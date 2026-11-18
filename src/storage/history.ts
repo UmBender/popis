@@ -1,17 +1,10 @@
-import {
-  DEFAULT_ARITHMETIC,
-  parseArithmeticSettings,
-  type ArithmeticSettings,
-} from "../gen/arithmetic";
 import type { JsonValue } from "../core/problem";
-import {
-  DEFAULT_FACTORING,
-  parseFactoringSettings,
-  type FactoringSettings,
-} from "../gen/factoring";
+import { parseArithmeticSettings } from "../gen/arithmetic";
+import { DEFAULT_FACTORING, parseFactoringSettings } from "../gen/factoring";
+import { MODES, type Mode, type ModeSettings } from "../modes";
 import { DEFAULT_DURATION_S, DURATIONS_S, type Attempt } from "../session/engine";
 
-export type Mode = "arithmetic" | "factoring";
+export type { Mode } from "../modes";
 
 /** The part of `Storage` the app uses; injected so tests use memory. */
 export interface KeyValueStore {
@@ -35,18 +28,18 @@ export type SessionRecord = {
   readonly log: readonly Attempt[];
 };
 
+/** The chosen mode and duration, plus the settings of every mode. */
 export type StoredSettings = {
   readonly mode: Mode;
-  readonly arithmetic: ArithmeticSettings;
-  readonly factoring: FactoringSettings;
   readonly durationS: number;
-};
+} & { readonly [M in Mode]: ModeSettings[M] };
 
 export const DEFAULT_SETTINGS: StoredSettings = {
   mode: "arithmetic",
-  arithmetic: DEFAULT_ARITHMETIC,
-  factoring: DEFAULT_FACTORING,
   durationS: DEFAULT_DURATION_S,
+  arithmetic: MODES.arithmetic.defaults,
+  factoring: MODES.factoring.defaults,
+  division: MODES.division.defaults,
 };
 
 export function memoryStore(initial: Record<string, string> = {}): KeyValueStore {
@@ -135,7 +128,7 @@ export function loadSettings(store: KeyValueStore): StoredSettings {
   ) {
     return DEFAULT_SETTINGS;
   }
-  return { mode, arithmetic, factoring, durationS };
+  return { ...DEFAULT_SETTINGS, mode, arithmetic, factoring, durationS };
 }
 
 export function saveSettings(store: KeyValueStore, settings: StoredSettings): void {
