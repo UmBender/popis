@@ -10,6 +10,7 @@ import {
   type RunningSession,
   type SessionState,
 } from "../session/engine";
+import { answerText } from "./format";
 
 /** How often the timer is redrawn and the end of the session checked. */
 const TICK_MS = 100;
@@ -56,6 +57,7 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
   const secondsLeft = Math.ceil(remainingMs(session, now) / 1000);
   const spec = MODES[mode];
   const last = session.log.at(-1);
+  const { choices } = session.problem;
 
   return (
     <div className="screen game">
@@ -77,7 +79,7 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
         <span data-testid="prompt" className="prompt">
           {session.problem.prompt}
         </span>
-        <span className="equals">=</span>
+        {choices === undefined && <span className="equals">=</span>}
         <input
           className={spec.wide ? "answer wide" : "answer"}
           aria-label="Resposta"
@@ -98,9 +100,16 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
           }}
         />
       </div>
+      {choices !== undefined && (
+        <ol className="choices" aria-label="Opções">
+          {choices.map((choice, i) => (
+            <li key={choice}>{`${i + 1}) ${choice}`}</li>
+          ))}
+        </ol>
+      )}
       {last?.outcome === "skipped" && (
         <p data-testid="skipped" className="skipped">
-          Pulada: {last.problem.prompt} = {last.problem.answer}
+          Pulada: {last.problem.prompt} = {answerText(last.problem)}
         </p>
       )}
       <p className="muted hint">

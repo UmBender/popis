@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Attempt } from "../session/engine";
 import { summarize } from "../session/stats";
 import { MODES, type Mode } from "../modes";
-import { seconds, skillLabel } from "./format";
+import { answerText, seconds, skillLabel } from "./format";
 
 /** How many of the slowest answers the results list. */
 const SLOWEST = 10;
@@ -68,7 +68,7 @@ export function ResultsScreen({ log, mode, onPlayAgain, onConfigure }: Props): R
             {summary.slowest.map((a, i) => (
               <tr key={i}>
                 <td>{a.problem.prompt}</td>
-                <td>{a.problem.answer}</td>
+                <td>{answerText(a.problem)}</td>
                 <td>{seconds(a.timeMs)}</td>
                 <td>{a.corrections}</td>
                 <td className="seed">{a.problem.seed}</td>
@@ -92,7 +92,7 @@ export function ResultsScreen({ log, mode, onPlayAgain, onConfigure }: Props): R
             {skipped.map((a, i) => (
               <tr key={i}>
                 <td>{a.problem.prompt}</td>
-                <td>{a.problem.answer}</td>
+                <td>{answerText(a.problem)}</td>
                 <td className="seed">{a.problem.seed}</td>
               </tr>
             ))}
