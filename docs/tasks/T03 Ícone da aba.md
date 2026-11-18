@@ -1,7 +1,7 @@
 ---
 id: T03
 title: Ícone da aba
-status: review
+status: done
 depends_on: [T02]
 branch: task/T03-favicon
 adrs: ["[[ADR-T03-1 The favicon uses theme tokens]]"]

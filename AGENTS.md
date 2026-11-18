@@ -26,7 +26,9 @@ TypeScript + React, com Vitest, fast-check, Testing Library e Playwright.
 `src/ui/theme.css`, e todo o resto usa `var(--token)`. Um literal de cor em
 qualquer outro arquivo de `src/` faz `tests/colors.test.ts` falhar. Precisou
 de uma cor nova? Crie um token a partir da paleta de origem e registre num
-ADR novo.
+ADR novo. Única exceção: `public/favicon.svg` escreve as cores direto no
+arquivo, mas só os valores de `--surface` e `--text`; `tests/favicon.test.ts`
+confere isso (ADR-T03-1).
 
 Tudo fora de `src/ui/` é TypeScript puro. Não usa DOM, `Math.random` nem
 `Date.now`, e por isso roda e é testado sem navegador.
