@@ -1,11 +1,6 @@
 /** Any value that survives a JSON round trip. */
 export type JsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | readonly JsonValue[]
-  | { readonly [key: string]: JsonValue };
+  null | boolean | number | string | readonly JsonValue[] | { readonly [key: string]: JsonValue };
 
 /** One question shown to the player. Plain data, so it can be stored. */
 export type Problem = {

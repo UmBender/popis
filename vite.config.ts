@@ -14,7 +14,13 @@ export default defineConfig({
       exclude: ["src/**/*.test.{ts,tsx}", "src/main.tsx"],
       reporter: ["text-summary", "text"],
       // Ratchet: raise these when coverage rises, never lower them without an ADR.
-      thresholds: {},
+      thresholds: {
+        "src/core/**": { lines: 100, statements: 100, functions: 100, branches: 88 },
+        "src/gen/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
+        "src/session/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
+        "src/storage/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
+        "src/ui/**": { lines: 100, statements: 100, functions: 100, branches: 75 },
+      },
     },
   },
 });

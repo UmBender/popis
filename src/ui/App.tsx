@@ -73,14 +73,7 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
       return <ConfigScreen settings={settings} onChange={setSettings} onStart={start} />;
     case "game":
       return (
-        <GameScreen
-          // A new session remounts the screen, resetting its state.
-          key={screen.session.config.seed}
-          initial={screen.session}
-          clock={clock}
-          onFinish={finish}
-          onAbort={abort}
-        />
+        <GameScreen initial={screen.session} clock={clock} onFinish={finish} onAbort={abort} />
       );
     case "results":
       return (

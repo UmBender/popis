@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRng, deriveSeed, MAX_SEED } from "./rng";
+import { createRng, deriveSeed, MAX_SEED, randomSeed } from "./rng";
 
 describe("createRng", () => {
   it("same seed gives the same sequence", () => {
@@ -46,6 +46,22 @@ describe("createRng", () => {
 
   it("pick on an empty list throws", () => {
     expect(() => createRng(1).pick([])).toThrow();
+  });
+
+  it("int with inverted or fractional bounds throws", () => {
+    expect(() => createRng(1).int(5, 4)).toThrow(RangeError);
+    expect(() => createRng(1).int(0.5, 4)).toThrow(RangeError);
+  });
+});
+
+describe("randomSeed", () => {
+  it("returns a uint32", () => {
+    for (let i = 0; i < 20; i++) {
+      const s = randomSeed();
+      expect(Number.isInteger(s)).toBe(true);
+      expect(s).toBeGreaterThanOrEqual(0);
+      expect(s).toBeLessThanOrEqual(MAX_SEED);
+    }
   });
 });
 

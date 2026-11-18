@@ -1,4 +1,8 @@
-import { DEFAULT_ARITHMETIC, parseArithmeticSettings, type ArithmeticSettings } from "../gen/arithmetic";
+import {
+  DEFAULT_ARITHMETIC,
+  parseArithmeticSettings,
+  type ArithmeticSettings,
+} from "../gen/arithmetic";
 import { DEFAULT_DURATION_S, DURATIONS_S, type Attempt } from "../session/engine";
 
 /** The part of `Storage` the app uses; injected so tests use memory. */

@@ -58,7 +58,7 @@ function start() {
 }
 
 function answerBox() {
-  return screen.getByRole("textbox", { name: "Resposta" });
+  return screen.getByRole<HTMLInputElement>("textbox", { name: "Resposta" });
 }
 
 function type(text: string) {
@@ -72,22 +72,22 @@ function prompt() {
 describe("config screen", () => {
   it("config offers the five durations with 120 s selected", () => {
     setup();
-    const select = screen.getByRole("combobox", { name: "Duração" });
-    const options = within(select).getAllByRole("option") as HTMLOptionElement[];
+    const select = screen.getByRole<HTMLSelectElement>("combobox", { name: "Duração" });
+    const options = within(select).getAllByRole<HTMLOptionElement>("option");
     expect(options.map((o) => o.value)).toEqual(["30", "60", "120", "300", "600"]);
-    expect((select as HTMLSelectElement).value).toBe("120");
+    expect(select.value).toBe("120");
   });
 
   it("shows the zetamac default ranges", () => {
     setup();
     const value = (name: string) =>
-      (screen.getByRole("spinbutton", { name }) as HTMLInputElement).value;
+      screen.getByRole<HTMLInputElement>("spinbutton", { name }).value;
     expect(value("Adição: mínimo à esquerda")).toBe("2");
     expect(value("Adição: máximo à direita")).toBe("100");
     expect(value("Multiplicação: máximo à esquerda")).toBe("12");
     expect(value("Multiplicação: máximo à direita")).toBe("100");
     for (const name of ["Adição", "Subtração", "Multiplicação", "Divisão"]) {
-      expect((screen.getByRole("checkbox", { name }) as HTMLInputElement).checked).toBe(true);
+      expect(screen.getByRole<HTMLInputElement>("checkbox", { name }).checked).toBe(true);
     }
   });
 
@@ -96,9 +96,7 @@ describe("config screen", () => {
     fireEvent.change(screen.getByRole("spinbutton", { name: "Adição: mínimo à esquerda" }), {
       target: { value: "500" },
     });
-    expect((screen.getByRole("button", { name: "Começar" }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Começar" }).disabled).toBe(true);
     expect(screen.getByRole("alert").textContent).toMatch(/mínimo maior que o máximo/);
   });
 
@@ -107,9 +105,7 @@ describe("config screen", () => {
     for (const name of ["Adição", "Subtração", "Multiplicação", "Divisão"]) {
       fireEvent.click(screen.getByRole("checkbox", { name }));
     }
-    expect((screen.getByRole("button", { name: "Começar" }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Começar" }).disabled).toBe(true);
     expect(screen.getByRole("alert").textContent).toMatch(/operação/);
   });
 });
@@ -129,7 +125,7 @@ describe("game screen", () => {
     start();
     type(solve(prompt() ?? ""));
     expect(screen.getByTestId("score").textContent).toBe("1");
-    expect((answerBox() as HTMLInputElement).value).toBe("");
+    expect(answerBox().value).toBe("");
   });
 
   it("wrong answer keeps the problem and the typed text", () => {
@@ -203,6 +199,13 @@ describe("results screen", () => {
     expect(history[0]?.log.filter((a) => a.outcome === "correct")).toHaveLength(2);
   });
 
+  it("configure returns to the config with the same settings", () => {
+    playTwoAndFinish(storeWith(ONE_PLUS_ONE, 30));
+    fireEvent.click(screen.getByRole("button", { name: "Configurar" }));
+    expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "Duração" }).value).toBe("30");
+    expect(screen.getByRole<HTMLInputElement>("checkbox", { name: "Divisão" }).checked).toBe(false);
+  });
+
   it("play again starts a new session with the same settings", () => {
     playTwoAndFinish(storeWith(ONE_PLUS_ONE));
     fireEvent.click(screen.getByRole("button", { name: "Jogar de novo" }));
@@ -224,11 +227,7 @@ describe("persistence", () => {
     document.body.innerHTML = "";
 
     setup(store);
-    expect((screen.getByRole("combobox", { name: "Duração" }) as HTMLSelectElement).value).toBe(
-      "30",
-    );
-    expect((screen.getByRole("checkbox", { name: "Divisão" }) as HTMLInputElement).checked).toBe(
-      false,
-    );
+    expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "Duração" }).value).toBe("30");
+    expect(screen.getByRole<HTMLInputElement>("checkbox", { name: "Divisão" }).checked).toBe(false);
   });
 });

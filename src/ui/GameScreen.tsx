@@ -56,7 +56,10 @@ export function GameScreen<P>({ initial, clock, onFinish, onAbort }: Props<P>): 
       <div className="status">
         <span>
           Tempo:{" "}
-          <span data-testid="timer" className={secondsLeft <= WARNING_S ? "timer warning" : "timer"}>
+          <span
+            data-testid="timer"
+            className={secondsLeft <= WARNING_S ? "timer warning" : "timer"}
+          >
             {secondsLeft}
           </span>
         </span>

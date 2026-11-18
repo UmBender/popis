@@ -21,11 +21,7 @@ export type ArithmeticSettings = {
 };
 
 export type SettingsError =
-  | "no-operation"
-  | "inverted-range"
-  | "non-integer"
-  | "out-of-bounds"
-  | "division-by-zero";
+  "no-operation" | "inverted-range" | "non-integer" | "out-of-bounds" | "division-by-zero";
 
 export const DEFAULT_ARITHMETIC: ArithmeticSettings = {
   operations: ["add", "sub", "mul", "div"],
@@ -99,7 +95,9 @@ export const arithmetic: Generator<ArithmeticSettings> = {
     const rng = createRng(seed);
     const op = rng.pick(params.operations);
     const [left, right] =
-      op === "add" || op === "sub" ? [params.addLeft, params.addRight] : [params.mulLeft, params.mulRight];
+      op === "add" || op === "sub"
+        ? [params.addLeft, params.addRight]
+        : [params.mulLeft, params.mulRight];
     const a = rng.int(left.min, left.max);
     const b = rng.int(right.min, right.max);
     const [prompt, answer] = {
