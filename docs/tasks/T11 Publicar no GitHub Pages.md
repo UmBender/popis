@@ -1,7 +1,7 @@
 ---
 id: T11
 title: Publicar no GitHub Pages
-status: review
+status: done
 depends_on: [T08]
 branch: task/T11-pages
 adrs: [ADR-T11-1]
