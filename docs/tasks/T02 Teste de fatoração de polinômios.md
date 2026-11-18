@@ -1,7 +1,7 @@
 ---
 id: T02
 title: Teste de fatoração de polinômios
-status: review
+status: done
 depends_on: [T01]
 branch: task/T02-polynomial-factoring
 adrs: ["[[ADR-T02-1 Factored answers are checked by expansion and factor count]]"]
