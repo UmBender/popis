@@ -127,6 +127,16 @@ describe("config screen", () => {
   });
 });
 
+describe("typing entry", () => {
+  it("config has a Digitação button that opens the typing screen and comes back", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: "Digitação" }));
+    expect(screen.getByTestId("typing-code")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(screen.getByRole("button", { name: "Começar" })).toBeTruthy();
+  });
+});
+
 describe("game screen", () => {
   it("starting shows a problem, the full time and a focused answer box", () => {
     setup();

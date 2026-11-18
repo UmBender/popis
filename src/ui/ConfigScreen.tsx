@@ -82,9 +82,17 @@ type Props = {
   readonly reviewCount: number;
   readonly onChange: (settings: StoredSettings) => void;
   readonly onStart: () => void;
+  /** Opens the code typing screen (T10). */
+  readonly onTyping: () => void;
 };
 
-export function ConfigScreen({ settings, reviewCount, onChange, onStart }: Props): ReactNode {
+export function ConfigScreen({
+  settings,
+  reviewCount,
+  onChange,
+  onStart,
+  onTyping,
+}: Props): ReactNode {
   const reviewing = settings.mode === "review";
   const errors = [
     ...errorsOf(settings.mode, settings),
@@ -220,9 +228,14 @@ export function ConfigScreen({ settings, reviewCount, onChange, onStart }: Props
         </ul>
       )}
 
-      <button type="submit" className="primary" disabled={errors.length > 0}>
-        Começar
-      </button>
+      <div className="actions">
+        <button type="submit" className="primary" disabled={errors.length > 0}>
+          Começar
+        </button>
+        <button type="button" className="typing-entry" onClick={onTyping}>
+          Digitação
+        </button>
+      </div>
     </form>
   );
 }
