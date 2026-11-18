@@ -26,6 +26,7 @@ const SKILL_LABELS: Readonly<Record<string, string>> = {
   "estimation.overflow": "Overflow",
   "sums.sum": "Somatório",
   "sums.loop": "Laços",
+  "primes.spf": "Menor fator primo",
 };
 
 /** The answer as shown to the player: "2) int64" for a multiple-choice one. */

@@ -5,6 +5,7 @@ import type { DivisionKind } from "../gen/division";
 import type { EstimationKind } from "../gen/estimation";
 import { LEVELS, type FactoringSettings, type Level } from "../gen/factoring";
 import type { KindSettings } from "../gen/kinds";
+import { PRIMES_LIMITS, type PrimesLimit } from "../gen/primes";
 import type { SumsKind } from "../gen/sums";
 import { MODE_IDS, MODES, type Mode } from "../modes";
 import { DURATIONS_S } from "../session/engine";
@@ -158,6 +159,23 @@ export function ConfigScreen({ settings, reviewCount, onChange, onStart }: Props
             onChange({ ...settings, sums });
           }}
         />
+      )}
+      {settings.mode === "primes" && (
+        <label className="row">
+          Limite
+          <select
+            value={settings.primes.limit}
+            onChange={(e) => {
+              onChange({ ...settings, primes: { limit: Number(e.target.value) as PrimesLimit } });
+            }}
+          >
+            {PRIMES_LIMITS.map((limit) => (
+              <option key={limit} value={limit}>
+                {limit.toLocaleString("pt-BR")}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
       {settings.mode === "division" && (
         <KindFields
