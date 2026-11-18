@@ -1,7 +1,7 @@
 ---
 id: T05
 title: Manipulação algébrica
-status: review
+status: done
 depends_on: [T04]
 branch: task/T05-algebra
 adrs: []
