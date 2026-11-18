@@ -1,0 +1,10 @@
+# Obsidian vault settings and state
+docs/.obsidian/
+docs/.trash/
+
+# Build, dependencies and test output
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
