@@ -5,7 +5,14 @@ import { manualClock, type ManualClock } from "../core/clock";
 import { deriveSeed } from "../core/rng";
 import { DEFAULT_ARITHMETIC, type ArithmeticSettings } from "../gen/arithmetic";
 import { DEFAULT_FACTORING, factoring, type FactoringSettings } from "../gen/factoring";
-import { loadHistory, memoryStore, SETTINGS_KEY, type KeyValueStore } from "../storage/history";
+import { division, DIVISION_KINDS, type DivisionSettings } from "../gen/division";
+import {
+  loadHistory,
+  loadSettings,
+  memoryStore,
+  SETTINGS_KEY,
+  type KeyValueStore,
+} from "../storage/history";
 import { App } from "./App";
 
 const SEED = 5;
@@ -340,5 +347,90 @@ describe("factoring mode", () => {
     setup(store);
     expect(screen.getByRole<HTMLInputElement>("radio", { name: "Fatoração" }).checked).toBe(true);
     expect(screen.getByRole<HTMLInputElement>("checkbox", { name: /^Nível 2/ }).checked).toBe(true);
+  });
+});
+
+describe("division mode", () => {
+  const ONLY_FLOOR: DivisionSettings = { kinds: ["floor"] };
+
+  function divisionStore(settings: DivisionSettings = ONLY_FLOOR): KeyValueStore {
+    return memoryStore({
+      [SETTINGS_KEY]: JSON.stringify({
+        mode: "division",
+        arithmetic: DEFAULT_ARITHMETIC,
+        division: settings,
+        durationS: 30,
+      }),
+    });
+  }
+
+  function nth(i: number) {
+    return division.generate(deriveSeed(SEED, i), ONLY_FLOOR);
+  }
+
+  it("division mode lists its kinds, all checked by default", () => {
+    setup();
+    fireEvent.click(screen.getByRole("radio", { name: "Divisão inteira" }));
+    for (const name of [
+      /^C\+\+: a \/ b/,
+      /^C\+\+: a % b/,
+      /^Piso/,
+      /^Teto/,
+      /^a mod b/,
+      /^Desigualdades/,
+    ]) {
+      expect(screen.getByRole<HTMLInputElement>("checkbox", { name }).checked).toBe(true);
+    }
+  });
+
+  it("division mode without kinds disables start", () => {
+    setup();
+    fireEvent.click(screen.getByRole("radio", { name: "Divisão inteira" }));
+    for (const box of screen.getAllByRole("checkbox")) fireEvent.click(box);
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Começar" }).disabled).toBe(true);
+    expect(screen.getByRole("alert").textContent).toMatch(/tipo/);
+  });
+
+  it("division mode accepts a negative answer typed with a hyphen", () => {
+    setup(divisionStore());
+    start();
+    expect(prompt()).toBe(nth(0).prompt);
+    type(nth(0).answer.replace("−", "-"));
+    expect(screen.getByTestId("score").textContent).toBe("1");
+  });
+
+  it("Enter skips in division", () => {
+    setup(divisionStore());
+    start();
+    fireEvent.keyDown(answerBox(), { key: "Enter" });
+    expect(screen.getByTestId("skipped").textContent).toContain(nth(0).prompt);
+    expect(prompt()).toBe(nth(1).prompt);
+  });
+
+  it("checking a kind again puts it back in menu order", () => {
+    const store = memoryStore();
+    setup(store);
+    fireEvent.click(screen.getByRole("radio", { name: "Divisão inteira" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^C\+\+: a \/ b/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^C\+\+: a \/ b/ }));
+    start();
+    expect(loadSettings(store).division.kinds).toEqual(DIVISION_KINDS);
+  });
+
+  it("division settings are remembered", () => {
+    const store = memoryStore();
+    setup(store);
+    fireEvent.click(screen.getByRole("radio", { name: "Divisão inteira" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^Teto/ }));
+    start();
+    fireEvent.keyDown(answerBox(), { key: "Escape" });
+    document.body.innerHTML = "";
+
+    setup(store);
+    expect(screen.getByRole<HTMLInputElement>("radio", { name: "Divisão inteira" }).checked).toBe(
+      true,
+    );
+    expect(screen.getByRole<HTMLInputElement>("checkbox", { name: /^Teto/ }).checked).toBe(false);
+    expect(screen.getByRole<HTMLInputElement>("checkbox", { name: /^Piso/ }).checked).toBe(true);
   });
 });

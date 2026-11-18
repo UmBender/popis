@@ -1,8 +1,7 @@
 import { useCallback, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
 import type { JsonValue } from "../core/problem";
-import { arithmetic } from "../gen/arithmetic";
-import { factoring } from "../gen/factoring";
+import { MODES, type Mode } from "../modes";
 import {
   startSession,
   type Attempt,
@@ -15,7 +14,6 @@ import {
   loadSettings,
   saveSettings,
   type KeyValueStore,
-  type Mode,
   type StoredSettings,
 } from "../storage/history";
 import { ConfigScreen } from "./ConfigScreen";
@@ -34,16 +32,17 @@ type Screen =
   | { readonly name: "game"; readonly mode: Mode; readonly session: RunningSession<JsonValue> }
   | { readonly name: "results"; readonly mode: Mode; readonly log: readonly Attempt[] };
 
-function sessionConfig(settings: StoredSettings, seed: number): SessionConfig<JsonValue> {
-  const durationMs = settings.durationS * 1000;
-  return settings.mode === "factoring"
-    ? { generator: factoring, params: settings.factoring, durationMs, seed }
-    : { generator: arithmetic, params: settings.arithmetic, durationMs, seed };
-}
-
-/** Generator ids are the mode names. */
-function modeOf(session: FinishedSession<JsonValue>): Mode {
-  return session.config.generator.id === factoring.id ? "factoring" : "arithmetic";
+function sessionConfig<M extends Mode>(
+  mode: M,
+  settings: StoredSettings,
+  seed: number,
+): SessionConfig<JsonValue> {
+  return {
+    generator: MODES[mode].generator,
+    params: settings[mode],
+    durationMs: settings.durationS * 1000,
+    seed,
+  };
 }
 
 export function App({ clock, store, newSeed }: AppProps): ReactNode {
@@ -52,13 +51,15 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
 
   const start = () => {
     saveSettings(store, settings);
-    const session = startSession(sessionConfig(settings, newSeed()), clock.now());
+    const session = startSession(sessionConfig(settings.mode, settings, newSeed()), clock.now());
     setScreen({ name: "game", mode: settings.mode, session });
   };
 
+  // Stable for the whole game, so the game screen's timer is not reset.
+  const gameMode = screen.name === "game" ? screen.mode : settings.mode;
   const finish = useCallback(
     (session: FinishedSession<JsonValue>) => {
-      const mode = modeOf(session);
+      const mode = gameMode;
       appendSession(store, {
         version: 1,
         mode,
@@ -70,7 +71,7 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
       });
       setScreen({ name: "results", mode, log: session.log });
     },
-    [clock, store],
+    [clock, store, gameMode],
   );
 
   const abort = useCallback(() => {

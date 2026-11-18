@@ -1,42 +1,42 @@
 import type { FormEvent, ReactNode } from "react";
-import {
-  validateArithmetic,
-  type ArithmeticSettings,
-  type Operation,
-  type Range,
-  type SettingsError,
-} from "../gen/arithmetic";
-import {
-  LEVELS,
-  validateFactoring,
-  type FactoringError,
-  type FactoringSettings,
-  type Level,
-} from "../gen/factoring";
+import type { ArithmeticSettings, Operation, Range } from "../gen/arithmetic";
+import type { DivisionKind } from "../gen/division";
+import { LEVELS, type FactoringSettings, type Level } from "../gen/factoring";
+import type { KindSettings } from "../gen/kinds";
+import { MODE_IDS, MODES, type Mode } from "../modes";
 import { DURATIONS_S } from "../session/engine";
-import type { Mode, StoredSettings } from "../storage/history";
+import type { StoredSettings } from "../storage/history";
 
-const ERROR_MESSAGES: Record<SettingsError | FactoringError, string> = {
+const ERROR_MESSAGES: Readonly<Record<string, string>> = {
   "no-operation": "Escolha pelo menos uma operação.",
   "inverted-range": "Uma faixa tem o mínimo maior que o máximo.",
   "non-integer": "As faixas aceitam só números inteiros.",
   "out-of-bounds": "As faixas vão de 0 a 1.000.000.",
   "division-by-zero": "Na divisão, a faixa à esquerda da multiplicação não pode incluir 0.",
   "no-level": "Escolha pelo menos um nível.",
+  "no-kind": "Escolha pelo menos um tipo.",
 };
 
-const MODES: readonly { mode: Mode; label: string; hint: string }[] = [
-  {
-    mode: "arithmetic",
-    label: "Aritmética",
-    hint: "Responda o máximo de contas antes do tempo acabar.",
-  },
-  {
-    mode: "factoring",
-    label: "Fatoração",
-    hint: "Digite a forma fatorada, como (x-5)(x+3). Enter pula a questão.",
-  },
+/** A checkbox of a kind-based mode: its label and a sample. */
+type KindOption<K extends string> = {
+  readonly kind: K;
+  readonly label: string;
+  readonly example: string;
+};
+
+const DIVISION_OPTIONS: readonly KindOption<DivisionKind>[] = [
+  { kind: "cpp-div", label: "C++: a / b", example: "−7 / 2 → −3" },
+  { kind: "cpp-mod", label: "C++: a % b", example: "−7 % 3 → −1" },
+  { kind: "floor", label: "Piso ⌊a / b⌋", example: "⌊−7 / 2⌋ → −4" },
+  { kind: "ceil", label: "Teto ⌈a / b⌉", example: "⌈−7 / 2⌉ → −3" },
+  { kind: "mod", label: "a mod b", example: "−7 mod 3 → 2" },
+  { kind: "inequality", label: "Desigualdades", example: "maior x com 3x + 7 ≤ 50 → 14" },
 ];
+
+/** Error codes of the chosen mode's settings. */
+function errorsOf<M extends Mode>(mode: M, settings: StoredSettings): readonly string[] {
+  return MODES[mode].validate(settings[mode]);
+}
 
 const LEVEL_LABELS: Readonly<Record<Level, { name: string; example: string }>> = {
   1: { name: "quadrática mônica", example: "x² − 2x − 15" },
@@ -56,10 +56,7 @@ type Props = {
 };
 
 export function ConfigScreen({ settings, onChange, onStart }: Props): ReactNode {
-  const errors =
-    settings.mode === "arithmetic"
-      ? validateArithmetic(settings.arithmetic)
-      : validateFactoring(settings.factoring);
+  const errors = errorsOf(settings.mode, settings);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -72,7 +69,7 @@ export function ConfigScreen({ settings, onChange, onStart }: Props): ReactNode 
 
       <fieldset className="modes">
         <legend>Modo</legend>
-        {MODES.map(({ mode, label }) => (
+        {MODE_IDS.map((mode) => (
           <label key={mode} className="op">
             <input
               type="radio"
@@ -82,24 +79,34 @@ export function ConfigScreen({ settings, onChange, onStart }: Props): ReactNode 
                 onChange({ ...settings, mode });
               }}
             />
-            {label}
+            {MODES[mode].label}
           </label>
         ))}
       </fieldset>
-      <p className="muted">{MODES.find((m) => m.mode === settings.mode)?.hint}</p>
+      <p className="muted">{MODES[settings.mode].hint}</p>
 
-      {settings.mode === "arithmetic" ? (
+      {settings.mode === "arithmetic" && (
         <ArithmeticFields
           arithmetic={settings.arithmetic}
           onChange={(arithmetic) => {
             onChange({ ...settings, arithmetic });
           }}
         />
-      ) : (
+      )}
+      {settings.mode === "factoring" && (
         <FactoringFields
           factoring={settings.factoring}
           onChange={(factoring) => {
             onChange({ ...settings, factoring });
+          }}
+        />
+      )}
+      {settings.mode === "division" && (
+        <KindFields
+          options={DIVISION_OPTIONS}
+          settings={settings.division}
+          onChange={(division) => {
+            onChange({ ...settings, division });
           }}
         />
       )}
@@ -236,6 +243,43 @@ function FactoringFields({
               }}
             />
             Nível {level}: {name}
+            <span className="muted example">{example}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function KindFields<K extends string>({
+  options,
+  settings,
+  onChange,
+}: {
+  readonly options: readonly KindOption<K>[];
+  readonly settings: KindSettings<K>;
+  readonly onChange: (settings: KindSettings<K>) => void;
+}): ReactNode {
+  return (
+    <div className="levels">
+      {options.map(({ kind, label, example }) => {
+        const enabled = settings.kinds.includes(kind);
+        return (
+          <label key={kind} className="op">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={() => {
+                onChange({
+                  kinds: enabled
+                    ? settings.kinds.filter((k) => k !== kind)
+                    : options
+                        .map((o) => o.kind)
+                        .filter((k) => k === kind || settings.kinds.includes(k)),
+                });
+              }}
+            />
+            {label}
             <span className="muted example">{example}</span>
           </label>
         );

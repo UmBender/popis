@@ -1,17 +1,11 @@
 import type { ReactNode } from "react";
 import type { Attempt } from "../session/engine";
 import { summarize } from "../session/stats";
-import type { Mode } from "../storage/history";
+import { MODES, type Mode } from "../modes";
 import { seconds, skillLabel } from "./format";
 
 /** How many of the slowest answers the results list. */
 const SLOWEST = 10;
-
-/** What the per-skill table calls a skill in each mode. */
-const GROUPS: Readonly<Record<Mode, { caption: string; column: string }>> = {
-  arithmetic: { caption: "Por operação", column: "Operação" },
-  factoring: { caption: "Por tipo", column: "Tipo" },
-};
 
 type Props = {
   readonly log: readonly Attempt[];
@@ -23,7 +17,7 @@ type Props = {
 export function ResultsScreen({ log, mode, onPlayAgain, onConfigure }: Props): ReactNode {
   const summary = summarize(log, SLOWEST);
   const skipped = log.filter((a) => a.outcome === "skipped");
-  const group = GROUPS[mode];
+  const group = MODES[mode].group;
 
   return (
     <div className="screen results">

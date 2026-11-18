@@ -9,6 +9,12 @@ const SKILL_LABELS: Readonly<Record<string, string>> = {
   "factoring.special": "Produtos notáveis",
   "factoring.cubic": "Cúbica",
   "factoring.twovar": "Duas variáveis",
+  "division.cpp-div": "C++ /",
+  "division.cpp-mod": "C++ %",
+  "division.floor": "Piso",
+  "division.ceil": "Teto",
+  "division.mod": "mod",
+  "division.inequality": "Desigualdade",
 };
 
 export function skillLabel(skill: string): string {
