@@ -28,7 +28,7 @@ falha se aparecer um literal de cor em qualquer outro lugar de `src/`.
 
 ## Ícone da aba
 
-`public/favicon.svg` desenha `O(n!)` em `--text` sobre `--surface`. É o
+`public/favicon.svg` desenha `n!` (de O(n!)) em `--text` sobre `--surface`. É o
 único arquivo fora de `theme.css` com valores de cor
 ([[ADR-T03-1 The favicon uses theme tokens]]); `tests/favicon.test.ts`
 confere que eles são os desses dois tokens.

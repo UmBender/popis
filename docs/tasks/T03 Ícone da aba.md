@@ -1,7 +1,7 @@
 ---
 id: T03
 title: Ícone da aba
-status: in-progress
+status: review
 depends_on: [T02]
 branch: task/T03-favicon
 adrs: ["[[ADR-T03-1 The favicon uses theme tokens]]"]
@@ -47,10 +47,10 @@ clara sobre fundo escuro, nas cores do tema ([[Theme]]).
 
 - **Passos pulados:** *models* (não há tipos nem código novo) e *quality*
   separado (os gates rodam no commit de comportamento; sem refatoração).
-- **Legibilidade:** com 5 caracteres, o texto em 16 px fica no limite. O
-  texto é esticado na vertical (`scale(1 1.75)`) para ocupar a altura;
-  conferido por screenshot em 16, 32 e 96 px.
+- **Legibilidade:** a primeira versão (`O(n!)` esticado na vertical) ficou
+  ilegível em 16 px, segundo o usuário. Comparei quatro alternativas em
+  16, 32 e 64 px; só `n!` ficou legível em 16 px, e o AC-1 mudou para ele.
 - **Fonte:** o SVG pede JetBrainsMono Nerd Font e cai para DejaVu Sans Mono
   ou `monospace`, porque um favicon não carrega fontes da página.
 - **Gates no último commit:** `npm run check` verde, `npm run coverage`
-  verde e `npm run test:e2e` verde (3 casos).
+  verde e `npm run test:e2e` verde (3 casos), também depois da troca para `n!`.
