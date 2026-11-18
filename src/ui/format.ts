@@ -1,3 +1,5 @@
+import type { Problem } from "../core/problem";
+
 const SKILL_LABELS: Readonly<Record<string, string>> = {
   "arithmetic.add": "Adição",
   "arithmetic.sub": "Subtração",
@@ -19,7 +21,16 @@ const SKILL_LABELS: Readonly<Record<string, string>> = {
   "algebra.simplify": "Simplificar",
   "algebra.square": "Completar o quadrado",
   "algebra.divide": "Dividir",
+  "estimation.complexity": "Complexidade",
+  "estimation.magnitude": "Ordem de grandeza",
+  "estimation.overflow": "Overflow",
 };
+
+/** The answer as shown to the player: "2) int64" for a multiple-choice one. */
+export function answerText(problem: Problem): string {
+  const choice = problem.choices?.[Number(problem.answer) - 1];
+  return choice === undefined ? problem.answer : `${problem.answer}) ${choice}`;
+}
 
 export function skillLabel(skill: string): string {
   return SKILL_LABELS[skill] ?? skill;

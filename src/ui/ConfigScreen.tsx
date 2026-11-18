@@ -2,6 +2,7 @@ import type { FormEvent, ReactNode } from "react";
 import type { AlgebraKind } from "../gen/algebra";
 import type { ArithmeticSettings, Operation, Range } from "../gen/arithmetic";
 import type { DivisionKind } from "../gen/division";
+import type { EstimationKind } from "../gen/estimation";
 import { LEVELS, type FactoringSettings, type Level } from "../gen/factoring";
 import type { KindSettings } from "../gen/kinds";
 import { MODE_IDS, MODES, type Mode } from "../modes";
@@ -40,6 +41,12 @@ const ALGEBRA_OPTIONS: readonly KindOption<AlgebraKind>[] = [
   { kind: "simplify", label: "Simplificar", example: "3(x − 2) − 2(x + 1) + x" },
   { kind: "square", label: "Completar o quadrado", example: "x² + 6x + 2 → (x + 3)² − 7" },
   { kind: "divide", label: "Dividir por (x − a)", example: "(x³ − 1) ÷ (x − 1)" },
+];
+
+const ESTIMATION_OPTIONS: readonly KindOption<EstimationKind>[] = [
+  { kind: "complexity", label: "Complexidade", example: "n ≤ 2·10⁵, 1 s → O(n log n)" },
+  { kind: "magnitude", label: "Ordem de grandeza", example: "O(n²) com n = 3·10⁴ → 10⁹" },
+  { kind: "overflow", label: "Overflow", example: "20! → int64" },
 ];
 
 /** Error codes of the chosen mode's settings. */
@@ -139,6 +146,15 @@ export function ConfigScreen({ settings, reviewCount, onChange, onStart }: Props
           settings={settings.division}
           onChange={(division) => {
             onChange({ ...settings, division });
+          }}
+        />
+      )}
+      {settings.mode === "estimation" && (
+        <KindFields
+          options={ESTIMATION_OPTIONS}
+          settings={settings.estimation}
+          onChange={(estimation) => {
+            onChange({ ...settings, estimation });
           }}
         />
       )}

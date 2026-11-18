@@ -9,6 +9,12 @@ import {
 import { ALGEBRA_KINDS, algebra, DEFAULT_ALGEBRA, type AlgebraSettings } from "./gen/algebra";
 import { DEFAULT_DIVISION, DIVISION_KINDS, division, type DivisionSettings } from "./gen/division";
 import {
+  DEFAULT_ESTIMATION,
+  ESTIMATION_KINDS,
+  estimation,
+  type EstimationSettings,
+} from "./gen/estimation";
+import {
   DEFAULT_FACTORING,
   factoring,
   parseFactoringSettings,
@@ -30,6 +36,7 @@ export type ModeSettings = {
   factoring: FactoringSettings;
   division: DivisionSettings;
   algebra: AlgebraSettings;
+  estimation: EstimationSettings;
   review: ReviewSettings;
 };
 
@@ -107,6 +114,18 @@ export const MODES: { readonly [M in Mode]: ModeSpec<ModeSettings[M]> } = {
     wide: true,
     group: BY_TYPE,
   },
+  estimation: {
+    label: "Estimativa",
+    hint: "Digite o número da opção certa. Enter pula a questão.",
+    generator: estimation,
+    defaults: DEFAULT_ESTIMATION,
+    parseSettings: (value) => parseKinds(value, ESTIMATION_KINDS),
+    validate: validateKinds,
+    allowSkip: true,
+    numeric: true,
+    wide: false,
+    group: BY_TYPE,
+  },
   review: {
     label: "Revisar",
     hint: "Refaça as questões que você pulou, corrigiu ou demorou. Enter pula a questão.",
@@ -127,6 +146,7 @@ export const MODE_IDS: readonly Mode[] = [
   "factoring",
   "division",
   "algebra",
+  "estimation",
   "review",
 ];
 
