@@ -4,6 +4,7 @@ import {
   constant,
   degree,
   equals,
+  evaluate,
   format,
   isConstant,
   monomial,
@@ -113,5 +114,19 @@ describe("format", () => {
 
   it("writes multi-digit superscripts", () => {
     expect(format(pow(x, 12))).toBe("x¹²");
+  });
+
+  it("format writes the display names it is given", () => {
+    const p = add(sub(mul(x, x), mul(c(5), mul(x, y))), y);
+    expect(format(p, { x: "n" })).toBe("n² − 5ny + y");
+    expect(format(p, { x: "i", y: "j" })).toBe("i² − 5ij + j");
+  });
+});
+
+describe("evaluate", () => {
+  it("evaluate substitutes x and y", () => {
+    expect(evaluate(quad, 4)).toBe(-7);
+    expect(evaluate(add(mul(x, y), y), 2, 3)).toBe(9);
+    expect(evaluate(c(0), 5)).toBe(0);
   });
 });

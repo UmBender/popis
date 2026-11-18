@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { fraction, sameValue } from "./fraction";
 import { MAX_EXPONENT, MAX_INPUT, parse, type Parsed } from "./parse";
 import { add, constant, equals, mul, neg, pow, sub, variable, type Poly } from "./poly";
 
@@ -91,6 +92,76 @@ describe("parse: division", () => {
     expect(equals(r.poly, c(1))).toBe(true);
     expect(r.denom).toBe(2);
     expect(r.factors).toBe(0);
+  });
+
+  it("division by a constant keeps the factor count", () => {
+    const r = parsed("(2x-10)(x+3)/2");
+    expect(sameValue(r, fraction(quad, 1))).toBe(true);
+    expect(r.factors).toBe(2);
+  });
+
+  it("the result is reduced with a positive denominator", () => {
+    const r = parsed("(2x+4)/(-6)");
+    expect(equals(r.poly, sub(neg(x), c(2)))).toBe(true);
+    expect(r.denom).toBe(3);
+    expect(parsed("6x/3").denom).toBe(1);
+    expect(equals(parsed("6x/3").poly, mul(c(2), x))).toBe(true);
+  });
+
+  it("division has the precedence of multiplication, left to right", () => {
+    expect(sameValue(parsed("12/2/3"), fraction(c(2), 1))).toBe(true);
+    expect(sameValue(parsed("1/2x"), fraction(x, 2))).toBe(true);
+    expect(sameValue(parsed("x+1/2"), fraction(add(mul(c(2), x), c(1)), 2))).toBe(true);
+  });
+
+  it("÷ divides", () => {
+    expect(sameValue(parsed("x ÷ 2"), fraction(x, 2))).toBe(true);
+  });
+
+  it("fractions add, multiply, divide and raise to powers", () => {
+    expect(sameValue(parsed("x/2 + x/3"), fraction(mul(c(5), x), 6))).toBe(true);
+    expect(sameValue(parsed("(x/2)^2"), fraction(mul(x, x), 4))).toBe(true);
+    expect(sameValue(parsed("1/(1/2)"), fraction(c(2), 1))).toBe(true);
+    expect(sameValue(parsed("x/(2/3)"), fraction(mul(c(3), x), 2))).toBe(true);
+  });
+
+  it("summands keep their own denominators", () => {
+    const r = parsed("x/2 - 1/3");
+    expect(r.summands).toHaveLength(2);
+    expect(sameValue(r.summands[1] ?? fraction(c(0), 1), fraction(c(-1), 3))).toBe(true);
+  });
+
+  it.each(["1/0", "x/(x-x)", "1/x", "(x+1)/(x-1)", "x/", "/2", "x//2", "x/^2"])(
+    "%j is rejected",
+    (input) => {
+      expect(parse(input)).toBeNull();
+    },
+  );
+});
+
+describe("parse: variables", () => {
+  const N = { variables: { n: "x" } } as const;
+  /** n(n + 1)/2 */
+  const triangle = fraction(add(mul(x, x), x), 2);
+
+  it.each(["n(n+1)/2", "(n² + n)/2", "n²/2 + n/2", "(n+1)n/2", "n·(n+1) ÷ 2", "(n^2+n)/2"])(
+    "%s is n(n + 1)/2 in n",
+    (input) => {
+      const r = parse(input, N);
+      expect(r).not.toBeNull();
+      expect(sameValue(r ?? fraction(c(0), 1), triangle)).toBe(true);
+    },
+  );
+
+  it("letters outside the option are rejected", () => {
+    expect(parse("x+1", N)).toBeNull();
+    expect(parse("n+1")).toBeNull();
+  });
+
+  it("two letters can name x and y", () => {
+    const r = parse("ab", { variables: { a: "x", b: "y" } });
+    expect(r).not.toBeNull();
+    expect(equals(r?.poly ?? c(0), mul(x, y))).toBe(true);
   });
 });
 

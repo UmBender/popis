@@ -144,6 +144,23 @@ describe("settings", () => {
     });
   });
 
+  it("settings saved by T05 load with the default sums kinds", () => {
+    const saved = { mode: "algebra", algebra: { kinds: ["expand"] }, durationS: 30 };
+    const store = memoryStore({ [SETTINGS_KEY]: JSON.stringify(saved) });
+    expect(loadSettings(store).sums).toEqual({ kinds: ["sum", "loop"] });
+  });
+
+  it("sums settings round-trip and invalid ones fall back to the defaults", () => {
+    const store = memoryStore();
+    saveSettings(store, { ...DEFAULT_SETTINGS, mode: "sums", sums: { kinds: ["loop"] } });
+    expect(loadSettings(store).mode).toBe("sums");
+    expect(loadSettings(store).sums).toEqual({ kinds: ["loop"] });
+    const bad = memoryStore({
+      [SETTINGS_KEY]: JSON.stringify({ sums: { kinds: ["pow"] }, durationS: 30 }),
+    });
+    expect(loadSettings(bad).sums).toEqual({ kinds: ["sum", "loop"] });
+  });
+
   it("invalid division kinds fall back to the defaults", () => {
     const saved = { arithmetic: DEFAULT_ARITHMETIC, division: { kinds: ["pow"] }, durationS: 60 };
     expect(loadSettings(memoryStore({ [SETTINGS_KEY]: JSON.stringify(saved) }))).toEqual(
