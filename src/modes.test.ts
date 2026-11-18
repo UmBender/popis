@@ -71,6 +71,22 @@ describe("mode registry", () => {
     expect(MODES.sums.validate({ kinds: [] })).toEqual(["no-kind"]);
   });
 
+  it("primes is a skippable numeric mode before review", () => {
+    expect(MODE_IDS.slice(-2)).toEqual(["primes", "review"]);
+    expect(MODES.primes.label).toBe("Primos");
+    expect(MODES.primes.allowSkip).toBe(true);
+    expect(MODES.primes.wide).toBe(false);
+    expect(MODES.primes.parseSettings({ limit: 100_000 })).toEqual({ limit: 100_000 });
+    expect(MODES.primes.parseSettings({ limit: 7 })).toBeNull();
+  });
+
+  it("primes problems can be reviewed", () => {
+    const item = { mode: "primes", seed: 3, params: { limit: 1000 } };
+    const problem = MODES.review.generator.generate(1, { items: [item] });
+    expect(problem).toEqual(MODES.primes.generator.generate(3, { limit: 1000 }));
+    expect(MODES.review.generator.check(problem, problem.answer)).toBe(true);
+  });
+
   it("isMode accepts registry ids only", () => {
     expect(isMode("division")).toBe(true);
     expect(isMode("chess")).toBe(false);

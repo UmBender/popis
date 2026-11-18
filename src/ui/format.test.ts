@@ -8,6 +8,10 @@ describe("format", () => {
     expect(skillLabel("future.skill")).toBe("future.skill");
   });
 
+  it("skillLabel names the primes skill", () => {
+    expect(skillLabel("primes.spf")).toBe("Menor fator primo");
+  });
+
   it("skillLabel names the estimation kinds", () => {
     expect(skillLabel("estimation.complexity")).toBe("Complexidade");
     expect(skillLabel("estimation.magnitude")).toBe("Ordem de grandeza");
