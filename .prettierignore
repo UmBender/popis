@@ -1,0 +1,7 @@
+dist
+coverage
+test-results
+playwright-report
+package-lock.json
+# Markdown (vault notes, AGENTS.md) is formatted by hand.
+*.md

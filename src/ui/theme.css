@@ -1,0 +1,17 @@
+/*
+ * Kanagawa Dragon, from the user's Alacritty theme (ADR-0001).
+ * The only file with colour values; docs/architecture/Theme.md lists the same
+ * tokens, and tests/colors.test.ts keeps both in sync.
+ */
+:root {
+  --bg: #181616;
+  --surface: #0d0c0c;
+  --text: #c5c9c5;
+  --muted: #a6a69c;
+  --accent: #7fa8bc;
+  --selection: #2d4f67;
+  --selection-text: #c8c093;
+  --correct: #8aa86e;
+  --wrong: #d16961;
+  --warning: #ceb680;
+}

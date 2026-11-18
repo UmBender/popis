@@ -171,8 +171,8 @@ Fora do `check`:
   mexem em `src/ui/`.
 - `npm run test:fuzz` roda os testes de propriedade com muito mais casos
   (`FC_NUM_RUNS=20000`).
-- `npm run coverage` usa limiares por pasta no `vitest.config.ts`. A
-  cobertura só sobe: quando subir, atualize o limiar; baixar exige um ADR.
+- `npm run coverage` usa limiares por pasta no `vite.config.ts` (bloco
+  `test.coverage.thresholds`). A cobertura só sobe: quando subir, atualize o limiar; baixar exige um ADR.
 
 ### Definition of Done
 
