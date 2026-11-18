@@ -123,6 +123,14 @@ describe("settings", () => {
     expect(loadSettings(store)).toEqual(settings);
   });
 
+  it("loaded settings keep the review mode but never review items", () => {
+    const store = memoryStore();
+    const item = { mode: "division", seed: 1, params: { kinds: ["floor"] } };
+    saveSettings(store, { ...DEFAULT_SETTINGS, mode: "review", review: { items: [item] } });
+    expect(loadSettings(store)).toEqual({ ...DEFAULT_SETTINGS, mode: "review" });
+    expect(DEFAULT_SETTINGS.review).toEqual({ items: [] });
+  });
+
   it("settings saved by T01 load with defaults for the new fields", () => {
     const arithmetic = { ...DEFAULT_ARITHMETIC, operations: ["add" as const] };
     const store = memoryStore({ [SETTINGS_KEY]: JSON.stringify({ arithmetic, durationS: 60 }) });

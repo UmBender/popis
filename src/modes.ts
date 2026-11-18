@@ -1,4 +1,4 @@
-import type { Generator } from "./core/problem";
+import type { Generator, JsonValue } from "./core/problem";
 import {
   arithmetic,
   DEFAULT_ARITHMETIC,
@@ -16,6 +16,13 @@ import {
   type FactoringSettings,
 } from "./gen/factoring";
 import { parseKinds, validateKinds } from "./gen/kinds";
+import {
+  createReview,
+  DEFAULT_REVIEW,
+  parseReviewSettings,
+  validateReview,
+  type ReviewSettings,
+} from "./gen/review";
 
 /** Settings of each mode; the stored settings keep one entry per mode id. */
 export type ModeSettings = {
@@ -23,6 +30,7 @@ export type ModeSettings = {
   factoring: FactoringSettings;
   division: DivisionSettings;
   algebra: AlgebraSettings;
+  review: ReviewSettings;
 };
 
 export type Mode = keyof ModeSettings;
@@ -99,11 +107,34 @@ export const MODES: { readonly [M in Mode]: ModeSpec<ModeSettings[M]> } = {
     wide: true,
     group: BY_TYPE,
   },
+  review: {
+    label: "Revisar",
+    hint: "Refaça as questões que você pulou, corrigiu ou demorou. Enter pula a questão.",
+    generator: createReview(replayable),
+    defaults: DEFAULT_REVIEW,
+    parseSettings: parseReviewSettings,
+    validate: validateReview,
+    allowSkip: true,
+    numeric: false,
+    wide: true,
+    group: BY_TYPE,
+  },
 };
 
 /** Mode ids in menu order. */
-export const MODE_IDS: readonly Mode[] = ["arithmetic", "factoring", "division", "algebra"];
+export const MODE_IDS: readonly Mode[] = [
+  "arithmetic",
+  "factoring",
+  "division",
+  "algebra",
+  "review",
+];
 
 export function isMode(value: unknown): value is Mode {
   return typeof value === "string" && (MODE_IDS as readonly string[]).includes(value);
+}
+
+/** The generator that replays a mode's problems; review problems are never items. */
+function replayable(mode: string): Generator<JsonValue> | undefined {
+  return isMode(mode) && mode !== "review" ? MODES[mode].generator : undefined;
 }

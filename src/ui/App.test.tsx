@@ -7,12 +7,15 @@ import { DEFAULT_ARITHMETIC, type ArithmeticSettings } from "../gen/arithmetic";
 import { DEFAULT_FACTORING, factoring, type FactoringSettings } from "../gen/factoring";
 import { algebra, type AlgebraSettings } from "../gen/algebra";
 import { division, DIVISION_KINDS, type DivisionSettings } from "../gen/division";
+import type { Problem } from "../core/problem";
 import {
+  HISTORY_KEY,
   loadHistory,
   loadSettings,
   memoryStore,
   SETTINGS_KEY,
   type KeyValueStore,
+  type SessionRecord,
 } from "../storage/history";
 import { App } from "./App";
 
@@ -469,5 +472,104 @@ describe("algebra mode", () => {
     expect(screen.getByTestId("score").textContent).toBe("1");
     fireEvent.keyDown(answerBox(), { key: "Enter" });
     expect(screen.getByTestId("skipped").textContent).toContain(nth(1).answer);
+  });
+});
+
+describe("review mode", () => {
+  const FLOOR: DivisionSettings = { kinds: ["floor"] };
+  const floor = (seed: number) => division.generate(seed, FLOOR);
+
+  function skippedSession(problems: readonly Problem[]): SessionRecord {
+    return {
+      version: 1,
+      mode: "division",
+      finishedAt: 0,
+      durationMs: 30_000,
+      seed: 1,
+      params: FLOOR,
+      log: problems.map((problem) => ({
+        problem,
+        outcome: "skipped",
+        timeMs: 1000,
+        corrections: 0,
+      })),
+    };
+  }
+
+  function reviewStore(problems: readonly Problem[]): KeyValueStore {
+    return memoryStore({
+      [SETTINGS_KEY]: JSON.stringify({ mode: "review", durationS: 30 }),
+      [HISTORY_KEY]: JSON.stringify([skippedSession(problems)]),
+    });
+  }
+
+  it("review mode without history disables start and says there is nothing to review", () => {
+    setup();
+    fireEvent.click(screen.getByRole("radio", { name: "Revisar" }));
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Começar" }).disabled).toBe(true);
+    expect(screen.getByRole("alert").textContent).toContain("Nada para revisar ainda");
+  });
+
+  it("review mode shows how many questions there are to review", () => {
+    setup(reviewStore([floor(1), floor(2)]));
+    expect(screen.getByTestId("review-count").textContent).toBe("2 questões para revisar");
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Começar" }).disabled).toBe(false);
+  });
+
+  it("review mode counts a single question in the singular", () => {
+    setup(reviewStore([floor(1)]));
+    expect(screen.getByTestId("review-count").textContent).toBe("1 questão para revisar");
+  });
+
+  it("review mode replays the skipped problem and accepts its answer", () => {
+    setup(reviewStore([floor(1)]));
+    start();
+    expect(prompt()).toBe(floor(1).prompt);
+    type(floor(1).answer);
+    expect(screen.getByTestId("score").textContent).toBe("1");
+  });
+
+  it("review mode skips with Enter and saves a review session with the original skills", () => {
+    const store = reviewStore([floor(1)]);
+    setup(store);
+    start();
+    fireEvent.keyDown(answerBox(), { key: "Enter" });
+    expect(screen.getByTestId("skipped").textContent).toContain(floor(1).prompt);
+    advance(30_000);
+
+    const saved = loadHistory(store).at(-1);
+    expect(saved?.mode).toBe("review");
+    expect(saved?.log[0]?.problem).toEqual(floor(1));
+    expect(saved?.log[0]?.outcome).toBe("skipped");
+  });
+
+  it("play again with nothing left to review returns to the config", () => {
+    // The skipped problem's session is the oldest of a full history, so
+    // saving the review session drops it.
+    const clean: SessionRecord = { ...skippedSession([]), log: [] };
+    const history = [skippedSession([floor(1)]), ...Array.from({ length: 199 }, () => clean)];
+    const store = memoryStore({
+      [SETTINGS_KEY]: JSON.stringify({ mode: "review", durationS: 30 }),
+      [HISTORY_KEY]: JSON.stringify(history),
+    });
+    setup(store);
+    start();
+    type(floor(1).answer);
+    advance(30_000);
+    fireEvent.click(screen.getByRole("button", { name: "Jogar de novo" }));
+    expect(screen.getByRole("alert").textContent).toContain("Nada para revisar ainda");
+  });
+
+  it("review count includes the session just played", () => {
+    const store = memoryStore({
+      [SETTINGS_KEY]: JSON.stringify({ mode: "division", division: FLOOR, durationS: 30 }),
+    });
+    setup(store);
+    start();
+    fireEvent.keyDown(answerBox(), { key: "Enter" });
+    advance(30_000);
+    fireEvent.click(screen.getByRole("button", { name: "Configurar" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Revisar" }));
+    expect(screen.getByTestId("review-count").textContent).toBe("1 questão para revisar");
   });
 });
