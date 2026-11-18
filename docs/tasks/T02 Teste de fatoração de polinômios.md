@@ -1,9 +1,10 @@
 ---
 id: T02
 title: Teste de fatoração de polinômios
-status: ready
+status: in-progress
 depends_on: [T01]
-adrs: []
+branch: task/T02-polynomial-factoring
+adrs: ["[[ADR-T02-1 Factored answers are checked by expansion and factor count]]"]
 tags: [task]
 ---
 
@@ -18,22 +19,74 @@ sozinha, como em [[T01 Clone do Zetamac]].
 ## Spec
 
 - **AC-1**: Um parser lê a resposta digitada: `+ - * ^`, parênteses,
-  multiplicação implícita, inteiros e variáveis.
+  multiplicação implícita, inteiros e as variáveis `x` e `y`. Também
+  aceita `−` (U+2212), `·`, `×` e expoentes sobrescritos (`²`, `³`…), para
+  que a resposta canônica exibida possa ser digitada ou colada. Entrada
+  inválida, acima de 80 caracteres, com expoente acima de 12 ou com
+  coeficiente fora do inteiro seguro dá `null`.
+  *Testes:* `src/math/parse.test.ts`, `src/math/poly.test.ts`,
+  `src/math/poly.prop.test.ts` (soma e produto comutativos e associativos,
+  distributividade, `parse(format(p))` igual a `p`).
 - **AC-2**: A resposta é aceita se a expansão dela for igual ao polinômio
   alvo **e** ela tiver o número esperado de fatores não constantes
-  (`^2` conta como dois). Qualquer ordem e forma equivalente servem.
+  (`^2` conta como dois)
+  ([[ADR-T02-1 Factored answers are checked by expansion and factor count]]).
+  Qualquer ordem e forma equivalente servem; o polinômio sem fatorar, uma
+  fatoração parcial ou um sinal trocado são rejeitados.
+  *Testes:* `src/gen/factoring.test.ts` ("check …").
 - **AC-3**: Os problemas são gerados de trás para frente: sorteia os
-  fatores e depois expande.
-- **AC-4**: Níveis:
-  1. quadrática mônica, raízes de −9 a 9;
-  2. quadrática não mônica;
-  3. fator comum + quadrática;
-  4. produtos notáveis (diferença de quadrados, quadrado perfeito, soma
-     ou diferença de cubos);
-  5. cúbica mônica com 3 raízes inteiras;
-  6. duas variáveis (`x² − 5xy + 6y²`).
-- **AC-5**: Tem uma tecla para pular, e os pulos aparecem no resultado.
-- **AC-6**: Para muitas seeds, cada problema gerado aceita a resposta canônica.
+  fatores e depois expande. O enunciado é o polinômio expandido, em ordem
+  decrescente de grau, com `−` e expoentes sobrescritos.
+  *Testes:* `src/gen/factoring.prop.test.ts` ("prompt is the expansion of
+  the answer").
+- **AC-4**: Níveis (um ou mais podem ser escolhidos; padrão: nível 1):
+  1. quadrática mônica `(x − r)(x − s)`, r e s de −9 a 9, não ambos 0;
+  2. quadrática não mônica `(ax + b)(cx + d)`, a e c de 1 a 5 com
+     `ac > 1`, b e d de −9 a 9 não nulos, fatores primitivos;
+  3. fator comum `k(x − r)(x − s)` ou `kx(x − r)(x − s)`, k de 2 a 6;
+  4. produtos notáveis: diferença de quadrados `(ax − b)(ax + b)`,
+     quadrado perfeito `(ax ± b)²` e soma ou diferença de cubos
+     `(ax ± b)(a²x² ∓ abx + b²)`, com fatores primitivos;
+  5. cúbica mônica `(x − r)(x − s)(x − t)`, raízes de −6 a 6, não todas 0;
+  6. duas variáveis `(x − ry)(x − sy)`, r e s de −9 a 9 não nulos.
+  *Testes:* `src/gen/factoring.test.ts`, `src/gen/factoring.prop.test.ts`
+  ("each level respects its shape").
+- **AC-5**: Enter pula a questão (só na fatoração; o modo aritmética segue
+  o Zetamac, sem pulo). Depois de pular, a questão pulada e a resposta
+  aparecem embaixo do campo. O resultado tem a tabela "Puladas", com as
+  respostas.
+  *Testes:* `src/ui/App.test.tsx` ("Enter skips …", "results list skipped
+  problems …", "Enter does nothing in arithmetic"),
+  `tests/e2e/factoring.spec.ts`.
+- **AC-6**: Para muitas seeds e cada nível, o problema gerado aceita a
+  resposta canônica, e a mesma seed gera o mesmo problema.
+  *Testes:* `src/gen/factoring.prop.test.ts`.
+- **AC-7**: A configuração tem a escolha de modo (Aritmética ou Fatoração).
+  A configuração salva passa a guardar o modo e os níveis, e a
+  configuração salva no formato da T01 continua sendo lida, com os padrões
+  para o que falta. O histórico registra o modo da sessão.
+  *Testes:* `src/storage/history.test.ts`, `src/ui/App.test.tsx`
+  ("mode choice …", "factoring settings are remembered").
+
+## Out of scope
+
+- Modo estrito (fatores primitivos obrigatórios).
+- Mais variáveis além de `x` e `y`, fatoração por agrupamento.
+
+## Files owned
+
+- `src/math/**`, `src/gen/factoring*.ts`, `src/storage/**`, `src/ui/**`,
+  `src/session/**` (se preciso), `tests/e2e/factoring.spec.ts`,
+  `docs/architecture/Theme.md` (só se um token novo for preciso)
+
+## Subtasks (one commit each)
+
+- [ ] spec — `docs(T02): specify polynomial factoring acceptance criteria`
+- [ ] tests — `test(T02): add failing tests for polynomial factoring`
+- [ ] models — `feat(T02): add polynomial, parser and factoring types`
+- [ ] behaviour — `feat(T02): implement polynomial factoring mode`
+- [ ] quality — `chore(T02): pass lint, format and coverage`
+- [ ] docs — `docs(T02): record polynomial factoring log`
 
 ## Decisions
 
