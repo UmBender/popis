@@ -6,6 +6,7 @@ import {
   validateArithmetic,
   type ArithmeticSettings,
 } from "./gen/arithmetic";
+import { ALGEBRA_KINDS, algebra, DEFAULT_ALGEBRA, type AlgebraSettings } from "./gen/algebra";
 import { DEFAULT_DIVISION, DIVISION_KINDS, division, type DivisionSettings } from "./gen/division";
 import {
   DEFAULT_FACTORING,
@@ -21,6 +22,7 @@ export type ModeSettings = {
   arithmetic: ArithmeticSettings;
   factoring: FactoringSettings;
   division: DivisionSettings;
+  algebra: AlgebraSettings;
 };
 
 export type Mode = keyof ModeSettings;
@@ -85,10 +87,22 @@ export const MODES: { readonly [M in Mode]: ModeSpec<ModeSettings[M]> } = {
     wide: false,
     group: BY_TYPE,
   },
+  algebra: {
+    label: "Álgebra",
+    hint: "Expanda, simplifique, complete o quadrado ou divida. Enter pula a questão.",
+    generator: algebra,
+    defaults: DEFAULT_ALGEBRA,
+    parseSettings: (value) => parseKinds(value, ALGEBRA_KINDS),
+    validate: validateKinds,
+    allowSkip: true,
+    numeric: false,
+    wide: true,
+    group: BY_TYPE,
+  },
 };
 
 /** Mode ids in menu order. */
-export const MODE_IDS: readonly Mode[] = ["arithmetic", "factoring", "division"];
+export const MODE_IDS: readonly Mode[] = ["arithmetic", "factoring", "division", "algebra"];
 
 export function isMode(value: unknown): value is Mode {
   return typeof value === "string" && (MODE_IDS as readonly string[]).includes(value);

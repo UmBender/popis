@@ -20,11 +20,17 @@ export const MAX_EXPONENT = 12;
 /** Largest total degree of any intermediate result. */
 export const MAX_DEGREE = 24;
 
-export type Parsed = {
-  /** The expanded polynomial. */
+/** A polynomial and the non-constant factors it was written with. */
+export type Summand = {
+  /** The expanded polynomial, with the sign it was written with. */
   readonly poly: Poly;
-  /** Non-constant factors of the top-level product (ADR-T02-1). */
+  /** Non-constant factors of the product (ADR-T02-1). */
   readonly factors: number;
+};
+
+export type Parsed = Summand & {
+  /** The top-level terms, in the order written. */
+  readonly summands: readonly Summand[];
 };
 
 type Op = "+" | "-" | "*" | "^" | "(" | ")";
@@ -142,10 +148,10 @@ class Parser {
     }
     // A single product keeps its factors; a sum is one factor unless it is constant.
     const factors = count === 1 ? first.factors : isConstant(poly) ? 0 : 1;
-    return { poly, factors };
+    return { poly, factors, summands: [] };
   }
 
-  private term(): Parsed {
+  private term(): Summand {
     let { poly, factors } = this.factor();
     for (;;) {
       if (this.isOp("*")) this.pos++;
@@ -158,7 +164,7 @@ class Parser {
     return { poly, factors };
   }
 
-  private factor(): Parsed {
+  private factor(): Summand {
     const base = this.primary();
     if (!this.isOp("^")) return base;
     this.pos++;
@@ -171,7 +177,7 @@ class Parser {
     return { poly: pow(base.poly, n), factors: base.factors * n };
   }
 
-  private primary(): Parsed {
+  private primary(): Summand {
     const t = this.tokens[this.pos++];
     if (t === undefined) throw new Reject("unexpected end");
     if (t.kind === "int") return { poly: constant(t.value), factors: 0 };

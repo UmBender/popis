@@ -38,6 +38,7 @@ export const DEFAULT_SETTINGS: StoredSettings = {
   arithmetic: MODES.arithmetic.defaults,
   factoring: MODES.factoring.defaults,
   division: MODES.division.defaults,
+  algebra: MODES.algebra.defaults,
 };
 
 export function memoryStore(initial: Record<string, string> = {}): KeyValueStore {
