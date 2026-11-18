@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_EXPONENT, MAX_INPUT, parse } from "./parse";
+import { MAX_EXPONENT, MAX_INPUT, parse, type Parsed } from "./parse";
 import { add, constant, equals, mul, neg, pow, sub, variable, type Poly } from "./poly";
 
 const x = variable("x");
@@ -9,7 +9,7 @@ const c = constant;
 /** x² − 2x − 15 = (x − 5)(x + 3) */
 const quad: Poly = mul(sub(x, c(5)), add(x, c(3)));
 
-function parsed(input: string): { poly: Poly; factors: number } {
+function parsed(input: string): Parsed {
   const result = parse(input);
   if (result === null) throw new Error(`expected "${input}" to parse`);
   return result;
