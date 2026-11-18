@@ -47,10 +47,14 @@ describe("primes", () => {
   });
 
   it("smallestPrimeFactor and isPrime agree with a sieve up to 10^5", () => {
+    // One assertion over every n: 2·10⁵ separate expect calls take longer
+    // than the test timeout.
     const spf = sieve(LIMIT);
+    const mismatches: string[] = [];
     for (let n = 2; n <= LIMIT; n++) {
-      expect(smallestPrimeFactor(n)).toBe(spf[n]);
-      expect(isPrime(n)).toBe(spf[n] === n);
+      if (smallestPrimeFactor(n) !== spf[n]) mismatches.push(`spf(${n})`);
+      if (isPrime(n) !== (spf[n] === n)) mismatches.push(`isPrime(${n})`);
     }
+    expect(mismatches).toEqual([]);
   });
 });
