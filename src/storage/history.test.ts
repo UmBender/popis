@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_ARITHMETIC } from "../gen/arithmetic";
 import { arithmetic } from "../gen/arithmetic";
+import { DEFAULT_FACTORING, factoring } from "../gen/factoring";
 import {
   appendSession,
   DEFAULT_SETTINGS,
@@ -68,6 +69,22 @@ describe("history", () => {
     expect(history[0]?.finishedAt).toBe(3);
   });
 
+  it("factoring sessions keep their mode", () => {
+    const store = memoryStore();
+    const problem = factoring.generate(1, DEFAULT_FACTORING);
+    const session: SessionRecord = {
+      version: 1,
+      mode: "factoring",
+      finishedAt: 1,
+      durationMs: 60_000,
+      seed: 1,
+      params: DEFAULT_FACTORING,
+      log: [{ problem, outcome: "skipped", timeMs: 900, corrections: 0 }],
+    };
+    appendSession(store, session);
+    expect(loadHistory(store)).toEqual([session]);
+  });
+
   it("a store that throws does not break loading or saving", () => {
     expect(loadHistory(throwingStore)).toEqual([]);
     expect(() => {
@@ -77,19 +94,50 @@ describe("history", () => {
 });
 
 describe("settings", () => {
-  it("defaults to the zetamac settings and 120 s", () => {
-    expect(DEFAULT_SETTINGS).toEqual({ arithmetic: DEFAULT_ARITHMETIC, durationS: 120 });
+  // T02 (AC-7) added `mode` and `factoring` to the stored settings.
+  it("defaults to arithmetic with the zetamac settings, factoring level 1 and 120 s", () => {
+    expect(DEFAULT_SETTINGS).toEqual({
+      mode: "arithmetic",
+      arithmetic: DEFAULT_ARITHMETIC,
+      factoring: { levels: [1] },
+      durationS: 120,
+    });
     expect(loadSettings(memoryStore())).toEqual(DEFAULT_SETTINGS);
   });
 
   it("round-trips saved settings", () => {
     const store = memoryStore();
     const settings = {
+      mode: "factoring" as const,
       arithmetic: { ...DEFAULT_ARITHMETIC, operations: ["mul" as const] },
+      factoring: { levels: [2, 4] as const },
       durationS: 30,
     };
     saveSettings(store, settings);
     expect(loadSettings(store)).toEqual(settings);
+  });
+
+  it("settings saved by T01 load with defaults for the new fields", () => {
+    const arithmetic = { ...DEFAULT_ARITHMETIC, operations: ["add" as const] };
+    const store = memoryStore({ [SETTINGS_KEY]: JSON.stringify({ arithmetic, durationS: 60 }) });
+    expect(loadSettings(store)).toEqual({
+      mode: "arithmetic",
+      arithmetic,
+      factoring: DEFAULT_FACTORING,
+      durationS: 60,
+    });
+  });
+
+  it("an unknown mode or invalid levels fall back to the defaults", () => {
+    const base = { arithmetic: DEFAULT_ARITHMETIC, durationS: 60 };
+    expect(
+      loadSettings(memoryStore({ [SETTINGS_KEY]: JSON.stringify({ ...base, mode: "chess" }) })),
+    ).toEqual(DEFAULT_SETTINGS);
+    expect(
+      loadSettings(
+        memoryStore({ [SETTINGS_KEY]: JSON.stringify({ ...base, factoring: { levels: [] } }) }),
+      ),
+    ).toEqual(DEFAULT_SETTINGS);
   });
 
   it("invalid stored settings fall back to the defaults", () => {
