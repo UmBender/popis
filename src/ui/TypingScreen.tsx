@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
 import type { KeyValueStore } from "../storage/history";
 import {
@@ -24,6 +24,7 @@ import {
   startTyping,
   typeText,
   typingStats,
+  type Mark,
   type TypingState,
 } from "../typing/engine";
 import { seconds } from "./format";
@@ -112,6 +113,9 @@ export function TypingScreen({ clock, store, newSeed, onBack }: Props): ReactNod
   const { snippet, typing, languages, seed } = current;
   const finished = isFinished(typing);
   const summary = typingSummary(results);
+  const markCodes = marks(typing)
+    .map((m) => MARK_CODES[m])
+    .join("");
 
   return (
     <div className="screen typing">
@@ -185,17 +189,14 @@ export function TypingScreen({ clock, store, newSeed, onBack }: Props): ReactNod
             box.current?.focus();
           }}
         >
-          {marks(typing).map((mark, i) => {
-            const ch = snippet.text.charAt(i);
-            const classes = [`mark-${mark}`];
-            if (ch === " ") classes.push("space");
-            if (!finished && i === typing.typed.length) classes.push("cursor");
-            return (
-              <span key={i} data-mark={mark} className={classes.join(" ")}>
-                {ch === "\n" && mark === "wrong" ? "↵\n" : ch}
-              </span>
-            );
-          })}
+          {lines(snippet.text).map(({ start, text }) => (
+            <Line
+              key={start}
+              text={text}
+              marks={markCodes.slice(start, start + text.length)}
+              cursor={!finished ? typing.typed.length - start : -1}
+            />
+          ))}
         </pre>
       </div>
 
@@ -229,6 +230,48 @@ export function TypingScreen({ clock, store, newSeed, onBack }: Props): ReactNod
     </div>
   );
 }
+
+const MARK_CODES: Readonly<Record<Mark, string>> = { correct: "c", wrong: "w", pending: "p" };
+const MARKS_BY_CODE: Readonly<Record<string, Mark>> = { c: "correct", w: "wrong", p: "pending" };
+
+/** The snippet's lines, each with its trailing newline and its offset. */
+function lines(text: string): { start: number; text: string }[] {
+  const out: { start: number; text: string }[] = [];
+  let start = 0;
+  for (const line of text.split(/(?<=\n)/)) {
+    out.push({ start, text: line });
+    start += line.length;
+  }
+  return out;
+}
+
+/**
+ * One line of the snippet, one span per character. Memoized on plain
+ * strings: a key changes one line, so the others skip rendering.
+ */
+const Line = memo(function Line({
+  text,
+  marks,
+  cursor,
+}: {
+  readonly text: string;
+  /** One code per character: c(orrect), w(rong) or p(ending). */
+  readonly marks: string;
+  /** Column of the cursor in this line, or outside [0, length) when absent. */
+  readonly cursor: number;
+}): ReactNode {
+  return [...text].map((ch, i) => {
+    const mark = MARKS_BY_CODE[marks.charAt(i)] ?? "pending";
+    const classes = [`mark-${mark}`];
+    if (ch === " ") classes.push("space");
+    if (i === cursor) classes.push("cursor");
+    return (
+      <span key={i} data-mark={mark} className={classes.join(" ")}>
+        {ch === "\n" && mark === "wrong" ? "↵\n" : ch}
+      </span>
+    );
+  });
+});
 
 function TypingResults({
   typing,
