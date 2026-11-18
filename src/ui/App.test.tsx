@@ -5,8 +5,14 @@ import { manualClock, type ManualClock } from "../core/clock";
 import { deriveSeed } from "../core/rng";
 import { DEFAULT_ARITHMETIC, type ArithmeticSettings } from "../gen/arithmetic";
 import { DEFAULT_FACTORING, factoring, type FactoringSettings } from "../gen/factoring";
-import { division, type DivisionSettings } from "../gen/division";
-import { loadHistory, memoryStore, SETTINGS_KEY, type KeyValueStore } from "../storage/history";
+import { division, DIVISION_KINDS, type DivisionSettings } from "../gen/division";
+import {
+  loadHistory,
+  loadSettings,
+  memoryStore,
+  SETTINGS_KEY,
+  type KeyValueStore,
+} from "../storage/history";
 import { App } from "./App";
 
 const SEED = 5;
@@ -399,6 +405,16 @@ describe("division mode", () => {
     fireEvent.keyDown(answerBox(), { key: "Enter" });
     expect(screen.getByTestId("skipped").textContent).toContain(nth(0).prompt);
     expect(prompt()).toBe(nth(1).prompt);
+  });
+
+  it("checking a kind again puts it back in menu order", () => {
+    const store = memoryStore();
+    setup(store);
+    fireEvent.click(screen.getByRole("radio", { name: "Divisão inteira" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^C\+\+: a \/ b/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^C\+\+: a \/ b/ }));
+    start();
+    expect(loadSettings(store).division.kinds).toEqual(DIVISION_KINDS);
   });
 
   it("division settings are remembered", () => {

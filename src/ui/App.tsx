@@ -1,7 +1,7 @@
 import { useCallback, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
-import type { Generator, JsonValue } from "../core/problem";
-import { isMode, MODES, type Mode } from "../modes";
+import type { JsonValue } from "../core/problem";
+import { MODES, type Mode } from "../modes";
 import {
   startSession,
   type Attempt,
@@ -38,18 +38,11 @@ function sessionConfig<M extends Mode>(
   seed: number,
 ): SessionConfig<JsonValue> {
   return {
-    // Every mode's settings are plain JSON (ModeSettings), so this widening is safe.
-    generator: MODES[mode].generator as Generator<JsonValue>,
-    params: settings[mode] as JsonValue,
+    generator: MODES[mode].generator,
+    params: settings[mode],
     durationMs: settings.durationS * 1000,
     seed,
   };
-}
-
-/** Generator ids are the mode ids (src/modes.test.ts). */
-function modeOf(session: FinishedSession<JsonValue>): Mode {
-  const id = session.config.generator.id;
-  return isMode(id) ? id : "arithmetic";
 }
 
 export function App({ clock, store, newSeed }: AppProps): ReactNode {
@@ -62,9 +55,11 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
     setScreen({ name: "game", mode: settings.mode, session });
   };
 
+  // Stable for the whole game, so the game screen's timer is not reset.
+  const gameMode = screen.name === "game" ? screen.mode : settings.mode;
   const finish = useCallback(
     (session: FinishedSession<JsonValue>) => {
-      const mode = modeOf(session);
+      const mode = gameMode;
       appendSession(store, {
         version: 1,
         mode,
@@ -76,7 +71,7 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
       });
       setScreen({ name: "results", mode, log: session.log });
     },
-    [clock, store],
+    [clock, store, gameMode],
   );
 
   const abort = useCallback(() => {
