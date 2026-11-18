@@ -1,4 +1,5 @@
 import type { FormEvent, ReactNode } from "react";
+import type { AlgebraKind } from "../gen/algebra";
 import type { ArithmeticSettings, Operation, Range } from "../gen/arithmetic";
 import type { DivisionKind } from "../gen/division";
 import { LEVELS, type FactoringSettings, type Level } from "../gen/factoring";
@@ -31,6 +32,13 @@ const DIVISION_OPTIONS: readonly KindOption<DivisionKind>[] = [
   { kind: "ceil", label: "Teto ⌈a / b⌉", example: "⌈−7 / 2⌉ → −3" },
   { kind: "mod", label: "a mod b", example: "−7 mod 3 → 2" },
   { kind: "inequality", label: "Desigualdades", example: "maior x com 3x + 7 ≤ 50 → 14" },
+];
+
+const ALGEBRA_OPTIONS: readonly KindOption<AlgebraKind>[] = [
+  { kind: "expand", label: "Expandir", example: "(2x − 3)(x + 5)" },
+  { kind: "simplify", label: "Simplificar", example: "3(x − 2) − 2(x + 1) + x" },
+  { kind: "square", label: "Completar o quadrado", example: "x² + 6x + 2 → (x + 3)² − 7" },
+  { kind: "divide", label: "Dividir por (x − a)", example: "(x³ − 1) ÷ (x − 1)" },
 ];
 
 /** Error codes of the chosen mode's settings. */
@@ -98,6 +106,15 @@ export function ConfigScreen({ settings, onChange, onStart }: Props): ReactNode 
           factoring={settings.factoring}
           onChange={(factoring) => {
             onChange({ ...settings, factoring });
+          }}
+        />
+      )}
+      {settings.mode === "algebra" && (
+        <KindFields
+          options={ALGEBRA_OPTIONS}
+          settings={settings.algebra}
+          onChange={(algebra) => {
+            onChange({ ...settings, algebra });
           }}
         />
       )}

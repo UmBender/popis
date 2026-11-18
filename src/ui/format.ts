@@ -15,6 +15,10 @@ const SKILL_LABELS: Readonly<Record<string, string>> = {
   "division.ceil": "Teto",
   "division.mod": "mod",
   "division.inequality": "Desigualdade",
+  "algebra.expand": "Expandir",
+  "algebra.simplify": "Simplificar",
+  "algebra.square": "Completar o quadrado",
+  "algebra.divide": "Dividir",
 };
 
 export function skillLabel(skill: string): string {

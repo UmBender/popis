@@ -7,7 +7,6 @@ import {
   neg,
   PolyOverflowError,
   pow,
-  sub,
   variable,
   type Poly,
   type Variable,
@@ -137,18 +136,19 @@ class Parser {
       this.pos++;
     }
     const first = this.term();
-    let poly = negative ? neg(first.poly) : first.poly;
-    let count = 1;
+    const summands: Summand[] = [negative ? { ...first, poly: neg(first.poly) } : first];
+    let poly = summands[0]?.poly ?? first.poly;
     while (this.isOp("+") || this.isOp("-")) {
       const minus = this.isOp("-");
       this.pos++;
       const next = this.term();
-      poly = limitDegree(minus ? sub(poly, next.poly) : add(poly, next.poly));
-      count++;
+      const signed = minus ? { ...next, poly: neg(next.poly) } : next;
+      summands.push(signed);
+      poly = limitDegree(add(poly, signed.poly));
     }
     // A single product keeps its factors; a sum is one factor unless it is constant.
-    const factors = count === 1 ? first.factors : isConstant(poly) ? 0 : 1;
-    return { poly, factors, summands: [] };
+    const factors = summands.length === 1 ? first.factors : isConstant(poly) ? 0 : 1;
+    return { poly, factors, summands };
   }
 
   private term(): Summand {
