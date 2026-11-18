@@ -1,7 +1,7 @@
 ---
 id: T09
 title: Números primos
-status: in-progress
+status: review
 depends_on: [T06]
 branch: task/T09-primes
 adrs: []
@@ -81,11 +81,38 @@ como na divisão.
 
 ## Subtasks (one commit each)
 
-- [ ] spec — `docs(T09): specify primes acceptance criteria`
-- [ ] tests — `test(T09): add failing tests for primes`
-- [ ] models — `feat(T09): add primes types and registry entry`
-- [ ] behaviour — `feat(T09): implement primes mode`
-- [ ] quality — `chore(T09): …`
-- [ ] docs — `docs(T09): record primes log`
+- [x] spec — `docs(T09): specify primes acceptance criteria`
+- [x] tests — `test(T09): add failing tests for primes` (antes dele,
+  `test(T09): let primes use the numeric keyboard`)
+- [x] models — `feat(T09): add primes types and registry entry`
+- [x] behaviour — `feat(T09): implement primes mode` (antes dele,
+  `test(T09): check the primes sieve in one assertion`)
+- [x] quality — `refactor(T09): write validatePrimes like validateReview`
+- [x] docs — `docs(T09): record primes log`
 
 ## Log
+
+- 2026-11-18 — **Teste de registro ajustado** (commit `test(T09)` próprio):
+  `src/modes.test.ts` lista os modos com teclado numérico. Primos responde
+  com um inteiro positivo, então entrou na lista junto com aritmética e
+  estimativa. As outras asserções não mudaram.
+- 2026-11-18 — **Teste do crivo lento** (commit `test(T09)` próprio, antes
+  do comportamento): comparar com o crivo chamava `expect` duas vezes para
+  cada n até 10⁵ e passava do limite de 5 s. Agora ele junta os n que
+  divergem e afirma que a lista está vazia. São as mesmas 2·10⁵
+  comparações, e o teste leva cerca de 0,1 s.
+- 2026-11-18 — **Sorteio:** uma moeda decide entre primo e composto, e o
+  número sai por rejeição de um inteiro uniforme em [11, limite], com
+  `retry` (até 1000 tentativas). A pior densidade é a dos compostos até
+  100 (3 em 90), e a chance de esgotar as tentativas é desprezível
+  (cerca de 10⁻¹⁴).
+- 2026-11-18 — **Tela:** o limite é um seletor "Limite" (100, 1.000,
+  10.000, 100.000), como o de duração. A revisão repete as questões de
+  primos sem mudança nenhuma, porque usa o registro.
+- 2026-11-18 — **Cobertura:** `src/gen/**` fica em 100%, e os limiares
+  inteiros de `src/math/**` (branches 96,95%) e de `src/ui/**` (95,55%)
+  não sobem, então não houve commit de ratchet.
+- 2026-11-18 — **Gates no último commit:** `npm run check` verde (539
+  testes), `npm run coverage` sem `ERROR`, `npm run test:fuzz` verde (44
+  testes) e `npm run test:e2e` verde (6 testes; o de celular já passa
+  pelo modo Primos).
