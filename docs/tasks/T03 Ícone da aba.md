@@ -1,7 +1,7 @@
 ---
 id: T03
 title: Ícone da aba
-status: in-progress
+status: review
 depends_on: [T02]
 branch: task/T03-favicon
 adrs: ["[[ADR-T03-1 The favicon uses theme tokens]]"]
@@ -35,12 +35,19 @@ sobre fundo escuro, nas cores do tema ([[Theme]]).
 
 ## Subtasks (one commit each)
 
-- [ ] spec — `docs(T03): specify the favicon`
-- [ ] tests — `test(T03): add failing tests for the favicon`
-- [ ] behaviour — `feat(T03): add the O(n!) favicon`
-- [ ] docs — `docs(T03): record favicon log`
+- [x] spec — `docs(T03): specify the favicon`
+- [x] tests — `test(T03): add failing tests for the favicon`
+- [x] behaviour — `feat(T03): add the O(n!) favicon`
+- [x] docs — `docs(T03): record favicon log`
 
 ## Log
 
 - **Passos pulados:** *models* (não há tipos nem código novo) e *quality*
   separado (os gates rodam no commit de comportamento; sem refatoração).
+- **Legibilidade:** com 5 caracteres, o texto em 16 px fica no limite. O
+  texto é esticado na vertical (`scale(1 1.75)`) para ocupar a altura;
+  conferido por screenshot em 16, 32 e 96 px.
+- **Fonte:** o SVG pede JetBrainsMono Nerd Font e cai para DejaVu Sans Mono
+  ou `monospace`, porque um favicon não carrega fontes da página.
+- **Gates no último commit:** `npm run check` verde, `npm run coverage`
+  verde e `npm run test:e2e` verde (3 casos).
