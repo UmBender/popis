@@ -1,17 +1,20 @@
 import {
-  add,
+  addFractions,
+  divFractions,
+  mulFractions,
+  powFraction,
+  type Fraction,
+} from "./fraction";
+import {
   constant,
   degree,
   isConstant,
-  mul,
   neg,
   PolyOverflowError,
-  pow,
   variable,
   type Poly,
   type Variable,
 } from "./poly";
-import type { Fraction } from "./fraction";
 
 /** Longest accepted input, in characters. */
 export const MAX_INPUT = 80;
@@ -40,7 +43,9 @@ export type ParseOptions = {
   readonly variables?: Readonly<Record<string, Variable>>;
 };
 
-type Op = "+" | "-" | "*" | "^" | "(" | ")";
+const DEFAULT_VARIABLES: Readonly<Record<string, Variable>> = { x: "x", y: "y" };
+
+type Op = "+" | "-" | "*" | "/" | "^" | "(" | ")";
 type Token =
   | { readonly kind: "int"; readonly value: number }
   | { readonly kind: "var"; readonly name: Variable }
@@ -55,6 +60,8 @@ const OPERATORS: Readonly<Record<string, Op>> = {
   "*": "*",
   "·": "*",
   "×": "*",
+  "/": "/",
+  "÷": "/",
   "^": "^",
   "(": "(",
   ")": ")",
@@ -63,7 +70,7 @@ const OPERATORS: Readonly<Record<string, Op>> = {
 /** Thrown inside the parser for any invalid input; `parse` turns it into null. */
 class Reject extends Error {}
 
-function tokenize(input: string): Token[] {
+function tokenize(input: string, variables: ReadonlyMap<string, Variable>): Token[] {
   const tokens: Token[] = [];
   const chars = [...input];
   let i = 0;
@@ -79,6 +86,7 @@ function tokenize(input: string): Token[] {
   };
   while (i < chars.length) {
     const c = chars[i] ?? "";
+    const name = variables.get(c);
     if (/\s/.test(c)) {
       i++;
     } else if (/[0-9]/.test(c)) {
@@ -87,8 +95,8 @@ function tokenize(input: string): Token[] {
       const digits = run((d) => SUPERSCRIPT_DIGITS.includes(d));
       tokens.push({ kind: "op", op: "^" });
       tokens.push(integer([...digits].map((d) => SUPERSCRIPT_DIGITS.indexOf(d)).join("")));
-    } else if (c === "x" || c === "y") {
-      tokens.push({ kind: "var", name: c });
+    } else if (name !== undefined) {
+      tokens.push({ kind: "var", name });
       i++;
     } else if (c in OPERATORS) {
       tokens.push({ kind: "op", op: OPERATORS[c] as Op });
@@ -105,12 +113,17 @@ function limitDegree(poly: Poly): Poly {
   return poly;
 }
 
+function negate(s: Summand): Summand {
+  return { ...s, poly: neg(s.poly) };
+}
+
 /**
  * Recursive descent over:
  *   expr    := [+|-] term ((+|-) term)*
- *   term    := factor ([*] factor)*      (juxtaposition multiplies)
+ *   term    := factor (([*] | /) factor)*  (juxtaposition multiplies)
  *   factor  := primary [^ int]
- *   primary := int | x | y | ( expr )
+ *   primary := int | variable | ( expr )
+ * Every value is a reduced fraction; only constants divide (ADR-T08-1).
  */
 class Parser {
   private pos = 0;
@@ -144,32 +157,44 @@ class Parser {
       this.pos++;
     }
     const first = this.term();
-    const summands: Summand[] = [negative ? { ...first, poly: neg(first.poly) } : first];
-    let poly = summands[0]?.poly ?? first.poly;
+    const summands: Summand[] = [negative ? negate(first) : first];
+    let value: Fraction = summands[0] ?? first;
     while (this.isOp("+") || this.isOp("-")) {
       const minus = this.isOp("-");
       this.pos++;
       const next = this.term();
-      const signed = minus ? { ...next, poly: neg(next.poly) } : next;
+      const signed = minus ? negate(next) : next;
       summands.push(signed);
-      poly = limitDegree(add(poly, signed.poly));
+      value = addFractions(value, signed);
+      limitDegree(value.poly);
     }
     // A single product keeps its factors; a sum is one factor unless it is constant.
-    const factors = summands.length === 1 ? first.factors : isConstant(poly) ? 0 : 1;
-    return { poly, denom: 1, factors, summands };
+    const factors = summands.length === 1 ? first.factors : isConstant(value.poly) ? 0 : 1;
+    return { poly: value.poly, denom: value.denom, factors, summands };
   }
 
   private term(): Summand {
-    let { poly, factors } = this.factor();
+    const first = this.factor();
+    let value: Fraction = first;
+    let factors = first.factors;
     for (;;) {
+      if (this.isOp("/")) {
+        this.pos++;
+        const quotient = divFractions(value, this.factor());
+        if (quotient === null) throw new Reject("division by a non-constant or zero");
+        value = quotient;
+        continue;
+      }
       if (this.isOp("*")) this.pos++;
       else if (!this.startsFactor()) break;
       const next = this.factor();
-      if (degree(poly) + degree(next.poly) > MAX_DEGREE) throw new Reject("degree too large");
-      poly = mul(poly, next.poly);
+      if (degree(value.poly) + degree(next.poly) > MAX_DEGREE) {
+        throw new Reject("degree too large");
+      }
+      value = mulFractions(value, next);
       factors += next.factors;
     }
-    return { poly, denom: 1, factors };
+    return { poly: value.poly, denom: value.denom, factors };
   }
 
   private factor(): Summand {
@@ -182,7 +207,7 @@ class Parser {
     }
     const n = exponent.value;
     if (degree(base.poly) * n > MAX_DEGREE) throw new Reject("degree too large");
-    return { poly: pow(base.poly, n), denom: 1, factors: base.factors * n };
+    return { ...powFraction(base, n), factors: base.factors * n };
   }
 
   private primary(): Summand {
@@ -196,17 +221,21 @@ class Parser {
     this.pos++;
     return {
       poly: inner.poly,
-      denom: 1,
+      denom: inner.denom,
       factors: isConstant(inner.poly) ? 0 : inner.factors,
     };
   }
 }
 
-/** Parses a typed expression, or returns null when it is not valid. */
-export function parse(input: string, _options: ParseOptions = {}): Parsed | null {
+/**
+ * Parses a typed expression, or returns null when it is not valid. The
+ * input may use the letters of `options.variables` (default x and y).
+ */
+export function parse(input: string, options: ParseOptions = {}): Parsed | null {
   if (input.length > MAX_INPUT) return null;
+  const variables = new Map(Object.entries(options.variables ?? DEFAULT_VARIABLES));
   try {
-    const tokens = tokenize(input);
+    const tokens = tokenize(input, variables);
     if (tokens.length === 0) return null;
     return new Parser(tokens).parse();
   } catch (error) {

@@ -74,7 +74,10 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
         </span>
       </div>
       <div className="problem">
-        <span data-testid="prompt" className="prompt">
+        <span
+          data-testid="prompt"
+          className={session.problem.prompt.includes("\n") ? "prompt code" : "prompt"}
+        >
           {session.problem.prompt}
         </span>
         <span className="equals">=</span>

@@ -19,6 +19,8 @@ const SKILL_LABELS: Readonly<Record<string, string>> = {
   "algebra.simplify": "Simplificar",
   "algebra.square": "Completar o quadrado",
   "algebra.divide": "Dividir",
+  "sums.sum": "Somatório",
+  "sums.loop": "Laços",
 };
 
 export function skillLabel(skill: string): string {

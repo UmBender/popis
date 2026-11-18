@@ -124,22 +124,30 @@ export function terms(p: Poly): Term[] {
     .sort((a, b) => b.ex + b.ey - (a.ex + a.ey) || b.ex - a.ex);
 }
 
-function monomialText(ex: number, ey: number): string {
-  return (ex > 0 ? `x${superscript(ex)}` : "") + (ey > 0 ? `y${superscript(ey)}` : "");
+function monomialText(ex: number, ey: number, names: VariableNames): string {
+  return (
+    (ex > 0 ? `${names.x ?? "x"}${superscript(ex)}` : "") +
+    (ey > 0 ? `${names.y ?? "y"}${superscript(ey)}` : "")
+  );
 }
 
 /** Value of `p` at the integers `x` and `y`. */
-export function evaluate(_p: Poly, _x: number, _y = 0): number {
-  throw new Error("todo");
+export function evaluate(p: Poly, x: number, y = 0): number {
+  let total = 0;
+  for (const [k, c] of p) {
+    const [ex, ey] = unkey(k);
+    total = checked(total + checked(c * x ** ex * y ** ey));
+  }
+  return total;
 }
 
-/** Display form: "x² − 5xy + 6y²". */
-export function format(p: Poly, _names: VariableNames = {}): string {
+/** Display form: "x² − 5xy + 6y²", or with other names: "n² − 5n". */
+export function format(p: Poly, names: VariableNames = {}): string {
   const ts = terms(p);
   if (ts.length === 0) return "0";
   return ts
     .map(({ ex, ey, coef }, i) => {
-      const body = monomialText(ex, ey);
+      const body = monomialText(ex, ey, names);
       const abs = Math.abs(coef);
       const text = (abs === 1 && body !== "" ? "" : String(abs)) + body;
       if (i === 0) return coef < 0 ? `−${text}` : text;

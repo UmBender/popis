@@ -1,5 +1,6 @@
 import type { Generator, Problem } from "../core/problem";
 import { createRng, retry, type Rng } from "../core/rng";
+import { sameValue } from "../math/fraction";
 import { parse } from "../math/parse";
 import {
   add,
@@ -186,7 +187,10 @@ export const factoring: Generator<FactoringSettings> = {
     };
   },
 
-  /** ADR-T02-1: same expansion and the same number of non-constant factors. */
+  /**
+   * ADR-T02-1: same expansion and the same number of non-constant factors;
+   * the value is compared as a fraction (ADR-T08-1).
+   */
   check(problem: Problem, input: string): boolean {
     const target = parse(problem.answer);
     const given = parse(input);
@@ -194,7 +198,7 @@ export const factoring: Generator<FactoringSettings> = {
       target !== null &&
       given !== null &&
       given.factors === target.factors &&
-      equals(given.poly, target.poly)
+      sameValue(given, target)
     );
   },
 };

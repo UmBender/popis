@@ -1,5 +1,6 @@
 import type { Generator, Problem } from "../core/problem";
 import { createRng, retry, type Rng } from "../core/rng";
+import { sameValue } from "../math/fraction";
 import { parse, type Summand } from "../math/parse";
 import {
   add,
@@ -178,7 +179,7 @@ export const algebra: Generator<AlgebraSettings> = {
   check(problem: Problem, input: string): boolean {
     const target = parse(problem.answer);
     const given = parse(input);
-    if (target === null || given === null || !equals(given.poly, target.poly)) return false;
+    if (target === null || given === null || !sameValue(given, target)) return false;
     if (problem.skill === skillOfKind("square")) {
       const [a, b] = given.summands;
       if (given.summands.length !== 2 || a === undefined || b === undefined) return false;

@@ -4,6 +4,7 @@ import type { ArithmeticSettings, Operation, Range } from "../gen/arithmetic";
 import type { DivisionKind } from "../gen/division";
 import { LEVELS, type FactoringSettings, type Level } from "../gen/factoring";
 import type { KindSettings } from "../gen/kinds";
+import type { SumsKind } from "../gen/sums";
 import { MODE_IDS, MODES, type Mode } from "../modes";
 import { DURATIONS_S } from "../session/engine";
 import type { StoredSettings } from "../storage/history";
@@ -39,6 +40,15 @@ const ALGEBRA_OPTIONS: readonly KindOption<AlgebraKind>[] = [
   { kind: "simplify", label: "Simplificar", example: "3(x − 2) − 2(x + 1) + x" },
   { kind: "square", label: "Completar o quadrado", example: "x² + 6x + 2 → (x + 3)² − 7" },
   { kind: "divide", label: "Dividir por (x − a)", example: "(x³ − 1) ÷ (x − 1)" },
+];
+
+const SUMS_OPTIONS: readonly KindOption<SumsKind>[] = [
+  { kind: "sum", label: "Somatório Σ", example: "Σᵢ₌₁ⁿ i → n(n + 1)/2" },
+  {
+    kind: "loop",
+    label: "Laços aninhados",
+    example: "for i < n, for j < i: ops++ → (n² − n)/2",
+  },
 ];
 
 /** Error codes of the chosen mode's settings. */
@@ -115,6 +125,15 @@ export function ConfigScreen({ settings, onChange, onStart }: Props): ReactNode 
           settings={settings.algebra}
           onChange={(algebra) => {
             onChange({ ...settings, algebra });
+          }}
+        />
+      )}
+      {settings.mode === "sums" && (
+        <KindFields
+          options={SUMS_OPTIONS}
+          settings={settings.sums}
+          onChange={(sums) => {
+            onChange({ ...settings, sums });
           }}
         />
       )}
