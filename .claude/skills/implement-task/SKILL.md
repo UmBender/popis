@@ -31,8 +31,10 @@ is `AGENTS.md` and the Obsidian vault in `docs/`. Read before starting:
    `docs/decisions/ADR-$ARGUMENTS-<n> <Title>.md` from `docs/templates/ADR.md`.
 6. **Colours** only through tokens of `docs/architecture/Theme.md`.
 7. **No new dependency** without an ADR.
-8. Check exit codes directly: never pipe a gate into `head`/`grep` and trust
-   the pipeline's status (`npx tsc --noEmit; echo $?`).
+8. A pipe hides a gate's exit code: never trust the status of
+   `npm run check | tail`. Run the gate without a pipe when you need its
+   status, or judge it by the output (`Tests … passed`, no `error`, no
+   coverage `ERROR:`). Use one simple command per call (no `;`, `&&`).
 
 ## Procedure
 
