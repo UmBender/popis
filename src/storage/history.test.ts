@@ -192,6 +192,28 @@ describe("settings", () => {
     expect(loadSettings(bad).sums).toEqual({ kinds: ["sum", "loop"] });
   });
 
+  it("settings saved before T09 load with the default primes limit", () => {
+    const saved = { mode: "sums", sums: { kinds: ["loop"] }, durationS: 30 };
+    const loaded = loadSettings(memoryStore({ [SETTINGS_KEY]: JSON.stringify(saved) }));
+    expect(loaded.primes).toEqual({ limit: 1000 });
+    expect(loaded.sums).toEqual({ kinds: ["loop"] });
+  });
+
+  it("primes settings round-trip and an invalid limit falls back to the defaults", () => {
+    const store = memoryStore();
+    const settings: StoredSettings = {
+      ...DEFAULT_SETTINGS,
+      mode: "primes",
+      primes: { limit: 100 },
+    };
+    saveSettings(store, settings);
+    expect(loadSettings(store)).toEqual(settings);
+    const bad = { mode: "primes", primes: { limit: 12 }, durationS: 60 };
+    expect(loadSettings(memoryStore({ [SETTINGS_KEY]: JSON.stringify(bad) }))).toEqual(
+      DEFAULT_SETTINGS,
+    );
+  });
+
   it("invalid division kinds fall back to the defaults", () => {
     const saved = { arithmetic: DEFAULT_ARITHMETIC, division: { kinds: ["pow"] }, durationS: 60 };
     expect(loadSettings(memoryStore({ [SETTINGS_KEY]: JSON.stringify(saved) }))).toEqual(

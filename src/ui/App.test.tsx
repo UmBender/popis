@@ -9,6 +9,7 @@ import { algebra, type AlgebraSettings } from "../gen/algebra";
 import { division, DIVISION_KINDS, type DivisionSettings } from "../gen/division";
 import type { Problem } from "../core/problem";
 import { estimation, type EstimationSettings } from "../gen/estimation";
+import { primes, type PrimesSettings } from "../gen/primes";
 import { sums, type SumsSettings } from "../gen/sums";
 import {
   HISTORY_KEY,
@@ -701,5 +702,47 @@ describe("sums mode", () => {
     expect(prompt()).toBe(nth(onlyLoops, 0).prompt);
     expect(prompt()).toContain("\n");
     expect(screen.getByTestId("prompt").classList.contains("code")).toBe(true);
+  });
+});
+
+describe("primes mode", () => {
+  const storeWithLimit = (limit: PrimesSettings["limit"]) =>
+    memoryStore({
+      [SETTINGS_KEY]: JSON.stringify({ mode: "primes", primes: { limit }, durationS: 30 }),
+    });
+  const nth = (settings: PrimesSettings, i: number) =>
+    primes.generate(deriveSeed(SEED, i), settings);
+
+  it("primes mode offers the limits with 1000 chosen", () => {
+    setup();
+    fireEvent.click(screen.getByRole("radio", { name: "Primos" }));
+    const select = screen.getByRole<HTMLSelectElement>("combobox", { name: "Limite" });
+    expect(select.value).toBe("1000");
+    expect([...select.options].map((o) => o.value)).toEqual(["100", "1000", "10000", "100000"]);
+  });
+
+  it("primes limit is remembered", () => {
+    const saved = memoryStore();
+    setup(saved);
+    fireEvent.click(screen.getByRole("radio", { name: "Primos" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Limite" }), {
+      target: { value: "100000" },
+    });
+    start();
+    expect(loadSettings(saved).primes).toEqual({ limit: 100_000 });
+  });
+
+  it("primes mode accepts the smallest factor with a numeric keyboard and skips with Enter", () => {
+    const settings: PrimesSettings = { limit: 10_000 };
+    setup(storeWithLimit(10_000));
+    start();
+    expect(answerBox().getAttribute("inputmode")).toBe("numeric");
+    expect(prompt()).toBe(nth(settings, 0).prompt);
+    type(nth(settings, 0).answer);
+    expect(screen.getByTestId("score").textContent).toBe("1");
+    fireEvent.keyDown(answerBox(), { key: "Enter" });
+    expect(screen.getByTestId("skipped").textContent).toContain(
+      `${nth(settings, 1).prompt} = ${nth(settings, 1).answer}`,
+    );
   });
 });
