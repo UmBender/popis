@@ -1,7 +1,7 @@
 ---
 id: T01
 title: Clone do Zetamac
-status: in-progress
+status: review
 depends_on: []
 branch: task/T01-zetamac-clone
 adrs: ["[[ADR-0001 Kanagawa Dragon theme]]", "[[ADR-0002 Static web app in Vite, TypeScript and React]]"]
@@ -73,19 +73,46 @@ partida cronometrada e tela de resultado. Também é o motor genérico
 
 ## Files owned
 
-- `package.json`, `package-lock.json`, `tsconfig.json`, `vite.config.ts`,
-  `vitest.config.ts`, `playwright.config.ts`, `eslint.config.js`,
+- `package.json`, `package-lock.json`, `tsconfig.json`, `vite.config.ts`
+  (também a config do Vitest), `playwright.config.ts`, `eslint.config.js`,
   `.prettierrc.json`, `.prettierignore`, `index.html`, `.gitignore`
 - `src/**`, `tests/**`
 
 ## Subtasks (one commit each)
 
-- [ ] spec — `docs(T01): specify zetamac clone acceptance criteria`
-- [ ] scaffold — `chore(T01): scaffold vite, typescript and test tooling`
-- [ ] tests — `test(T01): add failing tests for zetamac clone`
-- [ ] models — `feat(T01): add problem, generator and session types`
-- [ ] behaviour — `feat(T01): implement zetamac clone`
-- [ ] quality — `chore(T01): pass lint, format and coverage`
-- [ ] docs — `docs(T01): record zetamac clone log`
+- [x] spec — `docs(T01): specify zetamac clone acceptance criteria`
+- [x] scaffold — `chore(T01): scaffold vite, typescript and test tooling`
+- [x] tests — `test(T01): add failing tests for zetamac clone`
+- [x] models — `feat(T01): add problem, generator and session types`
+- [x] behaviour — `feat(T01): implement zetamac clone`
+- [x] quality — `chore(T01): pass lint, format and coverage`
+- [x] docs — `docs(T01): record zetamac clone log`
 
 ## Log
+
+- **Stack:** TypeScript 6.0.3 em vez do 7, porque o typescript-eslint
+  8.73 exige `<6.1.0` ([[ADR-0002 Static web app in Vite, TypeScript and React]]).
+  O Chromium headless do Playwright foi instalado em `~/.cache/ms-playwright`.
+- **Passo extra:** o scaffold (ferramentas, sem lógica) ganhou um commit
+  próprio antes dos testes, porque os testes precisam do Vitest instalado.
+- **Teste corrigido:** o teste "same seed gives the same problem sequence"
+  tinha uma inferência circular de tipo (TS7022). Ganhou uma anotação de
+  tipo num commit próprio (`3acafe7`), sem mudar a asserção.
+- **Histórico:** um commit de modelos saiu misturado com essa correção do
+  teste, por um erro meu na sequência de comandos. Como era o último commit
+  de uma branch local nunca publicada, desfiz com `git reset --soft HEAD~1`
+  e refiz os dois commits separados.
+- **Modelos:** `Generator<P>` e os tipos da sessão perderam a restrição
+  `P extends JsonValue`, porque o helper genérico do teste não a declara. O
+  formato JSON continua garantido por `Problem.params: JsonValue`.
+- **Fuzz:** com `FC_NUM_RUNS=20000`, a propriedade de `rng.int` leva cerca
+  de 5,5 s e estourava o timeout padrão de 5 s do Vitest. Nenhuma
+  propriedade falhou, então não houve regressão a registrar. O
+  `test:fuzz` agora usa `--testTimeout=300000`.
+- **Cobertura:** 100% das linhas em todas as pastas. Os limiares por pasta
+  ficam em `vite.config.ts`, com branches em 88% (`core`) e 75% (`ui`).
+- **E2E:** `tests/e2e/zetamac.spec.ts` usa `page.clock` do Playwright para
+  avançar os 2 minutos sem esperar.
+- **Gates no último commit:** `npm run check` verde (101 testes),
+  `npm run coverage` verde, `npm run test:fuzz` verde e
+  `npm run test:e2e` verde.
