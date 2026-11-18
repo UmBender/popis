@@ -10,6 +10,11 @@ export type Problem = {
   readonly prompt: string;
   /** Canonical answer; the generator's `check` always accepts it. */
   readonly answer: string;
+  /**
+   * Options of a multiple-choice question, shown numbered from 1; the
+   * answer is then the correct option's number (ADR-T07-1).
+   */
+  readonly choices?: readonly string[];
   /** Seed that, with `params`, regenerates exactly this problem. */
   readonly seed: number;
   /** Generator parameters used to build the problem. */

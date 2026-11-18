@@ -9,6 +9,12 @@ import {
 import { ALGEBRA_KINDS, algebra, DEFAULT_ALGEBRA, type AlgebraSettings } from "./gen/algebra";
 import { DEFAULT_DIVISION, DIVISION_KINDS, division, type DivisionSettings } from "./gen/division";
 import {
+  DEFAULT_ESTIMATION,
+  ESTIMATION_KINDS,
+  estimation,
+  type EstimationSettings,
+} from "./gen/estimation";
+import {
   DEFAULT_FACTORING,
   factoring,
   parseFactoringSettings,
@@ -23,6 +29,7 @@ export type ModeSettings = {
   factoring: FactoringSettings;
   division: DivisionSettings;
   algebra: AlgebraSettings;
+  estimation: EstimationSettings;
 };
 
 export type Mode = keyof ModeSettings;
@@ -99,10 +106,28 @@ export const MODES: { readonly [M in Mode]: ModeSpec<ModeSettings[M]> } = {
     wide: true,
     group: BY_TYPE,
   },
+  estimation: {
+    label: "Estimativa",
+    hint: "Digite o número da opção certa. Enter pula a questão.",
+    generator: estimation,
+    defaults: DEFAULT_ESTIMATION,
+    parseSettings: (value) => parseKinds(value, ESTIMATION_KINDS),
+    validate: validateKinds,
+    allowSkip: true,
+    numeric: true,
+    wide: false,
+    group: BY_TYPE,
+  },
 };
 
 /** Mode ids in menu order. */
-export const MODE_IDS: readonly Mode[] = ["arithmetic", "factoring", "division", "algebra"];
+export const MODE_IDS: readonly Mode[] = [
+  "arithmetic",
+  "factoring",
+  "division",
+  "algebra",
+  "estimation",
+];
 
 export function isMode(value: unknown): value is Mode {
   return typeof value === "string" && (MODE_IDS as readonly string[]).includes(value);
