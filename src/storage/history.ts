@@ -3,7 +3,11 @@ import {
   parseArithmeticSettings,
   type ArithmeticSettings,
 } from "../gen/arithmetic";
+import type { JsonValue } from "../core/problem";
+import { DEFAULT_FACTORING, type FactoringSettings } from "../gen/factoring";
 import { DEFAULT_DURATION_S, DURATIONS_S, type Attempt } from "../session/engine";
+
+export type Mode = "arithmetic" | "factoring";
 
 /** The part of `Storage` the app uses; injected so tests use memory. */
 export interface KeyValueStore {
@@ -17,22 +21,27 @@ export const MAX_SESSIONS = 200;
 
 export type SessionRecord = {
   readonly version: 1;
-  readonly mode: "arithmetic";
+  readonly mode: Mode;
   /** Wall-clock time the session ended, in epoch milliseconds. */
   readonly finishedAt: number;
   readonly durationMs: number;
   readonly seed: number;
-  readonly params: ArithmeticSettings;
+  /** Generator params of the session's mode. */
+  readonly params: JsonValue;
   readonly log: readonly Attempt[];
 };
 
 export type StoredSettings = {
+  readonly mode: Mode;
   readonly arithmetic: ArithmeticSettings;
+  readonly factoring: FactoringSettings;
   readonly durationS: number;
 };
 
 export const DEFAULT_SETTINGS: StoredSettings = {
+  mode: "arithmetic",
   arithmetic: DEFAULT_ARITHMETIC,
+  factoring: DEFAULT_FACTORING,
   durationS: DEFAULT_DURATION_S,
 };
 
@@ -103,7 +112,7 @@ export function loadSettings(store: KeyValueStore): StoredSettings {
   if (parsed === null || typeof durationS !== "number" || !DURATIONS_S.includes(durationS)) {
     return DEFAULT_SETTINGS;
   }
-  return { arithmetic: parsed, durationS };
+  return { ...DEFAULT_SETTINGS, arithmetic: parsed, durationS };
 }
 
 export function saveSettings(store: KeyValueStore, settings: StoredSettings): void {
