@@ -31,7 +31,8 @@ function unkey(k: string): [number, number] {
 }
 
 function checked(n: number): number {
-  if (!Number.isSafeInteger(n)) throw new PolyOverflowError(`coefficient ${n} is not a safe integer`);
+  if (!Number.isSafeInteger(n))
+    throw new PolyOverflowError(`coefficient ${n} is not a safe integer`);
   return n;
 }
 

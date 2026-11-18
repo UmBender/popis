@@ -104,7 +104,9 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
         </p>
       )}
       <p className="muted hint">
-        {factoring ? "Enter pula · Esc volta para a configuração." : "Esc volta para a configuração."}
+        {factoring
+          ? "Enter pula · Esc volta para a configuração."
+          : "Esc volta para a configuração."}
       </p>
     </div>
   );

@@ -62,6 +62,12 @@ describe("construction and arithmetic", () => {
     expect(degree(c(0))).toBe(-1);
   });
 
+  it("negative or fractional exponents are rejected", () => {
+    expect(() => monomial(1, -1, 0)).toThrow(RangeError);
+    expect(() => monomial(1, 0, 0.5)).toThrow(RangeError);
+    expect(() => pow(x, -1)).toThrow(RangeError);
+  });
+
   it("isConstant is true only without variables", () => {
     expect(isConstant(c(4))).toBe(true);
     expect(isConstant(c(0))).toBe(true);

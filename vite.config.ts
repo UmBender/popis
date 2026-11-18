@@ -15,11 +15,12 @@ export default defineConfig({
       reporter: ["text-summary", "text"],
       // Ratchet: raise these when coverage rises, never lower them without an ADR.
       thresholds: {
-        "src/core/**": { lines: 100, statements: 100, functions: 100, branches: 88 },
+        "src/core/**": { lines: 100, statements: 100, functions: 100, branches: 92 },
         "src/gen/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
+        "src/math/**": { lines: 99, statements: 98, functions: 100, branches: 95 },
         "src/session/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
         "src/storage/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
-        "src/ui/**": { lines: 100, statements: 100, functions: 100, branches: 75 },
+        "src/ui/**": { lines: 100, statements: 100, functions: 100, branches: 90 },
       },
     },
   },

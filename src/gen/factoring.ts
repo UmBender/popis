@@ -1,5 +1,5 @@
 import type { Generator, Problem } from "../core/problem";
-import { createRng, type Rng } from "../core/rng";
+import { createRng, retry, type Rng } from "../core/rng";
 import { parse } from "../math/parse";
 import {
   add,
@@ -70,17 +70,8 @@ function gcd(a: number, b: number): number {
   return b === 0 ? Math.abs(a) : gcd(b, a % b);
 }
 
-/** Draws until `ok` holds; the constraints below hold for most draws. */
-function drawUntil<T>(draw: () => T, ok: (value: T) => boolean): T {
-  for (let i = 0; i < 1000; i++) {
-    const value = draw();
-    if (ok(value)) return value;
-  }
-  throw new Error("factoring generator could not satisfy its constraints");
-}
-
 function nonZero(rng: Rng, lo: number, hi: number): number {
-  return drawUntil(
+  return retry(
     () => rng.int(lo, hi),
     (v) => v !== 0,
   );
@@ -89,7 +80,7 @@ function nonZero(rng: Rng, lo: number, hi: number): number {
 const LEVEL_BUILDERS: Readonly<Record<Level, (rng: Rng) => Factored>> = {
   // (x − r)(x − s)
   1: (rng) => {
-    const [r, s] = drawUntil(
+    const [r, s] = retry(
       () => [rng.int(-9, 9), rng.int(-9, 9)],
       ([r, s]) => r !== 0 || s !== 0,
     );
@@ -97,7 +88,7 @@ const LEVEL_BUILDERS: Readonly<Record<Level, (rng: Rng) => Factored>> = {
   },
   // (ax + b)(cx + d), primitive factors, ac > 1
   2: (rng) => {
-    const [a, b, c, d] = drawUntil(
+    const [a, b, c, d] = retry(
       () => [rng.int(1, 5), nonZero(rng, -9, 9), rng.int(1, 5), nonZero(rng, -9, 9)],
       ([a, b, c, d]) => a * c > 1 && gcd(a, b) === 1 && gcd(c, d) === 1,
     );
@@ -114,7 +105,7 @@ const LEVEL_BUILDERS: Readonly<Record<Level, (rng: Rng) => Factored>> = {
   // a²x² − b², (ax ± b)², a³x³ ± b³
   4: (rng) => {
     const coprime = (aMax: number, bMax: number) =>
-      drawUntil(
+      retry(
         () => [rng.int(1, aMax), rng.int(1, bMax)] as const,
         ([a, b]) => gcd(a, b) === 1,
       );
@@ -140,7 +131,7 @@ const LEVEL_BUILDERS: Readonly<Record<Level, (rng: Rng) => Factored>> = {
   },
   // (x − r)(x − s)(x − t)
   5: (rng) => {
-    const roots = drawUntil(
+    const roots = retry(
       () => [rng.int(-6, 6), rng.int(-6, 6), rng.int(-6, 6)],
       (rs) => rs.some((r) => r !== 0),
     );
