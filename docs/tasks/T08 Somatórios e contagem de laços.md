@@ -1,7 +1,7 @@
 ---
 id: T08
 title: Somatórios e contagem de laços
-status: review
+status: done
 depends_on: [T05]
 branch: task/T08-sums
 adrs: [ADR-T08-1]
