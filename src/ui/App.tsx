@@ -1,8 +1,7 @@
 import { useCallback, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
-import type { JsonValue } from "../core/problem";
-import { arithmetic } from "../gen/arithmetic";
-import { factoring } from "../gen/factoring";
+import type { Generator, JsonValue } from "../core/problem";
+import { isMode, MODES, type Mode } from "../modes";
 import {
   startSession,
   type Attempt,
@@ -15,7 +14,6 @@ import {
   loadSettings,
   saveSettings,
   type KeyValueStore,
-  type Mode,
   type StoredSettings,
 } from "../storage/history";
 import { ConfigScreen } from "./ConfigScreen";
@@ -34,16 +32,24 @@ type Screen =
   | { readonly name: "game"; readonly mode: Mode; readonly session: RunningSession<JsonValue> }
   | { readonly name: "results"; readonly mode: Mode; readonly log: readonly Attempt[] };
 
-function sessionConfig(settings: StoredSettings, seed: number): SessionConfig<JsonValue> {
-  const durationMs = settings.durationS * 1000;
-  return settings.mode === "factoring"
-    ? { generator: factoring, params: settings.factoring, durationMs, seed }
-    : { generator: arithmetic, params: settings.arithmetic, durationMs, seed };
+function sessionConfig<M extends Mode>(
+  mode: M,
+  settings: StoredSettings,
+  seed: number,
+): SessionConfig<JsonValue> {
+  return {
+    // Every mode's settings are plain JSON (ModeSettings), so this widening is safe.
+    generator: MODES[mode].generator as Generator<JsonValue>,
+    params: settings[mode] as JsonValue,
+    durationMs: settings.durationS * 1000,
+    seed,
+  };
 }
 
-/** Generator ids are the mode names. */
+/** Generator ids are the mode ids (src/modes.test.ts). */
 function modeOf(session: FinishedSession<JsonValue>): Mode {
-  return session.config.generator.id === factoring.id ? "factoring" : "arithmetic";
+  const id = session.config.generator.id;
+  return isMode(id) ? id : "arithmetic";
 }
 
 export function App({ clock, store, newSeed }: AppProps): ReactNode {
@@ -52,7 +58,7 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
 
   const start = () => {
     saveSettings(store, settings);
-    const session = startSession(sessionConfig(settings, newSeed()), clock.now());
+    const session = startSession(sessionConfig(settings.mode, settings, newSeed()), clock.now());
     setScreen({ name: "game", mode: settings.mode, session });
   };
 

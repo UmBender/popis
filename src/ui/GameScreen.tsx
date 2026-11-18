@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
-import type { Mode } from "../storage/history";
+import { MODES, type Mode } from "../modes";
 import {
   remainingMs,
   skipProblem,
@@ -19,7 +19,7 @@ const WARNING_S = 10;
 type Props<P> = {
   readonly initial: RunningSession<P>;
   readonly clock: Clock;
-  /** Factoring answers are text and can be skipped with Enter; arithmetic follows Zetamac. */
+  /** Decides the keyboard, the answer width and whether Enter skips (src/modes.ts). */
   readonly mode: Mode;
   readonly onFinish: (session: FinishedSession<P>) => void;
   readonly onAbort: () => void;
@@ -54,7 +54,7 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
   }, [apply, clock]);
 
   const secondsLeft = Math.ceil(remainingMs(session, now) / 1000);
-  const factoring = mode === "factoring";
+  const spec = MODES[mode];
   const last = session.log.at(-1);
 
   return (
@@ -79,19 +79,19 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
         </span>
         <span className="equals">=</span>
         <input
-          className={factoring ? "answer wide" : "answer"}
+          className={spec.wide ? "answer wide" : "answer"}
           aria-label="Resposta"
           autoFocus
           autoComplete="off"
           spellCheck={false}
-          inputMode={factoring ? "text" : "numeric"}
+          inputMode={spec.numeric ? "numeric" : "text"}
           value={session.input}
           onChange={(e) => {
             apply(typeAnswer(latest.current, e.target.value, clock.now()));
           }}
           onKeyDown={(e) => {
             if (e.key === "Escape") onAbort();
-            if (e.key === "Enter" && factoring) {
+            if (e.key === "Enter" && spec.allowSkip) {
               e.preventDefault();
               apply(skipProblem(latest.current, clock.now()));
             }
@@ -104,7 +104,7 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
         </p>
       )}
       <p className="muted hint">
-        {factoring
+        {spec.allowSkip
           ? "Enter pula · Esc volta para a configuração."
           : "Esc volta para a configuração."}
       </p>
