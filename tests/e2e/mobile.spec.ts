@@ -45,6 +45,13 @@ test("the app served under /popis/ loads its script and favicon", async ({ page,
   expect(response.headers()["content-type"]).toContain("image/svg+xml");
 });
 
+test("typing is hidden on touch screens", async ({ page }) => {
+  // T10 AC-8: code typing needs a physical keyboard.
+  await page.goto("./");
+  await expect(page.getByRole("button", { name: "Começar" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Digitação" })).toBeHidden();
+});
+
 test("every mode fits a phone in config, game and results", async ({ page }) => {
   await page.clock.install();
   await page.goto("./");
