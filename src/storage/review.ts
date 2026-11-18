@@ -29,7 +29,8 @@ function needsReview(attempt: Attempt, means: ReadonlyMap<string, number>): bool
     case "skipped":
       return true;
     case "correct": {
-      const mean = means.get(attempt.problem.skill) ?? Infinity;
+      // Every right answer's skill has a mean: it counts in it.
+      const mean = means.get(attempt.problem.skill) as number;
       return attempt.corrections > 0 || attempt.timeMs > SLOW_FACTOR * mean;
     }
   }
@@ -41,17 +42,14 @@ function itemOf(problem: Problem): ReviewItem | null {
   if (!isMode(mode) || mode === "review") return null;
   const spec = MODES[mode];
   const params = spec.parseSettings(problem.params);
+  // Valid settings always generate, so nothing below throws.
   if (params === null || spec.validate(params as never).length > 0) return null;
-  try {
-    const again = spec.generator.generate(problem.seed, params as never);
-    const same =
-      again.skill === problem.skill &&
-      again.prompt === problem.prompt &&
-      again.answer === problem.answer;
-    return same ? { mode, seed: problem.seed, params } : null;
-  } catch {
-    return null;
-  }
+  const again = spec.generator.generate(problem.seed, params as never);
+  const same =
+    again.skill === problem.skill &&
+    again.prompt === problem.prompt &&
+    again.answer === problem.answer;
+  return same ? { mode, seed: problem.seed, params } : null;
 }
 
 function isAttempt(value: unknown): value is Attempt {

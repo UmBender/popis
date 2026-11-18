@@ -109,11 +109,7 @@ describe("review items", () => {
   it("review items list the most recent first", () => {
     const older = session([attempt(floor(1), "skipped")]);
     const newer = session([attempt(floor(2), "skipped"), attempt(floor(3), "skipped")]);
-    expect(reviewItems([older, newer])).toEqual([
-      item(floor(3)),
-      item(floor(2)),
-      item(floor(1)),
-    ]);
+    expect(reviewItems([older, newer])).toEqual([item(floor(3)), item(floor(2)), item(floor(1))]);
   });
 
   it("review items keep the 50 most recent", () => {
@@ -146,7 +142,30 @@ describe("review items", () => {
     const badParams = { ...floor(1), params: { kinds: [] } };
     const unknown = { ...floor(2), skill: "chess.mate" };
     const review = { ...floor(3), skill: "review.any" };
-    const log = [attempt(badParams, "skipped"), attempt(unknown, "skipped"), attempt(review, "skipped")];
+    const log = [
+      attempt(badParams, "skipped"),
+      attempt(unknown, "skipped"),
+      attempt(review, "skipped"),
+    ];
     expect(reviewItems([session(log)])).toEqual([]);
+  });
+
+  it("review items drop problems whose stored skill or answer differs", () => {
+    const otherSkill = { ...floor(1), skill: "division.ceil" };
+    const otherAnswer = { ...floor(2), answer: "12345" };
+    const log = [attempt(otherSkill, "skipped"), attempt(otherAnswer, "skipped")];
+    expect(reviewItems([session(log)])).toEqual([]);
+  });
+
+  it("review items skip malformed attempts from storage", () => {
+    const malformed = [
+      null,
+      { outcome: "skipped" },
+      { problem: null, outcome: "skipped" },
+      { problem: { skill: 1, seed: 1 }, outcome: "skipped" },
+      { problem: { skill: "division.floor" }, outcome: "skipped" },
+    ] as unknown as Attempt[];
+    const log = [...malformed, attempt(floor(4), "skipped")];
+    expect(reviewItems([session(log)])).toEqual([item(floor(4))]);
   });
 });

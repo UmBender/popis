@@ -21,14 +21,10 @@ export function modeOfSkill(skill: string): string {
 }
 
 /** The stored review settings are ignored: items come from history. */
-export function parseReviewSettings(_value: unknown): ReviewSettings {
-  return DEFAULT_REVIEW;
-}
+export const parseReviewSettings: (value: unknown) => ReviewSettings = () => DEFAULT_REVIEW;
 
 /** Review settings never block a start; the config checks the item count. */
-export function validateReview(_settings: ReviewSettings): readonly string[] {
-  return [];
-}
+export const validateReview: (settings: ReviewSettings) => readonly string[] = () => [];
 
 /**
  * The review generator: picks an item with the problem's seed and replays

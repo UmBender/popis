@@ -487,7 +487,12 @@ describe("review mode", () => {
       durationMs: 30_000,
       seed: 1,
       params: FLOOR,
-      log: problems.map((problem) => ({ problem, outcome: "skipped", timeMs: 1000, corrections: 0 })),
+      log: problems.map((problem) => ({
+        problem,
+        outcome: "skipped",
+        timeMs: 1000,
+        corrections: 0,
+      })),
     };
   }
 
@@ -536,6 +541,23 @@ describe("review mode", () => {
     expect(saved?.mode).toBe("review");
     expect(saved?.log[0]?.problem).toEqual(floor(1));
     expect(saved?.log[0]?.outcome).toBe("skipped");
+  });
+
+  it("play again with nothing left to review returns to the config", () => {
+    // The skipped problem's session is the oldest of a full history, so
+    // saving the review session drops it.
+    const clean: SessionRecord = { ...skippedSession([]), log: [] };
+    const history = [skippedSession([floor(1)]), ...Array.from({ length: 199 }, () => clean)];
+    const store = memoryStore({
+      [SETTINGS_KEY]: JSON.stringify({ mode: "review", durationS: 30 }),
+      [HISTORY_KEY]: JSON.stringify(history),
+    });
+    setup(store);
+    start();
+    type(floor(1).answer);
+    advance(30_000);
+    fireEvent.click(screen.getByRole("button", { name: "Jogar de novo" }));
+    expect(screen.getByRole("alert").textContent).toContain("Nada para revisar ainda");
   });
 
   it("review count includes the session just played", () => {

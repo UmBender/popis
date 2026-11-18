@@ -102,7 +102,9 @@ export function ConfigScreen({ settings, reviewCount, onChange, onStart }: Props
 
       {reviewing && reviewCount > 0 && (
         <p data-testid="review-count">
-          {reviewCount === 1 ? "1 questão para revisar" : `${String(reviewCount)} questões para revisar`}
+          {reviewCount === 1
+            ? "1 questão para revisar"
+            : `${String(reviewCount)} questões para revisar`}
         </p>
       )}
 
