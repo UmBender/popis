@@ -16,7 +16,8 @@
     "test:fuzz": "FC_NUM_RUNS=20000 vitest run .prop.test --testTimeout=300000",
     "test:e2e": "playwright test",
     "coverage": "vitest run --coverage",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run build"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run build",
+    "build:pages": "vite build --base=/popis/"
   },
   "dependencies": {
     "react": "19.3.1",

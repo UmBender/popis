@@ -19,6 +19,7 @@ import {
   type KeyValueStore,
   type SessionRecord,
 } from "../storage/history";
+import { MODE_IDS } from "../modes";
 import { App } from "./App";
 import { answerText } from "./format";
 
@@ -158,6 +159,17 @@ describe("game screen", () => {
     advance(1500);
     expect(screen.getByTestId("timer").textContent).toBe("119");
   });
+
+  it.each(MODE_IDS.filter((m) => m !== "review"))(
+    "answer box turns off autocapitalize and autocorrect in %s",
+    (mode) => {
+      setup(memoryStore({ [SETTINGS_KEY]: JSON.stringify({ mode, durationS: 30 }) }));
+      start();
+      expect(answerBox().getAttribute("autocapitalize")).toBe("off");
+      expect(answerBox().getAttribute("autocorrect")).toBe("off");
+      expect(answerBox().getAttribute("spellcheck")).toBe("false");
+    },
+  );
 
   it("Escape returns to the config without saving", () => {
     const store = setup();

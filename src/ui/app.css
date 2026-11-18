@@ -258,3 +258,37 @@ th {
   border: 1px solid var(--muted);
   border-radius: 4px;
 }
+
+/* Touch screens: targets of at least 44 px (T11). */
+
+@media (pointer: coarse) {
+  .op,
+  .bound,
+  select,
+  button {
+    min-height: 44px;
+  }
+}
+
+/* Phones: the question and the answer stay above the on-screen keyboard. */
+
+@media (max-width: 40rem) {
+  #root {
+    padding: 1rem;
+  }
+
+  .problem {
+    gap: 0.5rem 1rem;
+    padding: 1rem 0;
+    font-size: 1.8rem;
+  }
+
+  .answer.wide {
+    font-size: 1.4rem;
+  }
+
+  .choices {
+    margin: -0.5rem 0 0.5rem;
+    font-size: 1.1rem;
+  }
+}

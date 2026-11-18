@@ -88,6 +88,8 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
           aria-label="Resposta"
           autoFocus
           autoComplete="off"
+          autoCapitalize="off"
+          autoCorrect="off"
           spellCheck={false}
           inputMode={spec.numeric ? "numeric" : "text"}
           value={session.input}
