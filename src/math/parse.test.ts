@@ -85,6 +85,15 @@ describe("parse: accepted forms", () => {
   });
 });
 
+describe("parse: division", () => {
+  it("1/2 is one half with no factors", () => {
+    const r = parsed("1/2");
+    expect(equals(r.poly, c(1))).toBe(true);
+    expect(r.denom).toBe(2);
+    expect(r.factors).toBe(0);
+  });
+});
+
 describe("parse: rejected input", () => {
   it.each([
     "",
@@ -100,7 +109,6 @@ describe("parse: rejected input", () => {
     "x+",
     "x++1",
     "x--3",
-    "1/2",
     "z",
     "a+1",
     "(x+1)^2^2",
