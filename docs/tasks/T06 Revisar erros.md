@@ -1,7 +1,7 @@
 ---
 id: T06
 title: Revisar erros
-status: review
+status: done
 depends_on: [T05]
 branch: task/T06-review
 adrs: [ADR-T06-1]
