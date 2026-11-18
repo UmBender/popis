@@ -1,7 +1,7 @@
 ---
 id: ADR-T11-1
 title: Deploy to GitHub Pages from Actions under a sub-path
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-18
 task: T11

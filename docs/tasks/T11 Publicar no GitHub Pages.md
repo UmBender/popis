@@ -1,7 +1,7 @@
 ---
 id: T11
 title: Publicar no GitHub Pages
-status: in-progress
+status: review
 depends_on: [T08]
 branch: task/T11-pages
 adrs: [ADR-T11-1]
@@ -82,15 +82,16 @@ no push da `main`. Decisões técnicas em
 - `src/ui/**` (ajustes de layout e atributos do campo)
 - `tests/pages.test.ts`, `tests/e2e/mobile.spec.ts`
 - `README.md` (link do app publicado)
+- `vite.config.ts` (só para subir o limiar de cobertura; ver *Log*)
 
 ## Subtasks (one commit each)
 
-- [ ] spec — `docs(T11): specify pages deploy acceptance criteria`
-- [ ] tests — `test(T11): add failing tests for pages deploy and phones`
-- [ ] models — pulado: não há tipos novos
-- [ ] behaviour — `feat(T11): deploy to pages and fit phones`
-- [ ] quality — `chore(T11): …`
-- [ ] docs — `docs(T11): record pages deploy log`
+- [x] spec — `docs(T11): specify pages deploy acceptance criteria`
+- [x] tests — `test(T11): add failing tests for pages deploy and phones`
+- [x] models — pulado: não há tipos novos
+- [x] behaviour — `feat(T11): deploy to pages and fit phones`
+- [x] quality — `chore(T11): raise the ui branch coverage threshold to 95`
+- [x] docs — `docs(T11): record pages deploy log`
 
 ## Log
 
@@ -98,3 +99,29 @@ no push da `main`. Decisões técnicas em
   no `vite.config.ts`. A flag `--base` do Vite faz o mesmo sem mudar a
   configuração, então `vite.config.ts` saiu de *Files owned* e
   `build:pages` entrou.
+- 2026-11-18 — **Teste que já passava no commit vermelho:** "the app served
+  under /popis/ loads its script and favicon" passou antes da mudança,
+  porque o Vite aplica o `--base` sozinho no `index.html`, inclusive no
+  `/favicon.svg?v=…` da pasta `public/`. Ele ficou como guarda do
+  subcaminho. A parte do AC-1 que faltava, o script `build:pages`, falhou
+  como esperado.
+- 2026-11-18 — **Layout de celular:** em telas com `pointer: coarse`,
+  rótulos, campos de faixa, a duração e os botões ganham `min-height`
+  de 44 px. Abaixo de 40rem, o `#root` e o `.problem` têm menos espaço e
+  a fonte da questão fica menor, porque a questão de álgebra com a caixa
+  larga terminava em 510 px, abaixo da metade da tela (420 px). Conferi
+  à mão capturas da configuração, da álgebra, da estimativa e do
+  resultado no Pixel 7.
+- 2026-11-18 — **Files owned ampliados:** `vite.config.ts`, só para subir
+  o limiar de branches de `src/ui/**` de 94 para 95 (a cobertura foi para
+  95,45%).
+- 2026-11-18 — **Actions fixadas por SHA:** checkout v7.0.1, setup-node
+  v7.1.0, configure-pages v6.0.0, upload-pages-artifact v5.0.0 e
+  deploy-pages v5.0.1, as últimas versões em 2026-11-18. O CI usa Node 22,
+  o mesmo daqui.
+- 2026-11-18 — **Gates no último commit:** `npm run check` verde (476
+  testes), `npm run coverage` sem `ERROR`, `npm run test:fuzz` verde e
+  `npm run test:e2e` verde (6 testes: 4 de desktop e 2 de celular).
+- 2026-11-18 — **Falta (dono):** criar o repositório `UmBender/popis`,
+  fazer o push da `main` e ativar o Pages com *Source: GitHub Actions*.
+  O primeiro deploy acontece no push.
