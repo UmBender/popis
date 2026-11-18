@@ -106,7 +106,7 @@ export function TypingScreen({ clock, store, newSeed, onBack }: Props): ReactNod
   };
 
   const typed = (text: string) => {
-    if (text !== "") apply(typeText(latest.current.typing, text.replaceAll("\r", ""), clock.now()));
+    apply(typeText(latest.current.typing, text.replaceAll("\r", ""), clock.now()));
   };
 
   const { snippet, typing, languages, seed } = current;
@@ -186,7 +186,7 @@ export function TypingScreen({ clock, store, newSeed, onBack }: Props): ReactNod
           }}
         >
           {marks(typing).map((mark, i) => {
-            const ch = snippet.text[i] ?? "";
+            const ch = snippet.text.charAt(i);
             const classes = [`mark-${mark}`];
             if (ch === " ") classes.push("space");
             if (!finished && i === typing.typed.length) classes.push("cursor");

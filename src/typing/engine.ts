@@ -25,6 +25,11 @@ export type TypingStats = {
   readonly timeMs: number;
 };
 
+/** Number of spaces at the start of `text`. */
+function leadingSpaces(text: string): number {
+  return text.search(/[^ ]|$/);
+}
+
 export function startTyping(target: string): TypingState {
   return {
     target,
@@ -86,7 +91,7 @@ export function pressEnter(state: TypingState, now: number): TypingState {
   if (!open(state)) return state;
   const at = state.typed.length;
   if (state.target[at] !== "\n") return insert(state, "\n", false, now);
-  const indent = /^ */.exec(state.target.slice(at + 1))?.[0] ?? "";
+  const indent = " ".repeat(leadingSpaces(state.target.slice(at + 1)));
   const inserted = `\n${indent}`;
   const autoIndents =
     indent === ""
@@ -121,7 +126,7 @@ export function typeableLength(target: string): number {
   const indentation = target
     .split("\n")
     .slice(1)
-    .reduce((sum, line) => sum + (/^ */.exec(line)?.[0].length ?? 0), 0);
+    .reduce((sum, line) => sum + leadingSpaces(line), 0);
   return target.length - indentation;
 }
 
