@@ -54,3 +54,10 @@ clara sobre fundo escuro, nas cores do tema ([[Theme]]).
   ou `monospace`, porque um favicon não carrega fontes da página.
 - **Gates no último commit:** `npm run check` verde, `npm run coverage`
   verde e `npm run test:e2e` verde (3 casos), também depois da troca para `n!`.
+- **Bug depois do merge (`fix/favicon-cache`):** o navegador continuou
+  mostrando o ícone `O(n!)`, porque guarda o favicon por URL e não o
+  recarrega nem com Ctrl+Shift+R. A causa não estava no servidor, que já
+  entregava `n!`. Correção: o link virou `/favicon.svg?v=<8 dígitos do
+  SHA-256>`. Teste de regressão: `regression T03 favicon-cache` em
+  `tests/regressions/T03-favicon-cache.test.ts`, commitado vermelho antes da
+  correção.

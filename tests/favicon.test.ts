@@ -27,7 +27,7 @@ describe("favicon", () => {
 
   it("index.html links the favicon", () => {
     expect(read("index.html")).toMatch(
-      /<link rel="icon" type="image\/svg\+xml" href="\/favicon\.svg" \/>/,
+      /<link rel="icon" type="image\/svg\+xml" href="\/favicon\.svg\?v=[0-9a-f]{8}" \/>/,
     );
   });
 });
