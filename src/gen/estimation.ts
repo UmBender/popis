@@ -59,12 +59,17 @@ export function smallestType(value: bigint): IntType {
 function shownNumber(n: number): string {
   if (n < 10_000) return String(n);
   const digits = String(n);
+  const lead = digits.slice(0, 1);
   const power = `10${superscript(digits.length - 1)}`;
-  return digits[0] === "1" ? power : `${digits[0] ?? ""}·${power}`;
+  return lead === "1" ? power : `${lead}·${power}`;
 }
 
 /** OPTIONS consecutive items of `all` that include the answer at `index`. */
-function optionsAround<T>(rng: Rng, all: readonly T[], index: number): { choices: T[]; answer: string } {
+function optionsAround<T>(
+  rng: Rng,
+  all: readonly T[],
+  index: number,
+): { choices: T[]; answer: string } {
   const start = rng.int(Math.max(0, index - OPTIONS + 1), Math.min(index, all.length - OPTIONS));
   return { choices: all.slice(start, start + OPTIONS), answer: String(index - start + 1) };
 }
@@ -99,16 +104,30 @@ const BOUNDS: readonly number[] = [
     .filter((n) => n > 30),
 ];
 
-/** For each class, the bounds where it is clearly the largest that fits. */
-const BOUNDS_BY_CLASS: readonly (readonly number[])[] = COST.map((cost, i) =>
-  BOUNDS.filter((n) => cost(n) <= FITS_OPS && (i === 0 || (COST[i - 1]?.(n) ?? 0) >= TOO_MANY_OPS)),
-);
+/**
+ * Each class of the scale with the bounds where it is clearly the largest
+ * that fits: it fits FITS_OPS and the class above needs TOO_MANY_OPS.
+ */
+const CLASSES: readonly { readonly index: number; readonly bounds: readonly number[] }[] =
+  COST.reduce<{ above: (n: number) => number; classes: { index: number; bounds: number[] }[] }>(
+    ({ above, classes }, cost, index) => ({
+      above: cost,
+      classes: [
+        ...classes,
+        {
+          index,
+          bounds: BOUNDS.filter((n) => cost(n) <= FITS_OPS && above(n) >= TOO_MANY_OPS),
+        },
+      ],
+    }),
+    { above: () => Infinity, classes: [] },
+  ).classes;
 
 type Question = { prompt: string; choices: readonly string[]; answer: string };
 
 function complexity(rng: Rng): Question {
-  const index = rng.int(0, COMPLEXITY_SCALE.length - 1);
-  const n = rng.pick(BOUNDS_BY_CLASS[index] ?? []);
+  const { index, bounds } = rng.pick(CLASSES);
+  const n = rng.pick(bounds);
   return {
     prompt: `n ≤ ${shownNumber(n)}, 1 s: maior complexidade viável?`,
     ...optionsAround(rng, COMPLEXITY_SCALE, index),
