@@ -1,7 +1,7 @@
 ---
 id: ADR-T10-1
 title: Code typing has its own engine, screen and store
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-18
 task: T10
@@ -68,6 +68,6 @@ puladas com Enter. O dono escolheu uma tela separada.
 ## Rollback plan
 
 Remover `src/typing/`, `src/storage/typing.ts`,
-`src/ui/TypingScreen.tsx` e o botão da configuração, registrar um ADR
-`kind: rollback` e apagar as chaves `popis.typing*` não faz falta: são
-ignoradas.
+`src/ui/TypingScreen.tsx` e o botão da configuração, e registrar um ADR
+`kind: rollback`. As chaves `popis.typing*` que ficarem nos navegadores
+não precisam ser apagadas, porque nada mais as lê.

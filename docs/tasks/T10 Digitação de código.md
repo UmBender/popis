@@ -1,7 +1,7 @@
 ---
 id: T10
 title: Digitação de código
-status: in-progress
+status: review
 depends_on: [T01]
 branch: task/T10-typing
 adrs: [ADR-T10-1]
@@ -133,12 +133,16 @@ Decisões técnicas em
 
 ## Subtasks (one commit each)
 
-- [ ] spec — `docs(T10): specify code typing acceptance criteria`
-- [ ] tests — `test(T10): add failing tests for code typing`
-- [ ] models — `feat(T10): add typing types and stubs`
-- [ ] behaviour — `feat(T10): implement code typing`
-- [ ] quality — `chore(T10): …`
-- [ ] docs — `docs(T10): record code typing log`
+- [x] spec — `docs(T10): specify code typing acceptance criteria`
+- [x] tests — `test(T10): add failing tests for code typing`
+- [x] models — `feat(T10): add typing types and stubs`
+- [x] behaviour — `feat(T10): implement code typing`
+- [x] quality — `test(T10): cover composition, refocus and re-checking a
+  language`, `chore(T10): drop unreachable fallbacks and ratchet
+  coverage`, `test(T10): give the whole-snippet typing tests a 20 s
+  timeout`, `refactor(T10): render the typing code one memoized line at a
+  time`
+- [x] docs — `docs(T10): record code typing log`
 
 ## Log
 
@@ -148,3 +152,37 @@ Decisões técnicas em
   decide se o `\n` está certo. As linguagens marcadas também ficam
   salvas. `tests/e2e/mobile.spec.ts` entrou em *Files owned*, porque só o
   projeto de celular prova o AC-8.
+- 2026-11-18 — **Corpus:** 13 trechos de C++ (busca binária, BFS, leitura
+  rápida, `sort` com lambda, gcd, DSU, somas de prefixo, dois ponteiros,
+  `map`, potência modular, Dijkstra, crivo e LIS) e 13 de Python (busca
+  binária, BFS, leitura rápida, `defaultdict`, comprehensions,
+  `with open`, classe, `sort` com `key`, `lru_cache`, `Counter`,
+  Dijkstra com `heapq`, `try/except` e `dataclass`).
+- 2026-11-18 — **Teclado:** o texto vem do `input` de um `<textarea>`
+  invisível, e as composições (teclas mortas do ABNT2) só entram no
+  `compositionend`. Enter, Backspace, Tab e Esc são tratados no
+  `keydown`, e Cmd+Enter também recomeça, como o Ctrl+Enter.
+- 2026-11-18 — **Visual:** o texto pendente usa `--muted` com opacidade
+  0,55, porque `--muted` e `--text` ficam próximos demais para separar o
+  digitado do pendente. Opacidade não é cor, então nenhum token novo foi
+  preciso. Conferi uma captura da tela no meio de uma digitação com erro.
+- 2026-11-18 — **Cobertura:** a primeira rodada derrubou `src/ui/**`.
+  Faltavam testes para a composição, para o clique que devolve o foco,
+  para re-marcar uma linguagem, para o Backspace no começo e para o
+  Cmd+Enter (commit `test(T10)` próprio). Os `?? ""` inalcançáveis do
+  motor saíram. `src/typing/**` ganhou limiar de 100%, e o de branches de
+  `src/ui/**` subiu de 95 para 96.
+- 2026-11-18 — **Teste lento** (commit `test(T10)` próprio): os dois
+  testes que digitam um trecho inteiro (cerca de 300 teclas) levavam 3 s
+  sozinhos e passaram dos 5 s na suíte completa, com a máquina carregada
+  por outro processo. Cada tecla é um render React no jsdom (≥ 5 ms).
+  Eles ganharam um timeout explícito de 20 s, sem mudar nenhuma asserção.
+  A tela passou a memoizar por linha, então uma tecla renderiza só a
+  linha que muda, e não os ~300 spans.
+- 2026-11-18 — **Gates no último commit:** `npm run check` verde (569
+  testes), `npm run coverage` sem `ERROR`, `npm run test:fuzz` verde e
+  `npm run test:e2e` verde (8 testes, com a digitação de um trecho Python
+  e um C++ no Chromium e o botão escondido no Pixel 7).
+- 2026-11-18 — **Verificação manual para o dono:** digitar no teclado
+  ABNT2 um trecho com aspas (`py-defaultdict` ou `cpp-map-count`), para
+  confirmar as teclas mortas no navegador real.
