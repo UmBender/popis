@@ -33,6 +33,18 @@ confere isso (ADR-T03-1).
 Tudo fora de `src/ui/` é TypeScript puro. Não usa DOM, `Math.random` nem
 `Date.now`, e por isso roda e é testado sem navegador.
 
+## Skills de agente
+
+- **`implement-task`** (`/implement-task T06`): implementa uma task de
+  `docs/tasks/` seguindo este fluxo, um commit por passo.
+- **`batch-tasks`**: roda várias tasks sem ninguém no teclado (ex.: à noite).
+  1. `/batch-tasks plan T06 T07 …`, com o dono presente: resolve as
+     decisões, aprova os comandos e grava `.batch/` (ignorado pelo git).
+  2. No terminal: `.claude/skills/batch-tasks/batch.sh check` e
+     `tmux new -d -s batch '.claude/skills/batch-tasks/batch.sh run'`.
+  3. De manhã: `batch.sh report` e `/batch-tasks triage`. As tasks param em
+     `review`; o merge é feito depois, como sempre.
+
 ## Idioma
 
 - Código, identificadores, nomes de teste e mensagens de commit: inglês.

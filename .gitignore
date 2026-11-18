@@ -8,3 +8,7 @@ dist/
 coverage/
 test-results/
 playwright-report/
+
+# Unattended batch runs (skill batch-tasks): plan, state, logs
+/.batch/
+/.batch-*/
