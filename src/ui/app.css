@@ -292,3 +292,78 @@ th {
     font-size: 1.1rem;
   }
 }
+
+/* Code typing (T10, ADR-T10-1) */
+
+.typing-area {
+  position: relative;
+}
+
+/* Receives the keys; invisible but focusable, so dead keys compose. */
+.typing-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  resize: none;
+}
+
+.typing-code {
+  margin: 0;
+  padding: 1rem;
+  overflow-x: auto;
+  background: var(--surface);
+  border-radius: 4px;
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: pre;
+  cursor: text;
+}
+
+.typing-area:focus-within .typing-code {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.mark-pending {
+  color: var(--muted);
+  opacity: 0.55;
+}
+
+.mark-correct {
+  color: var(--text);
+}
+
+.mark-wrong {
+  color: var(--wrong);
+}
+
+.mark-wrong.space {
+  background: var(--wrong);
+}
+
+.cursor {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.typing-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.typing-summary p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* Touch screens have no keyboard for code (T10 AC-8). */
+@media (hover: none) and (pointer: coarse) {
+  .typing-entry {
+    display: none;
+  }
+}
