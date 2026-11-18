@@ -1,7 +1,7 @@
 ---
 id: T09
 title: Números primos
-status: review
+status: done
 depends_on: [T06]
 branch: task/T09-primes
 adrs: []
