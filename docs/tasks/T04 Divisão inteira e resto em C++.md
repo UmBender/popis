@@ -1,7 +1,7 @@
 ---
 id: T04
 title: Divisão inteira e resto em C++
-status: review
+status: done
 depends_on: [T02]
 branch: task/T04-integer-division
 adrs: []
