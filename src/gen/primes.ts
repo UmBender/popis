@@ -16,10 +16,7 @@ const MIN_NUMBER = 11;
 const MIN_FACTOR = 7;
 
 /** The limit is picked from a list, so settings never block a start. */
-export function validatePrimes(settings: PrimesSettings): string[] {
-  void settings;
-  return [];
-}
+export const validatePrimes: (settings: PrimesSettings) => readonly string[] = () => [];
 
 /** Settings from untrusted JSON, or null when the limit is not in the list. */
 export function parsePrimesSettings(value: unknown): PrimesSettings | null {
