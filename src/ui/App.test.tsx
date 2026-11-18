@@ -452,6 +452,15 @@ describe("algebra mode", () => {
     }
   });
 
+  it("algebra settings are remembered", () => {
+    const saved = memoryStore();
+    setup(saved);
+    fireEvent.click(screen.getByRole("radio", { name: "Álgebra" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^Dividir/ }));
+    start();
+    expect(loadSettings(saved).algebra.kinds).toEqual(["expand", "simplify", "square"]);
+  });
+
   it("algebra mode accepts the expanded answer and skips with Enter", () => {
     setup(store());
     start();
