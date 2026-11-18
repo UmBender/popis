@@ -11,6 +11,7 @@ import {
   type Poly,
   type Variable,
 } from "./poly";
+import type { Fraction } from "./fraction";
 
 /** Longest accepted input, in characters. */
 export const MAX_INPUT = 80;
@@ -19,10 +20,12 @@ export const MAX_EXPONENT = 12;
 /** Largest total degree of any intermediate result. */
 export const MAX_DEGREE = 24;
 
-/** A polynomial and the non-constant factors it was written with. */
-export type Summand = {
-  /** The expanded polynomial, with the sign it was written with. */
-  readonly poly: Poly;
+/**
+ * A value and the non-constant factors it was written with. The value is
+ * the expanded numerator, with the sign it was written with, over a
+ * positive denominator (ADR-T08-1).
+ */
+export type Summand = Fraction & {
   /** Non-constant factors of the product (ADR-T02-1). */
   readonly factors: number;
 };
@@ -30,6 +33,11 @@ export type Summand = {
 export type Parsed = Summand & {
   /** The top-level terms, in the order written. */
   readonly summands: readonly Summand[];
+};
+
+export type ParseOptions = {
+  /** Letters the input may use and the variable each one means. */
+  readonly variables?: Readonly<Record<string, Variable>>;
 };
 
 type Op = "+" | "-" | "*" | "^" | "(" | ")";
@@ -148,7 +156,7 @@ class Parser {
     }
     // A single product keeps its factors; a sum is one factor unless it is constant.
     const factors = summands.length === 1 ? first.factors : isConstant(poly) ? 0 : 1;
-    return { poly, factors, summands };
+    return { poly, denom: 1, factors, summands };
   }
 
   private term(): Summand {
@@ -161,7 +169,7 @@ class Parser {
       poly = mul(poly, next.poly);
       factors += next.factors;
     }
-    return { poly, factors };
+    return { poly, denom: 1, factors };
   }
 
   private factor(): Summand {
@@ -174,24 +182,28 @@ class Parser {
     }
     const n = exponent.value;
     if (degree(base.poly) * n > MAX_DEGREE) throw new Reject("degree too large");
-    return { poly: pow(base.poly, n), factors: base.factors * n };
+    return { poly: pow(base.poly, n), denom: 1, factors: base.factors * n };
   }
 
   private primary(): Summand {
     const t = this.tokens[this.pos++];
     if (t === undefined) throw new Reject("unexpected end");
-    if (t.kind === "int") return { poly: constant(t.value), factors: 0 };
-    if (t.kind === "var") return { poly: variable(t.name), factors: 1 };
+    if (t.kind === "int") return { poly: constant(t.value), denom: 1, factors: 0 };
+    if (t.kind === "var") return { poly: variable(t.name), denom: 1, factors: 1 };
     if (t.op !== "(") throw new Reject(`unexpected ${t.op}`);
     const inner = this.expr();
     if (!this.isOp(")")) throw new Reject("missing )");
     this.pos++;
-    return { poly: inner.poly, factors: isConstant(inner.poly) ? 0 : inner.factors };
+    return {
+      poly: inner.poly,
+      denom: 1,
+      factors: isConstant(inner.poly) ? 0 : inner.factors,
+    };
   }
 }
 
 /** Parses a typed expression, or returns null when it is not valid. */
-export function parse(input: string): Parsed | null {
+export function parse(input: string, _options: ParseOptions = {}): Parsed | null {
   if (input.length > MAX_INPUT) return null;
   try {
     const tokens = tokenize(input);

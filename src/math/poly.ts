@@ -1,6 +1,9 @@
 /** The variables a polynomial may use. */
 export type Variable = "x" | "y";
 
+/** Display name of each variable; a missing one keeps its own name. */
+export type VariableNames = Readonly<Partial<Record<Variable, string>>>;
+
 /**
  * Sparse polynomial in x and y with integer coefficients, keyed by
  * monomial ("ex,ey"). Zero coefficients are never stored.
@@ -125,8 +128,13 @@ function monomialText(ex: number, ey: number): string {
   return (ex > 0 ? `x${superscript(ex)}` : "") + (ey > 0 ? `y${superscript(ey)}` : "");
 }
 
+/** Value of `p` at the integers `x` and `y`. */
+export function evaluate(_p: Poly, _x: number, _y = 0): number {
+  throw new Error("todo");
+}
+
 /** Display form: "x² − 5xy + 6y²". */
-export function format(p: Poly): string {
+export function format(p: Poly, _names: VariableNames = {}): string {
   const ts = terms(p);
   if (ts.length === 0) return "0";
   return ts

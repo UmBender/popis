@@ -16,6 +16,7 @@ import {
   type FactoringSettings,
 } from "./gen/factoring";
 import { parseKinds, validateKinds } from "./gen/kinds";
+import { DEFAULT_SUMS, sums, SUMS_KINDS, type SumsSettings } from "./gen/sums";
 
 /** Settings of each mode; the stored settings keep one entry per mode id. */
 export type ModeSettings = {
@@ -23,6 +24,7 @@ export type ModeSettings = {
   factoring: FactoringSettings;
   division: DivisionSettings;
   algebra: AlgebraSettings;
+  sums: SumsSettings;
 };
 
 export type Mode = keyof ModeSettings;
@@ -99,10 +101,22 @@ export const MODES: { readonly [M in Mode]: ModeSpec<ModeSettings[M]> } = {
     wide: true,
     group: BY_TYPE,
   },
+  sums: {
+    label: "Somatórios",
+    hint: "Forma fechada em n de um somatório ou de quantas vezes ops++ roda, como n(n+1)/2. Enter pula a questão.",
+    generator: sums,
+    defaults: DEFAULT_SUMS,
+    parseSettings: (value) => parseKinds(value, SUMS_KINDS),
+    validate: validateKinds,
+    allowSkip: true,
+    numeric: false,
+    wide: true,
+    group: BY_TYPE,
+  },
 };
 
 /** Mode ids in menu order. */
-export const MODE_IDS: readonly Mode[] = ["arithmetic", "factoring", "division", "algebra"];
+export const MODE_IDS: readonly Mode[] = ["arithmetic", "factoring", "division", "algebra", "sums"];
 
 export function isMode(value: unknown): value is Mode {
   return typeof value === "string" && (MODE_IDS as readonly string[]).includes(value);
