@@ -14,9 +14,9 @@ function token(name: string): string {
 }
 
 describe("favicon", () => {
-  it("favicon draws O(n!) in theme tokens", () => {
+  it("favicon draws n! in theme tokens", () => {
     const svg = read(FAVICON);
-    expect(svg).toMatch(/<text[^>]*>O\(n!\)<\/text>/);
+    expect(svg).toMatch(/<text[^>]*>n!<\/text>/);
 
     const colours = new Set([...svg.matchAll(/#[0-9a-fA-F]{6}\b/g)].map((m) => m[0].toLowerCase()));
     expect(colours).toEqual(new Set([token("--surface"), token("--text")]));

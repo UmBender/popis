@@ -8,5 +8,5 @@ test("the served app links and delivers the favicon", async ({ page, request }) 
   const response = await request.get("/favicon.svg");
   expect(response.ok()).toBe(true);
   expect(response.headers()["content-type"]).toContain("image/svg+xml");
-  expect(await response.text()).toContain("O(n!)");
+  expect(await response.text()).toContain(">n!<");
 });
