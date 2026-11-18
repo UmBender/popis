@@ -5,6 +5,7 @@ import { manualClock, type ManualClock } from "../core/clock";
 import { deriveSeed } from "../core/rng";
 import { DEFAULT_ARITHMETIC, type ArithmeticSettings } from "../gen/arithmetic";
 import { DEFAULT_FACTORING, factoring, type FactoringSettings } from "../gen/factoring";
+import { algebra, type AlgebraSettings } from "../gen/algebra";
 import { division, DIVISION_KINDS, type DivisionSettings } from "../gen/division";
 import {
   loadHistory,
@@ -432,5 +433,41 @@ describe("division mode", () => {
     );
     expect(screen.getByRole<HTMLInputElement>("checkbox", { name: /^Teto/ }).checked).toBe(false);
     expect(screen.getByRole<HTMLInputElement>("checkbox", { name: /^Piso/ }).checked).toBe(true);
+  });
+});
+
+describe("algebra mode", () => {
+  const ONLY_EXPAND: AlgebraSettings = { kinds: ["expand"] };
+  const store = () =>
+    memoryStore({
+      [SETTINGS_KEY]: JSON.stringify({ mode: "algebra", algebra: ONLY_EXPAND, durationS: 30 }),
+    });
+  const nth = (i: number) => algebra.generate(deriveSeed(SEED, i), ONLY_EXPAND);
+
+  it("algebra mode lists its kinds", () => {
+    setup();
+    fireEvent.click(screen.getByRole("radio", { name: "Álgebra" }));
+    for (const name of [/^Expandir/, /^Simplificar/, /^Completar o quadrado/, /^Dividir/]) {
+      expect(screen.getByRole<HTMLInputElement>("checkbox", { name }).checked).toBe(true);
+    }
+  });
+
+  it("algebra settings are remembered", () => {
+    const saved = memoryStore();
+    setup(saved);
+    fireEvent.click(screen.getByRole("radio", { name: "Álgebra" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^Dividir/ }));
+    start();
+    expect(loadSettings(saved).algebra.kinds).toEqual(["expand", "simplify", "square"]);
+  });
+
+  it("algebra mode accepts the expanded answer and skips with Enter", () => {
+    setup(store());
+    start();
+    expect(prompt()).toBe(nth(0).prompt);
+    type(nth(0).answer);
+    expect(screen.getByTestId("score").textContent).toBe("1");
+    fireEvent.keyDown(answerBox(), { key: "Enter" });
+    expect(screen.getByTestId("skipped").textContent).toContain(nth(1).answer);
   });
 });

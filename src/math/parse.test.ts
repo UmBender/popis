@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_EXPONENT, MAX_INPUT, parse } from "./parse";
+import { MAX_EXPONENT, MAX_INPUT, parse, type Parsed } from "./parse";
 import { add, constant, equals, mul, neg, pow, sub, variable, type Poly } from "./poly";
 
 const x = variable("x");
@@ -9,7 +9,7 @@ const c = constant;
 /** x² − 2x − 15 = (x − 5)(x + 3) */
 const quad: Poly = mul(sub(x, c(5)), add(x, c(3)));
 
-function parsed(input: string): { poly: Poly; factors: number } {
+function parsed(input: string): Parsed {
   const result = parse(input);
   if (result === null) throw new Error(`expected "${input}" to parse`);
   return result;
@@ -127,5 +127,25 @@ describe("parse: rejected input", () => {
 
   it("huge degrees are rejected", () => {
     expect(parse("((x^12)^2)^2")).toBeNull();
+  });
+});
+
+describe("parse: summands", () => {
+  it("summands are the signed top-level terms", () => {
+    const r = parsed("(x+3)^2 - 7");
+    expect(r.summands).toHaveLength(2);
+    expect(equals(r.summands[0]?.poly ?? c(0), pow(add(x, c(3)), 2))).toBe(true);
+    expect(r.summands[0]?.factors).toBe(2);
+    expect(equals(r.summands[1]?.poly ?? c(0), c(-7))).toBe(true);
+  });
+
+  it("a leading minus belongs to the first summand", () => {
+    const r = parsed("-x + 2");
+    expect(equals(r.summands[0]?.poly ?? c(0), neg(x))).toBe(true);
+  });
+
+  it("parenthesised sums count as one summand", () => {
+    expect(parsed("(x + 1)(x - 1)").summands).toHaveLength(1);
+    expect(parsed("x^2 + 7x - 15").summands).toHaveLength(3);
   });
 });
