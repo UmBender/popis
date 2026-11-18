@@ -16,6 +16,11 @@ import { TypingScreen } from "./TypingScreen";
 
 const SEED = 5;
 const STEP_MS = 100;
+/**
+ * Typing a whole snippet is ~300 keys, each a React render in jsdom
+ * (≥ 5 ms apiece), so these tests need more than the 5 s default.
+ */
+const WHOLE_SNIPPET_TIMEOUT_MS = 20_000;
 
 let clock: ManualClock;
 
@@ -143,42 +148,50 @@ describe("typing screen", () => {
     expect(charSpans().every((s) => s.dataset["mark"] === "pending")).toBe(true);
   });
 
-  it("typing the whole snippet shows the results and saves them", () => {
-    const { store } = setup();
-    const snippet = pickSnippet(SEED, LANGUAGES);
-    typeSnippet(snippet);
+  it(
+    "typing the whole snippet shows the results and saves them",
+    () => {
+      const { store } = setup();
+      const snippet = pickSnippet(SEED, LANGUAGES);
+      typeSnippet(snippet);
 
-    const typeable = typeableLength(snippet.text);
-    const timeMs = (typeable - 1) * STEP_MS;
-    const wpm = typeable / 5 / (timeMs / 60_000);
-    expect(screen.getByTestId("wpm").textContent).toBe(String(Math.round(wpm)));
-    expect(screen.getByTestId("accuracy").textContent).toBe("100%");
-    expect(screen.getByTestId("errors").textContent).toBe("0");
-    expect(screen.getByTestId("time").textContent).toBe(seconds(timeMs));
-    expect(screen.getByTestId("snippet-id").textContent).toBe(snippet.id);
-    expect(screen.getByTestId("typing-seed").textContent).toBe(String(SEED));
+      const typeable = typeableLength(snippet.text);
+      const timeMs = (typeable - 1) * STEP_MS;
+      const wpm = typeable / 5 / (timeMs / 60_000);
+      expect(screen.getByTestId("wpm").textContent).toBe(String(Math.round(wpm)));
+      expect(screen.getByTestId("accuracy").textContent).toBe("100%");
+      expect(screen.getByTestId("errors").textContent).toBe("0");
+      expect(screen.getByTestId("time").textContent).toBe(seconds(timeMs));
+      expect(screen.getByTestId("snippet-id").textContent).toBe(snippet.id);
+      expect(screen.getByTestId("typing-seed").textContent).toBe(String(SEED));
 
-    const saved = loadTypingResults(store);
-    expect(saved).toHaveLength(1);
-    expect(saved[0]).toMatchObject({
-      version: 1,
-      snippetId: snippet.id,
-      language: snippet.language,
-      seed: SEED,
-      errors: 0,
-      accuracy: 1,
-      timeMs,
-    });
-    expect(saved[0]?.wpm).toBeCloseTo(wpm, 10);
-  });
+      const saved = loadTypingResults(store);
+      expect(saved).toHaveLength(1);
+      expect(saved[0]).toMatchObject({
+        version: 1,
+        snippetId: snippet.id,
+        language: snippet.language,
+        seed: SEED,
+        errors: 0,
+        accuracy: 1,
+        timeMs,
+      });
+      expect(saved[0]?.wpm).toBeCloseTo(wpm, 10);
+    },
+    WHOLE_SNIPPET_TIMEOUT_MS,
+  );
 
-  it("Próximo after the results picks a new snippet", () => {
-    setup(memoryStore(), [SEED, 77]);
-    typeSnippet(pickSnippet(SEED, LANGUAGES));
-    fireEvent.click(screen.getByRole("button", { name: "Próximo" }));
-    expect(code().getAttribute("data-snippet-id")).toBe(pickSnippet(77, LANGUAGES).id);
-    expect(screen.queryByTestId("wpm")).toBeNull();
-  });
+  it(
+    "Próximo after the results picks a new snippet",
+    () => {
+      setup(memoryStore(), [SEED, 77]);
+      typeSnippet(pickSnippet(SEED, LANGUAGES));
+      fireEvent.click(screen.getByRole("button", { name: "Próximo" }));
+      expect(code().getAttribute("data-snippet-id")).toBe(pickSnippet(77, LANGUAGES).id);
+      expect(screen.queryByTestId("wpm")).toBeNull();
+    },
+    WHOLE_SNIPPET_TIMEOUT_MS,
+  );
 
   it("Escape picks another snippet", () => {
     setup(memoryStore(), [SEED, 77]);
