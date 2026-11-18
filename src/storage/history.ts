@@ -41,6 +41,7 @@ export const DEFAULT_SETTINGS: StoredSettings = {
   algebra: MODES.algebra.defaults,
   estimation: MODES.estimation.defaults,
   sums: MODES.sums.defaults,
+  primes: MODES.primes.defaults,
   review: MODES.review.defaults,
 };
 

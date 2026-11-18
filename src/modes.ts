@@ -29,6 +29,13 @@ import {
   validateReview,
   type ReviewSettings,
 } from "./gen/review";
+import {
+  DEFAULT_PRIMES,
+  parsePrimesSettings,
+  primes,
+  validatePrimes,
+  type PrimesSettings,
+} from "./gen/primes";
 import { DEFAULT_SUMS, sums, SUMS_KINDS, type SumsSettings } from "./gen/sums";
 
 /** Settings of each mode; the stored settings keep one entry per mode id. */
@@ -39,6 +46,7 @@ export type ModeSettings = {
   algebra: AlgebraSettings;
   estimation: EstimationSettings;
   sums: SumsSettings;
+  primes: PrimesSettings;
   review: ReviewSettings;
 };
 
@@ -140,6 +148,18 @@ export const MODES: { readonly [M in Mode]: ModeSpec<ModeSettings[M]> } = {
     wide: true,
     group: BY_TYPE,
   },
+  primes: {
+    label: "Primos",
+    hint: "Digite o menor fator primo; se o número for primo, ele mesmo. Enter pula a questão.",
+    generator: primes,
+    defaults: DEFAULT_PRIMES,
+    parseSettings: parsePrimesSettings,
+    validate: validatePrimes,
+    allowSkip: true,
+    numeric: true,
+    wide: false,
+    group: BY_TYPE,
+  },
   review: {
     label: "Revisar",
     hint: "Refaça as questões que você pulou, corrigiu ou demorou. Enter pula a questão.",
@@ -162,6 +182,7 @@ export const MODE_IDS: readonly Mode[] = [
   "algebra",
   "estimation",
   "sums",
+  "primes",
   "review",
 ];
 
