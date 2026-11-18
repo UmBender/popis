@@ -14,8 +14,9 @@ describe("mode registry", () => {
 
   it("only arithmetic follows zetamac without skipping or a text keyboard", () => {
     // T07 (ADR-T07-1): estimation answers with an option number, so it also
-    // uses the numeric keyboard; it still skips with Enter.
-    const NUMERIC: readonly string[] = ["arithmetic", "estimation"];
+    // uses the numeric keyboard; it still skips with Enter. T09: primes
+    // answers with a positive integer, so it does too.
+    const NUMERIC: readonly string[] = ["arithmetic", "estimation", "primes"];
     for (const id of MODE_IDS) {
       expect(MODES[id].allowSkip).toBe(id !== "arithmetic");
       expect(MODES[id].numeric).toBe(NUMERIC.includes(id));
