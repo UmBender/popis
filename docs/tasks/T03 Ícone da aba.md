@@ -1,7 +1,7 @@
 ---
 id: T03
 title: Ícone da aba
-status: review
+status: in-progress
 depends_on: [T02]
 branch: task/T03-favicon
 adrs: ["[[ADR-T03-1 The favicon uses theme tokens]]"]
@@ -12,14 +12,17 @@ tags: [task]
 
 ## Goal
 
-A aba do navegador mostra um ícone com o texto `O(n!)`, em letra clara
-sobre fundo escuro, nas cores do tema ([[Theme]]).
+A aba do navegador mostra um ícone com o texto `n!` (de O(n!)), em letra
+clara sobre fundo escuro, nas cores do tema ([[Theme]]).
 
 ## Spec
 
-- **AC-1**: `public/favicon.svg` desenha `O(n!)` com o fundo em `--surface`
-  e o texto em `--text`, e não usa nenhuma outra cor.
-  *Teste:* `tests/favicon.test.ts` ("favicon draws O(n!) in theme tokens").
+- **AC-1**: `public/favicon.svg` desenha `n!` com o fundo em `--surface`
+  e o texto em `--text`, e não usa nenhuma outra cor. A primeira versão
+  desenhava `O(n!)`, ilegível em 16 px segundo o usuário; das alternativas
+  comparadas em 16, 32 e 64 px (`n!`, `O(`/`n!)` em duas linhas, `n!`
+  dentro de um círculo, `O!`), `n!` foi a única legível em 16 px.
+  *Teste:* `tests/favicon.test.ts` ("favicon draws n! in theme tokens").
 - **AC-2**: `index.html` aponta para o ícone como SVG.
   *Testes:* `tests/favicon.test.ts` ("index.html links the favicon"),
   `tests/e2e/favicon.spec.ts` (o app servido entrega `/favicon.svg`).
