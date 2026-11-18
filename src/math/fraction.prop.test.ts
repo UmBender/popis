@@ -6,10 +6,9 @@ import { add, constant, equals, monomial, mul, type Poly } from "./poly";
 
 /** Small random polynomials in x. */
 const poly: fc.Arbitrary<Poly> = fc
-  .array(
-    fc.record({ coef: fc.integer({ min: -9, max: 9 }), ex: fc.integer({ min: 0, max: 3 }) }),
-    { maxLength: 4 },
-  )
+  .array(fc.record({ coef: fc.integer({ min: -9, max: 9 }), ex: fc.integer({ min: 0, max: 3 }) }), {
+    maxLength: 4,
+  })
   .map((ts) => ts.reduce<Poly>((p, t) => add(p, monomial(t.coef, t.ex, 0)), constant(0)));
 const denom = fc.integer({ min: 1, max: 24 });
 const scale = fc.integer({ min: 1, max: 12 });

@@ -207,6 +207,17 @@ describe("parse: rejected input", () => {
   it("huge degrees are rejected", () => {
     expect(parse("((x^12)^2)^2")).toBeNull();
   });
+
+  it("a product past the degree limit is rejected", () => {
+    expect(parse("x^12 x^12")).not.toBeNull();
+    expect(parse("x^12 x^12 x")).toBeNull();
+  });
+
+  it("denominators beyond safe integers are rejected", () => {
+    expect(parse("1/99999999/99999999")).toBeNull();
+    expect(parse("(1/99999999)^2")).toBeNull();
+    expect(parse("1/99999999 + 1/99999998")).toBeNull();
+  });
 });
 
 describe("parse: summands", () => {

@@ -478,8 +478,7 @@ describe("sums mode", () => {
     memoryStore({
       [SETTINGS_KEY]: JSON.stringify({ mode: "sums", sums: sumsSettings, durationS: 30 }),
     });
-  const nth = (settings: SumsSettings, i: number) =>
-    sums.generate(deriveSeed(SEED, i), settings);
+  const nth = (settings: SumsSettings, i: number) => sums.generate(deriveSeed(SEED, i), settings);
 
   it("sums mode lists its kinds", () => {
     setup();

@@ -69,9 +69,9 @@ export function powFraction(a: Fraction, n: number): Fraction {
 export function sameValue(a: Fraction, b: Fraction): boolean {
   try {
     return equals(mul(a.poly, constant(b.denom)), mul(b.poly, constant(a.denom)));
-  } catch (error) {
-    if (error instanceof PolyOverflowError) return false;
-    throw error;
+  } catch {
+    // `constant` and `mul` only throw PolyOverflowError.
+    return false;
   }
 }
 

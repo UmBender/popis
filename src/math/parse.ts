@@ -1,10 +1,4 @@
-import {
-  addFractions,
-  divFractions,
-  mulFractions,
-  powFraction,
-  type Fraction,
-} from "./fraction";
+import { addFractions, divFractions, mulFractions, powFraction, type Fraction } from "./fraction";
 import {
   constant,
   degree,

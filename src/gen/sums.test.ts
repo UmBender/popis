@@ -81,12 +81,17 @@ describe("loop prompt", () => {
 describe("checker", () => {
   const p = problem("sum", "Σᵢ₌₁ⁿ i", "(n² + n)/2");
 
-  it.each(["(n² + n)/2", "n(n+1)/2", "n²/2 + n/2", "(n+1)n/2", "n(n+1) ÷ 2", "(n^2+n)/2", "n/2+n²/2"])(
-    "checker accepts %j",
-    (input) => {
-      expect(sums.check(p, input)).toBe(true);
-    },
-  );
+  it.each([
+    "(n² + n)/2",
+    "n(n+1)/2",
+    "n²/2 + n/2",
+    "(n+1)n/2",
+    "n(n+1) ÷ 2",
+    "(n^2+n)/2",
+    "n/2+n²/2",
+  ])("checker accepts %j", (input) => {
+    expect(sums.check(p, input)).toBe(true);
+  });
 
   it.each([
     "n(n-1)/2",
