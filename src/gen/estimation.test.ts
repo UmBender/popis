@@ -116,7 +116,7 @@ describe("generate", () => {
   it("complexity writes large bounds as powers of ten", () => {
     const prompts = sample("complexity").map((p) => p.prompt);
     expect(prompts).toContain("n ≤ 10¹⁸, 1 s: maior complexidade viável?");
-    expect(prompts.some((p) => /^n ≤ [2-9]·10[⁰-⁹]+,/.test(p))).toBe(true);
+    expect(prompts.some((p) => /^n ≤ [2-9]·10[⁰¹²³⁴⁵⁶⁷⁸⁹]+,/.test(p))).toBe(true);
     expect(prompts.some((p) => /^n ≤ \d{1,4},/.test(p))).toBe(true);
   });
 
@@ -135,7 +135,7 @@ describe("generate", () => {
           ? "product"
           : /^\d+! /.test(p.prompt)
             ? "factorial"
-            : /^2[⁰-⁹]+ /.test(p.prompt)
+            : /^2[⁰¹²³⁴⁵⁶⁷⁸⁹]+ /.test(p.prompt)
               ? "power"
               : /^n\(n \+ 1\)\/2 com n = \d+ /.test(p.prompt)
                 ? "sum"

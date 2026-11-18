@@ -16,7 +16,7 @@ function fromSuperscript(text: string): number {
 /** "5000", "10¹⁸" or "2·10⁵" as a number. */
 function readNumber(text: string): number {
   if (/^\d+$/.test(text)) return Number(text);
-  const m = /^(?:(\d)·)?10([⁰-⁹]+)$/.exec(text);
+  const m = /^(?:(\d)·)?10([⁰¹²³⁴⁵⁶⁷⁸⁹]+)$/.exec(text);
   expect(m, text).not.toBeNull();
   return Number(m?.[1] ?? 1) * 10 ** fromSuperscript(m?.[2] ?? "");
 }
@@ -74,7 +74,7 @@ function overflowValue(prompt: string): bigint {
   if (m !== null) return BigInt(m[1] ?? "") * BigInt(m[2] ?? "");
   m = /^(\d+)!$/.exec(body);
   if (m !== null) return bigFactorial(BigInt(m[1] ?? ""));
-  m = /^2([⁰-⁹]+)$/.exec(body);
+  m = /^2([⁰¹²³⁴⁵⁶⁷⁸⁹]+)$/.exec(body);
   if (m !== null) return 2n ** BigInt(fromSuperscript(m[1] ?? ""));
   m = /^n\(n \+ 1\)\/2 com n = (\d+)$/.exec(body);
   if (m !== null) {
@@ -139,7 +139,7 @@ describe("estimation generator properties", () => {
         expect(log, p.prompt).toBeDefined();
         const value = (log ?? (() => NaN))(readNumber(m?.[2] ?? ""));
         const exponents = (p.choices ?? []).map((c) => {
-          const e = /^10([⁰-⁹]+)$/.exec(c);
+          const e = /^10([⁰¹²³⁴⁵⁶⁷⁸⁹]+)$/.exec(c);
           expect(e, c).not.toBeNull();
           return fromSuperscript(e?.[1] ?? "");
         });
