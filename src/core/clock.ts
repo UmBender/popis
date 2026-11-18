@@ -12,14 +12,17 @@ export interface ManualClock extends Clock {
 }
 
 export const systemClock: Clock = {
-  now: () => {
-    throw new Error("todo");
-  },
-  wallTime: () => {
-    throw new Error("todo");
-  },
+  now: () => performance.now(),
+  wallTime: () => Date.now(),
 };
 
-export function manualClock(_start = 0): ManualClock {
-  throw new Error("todo");
+export function manualClock(start = 0): ManualClock {
+  let t = start;
+  return {
+    now: () => t,
+    wallTime: () => t,
+    advance(ms) {
+      t += ms;
+    },
+  };
 }
