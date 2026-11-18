@@ -1,7 +1,7 @@
 ---
 id: T02
 title: Teste de fatoração de polinômios
-status: in-progress
+status: review
 depends_on: [T01]
 branch: task/T02-polynomial-factoring
 adrs: ["[[ADR-T02-1 Factored answers are checked by expansion and factor count]]"]
@@ -78,15 +78,17 @@ sozinha, como em [[T01 Clone do Zetamac]].
 - `src/math/**`, `src/gen/factoring*.ts`, `src/storage/**`, `src/ui/**`,
   `src/session/**` (se preciso), `tests/e2e/factoring.spec.ts`,
   `docs/architecture/Theme.md` (só se um token novo for preciso)
+- Acrescentados no passo de qualidade (ver Log): `src/core/rng.ts` e
+  `src/core/rng.test.ts` (`retry`), e `vite.config.ts` (limiares de cobertura).
 
 ## Subtasks (one commit each)
 
-- [ ] spec — `docs(T02): specify polynomial factoring acceptance criteria`
-- [ ] tests — `test(T02): add failing tests for polynomial factoring`
-- [ ] models — `feat(T02): add polynomial, parser and factoring types`
-- [ ] behaviour — `feat(T02): implement polynomial factoring mode`
-- [ ] quality — `chore(T02): pass lint, format and coverage`
-- [ ] docs — `docs(T02): record polynomial factoring log`
+- [x] spec — `docs(T02): specify polynomial factoring acceptance criteria`
+- [x] tests — `test(T02): add failing tests for polynomial factoring`
+- [x] models — `feat(T02): add polynomial, parser and factoring types`
+- [x] behaviour — `feat(T02): implement polynomial factoring mode`
+- [x] quality — `chore(T02): pass lint, format and coverage`
+- [x] docs — `docs(T02): record polynomial factoring log`
 
 ## Decisions
 
@@ -97,3 +99,26 @@ Decididas pelo usuário em 2026-11-17:
   tirar o fator comum, fica para depois.
 
 ## Log
+
+- **Teclas:** Enter pula, mas só na fatoração. Como a resposta é aceita
+  sozinha, Enter não tinha outro uso; o modo aritmética continua sem
+  pulo, igual ao Zetamac.
+- **Testes da T01 alterados:** "defaults to the zetamac settings and 120 s"
+  e "round-trips saved settings" passaram a esperar `mode` e `factoring`,
+  como pede o AC-7. A mudança está no commit de testes e não afrouxa
+  nenhuma asserção. Os testes de interface da T01 continuam gravando a
+  configuração no formato antigo, e por isso também provam a migração.
+- **Fora de *Files owned*:** no passo de qualidade, o `drawUntil` do gerador
+  virou `retry` em `src/core/rng.ts`, com teste do limite de tentativas.
+  Sem isso, a linha do erro ficava sem cobertura e quebrava o limiar de
+  100% de `src/gen`. O `vite.config.ts` recebeu os limiares de `src/math`.
+- **Cobertura:** `src/math` ficou em 99% das linhas, com limiar no valor
+  medido. A linha sem cobertura é o `throw` defensivo do parser para erros
+  que não são de entrada inválida, impossível de disparar sem mock. Os
+  limiares de branches de `src/core` (88 → 92) e `src/ui` (75 → 90) subiram.
+- **Fuzz:** `npm run test:fuzz` (20 000 casos) passou sem falhas: parser,
+  anel de polinômios e os seis níveis do gerador. Não houve regressão a
+  registrar.
+- **Gates no último commit:** `npm run check` verde (200 testes),
+  `npm run coverage` verde, `npm run test:fuzz` verde e `npm run test:e2e`
+  verde (2 casos).
