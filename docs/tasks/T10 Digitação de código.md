@@ -1,7 +1,7 @@
 ---
 id: T10
 title: Digitação de código
-status: review
+status: done
 depends_on: [T01]
 branch: task/T10-typing
 adrs: [ADR-T10-1]
