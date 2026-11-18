@@ -3,7 +3,15 @@ import {
   parseArithmeticSettings,
   type ArithmeticSettings,
 } from "../gen/arithmetic";
+import type { JsonValue } from "../core/problem";
+import {
+  DEFAULT_FACTORING,
+  parseFactoringSettings,
+  type FactoringSettings,
+} from "../gen/factoring";
 import { DEFAULT_DURATION_S, DURATIONS_S, type Attempt } from "../session/engine";
+
+export type Mode = "arithmetic" | "factoring";
 
 /** The part of `Storage` the app uses; injected so tests use memory. */
 export interface KeyValueStore {
@@ -17,22 +25,27 @@ export const MAX_SESSIONS = 200;
 
 export type SessionRecord = {
   readonly version: 1;
-  readonly mode: "arithmetic";
+  readonly mode: Mode;
   /** Wall-clock time the session ended, in epoch milliseconds. */
   readonly finishedAt: number;
   readonly durationMs: number;
   readonly seed: number;
-  readonly params: ArithmeticSettings;
+  /** Generator params of the session's mode. */
+  readonly params: JsonValue;
   readonly log: readonly Attempt[];
 };
 
 export type StoredSettings = {
+  readonly mode: Mode;
   readonly arithmetic: ArithmeticSettings;
+  readonly factoring: FactoringSettings;
   readonly durationS: number;
 };
 
 export const DEFAULT_SETTINGS: StoredSettings = {
+  mode: "arithmetic",
   arithmetic: DEFAULT_ARITHMETIC,
+  factoring: DEFAULT_FACTORING,
   durationS: DEFAULT_DURATION_S,
 };
 
@@ -95,15 +108,34 @@ export function appendSession(store: KeyValueStore, record: SessionRecord): void
   writeJson(store, HISTORY_KEY, history.slice(-MAX_SESSIONS));
 }
 
+/**
+ * Stored settings, or the defaults when anything stored is invalid. Fields
+ * added after T01 (`mode`, `factoring`) take their defaults when missing.
+ */
 export function loadSettings(store: KeyValueStore): StoredSettings {
   const value = readJson(store, SETTINGS_KEY);
   if (typeof value !== "object" || value === null) return DEFAULT_SETTINGS;
-  const { arithmetic, durationS } = value as { arithmetic?: unknown; durationS?: unknown };
-  const parsed = parseArithmeticSettings(arithmetic);
-  if (parsed === null || typeof durationS !== "number" || !DURATIONS_S.includes(durationS)) {
+  const stored = value as {
+    mode?: unknown;
+    arithmetic?: unknown;
+    factoring?: unknown;
+    durationS?: unknown;
+  };
+  const mode = stored.mode ?? DEFAULT_SETTINGS.mode;
+  const arithmetic = parseArithmeticSettings(stored.arithmetic);
+  const factoring =
+    stored.factoring === undefined ? DEFAULT_FACTORING : parseFactoringSettings(stored.factoring);
+  const { durationS } = stored;
+  if (
+    (mode !== "arithmetic" && mode !== "factoring") ||
+    arithmetic === null ||
+    factoring === null ||
+    typeof durationS !== "number" ||
+    !DURATIONS_S.includes(durationS)
+  ) {
     return DEFAULT_SETTINGS;
   }
-  return { arithmetic: parsed, durationS };
+  return { mode, arithmetic, factoring, durationS };
 }
 
 export function saveSettings(store: KeyValueStore, settings: StoredSettings): void {

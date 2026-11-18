@@ -1,19 +1,29 @@
 import type { ReactNode } from "react";
 import type { Attempt } from "../session/engine";
 import { summarize } from "../session/stats";
+import type { Mode } from "../storage/history";
 import { seconds, skillLabel } from "./format";
 
 /** How many of the slowest answers the results list. */
 const SLOWEST = 10;
 
+/** What the per-skill table calls a skill in each mode. */
+const GROUPS: Readonly<Record<Mode, { caption: string; column: string }>> = {
+  arithmetic: { caption: "Por operação", column: "Operação" },
+  factoring: { caption: "Por tipo", column: "Tipo" },
+};
+
 type Props = {
   readonly log: readonly Attempt[];
+  readonly mode: Mode;
   readonly onPlayAgain: () => void;
   readonly onConfigure: () => void;
 };
 
-export function ResultsScreen({ log, onPlayAgain, onConfigure }: Props): ReactNode {
+export function ResultsScreen({ log, mode, onPlayAgain, onConfigure }: Props): ReactNode {
   const summary = summarize(log, SLOWEST);
+  const skipped = log.filter((a) => a.outcome === "skipped");
+  const group = GROUPS[mode];
 
   return (
     <div className="screen results">
@@ -28,10 +38,10 @@ export function ResultsScreen({ log, onPlayAgain, onConfigure }: Props): ReactNo
 
       {summary.bySkill.length > 0 && (
         <table>
-          <caption>Por operação</caption>
+          <caption>{group.caption}</caption>
           <thead>
             <tr>
-              <th scope="col">Operação</th>
+              <th scope="col">{group.column}</th>
               <th scope="col">Acertos</th>
               <th scope="col">Tempo médio</th>
             </tr>
@@ -67,6 +77,28 @@ export function ResultsScreen({ log, onPlayAgain, onConfigure }: Props): ReactNo
                 <td>{a.problem.answer}</td>
                 <td>{seconds(a.timeMs)}</td>
                 <td>{a.corrections}</td>
+                <td className="seed">{a.problem.seed}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {skipped.length > 0 && (
+        <table>
+          <caption>Puladas</caption>
+          <thead>
+            <tr>
+              <th scope="col">Questão</th>
+              <th scope="col">Resposta</th>
+              <th scope="col">Seed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {skipped.map((a, i) => (
+              <tr key={i}>
+                <td>{a.problem.prompt}</td>
+                <td>{a.problem.answer}</td>
                 <td className="seed">{a.problem.seed}</td>
               </tr>
             ))}

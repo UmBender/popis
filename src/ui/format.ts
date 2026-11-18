@@ -3,6 +3,12 @@ const SKILL_LABELS: Readonly<Record<string, string>> = {
   "arithmetic.sub": "Subtração",
   "arithmetic.mul": "Multiplicação",
   "arithmetic.div": "Divisão",
+  "factoring.monic": "Quadrática mônica",
+  "factoring.nonmonic": "Quadrática não mônica",
+  "factoring.common": "Fator comum",
+  "factoring.special": "Produtos notáveis",
+  "factoring.cubic": "Cúbica",
+  "factoring.twovar": "Duas variáveis",
 };
 
 export function skillLabel(skill: string): string {

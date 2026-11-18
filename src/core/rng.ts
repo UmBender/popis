@@ -52,3 +52,16 @@ export function deriveSeed(seed: number, index: number): number {
 export function randomSeed(): number {
   return crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
 }
+
+/**
+ * Calls `draw` until `ok` accepts its value. Generators use it for
+ * constraints that most draws satisfy, so the attempt limit only guards
+ * against a constraint that can never hold.
+ */
+export function retry<T>(draw: () => T, ok: (value: T) => boolean, attempts = 1000): T {
+  for (let i = 0; i < attempts; i++) {
+    const value = draw();
+    if (ok(value)) return value;
+  }
+  throw new Error(`no acceptable value in ${attempts} attempts`);
+}

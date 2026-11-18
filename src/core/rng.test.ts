@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRng, deriveSeed, MAX_SEED, randomSeed } from "./rng";
+import { createRng, deriveSeed, MAX_SEED, randomSeed, retry } from "./rng";
 
 describe("createRng", () => {
   it("same seed gives the same sequence", () => {
@@ -82,5 +82,27 @@ describe("deriveSeed", () => {
       expect(s).toBeGreaterThanOrEqual(0);
       expect(s).toBeLessThanOrEqual(MAX_SEED);
     }
+  });
+});
+
+describe("retry", () => {
+  it("returns the first accepted value", () => {
+    let n = 0;
+    expect(
+      retry(
+        () => ++n,
+        (v) => v >= 3,
+      ),
+    ).toBe(3);
+  });
+
+  it("throws when no value is accepted within the attempts", () => {
+    expect(() =>
+      retry(
+        () => 1,
+        () => false,
+        5,
+      ),
+    ).toThrow(/5 attempts/);
   });
 });

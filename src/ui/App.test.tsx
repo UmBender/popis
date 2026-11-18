@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { manualClock, type ManualClock } from "../core/clock";
 import { deriveSeed } from "../core/rng";
 import { DEFAULT_ARITHMETIC, type ArithmeticSettings } from "../gen/arithmetic";
+import { DEFAULT_FACTORING, factoring, type FactoringSettings } from "../gen/factoring";
 import { loadHistory, memoryStore, SETTINGS_KEY, type KeyValueStore } from "../storage/history";
 import { App } from "./App";
 
@@ -229,5 +230,115 @@ describe("persistence", () => {
     setup(store);
     expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "Duração" }).value).toBe("30");
     expect(screen.getByRole<HTMLInputElement>("checkbox", { name: "Divisão" }).checked).toBe(false);
+  });
+});
+
+describe("factoring mode", () => {
+  function factoringStore(settings: FactoringSettings = DEFAULT_FACTORING): KeyValueStore {
+    return memoryStore({
+      [SETTINGS_KEY]: JSON.stringify({
+        mode: "factoring",
+        arithmetic: DEFAULT_ARITHMETIC,
+        factoring: settings,
+        durationS: 60,
+      }),
+    });
+  }
+
+  /** The i-th problem of the session seeded with SEED. */
+  function nth(i: number, settings: FactoringSettings = DEFAULT_FACTORING) {
+    return factoring.generate(deriveSeed(SEED, i), settings);
+  }
+
+  it("mode choice shows the factoring levels and hides the operations", () => {
+    setup();
+    expect(screen.getByRole<HTMLInputElement>("radio", { name: "Aritmética" }).checked).toBe(true);
+    fireEvent.click(screen.getByRole("radio", { name: "Fatoração" }));
+    expect(screen.getByRole<HTMLInputElement>("checkbox", { name: /^Nível 1/ }).checked).toBe(true);
+    expect(screen.getByRole<HTMLInputElement>("checkbox", { name: /^Nível 6/ }).checked).toBe(
+      false,
+    );
+    expect(screen.queryByRole("checkbox", { name: "Adição" })).toBeNull();
+  });
+
+  it("no level disables start", () => {
+    setup();
+    fireEvent.click(screen.getByRole("radio", { name: "Fatoração" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^Nível 1/ }));
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Começar" }).disabled).toBe(true);
+    expect(screen.getByRole("alert").textContent).toMatch(/nível/);
+  });
+
+  it("shows the polynomial and accepts the factored answer without Enter", () => {
+    setup(factoringStore());
+    start();
+    expect(prompt()).toBe(nth(0).prompt);
+    type(nth(0).answer);
+    expect(screen.getByTestId("score").textContent).toBe("1");
+    expect(prompt()).toBe(nth(1).prompt);
+  });
+
+  it("Enter skips and shows the skipped problem with its answer", () => {
+    setup(factoringStore());
+    start();
+    fireEvent.keyDown(answerBox(), { key: "Enter" });
+    expect(prompt()).toBe(nth(1).prompt);
+    expect(screen.getByTestId("score").textContent).toBe("0");
+    const skipped = screen.getByTestId("skipped").textContent;
+    expect(skipped).toContain(nth(0).prompt);
+    expect(skipped).toContain(nth(0).answer);
+  });
+
+  it("Enter does nothing in arithmetic", () => {
+    const store = storeWith(ONE_PLUS_ONE);
+    setup(store);
+    start();
+    type("3");
+    fireEvent.keyDown(answerBox(), { key: "Enter" });
+    expect(answerBox().value).toBe("3");
+    expect(screen.queryByTestId("skipped")).toBeNull();
+    advance(120_000);
+    expect(loadHistory(store)[0]?.log.map((a) => a.outcome)).toEqual(["timeout"]);
+  });
+
+  it("results list skipped problems with their answers and stats by type", () => {
+    const store = factoringStore();
+    setup(store);
+    start();
+    advance(2000);
+    type(nth(0).answer);
+    fireEvent.keyDown(answerBox(), { key: "Enter" });
+    advance(60_000);
+
+    const byType = screen.getByRole("table", { name: "Por tipo" });
+    expect(within(byType).getAllByRole("row")[1]?.textContent).toContain("Quadrática mônica");
+
+    const skipped = screen.getByRole("table", { name: "Puladas" });
+    const row = within(skipped).getAllByRole("row")[1];
+    expect(row?.textContent).toContain(nth(1).prompt);
+    expect(row?.textContent).toContain(nth(1).answer);
+  });
+
+  it("finished factoring session is saved with its mode", () => {
+    const store = factoringStore();
+    setup(store);
+    start();
+    advance(60_000);
+    expect(loadHistory(store)[0]?.mode).toBe("factoring");
+    expect(loadHistory(store)[0]?.params).toEqual(DEFAULT_FACTORING);
+  });
+
+  it("factoring settings are remembered", () => {
+    const store = memoryStore();
+    setup(store);
+    fireEvent.click(screen.getByRole("radio", { name: "Fatoração" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^Nível 2/ }));
+    start();
+    fireEvent.keyDown(answerBox(), { key: "Escape" });
+    document.body.innerHTML = "";
+
+    setup(store);
+    expect(screen.getByRole<HTMLInputElement>("radio", { name: "Fatoração" }).checked).toBe(true);
+    expect(screen.getByRole<HTMLInputElement>("checkbox", { name: /^Nível 2/ }).checked).toBe(true);
   });
 });
