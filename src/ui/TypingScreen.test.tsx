@@ -196,6 +196,46 @@ describe("typing screen", () => {
     expect(charSpans().every((s) => s.dataset["mark"] === "pending")).toBe(true);
   });
 
+  it("typing screen checks a language again", () => {
+    const { store } = setup(memoryStore(), [SEED, 8, 9]);
+    fireEvent.click(screen.getByRole("checkbox", { name: "Python" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Python" }));
+    expect(loadTypingLanguages(store)).toEqual(["cpp", "python"]);
+    expect(code().getAttribute("data-snippet-id")).toBe(pickSnippet(9, LANGUAGES).id);
+  });
+
+  it("typing screen types a dead key's character when the composition ends", () => {
+    setup();
+    const first = pickSnippet(SEED, LANGUAGES).text[0] ?? "";
+    fireEvent.input(box(), { target: { value: first }, isComposing: true });
+    expect(charSpans()[0]?.dataset["mark"]).toBe("pending");
+    fireEvent.compositionEnd(box(), { target: { value: first } });
+    expect(charSpans()[0]?.dataset["mark"]).toBe("correct");
+    expect(box().value).toBe("");
+  });
+
+  it("typing screen focuses the hidden box when the code is clicked", () => {
+    setup();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Python" }));
+    screen.getByRole("checkbox", { name: "C++" }).focus();
+    fireEvent.click(code());
+    expect(document.activeElement).toBe(box());
+  });
+
+  it("Backspace at the start does nothing", () => {
+    setup();
+    fireEvent.keyDown(box(), { key: "Backspace" });
+    expect(charSpans().every((s) => s.dataset["mark"] === "pending")).toBe(true);
+  });
+
+  it("Cmd+Enter also restarts the same snippet", () => {
+    setup(memoryStore(), [SEED, 77]);
+    typeChars("x");
+    fireEvent.keyDown(box(), { key: "Enter", metaKey: true });
+    expect(code().getAttribute("data-snippet-id")).toBe(pickSnippet(SEED, LANGUAGES).id);
+    expect(charSpans().every((s) => s.dataset["mark"] === "pending")).toBe(true);
+  });
+
   it("Voltar calls onBack", () => {
     const { onBack } = setup();
     fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
