@@ -9,6 +9,7 @@ import {
   startSession,
   tick,
   typeAnswer,
+  type RunningSession,
   type SessionConfig,
   type SessionState,
 } from "./engine";
@@ -60,7 +61,7 @@ describe("startSession", () => {
       );
       const prompts: string[] = [];
       for (let i = 0; i < 10; i++) {
-        const current = running(state);
+        const current: RunningSession<ArithmeticSettings> = running(state);
         prompts.push(current.problem.prompt);
         state = typeAnswer(current, current.problem.answer, i + 1);
       }
