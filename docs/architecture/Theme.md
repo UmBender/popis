@@ -1,7 +1,7 @@
 ---
 tags: [architecture]
 status: accepted
-adrs: ["[[ADR-0001 Kanagawa Dragon theme]]"]
+adrs: ["[[ADR-0001 Kanagawa Dragon theme]]", "[[ADR-T03-1 The favicon uses theme tokens]]"]
 ---
 
 # Theme
@@ -25,6 +25,15 @@ falha se aparecer um literal de cor em qualquer outro lugar de `src/`.
 | `--correct` | resposta aceita | `#8aa86e` |
 | `--wrong` | resposta errada, tempo esgotado | `#d16961` |
 | `--warning` | últimos segundos, questão pulada | `#ceb680` |
+
+## Ícone da aba
+
+`public/favicon.svg` desenha `n!` (de O(n!)) em `--text` sobre `--surface`. É o
+único arquivo fora de `theme.css` com valores de cor
+([[ADR-T03-1 The favicon uses theme tokens]]); `tests/favicon.test.ts`
+confere que eles são os desses dois tokens.
+
+## Gráficos
 
 Séries de gráficos, nesta ordem: `#7fa8bc`, `#8aa86e`, `#ceb680`,
 `#aa88ac`, `#82b0ab`, `#d16961`.
