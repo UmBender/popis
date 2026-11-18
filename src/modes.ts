@@ -136,5 +136,5 @@ export function isMode(value: unknown): value is Mode {
 
 /** The generator that replays a mode's problems; review problems are never items. */
 function replayable(mode: string): Generator<JsonValue> | undefined {
-  throw new Error(`todo ${mode}`);
+  return isMode(mode) && mode !== "review" ? MODES[mode].generator : undefined;
 }

@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
 import type { JsonValue } from "../core/problem";
 import { MODES, type Mode } from "../modes";
@@ -11,11 +11,13 @@ import {
 } from "../session/engine";
 import {
   appendSession,
+  loadHistory,
   loadSettings,
   saveSettings,
   type KeyValueStore,
   type StoredSettings,
 } from "../storage/history";
+import { reviewItems } from "../storage/review";
 import { ConfigScreen } from "./ConfigScreen";
 import { GameScreen } from "./GameScreen";
 import { ResultsScreen } from "./ResultsScreen";
@@ -34,12 +36,13 @@ type Screen =
 
 function sessionConfig<M extends Mode>(
   mode: M,
+  params: JsonValue,
   settings: StoredSettings,
   seed: number,
 ): SessionConfig<JsonValue> {
   return {
     generator: MODES[mode].generator,
-    params: settings[mode],
+    params,
     durationMs: settings.durationS * 1000,
     seed,
   };
@@ -48,10 +51,28 @@ function sessionConfig<M extends Mode>(
 export function App({ clock, store, newSeed }: AppProps): ReactNode {
   const [settings, setSettings] = useState<StoredSettings>(() => loadSettings(store));
   const [screen, setScreen] = useState<Screen>({ name: "config" });
+  // Read again each time the config shows, so the last session counts.
+  const reviewCount = useMemo(
+    () => (screen.name === "config" ? reviewItems(loadHistory(store)).length : 0),
+    [screen.name, store],
+  );
 
   const start = () => {
     saveSettings(store, settings);
-    const session = startSession(sessionConfig(settings.mode, settings, newSeed()), clock.now());
+    let params: JsonValue = settings[settings.mode];
+    if (settings.mode === "review") {
+      // Review items come from history at start, never from the settings.
+      const items = reviewItems(loadHistory(store));
+      if (items.length === 0) {
+        setScreen({ name: "config" });
+        return;
+      }
+      params = { items };
+    }
+    const session = startSession(
+      sessionConfig(settings.mode, params, settings, newSeed()),
+      clock.now(),
+    );
     setScreen({ name: "game", mode: settings.mode, session });
   };
 
@@ -80,7 +101,14 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
 
   switch (screen.name) {
     case "config":
-      return <ConfigScreen settings={settings} onChange={setSettings} onStart={start} />;
+      return (
+        <ConfigScreen
+          settings={settings}
+          reviewCount={reviewCount}
+          onChange={setSettings}
+          onStart={start}
+        />
+      );
     case "game":
       return (
         <GameScreen

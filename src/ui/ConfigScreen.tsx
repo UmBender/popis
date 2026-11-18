@@ -16,6 +16,7 @@ const ERROR_MESSAGES: Readonly<Record<string, string>> = {
   "division-by-zero": "Na divisão, a faixa à esquerda da multiplicação não pode incluir 0.",
   "no-level": "Escolha pelo menos um nível.",
   "no-kind": "Escolha pelo menos um tipo.",
+  "nothing-to-review": "Nada para revisar ainda.",
 };
 
 /** A checkbox of a kind-based mode: its label and a sample. */
@@ -59,12 +60,18 @@ type RangeKey = "addLeft" | "addRight" | "mulLeft" | "mulRight";
 
 type Props = {
   readonly settings: StoredSettings;
+  /** How many problems the review mode would replay now. */
+  readonly reviewCount: number;
   readonly onChange: (settings: StoredSettings) => void;
   readonly onStart: () => void;
 };
 
-export function ConfigScreen({ settings, onChange, onStart }: Props): ReactNode {
-  const errors = errorsOf(settings.mode, settings);
+export function ConfigScreen({ settings, reviewCount, onChange, onStart }: Props): ReactNode {
+  const reviewing = settings.mode === "review";
+  const errors = [
+    ...errorsOf(settings.mode, settings),
+    ...(reviewing && reviewCount === 0 ? ["nothing-to-review"] : []),
+  ];
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -92,6 +99,12 @@ export function ConfigScreen({ settings, onChange, onStart }: Props): ReactNode 
         ))}
       </fieldset>
       <p className="muted">{MODES[settings.mode].hint}</p>
+
+      {reviewing && reviewCount > 0 && (
+        <p data-testid="review-count">
+          {reviewCount === 1 ? "1 questão para revisar" : `${String(reviewCount)} questões para revisar`}
+        </p>
+      )}
 
       {settings.mode === "arithmetic" && (
         <ArithmeticFields
