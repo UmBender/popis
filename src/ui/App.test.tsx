@@ -7,6 +7,7 @@ import { DEFAULT_ARITHMETIC, type ArithmeticSettings } from "../gen/arithmetic";
 import { DEFAULT_FACTORING, factoring, type FactoringSettings } from "../gen/factoring";
 import { algebra, type AlgebraSettings } from "../gen/algebra";
 import { division, DIVISION_KINDS, type DivisionSettings } from "../gen/division";
+import { estimation, type EstimationSettings } from "../gen/estimation";
 import {
   loadHistory,
   loadSettings,
@@ -15,6 +16,7 @@ import {
   type KeyValueStore,
 } from "../storage/history";
 import { App } from "./App";
+import { answerText } from "./format";
 
 const SEED = 5;
 
@@ -469,5 +471,74 @@ describe("algebra mode", () => {
     expect(screen.getByTestId("score").textContent).toBe("1");
     fireEvent.keyDown(answerBox(), { key: "Enter" });
     expect(screen.getByTestId("skipped").textContent).toContain(nth(1).answer);
+  });
+});
+
+describe("estimation mode", () => {
+  const ONLY_OVERFLOW: EstimationSettings = { kinds: ["overflow"] };
+  const store = () =>
+    memoryStore({
+      [SETTINGS_KEY]: JSON.stringify({
+        mode: "estimation",
+        estimation: ONLY_OVERFLOW,
+        durationS: 30,
+      }),
+    });
+  const nth = (i: number) => estimation.generate(deriveSeed(SEED, i), ONLY_OVERFLOW);
+
+  it("estimation mode lists its kinds", () => {
+    setup();
+    fireEvent.click(screen.getByRole("radio", { name: "Estimativa" }));
+    for (const name of [/^Complexidade/, /^Ordem de grandeza/, /^Overflow/]) {
+      expect(screen.getByRole<HTMLInputElement>("checkbox", { name }).checked).toBe(true);
+    }
+  });
+
+  it("estimation settings are remembered", () => {
+    const saved = memoryStore();
+    setup(saved);
+    fireEvent.click(screen.getByRole("radio", { name: "Estimativa" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^Overflow/ }));
+    start();
+    expect(loadSettings(saved).estimation.kinds).toEqual(["complexity", "magnitude"]);
+  });
+
+  it("estimation mode shows numbered options without an equals sign", () => {
+    setup(store());
+    start();
+    expect(prompt()).toBe(nth(0).prompt);
+    const options = within(screen.getByRole("list", { name: "Opções" })).getAllByRole("listitem");
+    expect(options.map((o) => o.textContent)).toEqual(["1) int32", "2) int64", "3) nenhum"]);
+    expect(screen.queryByText("=")).toBeNull();
+    expect(answerBox().getAttribute("inputmode")).toBe("numeric");
+  });
+
+  it("estimation mode keeps a wrong digit, accepts the option number and counts the correction", () => {
+    setup(store());
+    start();
+    const wrong = nth(0).answer === "1" ? "2" : "1";
+    type(wrong);
+    expect(answerBox().value).toBe(wrong);
+    expect(screen.getByTestId("score").textContent).toBe("0");
+    type("");
+    type(nth(0).answer);
+    expect(screen.getByTestId("score").textContent).toBe("1");
+    advance(30_000);
+    const slowest = screen.getByRole("table", { name: "Mais lentas" });
+    const row = within(slowest).getAllByRole("row")[1];
+    if (row === undefined) throw new Error("no answered row");
+    const cells = within(row).getAllByRole("cell");
+    expect(cells[1]?.textContent).toBe(answerText(nth(0)));
+    expect(cells[3]?.textContent).toBe("1");
+  });
+
+  it("estimation mode skips with Enter and shows the option text", () => {
+    setup(store());
+    start();
+    fireEvent.keyDown(answerBox(), { key: "Enter" });
+    const first = nth(0);
+    const skipped = screen.getByTestId("skipped").textContent;
+    expect(skipped).toContain(first.prompt);
+    expect(skipped).toContain(`${first.answer}) ${first.choices?.[Number(first.answer) - 1]}`);
   });
 });

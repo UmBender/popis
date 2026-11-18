@@ -17,6 +17,7 @@ import {
   type StoredSettings,
 } from "./history";
 import { DIVISION_KINDS } from "../gen/division";
+import { ESTIMATION_KINDS } from "../gen/estimation";
 import { MODE_IDS, MODES } from "../modes";
 
 function record(finishedAt: number): SessionRecord {
@@ -142,6 +143,28 @@ describe("settings", () => {
       ...saved,
       factoring: { levels: [3] },
     });
+  });
+
+  it("settings saved before T07 load with the default estimation kinds", () => {
+    const saved = { mode: "division", division: { kinds: ["floor"] }, durationS: 60 };
+    const loaded = loadSettings(memoryStore({ [SETTINGS_KEY]: JSON.stringify(saved) }));
+    expect(loaded.estimation).toEqual({ kinds: ESTIMATION_KINDS });
+    expect(loaded.division).toEqual({ kinds: ["floor"] });
+  });
+
+  it("estimation settings round-trip and invalid kinds fall back to the defaults", () => {
+    const store = memoryStore();
+    const settings: StoredSettings = {
+      ...DEFAULT_SETTINGS,
+      mode: "estimation",
+      estimation: { kinds: ["overflow"] },
+    };
+    saveSettings(store, settings);
+    expect(loadSettings(store)).toEqual(settings);
+    const bad = { mode: "estimation", estimation: { kinds: ["guess"] }, durationS: 60 };
+    expect(loadSettings(memoryStore({ [SETTINGS_KEY]: JSON.stringify(bad) }))).toEqual(
+      DEFAULT_SETTINGS,
+    );
   });
 
   it("invalid division kinds fall back to the defaults", () => {
