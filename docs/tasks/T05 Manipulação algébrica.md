@@ -1,7 +1,7 @@
 ---
 id: T05
 title: Manipulação algébrica
-status: in-progress
+status: review
 depends_on: [T04]
 branch: task/T05-algebra
 adrs: []
@@ -49,11 +49,22 @@ expandir, simplificar, completar o quadrado e dividir por (x − a).
 
 ## Subtasks (one commit each)
 
-- [ ] spec — `docs(T05): specify algebra acceptance criteria`
-- [ ] tests — `test(T05): add failing tests for algebra`
-- [ ] models — `feat(T05): add algebra types and parser summands`
-- [ ] behaviour — `feat(T05): implement algebra mode`
-- [ ] quality — `chore(T05): pass lint, format and coverage`
-- [ ] docs — `docs(T05): record algebra log`
+- [x] spec — `docs(T05): specify algebra acceptance criteria`
+- [x] tests — `test(T05): add failing tests for algebra`
+- [x] models — `feat(T05): add algebra types and parser summands`
+- [x] behaviour — `feat(T05): implement algebra mode`
+- [x] quality — `chore(T05): pass lint, format and coverage`
+- [x] docs — `docs(T05): record algebra log`
 
 ## Log
+
+- **Commit de modelos com typecheck vermelho:** o helper `parsed()` de
+  `parse.test.ts` declarava o retorno `{ poly, factors }` e escondia o
+  campo novo `summands` (TS2339). Passei a ver o código de saída do `tsc`
+  porque `| head` o escondia; o helper ganhou o tipo `Parsed` num commit de
+  teste próprio, sem mudar asserções.
+- **Forma expandida:** "sem parênteses e uma parcela por monômio" aceita
+  `2·x·x` e qualquer ordem, e rejeita `x + x`, que é o erro de não juntar
+  termos semelhantes.
+- **Gates no último commit:** `npm run check`, `npm run coverage`,
+  `npm run test:fuzz` e `npm run test:e2e` verdes.
