@@ -1,7 +1,7 @@
 ---
 id: T07
 title: Estimativa e complexidade
-status: review
+status: done
 depends_on: [T05]
 branch: task/T07-estimation
 adrs: [ADR-T07-1]
