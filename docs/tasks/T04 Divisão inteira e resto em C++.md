@@ -1,7 +1,7 @@
 ---
 id: T04
 title: Divisão inteira e resto em C++
-status: in-progress
+status: review
 depends_on: [T02]
 branch: task/T04-integer-division
 adrs: []
@@ -58,11 +58,23 @@ registro de modos, para que os próximos modos entrem sem `if` espalhado.
 
 ## Subtasks (one commit each)
 
-- [ ] spec — `docs(T04): specify integer division acceptance criteria`
-- [ ] tests — `test(T04): add failing tests for integer division`
-- [ ] models — `feat(T04): add mode registry and division types`
-- [ ] behaviour — `feat(T04): implement integer division mode`
-- [ ] quality — `chore(T04): pass lint, format and coverage`
-- [ ] docs — `docs(T04): record integer division log`
+- [x] spec — `docs(T04): specify integer division acceptance criteria`
+- [x] tests — `test(T04): add failing tests for integer division`
+- [x] models — `feat(T04): add mode registry and division types`
+- [x] behaviour — `feat(T04): implement integer division mode`
+- [x] quality — `chore(T04): pass lint, format and coverage`
+- [x] docs — `docs(T04): record integer division log`
 
 ## Log
+
+- **Testes da T02 reescritos:** "defaults …" e "round-trips saved settings"
+  passaram a ler os padrões de cada modo do registro, para que cada modo
+  novo não mude o valor esperado deles de novo. Os casos da T01 e da T02
+  continuam cobertos ("settings saved by T01/T02 load …").
+- **Configuração antiga:** um modo ausente no que foi salvo recebe os
+  padrões do registro; um valor inválido ainda volta tudo para o padrão.
+- **Rótulos:** os nomes das habilidades de divisão na tabela "Por tipo"
+  entraram no passo de qualidade, junto com o teste de `skillLabel`.
+- **Cobertura:** branches de `src/ui` 90 → 93; `src/modes.ts` fixado em 100.
+- **Gates no último commit:** `npm run check` verde (261 testes),
+  `npm run coverage`, `npm run test:fuzz` e `npm run test:e2e` verdes.
