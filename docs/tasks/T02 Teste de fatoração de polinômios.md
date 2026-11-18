@@ -1,7 +1,7 @@
 ---
 id: T02
 title: Teste de fatoração de polinômios
-status: todo
+status: ready
 depends_on: [T01]
 adrs: []
 tags: [task]

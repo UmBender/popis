@@ -1,7 +1,7 @@
 ---
 id: T01
 title: Clone do Zetamac
-status: review
+status: done
 depends_on: []
 branch: task/T01-zetamac-clone
 adrs: ["[[ADR-0001 Kanagawa Dragon theme]]", "[[ADR-0002 Static web app in Vite, TypeScript and React]]"]
