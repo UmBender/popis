@@ -1,8 +1,9 @@
 ---
 id: T01
 title: Clone do Zetamac
-status: todo
+status: in-progress
 depends_on: []
+branch: task/T01-zetamac-clone
 adrs: ["[[ADR-0001 Kanagawa Dragon theme]]", "[[ADR-0002 Static web app in Vite, TypeScript and React]]"]
 tags: [task]
 ---
@@ -17,32 +18,74 @@ partida cronometrada e tela de resultado. Também é o motor genérico
 
 ## Spec
 
-- **AC-0**: A infraestrutura de testes descrita no `AGENTS.md` existe:
-  `npm run check` (tsc, eslint, prettier, vitest, build) falha com
-  `.only`/`.skip`. Também existem `npm run test:e2e`, `npm run test:fuzz`
-  e `npm run coverage`, o teste de pureza (`tests/purity.test.ts`) e o RNG
-  com seed e o relógio injetável em `src/core/`.
+- **AC-0**: A infraestrutura de testes do `AGENTS.md` existe. `npm run check`
+  roda tsc, eslint, prettier, vitest e build. Também existem
+  `npm run test:e2e`, `npm run test:fuzz` e `npm run coverage`, e o RNG com
+  seed e o relógio injetável ficam em `src/core/`.
+  *Testes:* `tests/purity.test.ts` (sem `Math.random`/`Date.now`/
+  `performance.now`/`new Date()` fora de `src/core/rng.ts` e
+  `src/core/clock.ts`), `tests/focused.test.ts` (sem `.only`/`.skip` nos
+  testes), `src/core/rng.test.ts` e `src/core/rng.prop.test.ts`
+  (mesma seed → mesma sequência, inteiros dentro dos limites).
 - **AC-1**: Padrões iguais ao Zetamac: adição (2–100)+(2–100), subtração
   como adição invertida, multiplicação (2–12)×(2–100), divisão como
-  multiplicação invertida. Faixas e operações configuráveis.
+  multiplicação invertida. Faixas e operações configuráveis, com validação
+  (faixa invertida, nenhuma operação, divisão por zero).
+  *Testes:* `src/gen/arithmetic.test.ts`, `src/gen/arithmetic.prop.test.ts`
+  (para qualquer seed e configuração válida: operandos na faixa, divisão
+  exata, resposta canônica aceita, mesma seed → mesmo problema).
 - **AC-2**: Duração de 30, 60, 120 (padrão), 300 ou 600 s.
+  *Testes:* `src/session/engine.test.ts` ("session finishes exactly at the
+  duration"), `src/ui/App.test.tsx` ("config offers the five durations").
 - **AC-3**: A resposta é aceita sem Enter assim que fica correta, e a
   próxima questão aparece na hora. Placar = número de acertos.
-- **AC-4**: Cada questão registra o tempo de resposta e as tentativas erradas.
+  *Testes:* `src/session/engine.test.ts`, `src/ui/App.test.tsx`
+  ("correct answer advances without Enter"), `tests/e2e/zetamac.spec.ts`.
+- **AC-4**: Cada questão registra o tempo de resposta e as correções. Uma
+  correção é uma edição que encurta a resposta (apagar). O Zetamac não tem
+  envio, então não há "tentativa errada" para contar; apagar é o sinal de
+  que a pessoa errou e corrigiu. A questão em aberto no fim do tempo fica
+  registrada como `timeout`.
+  *Testes:* `src/session/engine.test.ts`.
 - **AC-5**: A tela de resultado mostra o placar, o tempo médio por operação
   e as questões mais lentas.
-- **AC-6**: O histórico de sessões persiste no `localStorage`.
+  *Testes:* `src/session/stats.test.ts`, `src/ui/App.test.tsx`
+  ("results show score, per-operation mean and slowest problems").
+- **AC-6**: O histórico de sessões e a última configuração persistem no
+  `localStorage`. Dados corrompidos não quebram o app.
+  *Testes:* `src/storage/history.test.ts`, `src/ui/App.test.tsx`
+  ("finished session is saved", "settings are remembered").
 - **AC-7**: Toda questão carrega a `seed` e os parâmetros que a geraram, e a
-  tela de resultado os mostra. É o que permite reproduzir um bug como
+  tela de resultado mostra a seed. É o que permite reproduzir um bug como
   teste de regressão.
+  *Testes:* `src/gen/arithmetic.test.ts` ("same seed and params give the
+  same problem"), `src/ui/App.test.tsx` ("results show the seed of slow
+  problems").
 - **AC-8**: A interface usa os tokens de [[Theme]], definidos só em
-  `src/ui/theme.css`. O teste `tests/colors.test.ts` falha com um literal
-  de cor em qualquer outro arquivo de `src/`
-  ([[ADR-0001 Kanagawa Dragon theme]]).
+  `src/ui/theme.css` ([[ADR-0001 Kanagawa Dragon theme]]).
+  *Testes:* `tests/colors.test.ts` (literal de cor fora de `theme.css`
+  falha; `theme.css` tem exatamente os tokens de [[Theme]]).
 
 ## Out of scope
 
 - Dificuldade adaptativa (vem depois, usando os dados do AC-4).
+- Pular questão na interface (o motor suporta; a T02 expõe).
 
+## Files owned
+
+- `package.json`, `package-lock.json`, `tsconfig.json`, `vite.config.ts`,
+  `vitest.config.ts`, `playwright.config.ts`, `eslint.config.js`,
+  `.prettierrc.json`, `.prettierignore`, `index.html`, `.gitignore`
+- `src/**`, `tests/**`
+
+## Subtasks (one commit each)
+
+- [ ] spec — `docs(T01): specify zetamac clone acceptance criteria`
+- [ ] scaffold — `chore(T01): scaffold vite, typescript and test tooling`
+- [ ] tests — `test(T01): add failing tests for zetamac clone`
+- [ ] models — `feat(T01): add problem, generator and session types`
+- [ ] behaviour — `feat(T01): implement zetamac clone`
+- [ ] quality — `chore(T01): pass lint, format and coverage`
+- [ ] docs — `docs(T01): record zetamac clone log`
 
 ## Log
