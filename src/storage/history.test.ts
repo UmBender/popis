@@ -14,7 +14,10 @@ import {
   SETTINGS_KEY,
   type KeyValueStore,
   type SessionRecord,
+  type StoredSettings,
 } from "./history";
+import { DIVISION_KINDS } from "../gen/division";
+import { MODE_IDS, MODES } from "../modes";
 
 function record(finishedAt: number): SessionRecord {
   const problem = arithmetic.generate(finishedAt, DEFAULT_ARITHMETIC);
@@ -94,23 +97,26 @@ describe("history", () => {
 });
 
 describe("settings", () => {
-  // T02 (AC-7) added `mode` and `factoring` to the stored settings.
-  it("defaults to arithmetic with the zetamac settings, factoring level 1 and 120 s", () => {
-    expect(DEFAULT_SETTINGS).toEqual({
-      mode: "arithmetic",
-      arithmetic: DEFAULT_ARITHMETIC,
-      factoring: { levels: [1] },
-      durationS: 120,
-    });
+  // T02 (AC-7) added `mode` and `factoring`; T04 (AC-3) added `division` and
+  // made each mode's defaults come from the mode registry.
+  it("defaults to arithmetic for 120 s, with each mode's registry defaults", () => {
+    expect(DEFAULT_SETTINGS.mode).toBe("arithmetic");
+    expect(DEFAULT_SETTINGS.durationS).toBe(120);
+    expect(DEFAULT_SETTINGS.arithmetic).toEqual(DEFAULT_ARITHMETIC);
+    expect(DEFAULT_SETTINGS.factoring).toEqual({ levels: [1] });
+    expect(DEFAULT_SETTINGS.division).toEqual({ kinds: DIVISION_KINDS });
+    for (const id of MODE_IDS) expect(DEFAULT_SETTINGS[id]).toEqual(MODES[id].defaults);
     expect(loadSettings(memoryStore())).toEqual(DEFAULT_SETTINGS);
   });
 
   it("round-trips saved settings", () => {
     const store = memoryStore();
-    const settings = {
-      mode: "factoring" as const,
-      arithmetic: { ...DEFAULT_ARITHMETIC, operations: ["mul" as const] },
-      factoring: { levels: [2, 4] as const },
+    const settings: StoredSettings = {
+      ...DEFAULT_SETTINGS,
+      mode: "division",
+      arithmetic: { ...DEFAULT_ARITHMETIC, operations: ["mul"] },
+      factoring: { levels: [2, 4] },
+      division: { kinds: ["floor", "ceil"] },
       durationS: 30,
     };
     saveSettings(store, settings);
@@ -120,12 +126,29 @@ describe("settings", () => {
   it("settings saved by T01 load with defaults for the new fields", () => {
     const arithmetic = { ...DEFAULT_ARITHMETIC, operations: ["add" as const] };
     const store = memoryStore({ [SETTINGS_KEY]: JSON.stringify({ arithmetic, durationS: 60 }) });
+    expect(loadSettings(store)).toEqual({ ...DEFAULT_SETTINGS, arithmetic, durationS: 60 });
+  });
+
+  it("settings saved by T02 load with the default division kinds", () => {
+    const saved = {
+      mode: "factoring",
+      arithmetic: DEFAULT_ARITHMETIC,
+      factoring: { levels: [3] },
+      durationS: 30,
+    };
+    const store = memoryStore({ [SETTINGS_KEY]: JSON.stringify(saved) });
     expect(loadSettings(store)).toEqual({
-      mode: "arithmetic",
-      arithmetic,
-      factoring: DEFAULT_FACTORING,
-      durationS: 60,
+      ...DEFAULT_SETTINGS,
+      ...saved,
+      factoring: { levels: [3] },
     });
+  });
+
+  it("invalid division kinds fall back to the defaults", () => {
+    const saved = { arithmetic: DEFAULT_ARITHMETIC, division: { kinds: ["pow"] }, durationS: 60 };
+    expect(loadSettings(memoryStore({ [SETTINGS_KEY]: JSON.stringify(saved) }))).toEqual(
+      DEFAULT_SETTINGS,
+    );
   });
 
   it("an unknown mode or invalid levels fall back to the defaults", () => {
