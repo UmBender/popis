@@ -4,7 +4,11 @@ import {
   type ArithmeticSettings,
 } from "../gen/arithmetic";
 import type { JsonValue } from "../core/problem";
-import { DEFAULT_FACTORING, type FactoringSettings } from "../gen/factoring";
+import {
+  DEFAULT_FACTORING,
+  parseFactoringSettings,
+  type FactoringSettings,
+} from "../gen/factoring";
 import { DEFAULT_DURATION_S, DURATIONS_S, type Attempt } from "../session/engine";
 
 export type Mode = "arithmetic" | "factoring";
@@ -104,15 +108,34 @@ export function appendSession(store: KeyValueStore, record: SessionRecord): void
   writeJson(store, HISTORY_KEY, history.slice(-MAX_SESSIONS));
 }
 
+/**
+ * Stored settings, or the defaults when anything stored is invalid. Fields
+ * added after T01 (`mode`, `factoring`) take their defaults when missing.
+ */
 export function loadSettings(store: KeyValueStore): StoredSettings {
   const value = readJson(store, SETTINGS_KEY);
   if (typeof value !== "object" || value === null) return DEFAULT_SETTINGS;
-  const { arithmetic, durationS } = value as { arithmetic?: unknown; durationS?: unknown };
-  const parsed = parseArithmeticSettings(arithmetic);
-  if (parsed === null || typeof durationS !== "number" || !DURATIONS_S.includes(durationS)) {
+  const stored = value as {
+    mode?: unknown;
+    arithmetic?: unknown;
+    factoring?: unknown;
+    durationS?: unknown;
+  };
+  const mode = stored.mode ?? DEFAULT_SETTINGS.mode;
+  const arithmetic = parseArithmeticSettings(stored.arithmetic);
+  const factoring =
+    stored.factoring === undefined ? DEFAULT_FACTORING : parseFactoringSettings(stored.factoring);
+  const { durationS } = stored;
+  if (
+    (mode !== "arithmetic" && mode !== "factoring") ||
+    arithmetic === null ||
+    factoring === null ||
+    typeof durationS !== "number" ||
+    !DURATIONS_S.includes(durationS)
+  ) {
     return DEFAULT_SETTINGS;
   }
-  return { ...DEFAULT_SETTINGS, arithmetic: parsed, durationS };
+  return { mode, arithmetic, factoring, durationS };
 }
 
 export function saveSettings(store: KeyValueStore, settings: StoredSettings): void {

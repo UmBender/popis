@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
+import type { Mode } from "../storage/history";
 import {
   remainingMs,
+  skipProblem,
   tick,
   typeAnswer,
   type FinishedSession,
@@ -17,11 +19,13 @@ const WARNING_S = 10;
 type Props<P> = {
   readonly initial: RunningSession<P>;
   readonly clock: Clock;
+  /** Factoring answers are text and can be skipped with Enter; arithmetic follows Zetamac. */
+  readonly mode: Mode;
   readonly onFinish: (session: FinishedSession<P>) => void;
   readonly onAbort: () => void;
 };
 
-export function GameScreen<P>({ initial, clock, onFinish, onAbort }: Props<P>): ReactNode {
+export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props<P>): ReactNode {
   const [session, setSession] = useState<RunningSession<P>>(initial);
   const [now, setNow] = useState(() => clock.now());
   // The latest state, read by the interval and event handlers. It changes only
@@ -50,6 +54,8 @@ export function GameScreen<P>({ initial, clock, onFinish, onAbort }: Props<P>): 
   }, [apply, clock]);
 
   const secondsLeft = Math.ceil(remainingMs(session, now) / 1000);
+  const factoring = mode === "factoring";
+  const last = session.log.at(-1);
 
   return (
     <div className="screen game">
@@ -73,21 +79,33 @@ export function GameScreen<P>({ initial, clock, onFinish, onAbort }: Props<P>): 
         </span>
         <span className="equals">=</span>
         <input
-          className="answer"
+          className={factoring ? "answer wide" : "answer"}
           aria-label="Resposta"
           autoFocus
           autoComplete="off"
-          inputMode="numeric"
+          spellCheck={false}
+          inputMode={factoring ? "text" : "numeric"}
           value={session.input}
           onChange={(e) => {
             apply(typeAnswer(latest.current, e.target.value, clock.now()));
           }}
           onKeyDown={(e) => {
             if (e.key === "Escape") onAbort();
+            if (e.key === "Enter" && factoring) {
+              e.preventDefault();
+              apply(skipProblem(latest.current, clock.now()));
+            }
           }}
         />
       </div>
-      <p className="muted hint">Esc volta para a configuração.</p>
+      {last?.outcome === "skipped" && (
+        <p data-testid="skipped" className="skipped">
+          Pulada: {last.problem.prompt} = {last.problem.answer}
+        </p>
+      )}
+      <p className="muted hint">
+        {factoring ? "Enter pula · Esc volta para a configuração." : "Esc volta para a configuração."}
+      </p>
     </div>
   );
 }
