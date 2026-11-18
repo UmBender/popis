@@ -59,6 +59,17 @@ describe("mode registry", () => {
     expect(() => MODES.review.generator.generate(1, { items: [item] })).toThrow(RangeError);
   });
 
+  it("sums is a skippable mode with a wide text answer", () => {
+    expect(MODE_IDS).toContain("sums");
+    expect(MODES.sums.label).toBe("Somatórios");
+    expect(MODES.sums.allowSkip).toBe(true);
+    expect(MODES.sums.numeric).toBe(false);
+    expect(MODES.sums.wide).toBe(true);
+    expect(MODES.sums.parseSettings({ kinds: ["loop", "loop"] })).toEqual({ kinds: ["loop"] });
+    expect(MODES.sums.parseSettings({ kinds: ["chess"] })).toBeNull();
+    expect(MODES.sums.validate({ kinds: [] })).toEqual(["no-kind"]);
+  });
+
   it("isMode accepts registry ids only", () => {
     expect(isMode("division")).toBe(true);
     expect(isMode("chess")).toBe(false);

@@ -24,6 +24,8 @@ const SKILL_LABELS: Readonly<Record<string, string>> = {
   "estimation.complexity": "Complexidade",
   "estimation.magnitude": "Ordem de grandeza",
   "estimation.overflow": "Overflow",
+  "sums.sum": "Somatório",
+  "sums.loop": "Laços",
 };
 
 /** The answer as shown to the player: "2) int64" for a multiple-choice one. */

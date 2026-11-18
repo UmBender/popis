@@ -9,6 +9,7 @@ import { algebra, type AlgebraSettings } from "../gen/algebra";
 import { division, DIVISION_KINDS, type DivisionSettings } from "../gen/division";
 import type { Problem } from "../core/problem";
 import { estimation, type EstimationSettings } from "../gen/estimation";
+import { sums, type SumsSettings } from "../gen/sums";
 import {
   HISTORY_KEY,
   loadHistory,
@@ -642,5 +643,51 @@ describe("estimation mode", () => {
     const skipped = screen.getByTestId("skipped").textContent;
     expect(skipped).toContain(first.prompt);
     expect(skipped).toContain(`${first.answer}) ${first.choices?.[Number(first.answer) - 1]}`);
+  });
+});
+
+describe("sums mode", () => {
+  const storeWithKinds = (sumsSettings: SumsSettings) =>
+    memoryStore({
+      [SETTINGS_KEY]: JSON.stringify({ mode: "sums", sums: sumsSettings, durationS: 30 }),
+    });
+  const nth = (settings: SumsSettings, i: number) => sums.generate(deriveSeed(SEED, i), settings);
+
+  it("sums mode lists its kinds", () => {
+    setup();
+    fireEvent.click(screen.getByRole("radio", { name: "Somatórios" }));
+    for (const name of [/^Somatório Σ/, /^Laços aninhados/]) {
+      expect(screen.getByRole<HTMLInputElement>("checkbox", { name }).checked).toBe(true);
+    }
+  });
+
+  it("sums settings are remembered", () => {
+    const saved = memoryStore();
+    setup(saved);
+    fireEvent.click(screen.getByRole("radio", { name: "Somatórios" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^Laços aninhados/ }));
+    start();
+    expect(loadSettings(saved).sums.kinds).toEqual(["sum"]);
+  });
+
+  it("sums mode accepts an equivalent closed form and skips with Enter", () => {
+    const onlySums: SumsSettings = { kinds: ["sum"] };
+    setup(storeWithKinds(onlySums));
+    start();
+    expect(prompt()).toBe(nth(onlySums, 0).prompt);
+    expect(screen.getByTestId("prompt").classList.contains("code")).toBe(false);
+    type(`2(${nth(onlySums, 0).answer})/2`);
+    expect(screen.getByTestId("score").textContent).toBe("1");
+    fireEvent.keyDown(answerBox(), { key: "Enter" });
+    expect(screen.getByTestId("skipped").textContent).toContain(nth(onlySums, 1).answer);
+  });
+
+  it("sums mode shows loop code on several lines", () => {
+    const onlyLoops: SumsSettings = { kinds: ["loop"] };
+    setup(storeWithKinds(onlyLoops));
+    start();
+    expect(prompt()).toBe(nth(onlyLoops, 0).prompt);
+    expect(prompt()).toContain("\n");
+    expect(screen.getByTestId("prompt").classList.contains("code")).toBe(true);
   });
 });

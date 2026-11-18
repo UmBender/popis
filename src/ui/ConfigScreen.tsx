@@ -5,6 +5,7 @@ import type { DivisionKind } from "../gen/division";
 import type { EstimationKind } from "../gen/estimation";
 import { LEVELS, type FactoringSettings, type Level } from "../gen/factoring";
 import type { KindSettings } from "../gen/kinds";
+import type { SumsKind } from "../gen/sums";
 import { MODE_IDS, MODES, type Mode } from "../modes";
 import { DURATIONS_S } from "../session/engine";
 import type { StoredSettings } from "../storage/history";
@@ -47,6 +48,15 @@ const ESTIMATION_OPTIONS: readonly KindOption<EstimationKind>[] = [
   { kind: "complexity", label: "Complexidade", example: "n ≤ 2·10⁵, 1 s → O(n log n)" },
   { kind: "magnitude", label: "Ordem de grandeza", example: "O(n²) com n = 3·10⁴ → 10⁹" },
   { kind: "overflow", label: "Overflow", example: "20! → int64" },
+];
+
+const SUMS_OPTIONS: readonly KindOption<SumsKind>[] = [
+  { kind: "sum", label: "Somatório Σ", example: "Σᵢ₌₁ⁿ i → n(n + 1)/2" },
+  {
+    kind: "loop",
+    label: "Laços aninhados",
+    example: "for i < n, for j < i: ops++ → (n² − n)/2",
+  },
 ];
 
 /** Error codes of the chosen mode's settings. */
@@ -137,6 +147,15 @@ export function ConfigScreen({ settings, reviewCount, onChange, onStart }: Props
           settings={settings.algebra}
           onChange={(algebra) => {
             onChange({ ...settings, algebra });
+          }}
+        />
+      )}
+      {settings.mode === "sums" && (
+        <KindFields
+          options={SUMS_OPTIONS}
+          settings={settings.sums}
+          onChange={(sums) => {
+            onChange({ ...settings, sums });
           }}
         />
       )}

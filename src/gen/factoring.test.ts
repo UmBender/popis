@@ -37,6 +37,13 @@ describe("check: monic quadratic", () => {
       expect(factoring.check(p, input)).toBe(false);
     },
   );
+
+  it.each(["(x-5)(x+3)/7", "(x-5)(x+3)/(-1)", "(x-5)(x+3)/2"])(
+    "check rejects the answer divided by a constant: %s",
+    (input) => {
+      expect(factoring.check(p, input)).toBe(false);
+    },
+  );
 });
 
 describe("check: common factor", () => {

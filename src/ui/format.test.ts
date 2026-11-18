@@ -22,6 +22,11 @@ describe("format", () => {
     expect(answerText({ ...base, answer: "-4" })).toBe("-4");
   });
 
+  it("skillLabel names the sums skills", () => {
+    expect(skillLabel("sums.sum")).toBe("Somatório");
+    expect(skillLabel("sums.loop")).toBe("Laços");
+  });
+
   it("seconds uses two decimals and a decimal comma", () => {
     expect(seconds(1500)).toBe("1,50 s");
     expect(seconds(0)).toBe("0,00 s");

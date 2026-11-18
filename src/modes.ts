@@ -29,6 +29,7 @@ import {
   validateReview,
   type ReviewSettings,
 } from "./gen/review";
+import { DEFAULT_SUMS, sums, SUMS_KINDS, type SumsSettings } from "./gen/sums";
 
 /** Settings of each mode; the stored settings keep one entry per mode id. */
 export type ModeSettings = {
@@ -37,6 +38,7 @@ export type ModeSettings = {
   division: DivisionSettings;
   algebra: AlgebraSettings;
   estimation: EstimationSettings;
+  sums: SumsSettings;
   review: ReviewSettings;
 };
 
@@ -126,6 +128,18 @@ export const MODES: { readonly [M in Mode]: ModeSpec<ModeSettings[M]> } = {
     wide: false,
     group: BY_TYPE,
   },
+  sums: {
+    label: "Somatórios",
+    hint: "Forma fechada em n de um somatório ou de quantas vezes ops++ roda, como n(n+1)/2. Enter pula a questão.",
+    generator: sums,
+    defaults: DEFAULT_SUMS,
+    parseSettings: (value) => parseKinds(value, SUMS_KINDS),
+    validate: validateKinds,
+    allowSkip: true,
+    numeric: false,
+    wide: true,
+    group: BY_TYPE,
+  },
   review: {
     label: "Revisar",
     hint: "Refaça as questões que você pulou, corrigiu ou demorou. Enter pula a questão.",
@@ -147,6 +161,7 @@ export const MODE_IDS: readonly Mode[] = [
   "division",
   "algebra",
   "estimation",
+  "sums",
   "review",
 ];
 
