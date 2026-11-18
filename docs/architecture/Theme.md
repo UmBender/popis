@@ -33,6 +33,12 @@ falha se aparecer um literal de cor em qualquer outro lugar de `src/`.
 ([[ADR-T03-1 The favicon uses theme tokens]]); `tests/favicon.test.ts`
 confere que eles são os desses dois tokens.
 
+O `index.html` aponta para `/favicon.svg?v=<hash>`, onde `<hash>` são os 8
+primeiros dígitos hexadecimais do SHA-256 do arquivo. Sem isso, o navegador
+continua mostrando o ícone antigo do cache. Ao mudar o ícone, atualize o
+`v`; o teste `tests/regressions/T03-favicon-cache.test.ts` falha e mostra o
+valor certo.
+
 ## Gráficos
 
 Séries de gráficos, nesta ordem: `#7fa8bc`, `#8aa86e`, `#ceb680`,
