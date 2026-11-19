@@ -42,15 +42,23 @@ function bare(ch: string): string {
   return ch.normalize("NFD").replace(/\p{M}/gu, "");
 }
 
-function sameLetter(target: string, typed: string, lenient: boolean): boolean {
+/** Whether `typed` matches the target letter; there is none past the word's end. */
+function sameLetter(target: string | undefined, typed: string, lenient: boolean): boolean {
+  if (target === undefined) return false;
   return target === typed || (lenient && bare(target) === bare(typed));
 }
 
-/** Whether `input` spells `target`, letter by letter. */
+/** Whether `input` spells `target`; inputs are NFC, so letters line up. */
 function spells(target: string, input: string, lenient: boolean): boolean {
-  const t = [...target];
-  const i = [...input];
-  return t.length === i.length && t.every((ch, k) => sameLetter(ch, i[k] ?? "", lenient));
+  return target === input || (lenient && bare(target) === bare(input));
+}
+
+/**
+ * Word `index`. Callers only ask for the current word of a running test,
+ * a word before it or a word of `wordView`, which are all in range.
+ */
+function wordOf(state: WordsState, index: number): string {
+  return state.words[index] as string;
 }
 
 function inputAt(state: WordsState, index: number): string {
@@ -64,7 +72,7 @@ function withInput(state: WordsState, input: string): WordsState {
 }
 
 function wordIsRight(state: WordsState, index: number): boolean {
-  return spells(state.words[index] ?? "", inputAt(state, index), state.lenient);
+  return spells(wordOf(state, index), inputAt(state, index), state.lenient);
 }
 
 export function startWords(words: readonly string[], options: WordsOptions): WordsState {
@@ -87,11 +95,11 @@ export function isWordsFinished(state: WordsState): boolean {
 }
 
 function typeLetter(state: WordsState, ch: string, now: number): WordsState {
-  const target = [...(state.words[state.current] ?? "")];
+  const target = [...wordOf(state, state.current)];
   const input = inputAt(state, state.current);
   const typed = [...input].length;
   if (typed >= target.length + MAX_EXTRA) return state;
-  const right = typed < target.length && sameLetter(target[typed] ?? "", ch, state.lenient);
+  const right = sameLetter(target[typed], ch, state.lenient);
   const next: WordsState = {
     ...withInput(state, input + ch),
     startedAt: state.startedAt ?? now,
@@ -201,9 +209,10 @@ export function wordsStats(state: WordsState): WordsStats {
   const counted = Math.min(state.current, state.words.length - 1);
   for (let i = 0; i <= counted; i++) {
     const submitted = i < state.current;
-    const target = [...(state.words[i] ?? "")];
+    const word = wordOf(state, i);
+    const target = [...word];
     const input = inputAt(state, i);
-    for (const letter of wordLetters(state.words[i] ?? "", input, state.lenient)) {
+    for (const letter of wordLetters(word, input, state.lenient)) {
       if (letter.mark === "correct") correct++;
       else if (letter.mark === "incorrect") incorrect++;
       else if (letter.mark === "extra") extra++;

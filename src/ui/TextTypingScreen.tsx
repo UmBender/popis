@@ -141,8 +141,8 @@ export function TextTypingScreen({ clock, store, newSeed, onBack }: Props): Reac
 
   // Touch keyboards may send deletes without a Backspace keydown.
   useEffect(() => {
-    const el = box.current;
-    if (el === null) return;
+    // The box is always rendered, so it is set once the effect runs.
+    const el = box.current as HTMLTextAreaElement;
     const onBeforeInput = (e: InputEvent) => {
       if (e.inputType === "deleteContentBackward") {
         e.preventDefault();
@@ -481,7 +481,7 @@ const Word = memo(function Word({
   return (
     <span className={classes.join(" ")} data-word={index} data-status={status}>
       {letters.map((ch, k) => {
-        const mark = MARKS_BY_CODE[marks.charAt(k)] ?? "pending";
+        const mark = MARKS_BY_CODE[marks.charAt(k)] as LetterMark;
         return (
           <span
             key={k}
