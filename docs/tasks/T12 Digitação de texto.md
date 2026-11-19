@@ -1,7 +1,7 @@
 ---
 id: T12
 title: Digitação de texto
-status: in-progress
+status: review
 depends_on: [T10]
 branch: task/T12-text-typing
 adrs: [ADR-T12-1]
@@ -119,17 +119,21 @@ por palavra. Decisões técnicas em
 - `src/ui/TextTypingScreen*.tsx`, `src/ui/App.tsx`, `src/ui/App.test.tsx`,
   `src/ui/ConfigScreen.tsx`, `src/ui/app.css`
 - `tests/e2e/text-typing.spec.ts`, `tests/e2e/mobile.spec.ts` (só o teste
-  da tela nova)
+  da tela nova), `tests/e2e/regression-T12-word-box-clip.spec.ts` (bug
+  achado na verificação visual, ver *Log*)
 - `vite.config.ts` (só limiares de cobertura)
 
 ## Subtasks (one commit each)
 
-- [ ] spec — `docs(T12): specify text typing acceptance criteria`
-- [ ] tests — `test(T12): add failing tests for text typing`
-- [ ] models — `feat(T12): add text typing types and stubs`
-- [ ] behaviour — `feat(T12): implement text typing`
-- [ ] quality — `chore(T12): …`
-- [ ] docs — `docs(T12): record text typing log`
+- [x] spec — `docs(T12): specify text typing acceptance criteria`
+- [x] tests — `test(T12): add failing tests for text typing`
+- [x] models — `feat(T12): add text typing types and stubs`
+- [x] behaviour — `feat(T12): implement text typing`
+- [x] quality — `chore(T12): pass lint, format and coverage ratchet`
+- [x] regressão — `test(T12): add regression test for words showing
+  through the padding`, `test(T12): measure the word box clip without
+  rounding`, `fix(T12): clip the word box at three whole lines`
+- [x] docs — `docs(T12): record text typing log`
 
 ## Log
 
@@ -189,3 +193,54 @@ por palavra. Decisões técnicas em
     `text-raw`, `text-accuracy`, `text-chars`, `text-time`,
     `text-config`, `text-seed` e `text-summary`, e cada palavra tem
     `data-word` para o e2e.
+- 2026-11-19 — **Complementos ao desenho** (sem mudar nenhum AC):
+  - `parseTextSettings` nunca devolve null: cada campo inválido vira o
+    padrão, e assim um campo novo no futuro não apaga os outros.
+  - `text.ts` ganhou `wordsFrom`, `initialWords`, `timeLimitMs`,
+    `textConfigLabel` (o texto de `text-config`), `TEXT_SOURCES` e
+    `TEXT_MODES`. `words.ts` ganhou `TEXT_LANGUAGE_LABELS`, e o motor
+    ganhou `wordLetters` e `MAX_EXTRA`.
+  - A tela tem um testid a mais, `text-progress`, com o tempo restante
+    ou o `12/50`.
+  - Taxas: 1 palavra em 10 vira número, e 1 em 4 ganha pontuação; a
+    vírgula e o ponto pesam o dobro dos outros sinais. O RNG de cada
+    palavra sorteia tudo sempre, então ligar uma opção só decora a
+    palavra que a seed já escolheu (teste de propriedade "options only
+    decorate the word the seed picks").
+- 2026-11-19 — **Métricas, casos de borda:** o WPM bruto conta o que
+  ficou digitado no fim (letras apagadas saem), como nos sites mais
+  usados. Quando o tempo acaba no meio de uma palavra, ela conta nos
+  caracteres e no bruto, mas não em "faltando", que só vale para palavras
+  enviadas. Espaço numa palavra vazia não conta como tecla. Um teste de
+  uma letra só, com tempo 0, dá WPM 0.
+- 2026-11-19 — **Dados:** as listas de 1000 palavras foram escritas num
+  script, deduplicadas e cortadas em 1000; ficam em `words.ts` como texto
+  quebrado por espaços, para o prettier não pôr uma palavra por linha.
+  São 23 frases em português e 22 em inglês, todas próprias ou provérbios
+  populares.
+- 2026-11-19 — **Tela:** as opções ficam abaixo do texto. Na primeira
+  versão ficavam acima, e o e2e do Pixel 7 mostrou as palavras abaixo da
+  metade da tela, onde o teclado as cobriria. Teclados de toque podem
+  apagar sem mandar `keydown` de Backspace, então a tela também ouve o
+  `beforeinput` nativo (`deleteContentBackward` e `deleteWordBackward`).
+  Isso foi testado no jsdom, mas **não num celular de verdade**.
+- 2026-11-19 — **Bug (verificação visual):** a caixa de palavras cortava
+  o conteúdo na borda do padding, e o padding de baixo mostrava o topo de
+  uma quarta linha. O teste
+  `tests/e2e/regression-T12-word-box-clip.spec.ts` foi commitado vermelho
+  (10 palavras parcialmente visíveis). A primeira versão do teste usava
+  `clientTop` e `clientHeight`, que arredondam para pixel inteiro, e
+  continuava acusando 0,08 px de sobreposição mesmo com a correção. Ele
+  foi corrigido em commit `test(T12)` próprio: lê as bordas do estilo
+  computado e tolera 1 px. Continua vermelho sem a correção. A correção
+  troca o padding vertical por bordas na cor `--surface`.
+- 2026-11-19 — **Cobertura:** os `?? ""` inalcançáveis do motor saíram,
+  e `src/typing/**` segue em 100%. O limiar de branches de `src/ui/**`
+  subiu de 96 para 97 (medido: 97,38%).
+- 2026-11-19 — **Gates no último commit:** `npm run check` verde (730
+  testes), `npm run coverage` sem `ERROR`, `npm run test:fuzz` verde e
+  `npm run test:e2e` verde (12 testes: palavras e tempo no Chromium, a
+  tela no Pixel 7 e a regressão).
+- 2026-11-19 — **Verificação manual para o dono:** fazer um teste num
+  celular de verdade, para confirmar o Backspace do teclado de toque, e
+  conferir se as taxas de pontuação e números parecem boas.

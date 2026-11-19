@@ -1,7 +1,7 @@
 ---
 id: ADR-T12-1
 title: Text typing is judged word by word
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-19
 task: T12
