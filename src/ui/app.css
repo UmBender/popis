@@ -399,7 +399,10 @@ th {
   gap: 0 0.6em;
   max-height: calc(3 * 1.6em + 1rem);
   overflow: hidden;
-  padding: 0.5rem 0.75rem;
+  /* A border, not padding: overflow clips at the padding edge, so a
+     fourth line would show through vertical padding. */
+  padding: 0 0.75rem;
+  border-block: 0.5rem solid var(--surface);
   background: var(--surface);
   border-radius: 4px;
   font-size: 1.4rem;
