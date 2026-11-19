@@ -137,6 +137,16 @@ describe("typing entry", () => {
   });
 });
 
+describe("text typing entry", () => {
+  it("config has a Texto button that opens the text typing screen and comes back", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: "Texto" }));
+    expect(screen.getByRole("textbox", { name: "Texto digitado" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(screen.getByRole("button", { name: "Começar" })).toBeTruthy();
+  });
+});
+
 describe("game screen", () => {
   it("starting shows a problem, the full time and a focused answer box", () => {
     setup();
