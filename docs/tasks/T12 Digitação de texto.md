@@ -139,3 +139,53 @@ por palavra. Decisões técnicas em
   português, lista de 200, modo tempo de 30 s, sem pontuação, sem números
   e com acentos exigidos. Tab recomeça o mesmo texto, como nos sites mais
   usados.
+- 2026-11-19 — **Passagem de bastão** (só o spec foi feito; o próximo passo
+  é `test(T12)`). Desenho combinado para os próximos passos:
+  - `src/typing/words.ts`: `TextLanguage = "pt" | "en"`, `TEXT_LANGUAGES`,
+    `ListSize = 200 | 1000`, `LIST_SIZES`, `WORDS: Record<TextLanguage,
+    readonly string[]>` (1000 cada) e `wordList(language, size)`. Escreva
+    as listas num script, deduplique e confira a contagem antes de emitir
+    o TS.
+  - `src/typing/quotes.ts`: `Quote = { id, language, text }` (ids
+    `pt-…`/`en-…`), `QUOTES`, `pickQuote(seed, language)`.
+  - `src/typing/text.ts`: `TextSettings = { source: "words" | "quote",
+    language, listSize, mode: "time" | "words", seconds: 15 | 30 | 60 |
+    120, wordCount: 10 | 25 | 50 | 100, punctuation, numbers,
+    lenientAccents }`, `DEFAULT_TEXT_SETTINGS` (pt, 200, tempo 30 s, tudo
+    desligado), `parseTextSettings(value)` e `wordAt(seed, settings, i)`.
+    O RNG de `deriveSeed(seed, i)` sorteia sempre na mesma ordem (palavra,
+    sorteio de número, dígitos, valor, sorteio de pontuação, sinal), e a
+    maiúscula depende do final da palavra `i − 1`, recalculado pelo RNG
+    dela. `textConfigKey(settings)` identifica a configuração no resumo.
+  - `src/typing/words-engine.ts`: `WordsState = { words, inputs,
+    current, lenient, timeLimitMs, startedAt, finishedAt, keystrokes,
+    correctKeystrokes }`, com `startWords(words, { lenient, timeLimitMs
+    })`, `typeWordsText(state, text, now)` (`" "` vale como espaço),
+    `pressSpace`, `backspaceWord`, `clearWord`, `tick(state, now)` (fim
+    em `startedAt + timeLimitMs`), `appendWords(state, more)`,
+    `isWordsFinished`, `wordView(state)` (letras com `correct`,
+    `incorrect`, `extra` ou `pending` e o estado de cada palavra) e
+    `wordsStats(state)` (`wpm`, `raw`, `accuracy`, `correct`,
+    `incorrect`, `extra`, `missed`, `timeMs`). No modo palavras, o espaço
+    na última palavra leva `current` para `words.length`; no modo tempo,
+    o espaço na última palavra gerada é ignorado, porque a tela mantém
+    pelo menos 40 palavras à frente. Só palavras enviadas contam como
+    `missed`.
+  - `src/storage/text-typing.ts`: chaves `popis.text-typing` (até 200) e
+    `popis.text-typing-settings`. O resultado é `{ version: 1, config,
+    seed, wpm, raw, accuracy, chars: { correct, incorrect, extra, missed
+    }, timeMs, finishedAt }`, e `textSummary(results, config)` devolve o
+    melhor e a média dos últimos 10.
+  - Tela: o botão da configuração se chama **"Texto"**, sem a palavra
+    "Digitação", porque o `getByRole` do Playwright casa nomes por
+    substring sem diferenciar maiúsculas, e "Digitação" já é o botão da
+    T10. As teclas chegam por um `<textarea>` invisível, como na T10
+    (composição para as teclas mortas), e o `keydown` trata Backspace,
+    Ctrl+Backspace, Tab (recomeça), Esc (outro texto) e Enter (ignorado).
+    O modo tempo usa `setInterval` de 100 ms chamando `tick`; nos testes,
+    use `vi.useFakeTimers()` com o relógio manual, como o `advance` de
+    `App.test.tsx`. Para não renderizar tudo a cada tecla, memoize por
+    palavra, como a T10 faz por linha. Os testids são `text-wpm`,
+    `text-raw`, `text-accuracy`, `text-chars`, `text-time`,
+    `text-config`, `text-seed` e `text-summary`, e cada palavra tem
+    `data-word` para o e2e.
