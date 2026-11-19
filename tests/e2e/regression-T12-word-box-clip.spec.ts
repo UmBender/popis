@@ -8,13 +8,20 @@ test.describe("regression T12 word-box-clip", () => {
     await page.getByRole("button", { name: "Texto", exact: true }).click();
     const partial = await page.getByTestId("text-words").evaluate((area) => {
       const box = area.getBoundingClientRect();
-      // Overflow clips at the padding edge, inside the borders.
-      const top = box.top + area.clientTop;
-      const bottom = top + area.clientHeight;
-      return [...area.querySelectorAll("[data-word]")]
-        .map((w) => w.getBoundingClientRect())
-        .filter((r) => r.top < bottom && r.bottom > top && (r.top < top || r.bottom > bottom))
-        .length;
+      // Overflow clips at the padding edge, inside the borders. The
+      // computed style keeps fractions that clientTop/clientHeight round.
+      const style = getComputedStyle(area);
+      const top = box.top + parseFloat(style.borderTopWidth);
+      const bottom = box.bottom - parseFloat(style.borderBottomWidth);
+      return (
+        [...area.querySelectorAll("[data-word]")]
+          .map((w) => w.getBoundingClientRect())
+          // Layout rounds line boxes to 1/64 px, so allow a pixel of slack.
+          .filter((r) => {
+            const shown = Math.min(r.bottom, bottom) - Math.max(r.top, top);
+            return shown > 1 && (r.top < top - 1 || r.bottom > bottom + 1);
+          }).length
+      );
     });
     expect(partial).toBe(0);
   });
