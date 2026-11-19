@@ -1,3 +1,4 @@
+import { createRng } from "../core/rng";
 import type { TextLanguage } from "./words";
 
 /** A short text for the quote test, written for the app or a popular proverb. */
@@ -242,7 +243,5 @@ export const QUOTES: readonly Quote[] = [
 
 /** A quote of `language`, the same for the same seed. */
 export function pickQuote(seed: number, language: TextLanguage): Quote {
-  void seed;
-  void language;
-  throw new Error("todo");
+  return createRng(seed).pick(QUOTES.filter((q) => q.language === language));
 }

@@ -84,6 +84,8 @@ type Props = {
   readonly onStart: () => void;
   /** Opens the code typing screen (T10). */
   readonly onTyping: () => void;
+  /** Opens the text typing screen (T12). */
+  readonly onText: () => void;
 };
 
 export function ConfigScreen({
@@ -92,6 +94,7 @@ export function ConfigScreen({
   onChange,
   onStart,
   onTyping,
+  onText,
 }: Props): ReactNode {
   const reviewing = settings.mode === "review";
   const errors = [
@@ -234,6 +237,9 @@ export function ConfigScreen({
         </button>
         <button type="button" className="typing-entry" onClick={onTyping}>
           Digitação
+        </button>
+        <button type="button" className="text-entry" onClick={onText}>
+          Texto
         </button>
       </div>
     </form>

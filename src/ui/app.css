@@ -367,3 +367,75 @@ th {
     display: none;
   }
 }
+
+/* Text typing (T12, ADR-T12-1) */
+
+.text-options {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+}
+
+.text-flags {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.text-progress {
+  margin: 0;
+  color: var(--accent);
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Three lines of words; the current one stays on the second. */
+.text-words {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.6em;
+  max-height: calc(3 * 1.6em + 1rem);
+  overflow: hidden;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface);
+  border-radius: 4px;
+  font-size: 1.4rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+
+.typing-area:focus-within .text-words {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.word {
+  white-space: nowrap;
+}
+
+.word-wrong {
+  text-decoration: underline var(--wrong);
+  text-underline-offset: 0.2em;
+}
+
+.letter-pending {
+  color: var(--muted);
+  opacity: 0.55;
+}
+
+.letter-correct {
+  color: var(--text);
+}
+
+.letter-incorrect,
+.letter-extra {
+  color: var(--wrong);
+}
+
+.cursor-after {
+  box-shadow: 2px 0 0 var(--accent);
+}

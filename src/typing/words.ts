@@ -203,7 +203,5 @@ export const WORDS: Readonly<Record<TextLanguage, readonly string[]>> = {
 
 /** The `size` most frequent words of `language`. */
 export function wordList(language: TextLanguage, size: ListSize): readonly string[] {
-  void language;
-  void size;
-  throw new Error("todo");
+  return WORDS[language].slice(0, size);
 }
