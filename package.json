@@ -17,6 +17,7 @@
     "test:e2e": "playwright test",
     "coverage": "vitest run --coverage",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run build",
+    "vim:oracle": "node scripts/vim-oracle.mjs",
     "build:pages": "vite build --base=/popis/"
   },
   "dependencies": {

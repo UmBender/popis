@@ -1,0 +1,110 @@
+import { describe, expect, it } from "vitest";
+import { systemClock } from "../core/clock";
+import { CORPUS } from "../typing/corpus";
+import { pressKey } from "./engine";
+import { parseKeys } from "./keys";
+import type { Level } from "./levels";
+import { optimalSolution } from "./optimal";
+import { createState, type Pos, type VimState } from "./state";
+
+// AC-5: the minimum number of keys to reach a target, and a sequence that does.
+
+function start(text: string, from: Pos): VimState {
+  return createState(text.split("\n"), from);
+}
+
+/** Types the keys and returns the final cursor, or null when a key is blocked. */
+function replay(state: VimState, keys: string, level: Level): Pos | null {
+  let s = state;
+  for (const key of parseKeys(keys)) {
+    const r = pressKey(s, key, level);
+    if (r.blocked !== null) return null;
+    s = r.state;
+  }
+  return s.pending.length === 0 ? s.cursor : null;
+}
+
+const WORDS = "ab ab ab ab ab ab";
+
+describe("optimalSolution", () => {
+  it("optimalSolution needs no keys when the cursor is on the target", () => {
+    const s = start("abc", { line: 0, col: 1 });
+    expect(optimalSolution(s, { line: 0, col: 1 }, 1)).toEqual({ keys: "", cost: 0 });
+  });
+
+  it("optimalSolution counts one key per step with only h j k l", () => {
+    const s = start("abc\ndef", { line: 0, col: 0 });
+    const target = { line: 1, col: 2 };
+    const solution = optimalSolution(s, target, 1);
+    expect(solution?.cost).toBe(3);
+    expect(replay(s, solution?.keys ?? "", 1)).toEqual(target);
+  });
+
+  it("optimalSolution prefers word motions on level 2", () => {
+    const s = start(WORDS, { line: 0, col: 0 });
+    expect(optimalSolution(s, { line: 0, col: 6 }, 2)?.cost).toBe(2);
+    expect(optimalSolution(s, { line: 0, col: 6 }, 1, 8)?.cost).toBe(6);
+  });
+
+  it("optimalSolution values a count at 2 keys on level 5", () => {
+    const s = start(WORDS, { line: 0, col: 0 });
+    const target = { line: 0, col: 12 };
+    expect(optimalSolution(s, target, 5)).toEqual({ keys: "4w", cost: 2 });
+    expect(optimalSolution(s, target, 4)?.cost).toBe(3);
+  });
+
+  it("optimalSolution uses f for a character on the line", () => {
+    const s = start("foo(bar, baz)", { line: 0, col: 0 });
+    expect(optimalSolution(s, { line: 0, col: 3 }, 4)).toEqual({ keys: "f(", cost: 2 });
+  });
+
+  it("optimalSolution uses * for the next occurrence of the word", () => {
+    const s = start("foo x foo", { line: 0, col: 0 });
+    const target = { line: 0, col: 6 };
+    expect(optimalSolution(s, target, 7)).toEqual({ keys: "*", cost: 1 });
+    expect(optimalSolution(s, target, 6)?.cost).toBe(2);
+  });
+
+  it("optimalSolution counts a search as slash, pattern and Enter", () => {
+    const lines = [...Array.from({ length: 11 }, () => "aaaaaaaaaaaa"), "aaaaaaaaaQaa"];
+    const s = createState(lines, { line: 0, col: 0 });
+    const target = { line: 11, col: 9 };
+    const solution = optimalSolution(s, target, 7, 3);
+    expect(solution?.cost).toBe(3);
+    expect(parseKeys(solution?.keys ?? "")).toHaveLength(3);
+    expect(replay(s, solution?.keys ?? "", 7)).toEqual(target);
+    expect(optimalSolution(s, target, 5, 3)).toBeNull();
+  });
+
+  it("optimalSolution returns null when the target needs more keys than allowed", () => {
+    const s = start("abcdefghij", { line: 0, col: 0 });
+    expect(optimalSolution(s, { line: 0, col: 9 }, 1, 5)).toBeNull();
+    expect(optimalSolution(s, { line: 0, col: 9 }, 1, 9)?.cost).toBe(9);
+  });
+
+  it("optimalSolution only uses keys the level allows", () => {
+    const s = start("foo(bar, baz)\nqux", { line: 0, col: 0 });
+    for (const level of [1, 2, 3, 4, 5, 6, 7] as const) {
+      const solution = optimalSolution(s, { line: 1, col: 1 }, level, 8);
+      expect(solution).not.toBeNull();
+      expect(replay(s, solution?.keys ?? "", level)).toEqual({ line: 1, col: 1 });
+    }
+  });
+
+  it("optimalSolution answers in under 50 ms on a corpus snippet, even without a solution", () => {
+    const snippets = CORPUS.filter((c) => c.text.split("\n").length <= 15).slice(0, 6);
+    expect(snippets.length).toBe(6);
+    for (const level of [4, 7] as const) {
+      for (const snippet of snippets) {
+        const lines = snippet.text.split("\n");
+        const s = createState(lines, { line: 0, col: 0 });
+        const last = lines.length - 1;
+        const target = { line: last, col: Math.floor((lines[last] ?? "").length / 2) };
+        optimalSolution(s, target, level, 4);
+        const before = systemClock.now();
+        optimalSolution(s, target, level, 4);
+        expect(systemClock.now() - before, `${snippet.id} level ${String(level)}`).toBeLessThan(50);
+      }
+    }
+  });
+});

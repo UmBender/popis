@@ -52,6 +52,13 @@ test("typing is hidden on touch screens", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Digitação" })).toBeHidden();
 });
 
+test("vim is hidden on touch screens", async ({ page }) => {
+  // T13 AC-10: the Vim drill needs a physical keyboard.
+  await page.goto("./");
+  await expect(page.getByRole("button", { name: "Começar" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Vim", exact: true })).toBeHidden();
+});
+
 test("text typing fits a phone", async ({ page }) => {
   // T12 AC-10: text typing stays visible on touch screens.
   await page.goto("./");

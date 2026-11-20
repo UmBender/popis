@@ -147,6 +147,16 @@ describe("text typing entry", () => {
   });
 });
 
+describe("vim entry", () => {
+  it("config has a Vim button that opens the Vim screen and comes back", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: "Vim" }));
+    expect(screen.getByRole("textbox", { name: "Teclas do Vim" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(screen.getByRole("button", { name: "Começar" })).toBeTruthy();
+  });
+});
+
 describe("game screen", () => {
   it("starting shows a problem, the full time and a focused answer box", () => {
     setup();
