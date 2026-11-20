@@ -156,25 +156,25 @@ describe("round", () => {
 
 describe("roundStats", () => {
   it("roundStats counts reached and skipped targets", () => {
-    const round = { results: [result(2, 2), result(4, 2, true), result(3, 3)] } as Round;
+    const round = { results: [result(2, 2), result(4, 2, true), result(3, 3)] };
     const stats = roundStats(round);
     expect(stats.reached).toBe(2);
     expect(stats.skipped).toBe(1);
   });
 
   it("roundStats averages the efficiency of the reached targets", () => {
-    const round = { results: [result(2, 2), result(4, 2), result(9, 1, true)] } as Round;
+    const round = { results: [result(2, 2), result(4, 2), result(9, 1, true)] };
     expect(roundStats(round).efficiency).toBeCloseTo(0.75);
   });
 
   it("roundStats gives zero efficiency when nothing was reached", () => {
-    expect(roundStats({ results: [] } as unknown as Round).efficiency).toBe(0);
-    expect(roundStats({ results: [result(1, 1, true)] } as Round).efficiency).toBe(0);
+    expect(roundStats({ results: [] }).efficiency).toBe(0);
+    expect(roundStats({ results: [result(1, 1, true)] }).efficiency).toBe(0);
   });
 
   it("roundStats lists the 3 reached targets with the worst efficiency first", () => {
     const results = [result(2, 2), result(8, 2), result(4, 2), result(6, 2), result(5, 2, true)];
-    const worst = roundStats({ results } as Round).worst;
+    const worst = roundStats({ results }).worst;
     expect(worst.map((r) => r.keys)).toEqual([8, 6, 4]);
   });
 
