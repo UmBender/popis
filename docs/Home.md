@@ -2,7 +2,10 @@
 tags: [moc]
 ---
 
-# popis — Home
+# POPIS — Home
+
+**POPIS — Practice Of Problem-solving In Sprints.** Rodadas curtas contra o
+relógio, com foco em programação competitiva.
 
 Treino rápido de cálculo mental, álgebra básica, lógica e visualização, no
 estilo flash cards: questões geradas por código, respondidas contra o

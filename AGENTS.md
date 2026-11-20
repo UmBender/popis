@@ -1,4 +1,4 @@
-# popis
+# popis — POPIS: Practice Of Problem-solving In Sprints
 
 Treino rápido de cálculo mental, álgebra básica, lógica e visualização. As
 questões são geradas por código e respondidas contra o relógio, e a
