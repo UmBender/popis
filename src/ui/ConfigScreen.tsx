@@ -86,6 +86,8 @@ type Props = {
   readonly onTyping: () => void;
   /** Opens the text typing screen (T12). */
   readonly onText: () => void;
+  /** Opens the Vim motion drill (T13). */
+  readonly onVim: () => void;
 };
 
 export function ConfigScreen({
@@ -95,6 +97,7 @@ export function ConfigScreen({
   onStart,
   onTyping,
   onText,
+  onVim,
 }: Props): ReactNode {
   const reviewing = settings.mode === "review";
   const errors = [
@@ -240,6 +243,9 @@ export function ConfigScreen({
         </button>
         <button type="button" className="text-entry" onClick={onText}>
           Texto
+        </button>
+        <button type="button" className="vim-entry" onClick={onVim}>
+          Vim
         </button>
       </div>
     </form>
