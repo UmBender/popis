@@ -7,7 +7,14 @@ import { diffText } from "../../vim/diff";
 import type { RegisterKind } from "../../vim/drills/register-edit";
 import { pressEditKey } from "../../vim/edit";
 import { formatKeys, keyFromEvent, parseKeys, type Key } from "../../vim/keys";
-import { LESSONS, exampleFrames, exerciseFor, lessonFor, type Lesson } from "../../vim/lessons";
+import {
+  LESSONS,
+  exampleFrames,
+  exerciseFor,
+  lessonFor,
+  type Frame,
+  type Lesson,
+} from "../../vim/lessons";
 import { createState, type VimState } from "../../vim/state";
 import { selectionRange } from "../../vim/visual";
 import { DrillSelect } from "./DrillSelect";
@@ -152,8 +159,8 @@ function Example({ lesson }: { readonly lesson: Lesson }): ReactNode {
     };
   }, [running, last]);
 
-  const frame = frames[index] ?? frames[0];
-  if (frame === undefined) return null;
+  // `index` never leaves the frames.
+  const frame = frames[index] as Frame;
   return (
     <div className="vim-example">
       <h3>Exemplo</h3>

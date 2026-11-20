@@ -114,6 +114,13 @@ describe("macros: running", () => {
     expect(state.lines[0]).toBe("x");
   });
 
+  it("a line break in a register is a line break in insert mode and j in normal mode", () => {
+    const state = run("ia\nb", '"ayyj@a');
+    expect(state.lines).toEqual(["ia", "a", "b"]);
+    expect(state.mode).toBe("insert");
+    expect(run("x\ny\nz", '"ayyj@a').cursor.line).toBe(2);
+  });
+
   it("the unnamed register is not the macro", () => {
     const state = run("abc", "yyqaxq");
     expect(getRegister(state, "0")?.lines).toEqual(["abc"]);

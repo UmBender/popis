@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pressEditKey } from "./edit";
+import { pressEditKey, registerView } from "./edit";
 import { parseKeys } from "./keys";
 import { getRegister, listRegisters, registersView } from "./registers";
 import { createState, type VimState } from "./state";
@@ -94,6 +94,55 @@ describe("registers: the register list", () => {
 
   it("is empty when nothing was copied", () => {
     expect(listRegisters(createState(["one"], { line: 0, col: 0 }))).toEqual([]);
+  });
+});
+
+describe("registers: block, control characters and the rest", () => {
+  it("a block yank has the block type and the width", () => {
+    const state = run("abc\ndef", "<C-v>jly");
+    expect(registersView(state)).toEqual({ "0": { reg: "ab\nde", regtype: "\x162" } });
+    expect(listRegisters(state)[0]).toEqual({ name: '"', type: "b", text: "ab^Jde" });
+    expect(registerView(state)).toEqual({ reg: "ab\nde", regtype: "\x162" });
+  });
+
+  it("a register with a delete character shows it as ^?", () => {
+    const state: VimState = {
+      ...createState(["a"], { line: 0, col: 0 }),
+      registers: { a: { lines: ["x\x7fy"], linewise: false } },
+    };
+    expect(listRegisters(state)).toEqual([{ name: "a", type: "c", text: "x^?y" }]);
+    expect(registersView(state)).toEqual({ a: { reg: "x\x7fy", regtype: "v" } });
+  });
+
+  it("a register of a block shows its type in the view", () => {
+    const state: VimState = {
+      ...createState(["a"], { line: 0, col: 0 }),
+      registers: { b: { lines: ["a", "b"], linewise: false, block: 1 } },
+    };
+    expect(registersView(state)).toEqual({ b: { reg: "a\nb", regtype: "\x161" } });
+  });
+
+  it("a motion typed after the register prefix in visual mode writes nothing", () => {
+    const state = run("abc", 'v"al');
+    expect(state.mode).toBe("visual");
+    expect(listRegisters(state)).toEqual([]);
+  });
+
+  it("an uppercase recording with nothing recorded changes nothing", () => {
+    expect(listRegisters(run("abc", "qaxqqAq"))).toEqual([
+      { name: '"', type: "c", text: "a" },
+      { name: "-", type: "c", text: "a" },
+      { name: "a", type: "c", text: "x" },
+    ]);
+  });
+
+  it("an uppercase recording into an empty register starts it", () => {
+    expect(listRegisters(run("abc", "qAxq")).map((l) => l.text)).toEqual(["a", "a", "x"]);
+  });
+
+  it("a text with a character outside the basic plane is pasted whole", () => {
+    const state = run("😀", 'yl$a<C-r>"<Esc>');
+    expect(state.lines).toEqual(["😀\ud83d"]);
   });
 });
 

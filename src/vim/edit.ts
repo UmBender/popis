@@ -444,11 +444,10 @@ function pasteRegister(state: VimState, session: Session, key: Key): VimState {
   if (register === null) return { ...state, session: waiting };
   let at: VimState = state;
   const typed: Key[] = [];
-  for (const ch of registerText(register)) {
+  // Code units, so every typed key is one character.
+  for (const ch of registerText(register).split("")) {
     const pressed = ch === "\n" ? "<CR>" : ch;
-    const next = insertKey(at, pressed);
-    if (next === null) continue;
-    at = next;
+    at = ch === "\n" ? insertBreak(at) : insertText(at, ch);
     typed.push(pressed);
   }
   return { ...at, session: { ...waiting, typed: [...session.typed, ...typed] } };
@@ -719,7 +718,7 @@ const REGISTER_ONE_MOTIONS = new Set<string>([..."%()`/?nN{}"]);
 type Write = { readonly kind: WriteKind; readonly one: boolean };
 
 /** What a command does to the registers: a copy, a delete, or nothing. */
-function writeOf(parsed: Parsed): Write | null {
+function writeOf(parsed: Extract<Parsed, { kind: "operator" | "command" }>): Write | null {
   if (parsed.kind === "operator") {
     if (parsed.op === "y") return { kind: "yank", one: false };
     if (parsed.op === ">" || parsed.op === "<") return null;
@@ -727,7 +726,6 @@ function writeOf(parsed: Parsed): Write | null {
       parsed.target.kind === "motion" && REGISTER_ONE_MOTIONS.has(parsed.target.motion.name);
     return { kind: "delete", one };
   }
-  if (parsed.kind !== "command") return null;
   if (parsed.name === "Y") return { kind: "yank", one: false };
   return "xXDCsS".includes(parsed.name) ? { kind: "delete", one: false } : null;
 }

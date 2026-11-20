@@ -56,6 +56,11 @@ describe("increment", () => {
     expect(run("0x0f", "<C-a>").lines).toEqual(["0x10"]);
   });
 
+  it("hexadecimal digits follow the case of the last letter", () => {
+    expect(run("0xFE", "<C-a>").lines).toEqual(["0xFF"]);
+    expect(run("0xfe", "<C-a>").lines).toEqual(["0xff"]);
+  });
+
   it("binary keeps the 0b and the width", () => {
     expect(run("0b011", "<C-a>").lines).toEqual(["0b100"]);
   });

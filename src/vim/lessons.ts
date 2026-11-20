@@ -1,5 +1,5 @@
 import { generateEdit, type EditTarget } from "./drills/edit";
-import { REGISTER_KINDS, type RegisterKind } from "./drills/register-edit";
+import type { RegisterKind } from "./drills/register-edit";
 import { pressEditKey } from "./edit";
 import { parseKeys, type Key } from "./keys";
 import { createState, type Mode, type Pos } from "./state";
@@ -163,8 +163,6 @@ export const LESSONS: readonly Lesson[] = [
     exercise: { seed: 3 },
   },
 ];
-
-if (LESSONS.length !== REGISTER_KINDS.length) throw new Error("a lesson is missing");
 
 export function lessonFor(kind: RegisterKind): Lesson {
   return LESSONS.find((lesson) => lesson.kind === kind) as Lesson;

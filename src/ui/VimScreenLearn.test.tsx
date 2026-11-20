@@ -7,7 +7,7 @@ import { VIM_EDIT_SETTINGS_KEY, loadVimEditSettings } from "../storage/vim";
 import { VIM_LEARN_KEY, loadUnlocked, unlockKind } from "../storage/vim-learn";
 import { EDIT_KIND_LABELS } from "../vim/drills/edit";
 import { REGISTER_KINDS } from "../vim/drills/register-edit";
-import { parseKeys } from "../vim/keys";
+import { formatKeys, parseKeys } from "../vim/keys";
 import { exampleFrames, exerciseFor, lessonFor } from "../vim/lessons";
 import { VimScreen } from "./VimScreen";
 
@@ -201,10 +201,141 @@ describe("VimScreen Learn mode", () => {
     });
   });
 
-  it("Voltar goes back from a lesson to the list", () => {
+  it("Lições goes back from a lesson to the list", () => {
     setup();
     open("number-lines");
     fireEvent.click(screen.getByRole("button", { name: "Lições" }));
     expect(screen.queryByTestId("learn-explanation")).toBeNull();
+  });
+});
+
+describe("VimScreen Learn mode controls", () => {
+  it("Voltar leaves the screen", () => {
+    const onBack = vi.fn();
+    const store = memoryStore();
+    store.setItem(VIM_EDIT_SETTINGS_KEY, JSON.stringify({ drill: "learn" }));
+    render(<VimScreen clock={clock} store={store} newSeed={() => 21} onBack={onBack} />);
+    fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("the Treino choice goes from Aprender to the other drills and is saved", () => {
+    const store = setup();
+    fireEvent.change(screen.getByRole("combobox", { name: "Treino" }), {
+      target: { value: "edit" },
+    });
+    expect(screen.getByTestId("vim-after")).toBeTruthy();
+    expect(loadVimEditSettings(store).drill).toBe("edit");
+    fireEvent.change(screen.getByRole("combobox", { name: "Treino" }), {
+      target: { value: "motion" },
+    });
+    expect(loadVimEditSettings(store).drill).toBe("motion");
+  });
+
+  it("keys typed as text, like composed or pasted ones, reach the exercise", () => {
+    setup();
+    open("number-lines");
+    const keys = parseKeys(exerciseFor(lessonFor("number-lines")).reference);
+    fireEvent.change(box(), { target: { value: "qa\n" } });
+    expect(screen.getByTestId("learn-next-key").textContent).toBe(keys[2]);
+    box().value = "yy";
+    fireEvent.compositionEnd(box());
+    expect(screen.getByTestId("learn-next-key").textContent).toBe(keys[4]);
+  });
+
+  it("keys that are still being composed wait for the composition to end", () => {
+    setup();
+    open("number-lines");
+    const keys = parseKeys(exerciseFor(lessonFor("number-lines")).reference);
+    fireEvent.input(box(), { target: { value: "q" }, isComposing: true });
+    fireEvent.keyDown(box(), { key: "q", isComposing: true });
+    expect(screen.getByTestId("learn-next-key").textContent).toBe(keys[0]);
+  });
+
+  it("a kind already in the saved kinds is not added twice", () => {
+    const store = memoryStore();
+    store.setItem(
+      VIM_EDIT_SETTINGS_KEY,
+      JSON.stringify({ drill: "learn", durationS: 60, kinds: ["delete-line", "number-lines"] }),
+    );
+    render(<VimScreen clock={clock} store={store} newSeed={() => 21} onBack={vi.fn()} />);
+    open("number-lines");
+    press(exerciseFor(lessonFor("number-lines")).reference);
+    expect(loadVimEditSettings(store).kinds).toEqual(["delete-line", "number-lines"]);
+  });
+
+  it("a click on the buffer focuses the key box again", () => {
+    setup();
+    open("number-lines");
+    box().blur();
+    fireEvent.click(screen.getByTestId("vim-code"));
+    expect(document.activeElement).toBe(box());
+  });
+
+  it("a dead key is left to the composition and moves nothing", () => {
+    setup();
+    open("number-lines");
+    const keys = parseKeys(exerciseFor(lessonFor("number-lines")).reference);
+    fireEvent.keyDown(box(), { key: "Dead" });
+    expect(screen.getByTestId("learn-next-key").textContent).toBe(keys[0]);
+  });
+
+  it("Recomeçar exercício puts the buffer and the highlight back", () => {
+    setup();
+    open("number-lines");
+    const edit = exerciseFor(lessonFor("number-lines"));
+    const keys = parseKeys(edit.reference);
+    press("qa");
+    expect(screen.getByTestId("vim-status").textContent).toContain("gravando @a");
+    fireEvent.click(screen.getByRole("button", { name: "Recomeçar exercício" }));
+    expect(screen.getByTestId("learn-next-key").textContent).toBe(keys[0]);
+    expect(screen.getByTestId("vim-status").textContent).not.toContain("gravando");
+    expect(screen.getByTestId("vim-code").textContent).toBe(edit.lines.join("\n"));
+  });
+
+  it("keys after the exercise is done change nothing", () => {
+    setup();
+    open("number-lines");
+    const edit = exerciseFor(lessonFor("number-lines"));
+    press(edit.reference);
+    press("dd");
+    expect(screen.getByTestId("vim-code").textContent).toBe(edit.after.join("\n"));
+  });
+
+  it("a lesson already done says so", () => {
+    const store = memoryStore();
+    unlockKind(store, "number-lines");
+    setup(store);
+    open("number-lines");
+    expect(screen.getByTestId("learn-was-done")).toBeTruthy();
+  });
+
+  it("Tocar after the end plays the example again", () => {
+    setup();
+    open("number-lines");
+    const keys = parseKeys(lessonFor("number-lines").example.keys);
+    advance(STEP_MS * (keys.length + 2));
+    expect(screen.getByTestId("learn-keys").textContent).toBe(formatKeys(keys));
+    fireEvent.click(screen.getByRole("button", { name: "Tocar" }));
+    expect(screen.getByTestId("learn-keys").textContent).toBe("");
+    advance(STEP_MS);
+    expect(screen.getByTestId("learn-keys").textContent).toBe(keys[0]);
+  });
+
+  it("a round with only locked register kinds falls back to the plain kinds", () => {
+    const store = memoryStore({
+      [VIM_EDIT_SETTINGS_KEY]: JSON.stringify({
+        drill: "edit",
+        durationS: 60,
+        kinds: ["number-lines"],
+      }),
+    });
+    render(<VimScreen clock={clock} store={store} newSeed={() => 21} onBack={vi.fn()} />);
+    expect(screen.getByTestId("vim-code").dataset["editIndex"]).toBe("0");
+    expect(
+      screen.getByRole<HTMLInputElement>("checkbox", {
+        name: EDIT_KIND_LABELS["number-lines"],
+      }).checked,
+    ).toBe(false);
   });
 });
