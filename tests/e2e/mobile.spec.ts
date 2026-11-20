@@ -39,6 +39,31 @@ async function openMenu(page: Page) {
   await page.getByRole("button", { name: "Menu" }).click();
 }
 
+test("the drawer opens and closes on a phone", async ({ page }) => {
+  // T18 AC-9 and AC-10.
+  await page.goto("./");
+  const button = page.getByRole("button", { name: "Menu" });
+  await expect(button).toHaveAttribute("aria-expanded", "false");
+  expect((await button.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
+  await expect(page.getByTestId("shell-path")).toContainText("aritmética");
+
+  await button.click();
+  const drawer = page.getByRole("dialog", { name: "Treinos" });
+  await expect(drawer).toBeVisible();
+  await expect(drawer).toHaveAttribute("aria-modal", "true");
+  await expectNoHorizontalScroll(page, "open drawer");
+  await expectTouchTargets(drawer.locator("label, button"), "drawer");
+
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+  await expect(button).toBeFocused();
+
+  await button.click();
+  await page.getByRole("radio", { name: "Primos", exact: true }).click();
+  await expect(drawer).toBeHidden();
+  await expect(page.getByTestId("shell-path")).toHaveText("popis/cp/primos");
+});
+
 test("the app served under /popis/ loads its script and favicon", async ({ page, request }) => {
   await page.goto("./");
   await expect(page.getByRole("button", { name: "Começar" })).toBeVisible();
