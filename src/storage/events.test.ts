@@ -147,16 +147,14 @@ describe("recordEvents", () => {
     expect(quotaNoticePending(store)).toBe(false);
     const day = (k: number) => NOW - (60 - k) * DAY_MS;
 
-    for (let k = 0; k < 30; k++) {
-      recordEvents(store, [event(day(k), 0), event(day(k), 1), event(day(k), 2)], NOW);
-    }
+    const batch = (k: number) => [0, 1, 2, 3, 4].map((i) => event(day(k), i));
+
+    for (let k = 0; k < 30; k++) recordEvents(store, batch(k), NOW);
     expect(quotaNoticePending(store)).toBe(true);
 
     clearQuotaNotice(store);
     expect(quotaNoticePending(store)).toBe(false);
-    for (let k = 30; k < 60; k++) {
-      recordEvents(store, [event(day(k), 0), event(day(k), 1), event(day(k), 2)], NOW);
-    }
+    for (let k = 30; k < 60; k++) recordEvents(store, batch(k), NOW);
     expect(quotaNoticePending(store)).toBe(false);
   });
 
