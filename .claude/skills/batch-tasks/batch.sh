@@ -13,8 +13,10 @@
 # Environment (all optional):
 #   BATCH_TASK_TIMEOUT   seconds per session attempt        (default 14400)
 #   BATCH_MAX_ATTEMPTS   failed attempts before giving up   (default 2)
-#   BATCH_MODEL          model of every session             (default sonnet)
-#   BATCH_EFFORT         effort level of every session      (default medium)
+#   BATCH_MODEL          default model of a session         (default sonnet)
+#   BATCH_EFFORT         default effort level of a session  (default medium)
+#                        A queue line can override both for its task:
+#                        `T18 after:T22 model=opus effort=high`.
 #   BATCH_LIMIT_WAIT     seconds between checks while a usage limit
 #                        lasts (no cap: waits until it is restored)
 #                                                           (default 900)
@@ -90,9 +92,22 @@ task_deps() { # space-separated ids from `depends_on: [T73, T74]`
     front "$1" depends_on | tr -d '[]' | tr ',' ' ' | xargs -n1 2>/dev/null | grep -E '^T[0-9]+' | xargs
 }
 
-queue() { # lines "ID BASE" of .batch/queue, comments and blanks skipped
+queue_lines() { # .batch/queue without comments and blanks
     grep -vE '^[[:space:]]*(#|$)' "$B/queue"
 }
+
+queue() { # lines "ID BASE" of .batch/queue (options after BASE dropped)
+    queue_lines | awk '{print $1, $2}'
+}
+
+task_opt() { # task_opt ID KEY → value of KEY=value on ID's queue line, if any
+    queue_lines | awk -v id="$1" -v k="$2" '$1 == id {
+        for (i = 3; i <= NF; i++) if (index($i, k "=") == 1) { print substr($i, length(k) + 2); exit }
+    }'
+}
+
+task_model() { local m; m=$(task_opt "$1" model); echo "${m:-$MODEL}"; }
+task_effort() { local e; e=$(task_opt "$1" effort); echo "${e:-$EFFORT}"; }
 
 in_queue() { queue | awk '{print $1}' | grep -qx "$1"; }
 
@@ -175,7 +190,8 @@ cmd_check() {
             in_queue "$dep" && continue
             [[ $(front "$dep" status) == done ]] || say WARN "$id: depends on $dep, which is not done and not in the queue"
         done
-        say ok "$id: $(get "$id" status), base $base"
+        case $(task_effort "$id") in low | medium | high | xhigh | max) ;; *) say FAIL "$id: bad effort '$(task_effort "$id")'" ;; esac
+        say ok "$id: $(get "$id" status), base $base, $(task_model "$id")/$(task_effort "$id")"
     done < <(queue)
     return $ok
 }
@@ -237,7 +253,7 @@ session() { # session ID BASE MODE(start|resume) REASON → exit code; output in
     mkdir -p "$B/logs" "$B/out"
     local -a common=(
         -p --output-format json
-        --model "$MODEL" --effort "$EFFORT"
+        --model "$(task_model "$id")" --effort "$(task_effort "$id")"
         --permission-mode dontAsk --permission-prompts none
         --settings "$B/settings.json"
         --disallowedTools AskUserQuestion
@@ -245,13 +261,13 @@ session() { # session ID BASE MODE(start|resume) REASON → exit code; output in
     )
     if [[ $mode == resume ]]; then
         sid=$(get "$id" session)
-        log "$id: session run $n, resuming session $sid ($reason)"
+        log "$id: session run $n ($(task_model "$id")/$(task_effort "$id")), resuming session $sid ($reason)"
         timeout --kill-after=60 "$TASK_TIMEOUT" "$CLAUDE_BIN" "${common[@]}" --resume "$sid" \
             "$(prompt_resume "$id" "$base" "$reason")" >"$out" 2>"$err" </dev/null
     else
         sid=$(uuidgen)
         set_state "$id" session "$sid"
-        log "$id: session run $n, new session $sid"
+        log "$id: session run $n ($(task_model "$id")/$(task_effort "$id")), new session $sid"
         timeout --kill-after=60 "$TASK_TIMEOUT" "$CLAUDE_BIN" "${common[@]}" --session-id "$sid" \
             "$(prompt_start "$id" "$base")" >"$out" 2>"$err" </dev/null
     fi

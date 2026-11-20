@@ -75,7 +75,13 @@ Do this with the owner present; it is the only time questions are allowed.
    - `.batch/plan.md` from `plan.template.md` (policies, prerequisites,
      order, one section per task with owner decisions, defaults, extra
      commands, block conditions, manual checks);
-   - `.batch/queue`: one line per task, `<ID> <base>`, in order;
+   - `.batch/queue`: one line per task, `<ID> <base>`, in order,
+     optionally followed by `model=<alias>` and `effort=<level>` for that
+     task (defaults: `BATCH_MODEL`/`BATCH_EFFORT`, sonnet/medium). Pick
+     them with the owner to spare the usage limit: the cheapest model and
+     effort that the task's risk allows (mechanical or content-heavy work
+     → sonnet medium; tricky logic → sonnet high; broad design judgment →
+     opus);
    - `.batch/settings.json`: `settings.template.json` plus the extra
      allow rules (narrow patterns, never `Bash(*)`); add `git merge` /
      `git push` rules only if the policies allow them, and remove the
