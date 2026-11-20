@@ -72,6 +72,8 @@ export type Session = {
   readonly change: Pick<Change, "count" | "keys">;
   /** Keys typed since the session started. */
   readonly typed: readonly Key[];
+  /** `<C-r>` was typed: the next key names a register to paste. */
+  readonly ctrlR?: boolean;
   /** The `.` after a visual command does not repeat it (ADR-T15-1). */
   readonly noRepeat?: boolean;
   /** A block insert (`I`, `A`, `$A`) to copy to the other rows on Esc. */

@@ -116,11 +116,20 @@ const asExpectation = (result, withRegs) => ({
   ...(withRegs ? { regs: Object.fromEntries(Object.entries(result.regs).sort()) } : {}),
 });
 
+/** JSON with the keys of every object sorted, so that key order never matters. */
+function canonical(value) {
+  return JSON.stringify(value, (_key, item) =>
+    item !== null && typeof item === "object" && !Array.isArray(item)
+      ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b)))
+      : item,
+  );
+}
+
 function disagrees(c, result) {
   const expect = c[4];
   if (result.mode !== "n") return true;
   if (!isEditCase(c)) return result.cursor[0] !== expect[0] || result.cursor[1] !== expect[1];
-  return JSON.stringify(asExpectation(result, isRegCase(c))) !== JSON.stringify(expect);
+  return canonical(asExpectation(result, isRegCase(c))) !== canonical(expect);
 }
 
 async function loadFiles() {

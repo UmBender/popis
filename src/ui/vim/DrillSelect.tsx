@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
+import type { VimDrill } from "../../storage/vim";
 
-/** The choice between the motion drill and the edit drill, shared by both screens. */
+/** The choice between the motion drill, the edit drill and Aprender, shared by the screens. */
 export function DrillSelect({
   value,
   onChange,
 }: {
-  readonly value: "motion" | "edit";
-  readonly onChange: (drill: "motion" | "edit") => void;
+  readonly value: VimDrill;
+  readonly onChange: (drill: VimDrill) => void;
 }): ReactNode {
   return (
     <>
@@ -15,11 +16,13 @@ export function DrillSelect({
         id="vim-drill"
         value={value}
         onChange={(e) => {
-          onChange(e.target.value === "edit" ? "edit" : "motion");
+          const chosen = e.target.value;
+          onChange(chosen === "edit" || chosen === "learn" ? chosen : "motion");
         }}
       >
         <option value="motion">Movimento</option>
         <option value="edit">Edição</option>
+        <option value="learn">Aprender</option>
       </select>
     </>
   );

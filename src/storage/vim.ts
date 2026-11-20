@@ -1,4 +1,4 @@
-import { EDIT_KINDS, type EditKind } from "../vim/drills/edit";
+import { ALL_EDIT_KINDS, EDIT_KINDS, type EditKind } from "../vim/drills/edit";
 import { LEVELS, type Level } from "../vim/levels";
 import { ROUND_DURATIONS_S } from "../vim/round";
 import type { KeyValueStore } from "./history";
@@ -34,8 +34,10 @@ export type VimSummary = { readonly best: number; readonly recentMean: number } 
 export const VIM_EDIT_SETTINGS_KEY = "popis.vim-edit-settings";
 
 /** Which drill the screen shows, and the options of the edit drill (ADR-T14-1). */
+export type VimDrill = "motion" | "edit" | "learn";
+
 export type VimEditSettings = {
-  readonly drill: "motion" | "edit";
+  readonly drill: VimDrill;
   readonly durationS: number;
   readonly kinds: readonly EditKind[];
 };
@@ -159,9 +161,10 @@ export function appendVimEditResult(store: KeyValueStore, result: VimEditResult)
 export function parseVimEditSettings(value: unknown): VimEditSettings {
   const raw = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
   const wanted = Array.isArray(raw["kinds"]) ? raw["kinds"] : [];
-  const kinds = EDIT_KINDS.filter((kind) => wanted.includes(kind));
+  const kinds = ALL_EDIT_KINDS.filter((kind) => wanted.includes(kind));
+  const drill = raw["drill"];
   return {
-    drill: raw["drill"] === "edit" || raw["drill"] === "motion" ? raw["drill"] : "motion",
+    drill: drill === "edit" || drill === "motion" || drill === "learn" ? drill : "motion",
     durationS: isDuration(raw["durationS"])
       ? raw["durationS"]
       : DEFAULT_VIM_EDIT_SETTINGS.durationS,
