@@ -101,8 +101,9 @@ describe("VimScreen registers", () => {
 
   it("the panel is hidden when the round has finished", () => {
     setup();
+    // The first key starts the clock; the timer exists only after that render.
+    press("l");
     act(() => {
-      press("l");
       clock.advance(61_000);
       vi.advanceTimersByTime(61_000);
     });
