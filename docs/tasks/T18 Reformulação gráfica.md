@@ -24,6 +24,17 @@ layout de **terminal/IDE**, coerente com o público que usa Vim:
 
 Tudo é navegável pelo teclado. As cores continuam as do Kanagawa Dragon.
 
+**Revisão do dono (2026-11-20, depois da T13–T17):** a tela ficou poluída e
+os seletores principais estão no pé da página (os botões "Digitação",
+"Texto" e "Vim" embaixo do formulário; o "Treino" do Vim embaixo de tudo,
+inclusive no Aprender). Esta task passa a exigir:
+- um **menu lateral recolhível** que também funcione no celular (gaveta);
+- as **opções sempre em cima**, logo abaixo da descrição do item;
+- nenhum seletor de tela no pé da página.
+
+A auditoria completa de incoerências está na [[T19 Coerência da
+interface]]. A T18 resolve o layout, e a T19 resolve o resto da lista.
+
 ## Spec (rascunho; o passo de spec nomeia os testes)
 
 Decisões do dono (2026-11-20): estilo terminal/IDE; manter a paleta
@@ -59,10 +70,14 @@ muda.
   | CP | Divisão inteira, Estimativa, Primos |
   | Treino | Revisar (com a contagem) |
   | Digitação | Código, Texto |
-  | Vim | os treinos das T13–T16 |
+  | Vim | Aprender, Movimento, Edição |
 
   Um teste garante que todo modo de `MODES` e toda tela aparecem uma vez.
   Pastas abertas e fechadas ficam salvas.
+
+  O seletor "Treino" do Vim (`src/ui/vim/DrillSelect.tsx`) some: cada
+  treino é um item da árvore. O mesmo vale para os botões "Digitação",
+  "Texto" e "Vim" do rodapé da configuração.
 - **AC-3**: **Teclado em primeiro lugar:**
   - fora de um campo de texto: `j`/`k` e as setas movem na árvore,
     `h`/`l` fecham e abrem pastas, `1`–`9` pulam para o item com esse
@@ -76,8 +91,18 @@ muda.
     capturadas;
   - o foco é sempre visível (contorno em `--accent`), e a ordem de Tab
     segue a ordem visual.
-- **AC-4**: **Painel do item:**
-  - o título em `--text-xl` e a descrição de uma linha em `--muted`;
+- **AC-4**: **Painel do item**, sempre nesta ordem, de cima para baixo,
+  em todas as telas (inclusive Digitação, Texto e os três treinos de
+  Vim):
+  1. o título em `--text-xl` e a descrição de uma linha em `--muted`;
+  2. as opções;
+  3. a área do treino (caixa de código, texto ou exercício);
+  4. o histórico;
+  5. os painéis de referência ("Comandos", "Registradores", "Tipos de
+     edição"), fechados por padrão (`<details>`), com o estado salvo.
+
+  Um teste de componente confere essa ordem no DOM para cada item da
+  árvore. Detalhes do painel:
   - as opções numa grade rótulo/valor (as caixas de seleção aparecem como
     `[x]`/`[ ]`, mas continuam `input type="checkbox"`);
   - "Últimas 10 rodadas", com uma minibarra de caracteres de bloco e o
@@ -117,20 +142,37 @@ muda.
 - **AC-8**: **Acessibilidade e compatibilidade dos testes:**
   - os itens da árvore são um grupo de rádio (`role="radio"`) com os
     mesmos nomes acessíveis de hoje;
-  - os botões "Começar", "Digitação", "Texto", "Vim", "Voltar",
-    "Próximo" e "Configurar" mantêm os nomes, ou ganham equivalentes
-    registrados;
+  - os botões "Começar", "Voltar", "Próximo" e "Configurar" mantêm os
+    nomes, ou ganham equivalentes registrados. "Digitação", "Texto" e
+    "Vim" deixam de ser botões e viram itens da árvore; os testes que os
+    clicavam passam a escolher o item (commit `test(T18)` próprio);
   - os testes existentes passam sem mudança. Se um seletor precisar
     mudar, a mudança vai num commit `test(T18)` próprio, explicada no
     *Log*, sem tirar nenhuma asserção.
-- **AC-9**: **Celular** (Pixel 7):
-  - a árvore vira a linha "▾ Item … trocar" (44px), que abre a árvore
-    inteira;
+- **AC-9**: **Menu lateral recolhível:**
+  - no desktop, um botão `☰` na barra de caminho e a tecla `m` (fora de
+    um campo) recolhem e abrem a árvore. Recolhida, a árvore some e o
+    painel ocupa a largura toda. O estado fica salvo;
+  - abaixo de 48rem de largura, a árvore vira uma **gaveta** que entra
+    pela esquerda por cima do painel, com um fundo que escurece o resto
+    (`--bg` com opacidade, sem cor nova). Ela abre pelo `☰` (alvo de
+    44px) e fecha ao escolher um item, com Esc, com um toque fora dela ou
+    com o `☰` de novo;
+  - enquanto aberta, a gaveta prende o foco (`role="dialog"`,
+    `aria-modal="true"`), e ao fechar o foco volta para o `☰`;
+  - o botão tem `aria-expanded` e `aria-controls`;
+  - a animação de entrada some com `prefers-reduced-motion`.
+
+  *Testes:* componente (abrir, fechar, foco, estado salvo) e
+  `tests/e2e/mobile.spec.ts` (gaveta no Pixel 7).
+- **AC-10**: **Celular** (Pixel 7):
+  - a barra de caminho mostra o `☰` e o item atual; não há seletor de
+    tela em nenhum outro lugar;
   - continuam valendo: nenhuma rolagem horizontal, alvos de toque de pelo
     menos 44px, e a pergunta, o campo de resposta e a fila de vereditos
     na metade de cima (`tests/e2e/mobile.spec.ts`);
   - Digitação de código e Vim continuam escondidos no toque.
-- **AC-10**: **Verificação visual:** capturas de menu, partida e
+- **AC-11**: **Verificação visual:** capturas de menu, partida e
   resultado, no desktop (1280×800) e no Pixel 7, comparadas com as de
   `docs/architecture/shell/`. As diferenças são corrigidas ou explicadas
   no *Log*.
@@ -138,9 +180,13 @@ muda.
   - `j`, `j` e Enter começam o terceiro item;
   - Esc volta;
   - `?` abre a ajuda.
-- **AC-11**: **ADR-T18-1** registra o layout de janela de editor, a
-  navegação por teclado e os vereditos, citando o ADR-0001 (cores
-  mantidas), e [[Shell]] passa para `status: accepted`.
+  As capturas também cobrem a árvore recolhida no desktop e a gaveta
+  aberta no celular, e o protótipo em `docs/architecture/shell/` é
+  atualizado com esses dois estados antes do código (passo de spec).
+- **AC-12**: **ADR-T18-1** registra o layout de janela de editor, o menu
+  recolhível e a gaveta, a ordem fixa do painel, a navegação por teclado
+  e os vereditos, citando o ADR-0001 (cores mantidas), e [[Shell]] passa
+  para `status: accepted`.
 
 ## Out of scope
 

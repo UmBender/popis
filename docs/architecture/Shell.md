@@ -76,9 +76,16 @@ estilo ICPC.
   - três números com rótulo embaixo: tentativas erradas, puladas e seu
     recorde;
   - o placar tem uma linha por tipo de questão e uma célula por questão.
+- **Menu recolhível** (revisão de 2026-11-20): um `☰` na barra de caminho
+  (e a tecla `m`) recolhe a árvore no desktop; o painel ocupa a largura
+  toda.
+- **Ordem do painel**, igual em todas as telas: título e descrição,
+  opções, área do treino, histórico, e só então os painéis de referência,
+  fechados por padrão. Nada de seletor no pé da página.
 - **Celular:**
-  - a árvore vira uma linha "▾ Aritmética … trocar", com 44px de altura,
-    abaixo do caminho;
+  - a árvore vira uma gaveta que entra pela esquerda, aberta pelo `☰`
+    (44px) na barra de caminho, e fecha ao escolher um item, com Esc ou
+    com um toque fora;
   - na partida, a fila de vereditos fica logo abaixo do campo de
     resposta, porque o teclado cobre a metade de baixo.
 
