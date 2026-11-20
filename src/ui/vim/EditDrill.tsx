@@ -144,10 +144,12 @@ export function EditDrill({
   };
 
   const toggleKind = (kind: EditKind, on: boolean) => {
-    const kinds = EDIT_KINDS.filter((k) =>
-      k === kind ? on : latest.current.settings.kinds.includes(k),
-    );
-    if (kinds.length > 0) change({ kinds });
+    // The last kind left on has its checkbox disabled, so the list is never empty.
+    change({
+      kinds: EDIT_KINDS.filter((k) =>
+        k === kind ? on : latest.current.settings.kinds.includes(k),
+      ),
+    });
   };
 
   const { target, vim } = round;

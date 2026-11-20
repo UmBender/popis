@@ -1,7 +1,16 @@
 import type { Key } from "./keys";
 import { endWord, fwdWord, runMotion, wordWalk, type Command, type SimpleName } from "./motions";
-import type { Change, FindKind, Pos, Register, Snapshot, UndoStep, VimState } from "./state";
-import { TEXT_OBJECTS, textObject } from "./textobjects";
+import type {
+  Change,
+  FindKind,
+  Pos,
+  Register,
+  Session,
+  Snapshot,
+  UndoStep,
+  VimState,
+} from "./state";
+import { TEXT_OBJECTS, textObjectAt } from "./textobjects";
 
 /** The text `getreg('"')` gives: "a\nb" for characters, "a\n" for lines. */
 export function registerText(register: Register): string {
@@ -72,8 +81,8 @@ function readCount(keys: readonly Key[], from: number): { count: number | null; 
 }
 
 function parseMotion(keys: readonly Key[], i: number): Motion | Parsed {
-  const key = keys[i];
-  if (key === undefined) return WAIT;
+  // The caller checked that a key is there.
+  const key = keys[i] as Key;
   if (SIMPLE_MOTIONS.has(key)) return { name: key, keys: [key] };
   if (FIND_KEYS.has(key)) {
     const char = keys[i + 1];
@@ -208,6 +217,8 @@ type Range = {
   readonly end: Pos;
   readonly inclusive: boolean;
   readonly linewise: boolean;
+  /** The range comes from a text object. */
+  readonly object?: boolean;
 };
 
 /** Only blanks lie before the position (Vim's inindent(0) at the start of a range). */
@@ -338,10 +349,12 @@ function operatorRange(state: VimState, op: Op, count: number | null, target: Ta
     return { range: { start: cursor, end, inclusive: false, linewise: true }, base: state };
   }
   if (target.kind === "object") {
-    const hit = textObject(lines, cursor, target.object, count ?? 1);
-    if (hit === null) return { range: null, base: state };
+    const found = textObjectAt(lines, cursor, target.object, count ?? 1);
+    const hit = found.range;
+    if (hit === null)
+      return { range: null, base: withCursor(state, found.cursor.line, found.cursor.col) };
     const { start, end, inclusive } = hit;
-    return { range: { start, end, inclusive, linewise: false }, base: state };
+    return { range: { start, end, inclusive, linewise: false, object: true }, base: state };
   }
   return motionRange(state, op, count, target.motion);
 }
@@ -425,15 +438,17 @@ function applyOperator(
     if (linewise) {
       const next = deleteLines(lines, start.line, end.line);
       const line = Math.min(start.line, next.length - 1);
-      // With 'nostartofline' the cursor keeps its wanted column.
+      // With 'nostartofline' the cursor keeps its wanted column; a text object
+      // that became whole lines puts it on the first non-blank, as Neovim does.
+      const col = found.object === true ? firstNonBlank(next[line] as string) : state.curswant;
       const moved = withCursor(
         { ...state, lines: next, register: rangeText(lines, range) },
         line,
-        state.curswant,
+        col,
       );
       return withUndo(state, snapshot(state, start), {
         ...moved,
-        curswant: state.curswant,
+        curswant: found.object === true ? moved.cursor.col : state.curswant,
         lastChange: change,
       });
     }
@@ -561,8 +576,8 @@ function startInsert(
 }
 
 function pressInsert(state: VimState, key: Key): VimState {
-  const session = state.session;
-  if (session === null) return { ...state, mode: "normal" };
+  // Insert mode always has its session.
+  const session = state.session as Session;
   if (key !== "<Esc>") {
     const next = insertKey(state, key);
     if (next === null) return state;
@@ -572,7 +587,8 @@ function pressInsert(state: VimState, key: Key): VimState {
   let at = state;
   for (let left = session.count; left > 1; left--) {
     if (session.opened !== "here") at = openLine(at, true);
-    for (const typed of session.typed) at = insertKey(at, typed) ?? at;
+    // The typed keys were all accepted the first time.
+    for (const typed of session.typed) at = insertKey(at, typed) as VimState;
   }
   const { line, col } = at.cursor;
   const cursor = normalCursor(at.lines, line, col > 0 ? col - 1 : 0);
@@ -673,28 +689,13 @@ function toggleChars(state: VimState, count: number | null): VimState {
 /** Where undo and redo leave the cursor (Vim's u_undoredo()). */
 function afterUndo(state: VimState, target: Snapshot, saved: Pos): VimState {
   const lines = target.lines;
-  const current = state.lines;
-  // The changed block: what differs between the buffers, from the top and from the bottom.
-  const shortest = Math.min(lines.length, current.length);
-  let above = 0;
-  while (above < shortest && lines[above] === current[above]) above++;
-  let below = 0;
-  while (
-    below < shortest - above &&
-    lines[lines.length - 1 - below] === current[current.length - 1 - below]
-  ) {
-    below++;
-  }
-  const size = lines.length - above - below;
-  // The saved cursor stays when it lies in or next to the block, else the first changed line.
-  let line = saved.line >= above - 1 && saved.line <= above + size ? saved.line : above;
-  if (saved.line + 1 === line && line > 0) line--;
   const base = { ...state, lines };
-  if (line >= lines.length) {
+  // Every command saves the cursor in or next to the lines it changes, so
+  // Vim puts the cursor back where it was; a redo can leave that line behind.
+  if (saved.line >= lines.length) {
     return { ...base, cursor: { line: lines.length - 1, col: 0 }, curswant: 0 };
   }
-  // Another line than the one saved: the wanted column, as with 'nostartofline'.
-  return withCursor(base, line, saved.line === line ? saved.col : state.curswant);
+  return withCursor(base, saved.line, saved.col);
 }
 
 function undo(state: VimState, count: number | null): VimState {

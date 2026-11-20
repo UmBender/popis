@@ -75,16 +75,18 @@ function currentWord(
   count: number,
   include: boolean,
   big: boolean,
-): TextRange | null {
+): WordResult {
   const pos: Mut = { ...cursor };
   const w = walker(lines, pos, big);
+  // Vim leaves the cursor where the search for the word ended, even when it fails.
+  const fail = (): WordResult => ({ range: null, cursor: { ...pos } });
   backInLine(w);
   let start: Pos = { ...pos };
   const startPos = start;
   let inclusive = true;
   let includeWhite = false;
   if ((classOf(w) === 0) === include) {
-    if (!endWord(w, 1, true, true)) return null;
+    if (!endWord(w, 1, true, true)) return fail();
   } else {
     fwdWord(w, 1, true);
     if (pos.col === 0) decl(w);
@@ -93,16 +95,17 @@ function currentWord(
   }
   for (let left = count - 1; left > 0; left--) {
     inclusive = true;
-    if (incl(w) === -1) return null;
+    if (incl(w) === -1) return fail();
     if (include !== (classOf(w) === 0)) {
-      if (!fwdWord(w, 1, true) && left > 1) return null;
+      if (!fwdWord(w, 1, true) && left > 1) return fail();
       // At the start of a line, the blank before it is the end.
       if (!oneleft(w)) inclusive = false;
     } else if (!endWord(w, 1, true, true)) {
-      return null;
+      return fail();
     }
   }
-  if (includeWhite && (classOf(w) !== 0 || (pos.col === 0 && !inclusive))) {
+  // (`!inclusive` means the last object ended in column 0.)
+  if (includeWhite && (classOf(w) !== 0 || !inclusive)) {
     // No blank at the end: take the blank before the word instead, but not the indent.
     const end: Pos = { ...pos };
     set(pos, startPos);
@@ -112,7 +115,7 @@ function currentWord(
     }
     set(pos, end);
   }
-  return { start, end: { ...pos }, inclusive };
+  return { range: { start, end: { ...pos }, inclusive }, cursor: { ...pos } };
 }
 
 const PAIRS: Readonly<Record<string, string>> = { "(": ")", "{": "}", "[": "]", "<": ">" };
@@ -228,9 +231,8 @@ function currentQuote(
     colStart = 0;
     for (;;) {
       colStart = findNextQuote(line, colStart, quote, false);
-      if (colStart < 0 || colStart > first) return null;
       colEnd = findNextQuote(line, colStart + 1, quote, true);
-      if (colEnd < 0) return null;
+      if (colStart < 0 || colEnd < 0) return null;
       if (colStart <= first && first <= colEnd) break;
       colStart = colEnd + 1;
     }
@@ -264,31 +266,39 @@ function currentQuote(
   return { start, end, inclusive };
 }
 
+/** A text object, and where Vim leaves the cursor when it fails to find one. */
+export type WordResult = { readonly range: TextRange | null; readonly cursor: Pos };
+
 /**
- * The text object `object` ("iw", "a(", 'i"') around `cursor`, or null when
- * there is none. Ports of Vim's current_word(), current_block() and
- * current_quote().
+ * The text object `object` ("iw", "a(", 'i"') around `cursor`. Ports of Vim's
+ * current_word(), current_block() and current_quote(). A word object that
+ * fails still moves the cursor, as in Vim; the others leave it.
  */
+export function textObjectAt(
+  lines: readonly string[],
+  cursor: Pos,
+  object: string,
+  count: number,
+): WordResult {
+  const include = object.startsWith("a");
+  const key = object.slice(1);
+  if (key === "w" || key === "W") return currentWord(lines, cursor, count, include, key === "W");
+  if (key === '"' || key === "'" || key === "`") {
+    return { range: currentQuote(lines, cursor, count, include, key), cursor };
+  }
+  const opener = blockOpener(key);
+  return {
+    range: opener === null ? null : currentBlock(lines, cursor, count, include, opener),
+    cursor,
+  };
+}
+
+/** The text object `object` around `cursor`, or null when there is none. */
 export function textObject(
   lines: readonly string[],
   cursor: Pos,
   object: string,
   count: number,
 ): TextRange | null {
-  const include = object.startsWith("a");
-  const key = object.slice(1);
-  switch (key) {
-    case "w":
-      return currentWord(lines, cursor, count, include, false);
-    case "W":
-      return currentWord(lines, cursor, count, include, true);
-    case '"':
-    case "'":
-    case "`":
-      return currentQuote(lines, cursor, count, include, key);
-    default: {
-      const opener = blockOpener(key);
-      return opener === null ? null : currentBlock(lines, cursor, count, include, opener);
-    }
-  }
+  return textObjectAt(lines, cursor, object, count).range;
 }

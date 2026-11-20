@@ -1,4 +1,4 @@
-import { createRng, deriveSeed, type Rng } from "../../core/rng";
+import { createRng, deriveSeed, retry, type Rng } from "../../core/rng";
 import { CORPUS, type Language } from "../../typing/corpus";
 import { parseKeys } from "../keys";
 import type { Pos } from "../state";
@@ -152,9 +152,7 @@ function changeQuotes(rng: Rng, lines: readonly string[]): Draft | null {
 const BUILDERS: Readonly<Record<EditKind, Builder>> = {
   "delete-word": (rng, lines) => {
     // A word followed by blanks and more text: dw takes the word and the blanks.
-    const hits = findAll(lines, /(?<!\w)[A-Za-z_]\w*( +)(?=\S)/);
-    if (hits.length === 0) return null;
-    const hit = rng.pick(hits);
+    const hit = rng.pick(findAll(lines, /(?<!\w)[A-Za-z_]\w*( +)(?=\S)/));
     const word = hit.match[0].trimEnd();
     const inside = word.length > 2 && rng.next() < 0.5;
     return {
@@ -165,9 +163,7 @@ const BUILDERS: Readonly<Record<EditKind, Builder>> = {
     };
   },
   "change-word": (rng, lines) => {
-    const hits = findAll(lines, WORDS);
-    if (hits.length === 0) return null;
-    const hit = rng.pick(hits);
+    const hit = rng.pick(findAll(lines, WORDS));
     const word = hit.match[0];
     const text = rng.pick(NEW_WORDS.filter((w) => w !== word));
     return {
@@ -218,7 +214,6 @@ const BUILDERS: Readonly<Record<EditKind, Builder>> = {
     };
   },
   "delete-line": (rng, lines) => {
-    if (lines.length < 3) return null;
     const line = rng.int(0, lines.length - 1);
     const text = lines[line] as string;
     return {
@@ -240,8 +235,8 @@ const BUILDERS: Readonly<Record<EditKind, Builder>> = {
   },
   "swap-lines": (rng, lines) => {
     const line = rng.int(0, lines.length - 2);
+    // No snippet has two equal lines in a row (a test checks it).
     const [a, b] = [lines[line] as string, lines[line + 1] as string];
-    if (a === b) return null;
     return {
       lines,
       start: { line, col: rng.int(0, Math.max(0, a.length - 1)) },
@@ -251,9 +246,7 @@ const BUILDERS: Readonly<Record<EditKind, Builder>> = {
   },
   "append-semicolon": (rng, lines, language) => {
     if (language !== "cpp") return null;
-    const hits = findAll(lines, /\S;$/);
-    if (hits.length === 0) return null;
-    const hit = rng.pick(hits);
+    const hit = rng.pick(findAll(lines, /\S;$/));
     const text = lines[hit.line] as string;
     const broken = text.slice(0, -1);
     return {
@@ -264,8 +257,8 @@ const BUILDERS: Readonly<Record<EditKind, Builder>> = {
     };
   },
   "comment-line": (rng, lines, language) => {
-    const candidates = lines.flatMap((text, line) => (text.trim() === "" ? [] : [line]));
-    const line = rng.pick(candidates);
+    // No snippet has a blank line.
+    const line = rng.int(0, lines.length - 1);
     const text = lines[line] as string;
     const indent = text.length - text.trimStart().length;
     const mark = language === "cpp" ? "// " : "# ";
@@ -364,21 +357,25 @@ export function generateEdit(seed: number, index: number, kinds: readonly EditKi
   const targetSeed = deriveSeed(seed, index);
   const rng = createRng(targetSeed);
   const kind = rng.pick(kinds);
-  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
-    const snippet = rng.pick(ELIGIBLE);
-    const draft = BUILDERS[kind](rng, snippet.lines, snippet.language);
-    if (draft === null) continue;
-    return {
-      index,
-      seed: targetSeed,
-      kind,
-      snippetId: snippet.id,
-      lines: draft.lines,
-      start: draft.start,
-      after: draft.after,
-      reference: draft.reference,
-      referenceKeys: parseKeys(draft.reference).length,
-    };
-  }
-  throw new Error(`no ${kind} edit found in ${String(ATTEMPTS)} attempts`);
+  // Most snippets fit a kind; the others have no site for it and are skipped.
+  const found = retry(
+    () => {
+      const snippet = rng.pick(ELIGIBLE);
+      return { snippet, draft: BUILDERS[kind](rng, snippet.lines, snippet.language) };
+    },
+    (candidate) => candidate.draft !== null,
+    ATTEMPTS,
+  );
+  const draft = found.draft as Draft;
+  return {
+    index,
+    seed: targetSeed,
+    kind,
+    snippetId: found.snippet.id,
+    lines: draft.lines,
+    start: draft.start,
+    after: draft.after,
+    reference: draft.reference,
+    referenceKeys: parseKeys(draft.reference).length,
+  };
 }
