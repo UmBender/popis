@@ -153,6 +153,24 @@ describe("edit round", () => {
     expect(stats.worst.map((r) => r.index)).toEqual([4, 1, 0]);
   });
 
+  it("a finished round ignores skips, and a skip after the time is up ends the round", () => {
+    const round = startEditRound(config(["delete-line"], 30_000));
+    const started = pressEditRoundKey(round, "j", 1000);
+    const over = tickEditRound(started, 31_000);
+    expect(skipEdit(over, 32_000)).toBe(over);
+    expect(isEditRoundFinished(skipEdit(started, 31_000))).toBe(true);
+  });
+
+  it("the stats of a round without reached edits are zero", () => {
+    expect(editRoundStats({ results: [] })).toEqual({
+      reached: 0,
+      skipped: 0,
+      efficiency: 0,
+      worst: [],
+    });
+    expect(editRoundStats({ results: [result({ skipped: true })] }).efficiency).toBe(0);
+  });
+
   it("the same config plays the same round", () => {
     const keys = (r: EditRound) => type(r, r.target.reference, 0).results;
     expect(keys(startEditRound(config(["delete-word", "change-word"])))).toEqual(

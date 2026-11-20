@@ -121,6 +121,12 @@ describe("VimScreen edit drill", () => {
     expect(screen.getByTestId("vim-last").textContent).toContain("pulado");
   });
 
+  it("Meta+Enter skips the edit too", () => {
+    setup(storeWith(["delete-line"]));
+    fireEvent.keyDown(box(), { key: "Enter", metaKey: true });
+    expect(code().dataset["editIndex"]).toBe("1");
+  });
+
   it("the kinds can be switched off one by one, but not all", () => {
     const store = setup();
     for (const kind of EDIT_KINDS.slice(1)) {
@@ -132,6 +138,61 @@ describe("VimScreen edit drill", () => {
     expect(last.checked).toBe(true);
     expect(last.disabled).toBe(true);
     expect(after().dataset["reference"]).toBe(generateEdit(SEED, 0, [only]).reference);
+  });
+
+  it("a dead key typed through composition acts as the key itself", () => {
+    setup(storeWith(["delete-line"]));
+    const lines = (code().textContent ?? "").split("\n");
+    // The dead key itself is not prevented: the browser must compose it.
+    expect(fireEvent.keyDown(box(), { key: "Dead" })).toBe(true);
+    fireEvent.compositionEnd(box(), { target: { value: "$" } });
+    const cursor = screen.getByTestId("vim-cursor");
+    const line = Number(cursor.dataset["line"]);
+    expect(Number(cursor.dataset["col"])).toBe((lines[line] ?? "").length - 1);
+    expect(box().value).toBe("");
+  });
+
+  it("text typed without a key event is read as keys", () => {
+    setup(storeWith(["delete-line"]));
+    const start = Number(screen.getByTestId("vim-cursor").dataset["col"]);
+    fireEvent.change(box(), { target: { value: "$" } });
+    expect(Number(screen.getByTestId("vim-cursor").dataset["col"])).not.toBe(start);
+    expect(box().value).toBe("");
+  });
+
+  it("keys during a composition are left to the browser and their text waits for its end", () => {
+    setup(storeWith(["delete-line"]));
+    const start = Number(screen.getByTestId("vim-cursor").dataset["col"]);
+    expect(fireEvent.keyDown(box(), { key: "$", isComposing: true })).toBe(true);
+    fireEvent.input(box(), { target: { value: "$" }, isComposing: true });
+    expect(Number(screen.getByTestId("vim-cursor").dataset["col"])).toBe(start);
+    expect(box().value).toBe("$");
+  });
+
+  it("clicking the code puts the focus back on the key box", () => {
+    setup();
+    box().blur();
+    fireEvent.click(code());
+    expect(document.activeElement).toBe(box());
+  });
+
+  it("the duration option restarts the round and is saved", () => {
+    const store = setup();
+    fireEvent.change(screen.getByRole("combobox", { name: "Duração" }), {
+      target: { value: "30" },
+    });
+    expect(loadVimEditSettings(store).durationS).toBe(30);
+    expect(screen.getByTestId("vim-time").textContent).toBe("30");
+  });
+
+  it("the Treino choice goes back to the motion drill", () => {
+    const store = setup();
+    fireEvent.change(screen.getByRole("combobox", { name: "Treino" }), {
+      target: { value: "motion" },
+    });
+    expect(screen.getByRole("combobox", { name: "Nível" })).toBeTruthy();
+    expect(screen.queryByTestId("vim-after")).toBeNull();
+    expect(loadVimEditSettings(store).drill).toBe("motion");
   });
 
   it("the commands panel lists the operators and the text objects", () => {

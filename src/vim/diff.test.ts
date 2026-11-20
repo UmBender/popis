@@ -31,6 +31,21 @@ describe("diffText", () => {
     expect(marked("a[i + 1]", bMask)).toBe(" + 1");
   });
 
+  it("several separate changes are marked each in its own place", () => {
+    const a = "p(a, b)";
+    const b = "p(x, a, y, b)";
+    const { aMask, bMask } = diffText(a, b);
+    expect(aMask.some(Boolean)).toBe(false);
+    // What is not marked in the second text is the first text.
+    expect([...b].filter((_, i) => !bMask[i]).join("")).toBe(a);
+  });
+
+  it("a word replaced between equal words marks only that word", () => {
+    const { aMask, bMask } = diffText("a b c d e", "a x c y e");
+    expect(marked("a b c d e", aMask)).toBe("bd");
+    expect(marked("a x c y e", bMask)).toBe("xy");
+  });
+
   it("the masks have one entry per character", () => {
     const { aMask, bMask } = diffText("abc", "xyzw");
     expect(aMask).toHaveLength(3);

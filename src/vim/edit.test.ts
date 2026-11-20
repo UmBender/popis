@@ -50,6 +50,12 @@ describe("insert mode", () => {
     expect(text(run("x", [0, 0], "3ia<Esc>"))).toBe("aaax");
   });
 
+  it("Backspace is ignored in normal mode and edits a search being typed", () => {
+    expect(at(run("foo bar", [0, 3], "<BS>"))).toEqual([0, 3]);
+    expect(run("foo bar", [0, 0], "d/ba<BS>").pending).toEqual(["d", "/", "b"]);
+    expect(run("foo bar", [0, 0], "d/<BS>").pending).toEqual([]);
+  });
+
   it("unknown keys in normal mode are ignored and clear the pending keys", () => {
     const state = run("foo bar", [0, 3], "d<C-w>");
     expect(state.pending).toEqual([]);

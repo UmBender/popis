@@ -1,5 +1,7 @@
 import { BASIC } from "./basic";
 import type { EditCase, VimCase } from "./case";
+import { EDIT_EDGES } from "./edit-edges";
+import { EDIT_GRID } from "./edit-grid";
 import { EDIT_INSERT } from "./edit-insert";
 import { EDIT_OBJECTS } from "./edit-objects";
 import { EDIT_OPERATORS } from "./edit-operators";
@@ -18,6 +20,8 @@ export const EDIT_CASES: readonly EditCase[] = [
   ...EDIT_OPERATORS,
   ...EDIT_OBJECTS,
   ...EDIT_UNDO,
+  ...EDIT_EDGES,
+  ...EDIT_GRID,
 ];
 
 /** The motion or command a case is about: its name up to the first ": ". */
