@@ -13,6 +13,8 @@ export interface KeyValueStore {
 export const HISTORY_KEY = "popis.history.v1";
 export const SETTINGS_KEY = "popis.settings.v1";
 export const MAX_SESSIONS = 200;
+/** Most characters the stored sessions may take (ADR-T22-1). */
+export const HISTORY_BUDGET = 1_200_000;
 
 export type SessionRecord = {
   readonly version: 1;
