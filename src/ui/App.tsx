@@ -32,6 +32,8 @@ export type AppProps = {
   readonly store: KeyValueStore;
   /** Seed of each new session. */
   readonly newSeed: () => number;
+  /** Below 48rem the tree is a drawer; measured with matchMedia when absent. */
+  readonly narrow?: boolean;
 };
 
 type Screen =
