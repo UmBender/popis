@@ -1,10 +1,10 @@
 ---
 id: T14
 title: Vim - edição
-status: todo
+status: in-progress
 depends_on: [T13]
 branch: task/T14-vim-editing
-adrs: []
+adrs: [ADR-T14-1]
 tags: [task]
 ---
 
@@ -85,6 +85,26 @@ comportamento continua sendo o `nvim --clean`.
   digita a referência exposta num `data-` de 3 edições e vê eficiência
   100%.
 
+## Testes por critério
+
+- **AC-1**: `src/vim/edit.test.ts` (grupo "insert mode") e os casos de
+  `src/vim/cases/edit-insert.ts`.
+- **AC-2**: `src/vim/edit.test.ts` (grupo "operators") e os casos de
+  `src/vim/cases/edit-operators.ts`.
+- **AC-3**: `src/vim/textobjects.test.ts` e os casos de
+  `src/vim/cases/edit-objects.ts`.
+- **AC-4**: `src/vim/edit.test.ts` (grupo "undo, redo and dot") e os casos
+  de `src/vim/cases/edit-undo.ts`.
+- **AC-5**: `src/vim/edit-cases.test.ts` (o motor contra cada caso, pelo
+  menos 5 por comando, nomes únicos) e `npm run vim:oracle`.
+- **AC-6**: `src/vim/drills/edit.test.ts` (14 tipos, cada tipo gera) e
+  `src/vim/drills/edit.prop.test.ts` (a referência dá o "depois", mesma
+  seed, mesma edição).
+- **AC-7**: `src/vim/edit-round.test.ts`.
+- **AC-8**: `src/ui/VimScreenEdit.test.tsx`.
+- **AC-9**: `src/storage/vim-edit.test.ts`.
+- **AC-10**: `tests/e2e/vim.spec.ts` (caso de edição).
+
 ## Out of scope
 
 - Modo visual, `:s`, `>>`, `<<` e `J` (T15).
@@ -100,6 +120,20 @@ comportamento continua sendo o `nvim --clean`.
   `src/ui/app.css`
 - `tests/e2e/vim.spec.ts`
 - `vite.config.ts` (só limiares de cobertura)
+- `scripts/vim-oracle.mjs` (acrescentado: o AC-5 exige que o oráculo rode
+  os casos de edição, e o script é dele)
+- `docs/decisions/ADR-T14-1 *.md`
+
+## Subtasks
+
+- [ ] Spec, ADR-T14-1 e testes por critério.
+- [ ] Testes vermelhos (motor, objetos, casos, geradores, rodada,
+      armazenamento, tela, e2e).
+- [ ] Modelos (tipos e assinaturas).
+- [ ] Comportamento (motor, objetos de texto, desfazer, `.`, geradores,
+      rodada, armazenamento, tela).
+- [ ] Qualidade: `check`, cobertura, oráculo.
+- [ ] Docs e *Log*.
 
 ## Notas para o batch
 
