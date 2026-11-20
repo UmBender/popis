@@ -83,11 +83,12 @@ describe("operators", () => {
     expect(text(run("foo bar", [0, 0], "cwX<Esc>"))).toBe("X bar");
   });
 
-  it("dd deletes lines, fills the register with lines and goes to the first non-blank", () => {
+  it("dd deletes lines, fills the register with lines and keeps the wanted column", () => {
     const state = run("a\n  b\nc", [0, 0], "dd");
     expect(text(state)).toBe("  b\nc");
-    expect(at(state)).toEqual([0, 2]);
+    expect(at(state)).toEqual([0, 0]);
     expect(registerView(state)).toEqual({ reg: "a\n", regtype: "V" });
+    expect(at(run("abc\n  def\nc", [0, 2], "dd"))).toEqual([0, 2]);
   });
 
   it("a linear movement makes the operator work on whole lines", () => {
@@ -120,10 +121,10 @@ describe("operators", () => {
     expect(text(run("abc", [0, 1], "~"))).toBe("aBc");
   });
 
-  it("D and C work to the end of the line, Y yanks it", () => {
+  it("D and C work to the end of the line, Y yanks the whole line like Neovim", () => {
     expect(text(run("foo bar", [0, 3], "D"))).toBe("foo");
     expect(text(run("foo bar", [0, 3], "CX<Esc>"))).toBe("fooX");
-    expect(registerView(run("foo bar", [0, 3], "Y"))).toEqual({ reg: " bar", regtype: "v" });
+    expect(registerView(run("foo bar", [0, 3], "Y"))).toEqual({ reg: "foo bar\n", regtype: "V" });
   });
 
   it("a text object works with an operator and a count", () => {

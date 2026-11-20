@@ -28,7 +28,7 @@ vim.bo.undolevels = -1
 vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.split(input.text, "\\n", { plain = true }))
 vim.bo.undolevels = undolevels
 vim.api.nvim_win_set_cursor(0, { input.line + 1, input.col })
-local keys = vim.api.nvim_replace_termcodes(input.keys, true, false, true)
+local keys = vim.api.nvim_replace_termcodes(input.keys, true, true, true)
 vim.api.nvim_feedkeys(keys, "ntx", false)
 local pos = vim.api.nvim_win_get_cursor(0)
 local mode = vim.api.nvim_get_mode().mode
