@@ -4,6 +4,8 @@ export type EditHelp = {
   readonly keys: string;
   /** A sentence in Portuguese. */
   readonly text: string;
+  /** A use in competitive programming, for the commands of the visual drill (T15). */
+  readonly example?: string;
 };
 
 /** Every command the edit drill accepts, besides the movements of the motion drill. */

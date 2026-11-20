@@ -15,10 +15,29 @@ export type SearchSpec = {
   readonly endWord: boolean;
 };
 
-export type Mode = "normal" | "insert";
+export type Mode = "normal" | "insert" | "visual" | "cmdline";
 
-/** The unnamed register: text by characters, or whole lines (ADR-T14-1). */
-export type Register = { readonly lines: readonly string[]; readonly linewise: boolean };
+/**
+ * The unnamed register: text by characters, or whole lines (ADR-T14-1). A
+ * block (ADR-T15-1) has `block`, its width.
+ */
+export type Register = {
+  readonly lines: readonly string[];
+  readonly linewise: boolean;
+  readonly block?: number;
+};
+
+export type VisualKind = "char" | "line" | "block";
+
+/** A selection in progress: the cursor is the other end (ADR-T15-1). */
+export type VisualSel = { readonly kind: VisualKind; readonly anchor: Pos };
+
+/** The last selection, for `gv` and the marks `'<` and `'>`. */
+export type VisualMark = {
+  readonly kind: VisualKind;
+  readonly anchor: Pos;
+  readonly cursor: Pos;
+};
 
 /** The buffer and the cursor at one moment. */
 export type Snapshot = { readonly lines: readonly string[]; readonly cursor: Pos };
@@ -50,6 +69,23 @@ export type Session = {
   readonly change: Pick<Change, "count" | "keys">;
   /** Keys typed since the session started. */
   readonly typed: readonly Key[];
+  /** The `.` after a visual command does not repeat it (ADR-T15-1). */
+  readonly noRepeat?: boolean;
+  /** A block insert (`I`, `A`, `$A`) to copy to the other rows on Esc. */
+  readonly block?: BlockInsert;
+};
+
+/** Where a block insert goes: rows, the column on the first row, and the kind. */
+export type BlockInsert = {
+  readonly top: number;
+  readonly bottom: number;
+  readonly col: number;
+  /** Text goes at `col` on each row, or at the end of each row. */
+  readonly at: "col" | "end";
+  /** Pad short rows with spaces up to `col` (`A`). */
+  readonly pad: boolean;
+  /** Length of the first row before the insert. */
+  readonly length: number;
 };
 
 /**
@@ -63,6 +99,10 @@ export type VimState = {
   readonly redo: readonly UndoStep[];
   readonly lastChange: Change | null;
   readonly session: Session | null;
+  readonly visual: VisualSel | null;
+  readonly lastVisual: VisualMark | null;
+  /** The text of the command line (after the colon) in `cmdline` mode. */
+  readonly cmdline: string | null;
   readonly lines: readonly string[];
   readonly cursor: Pos;
   /** The column `j` and `k` aim for; Infinity after `$`. */
@@ -86,6 +126,9 @@ export function createState(lines: readonly string[], cursor: Pos): VimState {
     redo: [],
     lastChange: null,
     session: null,
+    visual: null,
+    lastVisual: null,
+    cmdline: null,
     lines: buffer,
     cursor: { line, col },
     curswant: col,

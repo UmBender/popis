@@ -23,6 +23,16 @@ export const EDIT_KINDS = [
   "change-type",
   "fix-index",
   "replace-digit",
+  "comment-block",
+  "uncomment-block",
+  "rename-variable",
+  "rename-in-function",
+  "indent-block",
+  "dedent-block",
+  "indent-lines",
+  "join-lines",
+  "append-semicolons",
+  "replace-endl",
 ] as const;
 
 export type EditKind = (typeof EDIT_KINDS)[number];
@@ -47,6 +57,16 @@ export const EDIT_KIND_LABELS: Readonly<Record<EditKind, string>> = {
   "change-type": "trocar int por long long",
   "fix-index": "corrigir um índice",
   "replace-digit": "trocar um dígito",
+  "comment-block": "comentar um bloco de linhas",
+  "uncomment-block": "descomentar um bloco de linhas",
+  "rename-variable": "renomear uma variável no trecho",
+  "rename-in-function": "renomear dentro de uma função",
+  "indent-block": "indentar o conteúdo de { }",
+  "dedent-block": "desindentar o conteúdo de { }",
+  "indent-lines": "indentar linhas selecionadas",
+  "join-lines": "juntar duas linhas",
+  "append-semicolons": "acrescentar ; em várias linhas",
+  "replace-endl": "trocar endl por '\\n'",
 };
 
 /** One edit of a round (AC-6). */
@@ -340,6 +360,16 @@ const BUILDERS: Readonly<Record<EditKind, Builder>> = {
       reference: `r${digit}`,
     };
   },
+  "comment-block": () => null,
+  "uncomment-block": () => null,
+  "rename-variable": () => null,
+  "rename-in-function": () => null,
+  "indent-block": () => null,
+  "dedent-block": () => null,
+  "indent-lines": () => null,
+  "join-lines": () => null,
+  "append-semicolons": () => null,
+  "replace-endl": () => null,
 };
 
 const ATTEMPTS = 300;
