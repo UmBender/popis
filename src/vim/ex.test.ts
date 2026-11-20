@@ -97,7 +97,7 @@ describe(":s ranges", () => {
   });
 
   it("'<,'> is the last selection", () => {
-    const state = run("Vj<Esc>G:'<,'>s/o/0/<CR>");
+    const state = run("Vj<Esc>G:'<lt>,'>s/o/0/<CR>");
     expect(state.lines).toEqual(["0ne two", "tw0 three", "three four", "four one"]);
   });
 
@@ -107,7 +107,7 @@ describe(":s ranges", () => {
   });
 
   it("'<,'> without an earlier selection changes nothing", () => {
-    expect(run(":'<,'>s/o/0/<CR>").lines).toEqual(TEXT);
+    expect(run(":'<lt>,'>s/o/0/<CR>").lines).toEqual(TEXT);
   });
 });
 

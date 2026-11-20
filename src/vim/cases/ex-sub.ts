@@ -217,7 +217,7 @@ export const EX_SUB: readonly EditCase[] = [
     ":s range: marks of the last selection",
     "cerr << a;\ncerr << b;\ncerr << c;\nx = 1;",
     [2, 0],
-    "Vj<Esc>:'<,'>s/cerr/cout/<CR>",
+    "Vj<Esc>:'<lt>,'>s/cerr/cout/<CR>",
     { text: "cerr << a;\ncerr << b;\ncout << c;\nx = 1;", cursor: [2, 0], reg: "", regtype: "" },
   ],
   [

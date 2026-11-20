@@ -113,12 +113,12 @@ export const VISUAL_SELECT: readonly EditCase[] = [
     "v: the same key leaves",
     "foo bar(baz, qux)\n  second line here\n\nlast one",
     [0, 4],
-    "vlvy",
+    "vlvyl",
     {
       text: "foo bar(baz, qux)\n  second line here\n\nlast one",
       cursor: [0, 5],
-      reg: "",
-      regtype: "",
+      reg: "a",
+      regtype: "v",
     },
   ],
   [

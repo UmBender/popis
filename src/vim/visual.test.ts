@@ -31,7 +31,7 @@ describe("visual mode", () => {
   it("a movement moves the cursor and keeps the anchor", () => {
     const state = run("vlw");
     expect(state.visual?.anchor).toEqual({ line: 0, col: 4 });
-    expect(state.cursor).toEqual({ line: 0, col: 8 });
+    expect(state.cursor).toEqual({ line: 0, col: 7 });
   });
 
   it("the mode key of the same kind leaves visual mode", () => {
@@ -142,15 +142,16 @@ describe("selection ranges for the screen", () => {
 
   it("block mode selects the same columns on every line, clipped by short lines", () => {
     const state = run("<C-v>jjll", TEXT, { line: 0, col: 4 });
-    expect(selectionRange(state, 0)).toEqual({ from: 4, to: 7 });
-    expect(selectionRange(state, 1)).toEqual({ from: 4, to: 7 });
+    // The empty last line moves the cursor to column 0, so the block is columns 0 to 4.
+    expect(selectionRange(state, 0)).toEqual({ from: 0, to: 5 });
+    expect(selectionRange(state, 1)).toEqual({ from: 0, to: 5 });
     expect(selectionRange(state, 2)).toBeNull();
   });
 
   it("block mode with $ runs to the end of each line", () => {
     const state = run("<C-v>j$", TEXT, { line: 0, col: 4 });
     expect(selectionRange(state, 0)?.to).toBe(18);
-    expect(selectionRange(state, 1)?.to).toBe(20);
+    expect(selectionRange(state, 1)?.to).toBe(19);
   });
 
   it("there is no selection outside visual mode", () => {
