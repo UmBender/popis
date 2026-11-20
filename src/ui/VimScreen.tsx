@@ -3,11 +3,15 @@ import type { Clock } from "../core/clock";
 import type { KeyValueStore } from "../storage/history";
 import {
   appendVimResult,
+  loadVimEditSettings,
   loadVimResults,
   loadVimSettings,
+  parseVimEditSettings,
   parseVimSettings,
+  saveVimEditSettings,
   saveVimSettings,
   vimSummary,
+  type VimEditSettings,
   type VimResult,
   type VimSettings,
 } from "../storage/vim";
@@ -26,6 +30,8 @@ import {
   type Round,
   type TargetResult,
 } from "../vim/round";
+import { DrillSelect } from "./vim/DrillSelect";
+import { EditDrill } from "./vim/EditDrill";
 
 type Props = {
   readonly clock: Clock;
@@ -34,6 +40,25 @@ type Props = {
   readonly newSeed: () => number;
   readonly onBack: () => void;
 };
+
+/** The Vim screen: the motion drill (T13) or the edit drill (T14), as chosen. */
+export function VimScreen(props: Props): ReactNode {
+  const { store } = props;
+  const [edit, setEdit] = useState<VimEditSettings>(() => loadVimEditSettings(store));
+  if (edit.drill === "edit") {
+    return <EditDrill {...props} settings={edit} onSettings={setEdit} />;
+  }
+  return (
+    <MotionDrill
+      {...props}
+      onDrill={(drill) => {
+        const updated = parseVimEditSettings({ ...edit, drill });
+        saveVimEditSettings(store, updated);
+        setEdit(updated);
+      }}
+    />
+  );
+}
 
 const TICK_MS = 100;
 
@@ -56,7 +81,13 @@ function newRun(settings: VimSettings, seed: number, run: number): Run {
 const percent = (fraction: number): string => `${String(Math.round(fraction * 100))}%`;
 
 /** The Vim motion drill (ADR-T13-1). */
-export function VimScreen({ clock, store, newSeed, onBack }: Props): ReactNode {
+function MotionDrill({
+  clock,
+  store,
+  newSeed,
+  onBack,
+  onDrill,
+}: Props & { readonly onDrill: (drill: "motion" | "edit") => void }): ReactNode {
   const [current, setCurrent] = useState<Run>(() => newRun(loadVimSettings(store), newSeed(), 0));
   const [results, setResults] = useState<readonly VimResult[]>(() => loadVimResults(store));
   const [now, setNow] = useState(() => clock.now());
@@ -227,6 +258,7 @@ export function VimScreen({ clock, store, newSeed, onBack }: Props): ReactNode {
 
       <fieldset className="vim-options">
         <legend>Opções</legend>
+        <DrillSelect value="motion" onChange={onDrill} />
         <label htmlFor="vim-level">Nível</label>
         <select
           id="vim-level"

@@ -513,3 +513,49 @@ th {
   margin: 0;
   padding-left: 1.25rem;
 }
+
+/* Vim edit drill (T14, ADR-T14-1) */
+
+/* The text still to remove from the buffer, and the text still to add. */
+.vim-diff-del {
+  color: var(--wrong);
+  text-decoration: underline;
+}
+
+.vim-diff-add {
+  color: var(--correct);
+  text-decoration: underline;
+}
+
+.vim-cursor.vim-insert {
+  background: none;
+  color: inherit;
+  box-shadow: inset 2px 0 0 var(--text);
+}
+
+.vim-after {
+  margin: 0.5rem 0 0;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  border: 1px dashed var(--muted);
+  border-radius: 4px;
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.vim-kinds {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 0.25rem 1rem;
+}
+
+.vim-kinds label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vim-better {
+  color: var(--correct);
+}
