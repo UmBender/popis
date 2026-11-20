@@ -10,6 +10,7 @@ import type { SumsKind } from "../gen/sums";
 import { MODE_IDS, MODES, type Mode } from "../modes";
 import { DURATIONS_S } from "../session/engine";
 import type { StoredSettings } from "../storage/history";
+import { Brand } from "./Brand";
 
 const ERROR_MESSAGES: Readonly<Record<string, string>> = {
   "no-operation": "Escolha pelo menos uma operação.",
@@ -109,7 +110,7 @@ export function ConfigScreen({
 
   return (
     <form className="screen config" onSubmit={submit}>
-      <h1>Popis</h1>
+      <Brand />
 
       <fieldset className="modes">
         <legend>Modo</legend>

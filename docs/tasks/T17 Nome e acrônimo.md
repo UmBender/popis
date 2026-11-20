@@ -1,7 +1,7 @@
 ---
 id: T17
 title: Nome e acrônimo
-status: ready
+status: review
 depends_on: []
 branch: task/T17-acronym
 adrs: []
@@ -34,13 +34,15 @@ In Sprints", em inglês. O resto do app continua em português.
   `<meta name="description">` em português que explica o app em uma
   frase. *Teste:* `tests/e2e/identity.spec.ts`, que confere o título e
   a descrição no app servido.
-- **AC-3**: **Documentação:** o `README.md` e a `docs/Home.md` abrem com
+- **AC-3** (sem teste automático; revisão manual dos arquivos):
+  **Documentação:** o `README.md` e a `docs/Home.md` abrem com
   o nome, o acrônimo por extenso e uma linha sobre o foco em programação
   competitiva. O `AGENTS.md` ganha o acrônimo na primeira linha, sem
   mudar nenhuma regra.
 - **AC-4**: **Sem quebrar nada:** as chaves do `localStorage`
   (`popis.*`), o nome do pacote, o caminho `/popis/` do GitHub Pages e o
-  favicon não mudam.
+  favicon não mudam. *Teste:* os testes existentes (`persistence`,
+  `tests/favicon.test.ts`, `tests/e2e/favicon.spec.ts`) continuam verdes.
 
 ## Out of scope
 
@@ -63,4 +65,17 @@ In Sprints", em inglês. O resto do app continua em português.
   rodar depois, a base é `main`, e o conflito com a T13 em
   `ConfigScreen.tsx` fica em linhas diferentes.
 
+## Subtasks
+
+- [x] Testes: `App.test.tsx` e `identity.spec.ts`
+- [x] `Brand.tsx` e CSS
+- [x] `index.html`, README, Home, AGENTS
+- [x] Gates
+
 ## Log
+
+- 2026-11-20 — Implementada em batch. Passo de modelos pulado: `Brand`
+  é pequeno e entrou junto com o comportamento. `npm run check`,
+  `npm run coverage` e `npm run test:e2e` (13 testes) verdes. Sem ADR.
+  Verificação manual pendente: o visual do cabeçalho no desktop e no
+  celular.

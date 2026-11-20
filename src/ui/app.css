@@ -39,6 +39,22 @@ h1 {
   font-size: 1.6rem;
 }
 
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.brand-acronym {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.brand-acronym strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
 .muted {
   color: var(--muted);
 }
