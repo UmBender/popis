@@ -1,7 +1,7 @@
 ---
 id: T18
 title: Reformulação gráfica
-status: todo
+status: ready
 depends_on: [T16, T17]
 branch: task/T18-redesign
 adrs: []
