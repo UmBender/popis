@@ -1,7 +1,7 @@
 ---
 id: T13
 title: Vim - movimentos
-status: review
+status: done
 depends_on: [T10]
 branch: task/T13-vim-motions
 adrs: [ADR-T13-1]
