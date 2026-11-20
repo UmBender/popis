@@ -1,7 +1,7 @@
 ---
 id: T17
 title: Nome e acrônimo
-status: review
+status: done
 depends_on: []
 branch: task/T17-acronym
 adrs: []
