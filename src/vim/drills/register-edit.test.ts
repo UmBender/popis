@@ -10,7 +10,7 @@ import { REGISTER_KINDS, type RegisterKind } from "./register-edit";
 
 const SHAPES: readonly [RegisterKind, RegExp][] = [
   ["number-lines", /^qayyp<C-a>q\d*@a$/],
-  ["copy-block", /^"a2yy\d*"ap$/],
+  ["copy-block", /^"a2yyj\d*"ap$/],
   ["array-initializer", /^:s\/ \/, \/g<CR>I\{<Esc>A\}<Esc>$/],
   ["declarations-to-cin", /^qa0cwcin >><Esc>jq\d*@a$/],
   ["swap-columns", /^qa0dwA <C-r>"<BS><Esc>j0q\d*@a$/],
