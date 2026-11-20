@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>POPIS — protótipo da T18</title>
+    <style>
+      /* Tokens from src/ui/theme.css (ADR-0001); the prototype repeats them. */
+      :root {
+        --bg: #181616;
+        --surface: #0d0c0c;
+        --text: #c5c9c5;
+        --muted: #a6a69c;
+        --accent: #7fa8bc;
+        --selection: #2d4f67;
+        --selection-text: #c8c093;
+        --correct: #8aa86e;
+        --wrong: #d16961;
+        --warning: #ceb680;
+
+        --text-sm: 0.8125rem;
+        --text-md: 1rem;
+        --text-lg: 1.25rem;
+        --text-xl: 2rem;
+        --text-xxl: 4.5rem;
+        --space-1: 0.25rem;
+        --space-2: 0.5rem;
+        --space-3: 1rem;
+        --space-4: 1.5rem;
+        --space-5: 3rem;
+        --rail: 26ch;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          var(--text-md) / 1.5 "JetBrainsMono Nerd Font",
+          "JetBrains Mono",
+          ui-monospace,
+          monospace;
+      }
+
+      .frame {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        height: 800px;
+        width: 1280px;
+        border-bottom: 1px solid var(--selection);
+      }
+
+      /* Title bar: the path is where you are. */
+      .path {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-2) var(--space-3);
+        color: var(--muted);
+        border-bottom: 1px solid var(--selection);
+      }
+
+      .path b {
+        color: var(--text);
+        font-weight: 400;
+      }
+
+      .brand {
+        color: var(--muted);
+      }
+
+      .brand .initial {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      .body {
+        display: grid;
+        grid-template-columns: var(--rail) 1fr;
+        min-height: 0;
+      }
+
+      /* Rail: a file tree of drills. */
+      .rail {
+        padding: var(--space-3) 0;
+        border-right: 1px solid var(--selection);
+        background: var(--surface);
+      }
+
+      .rail ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .folder {
+        padding: var(--space-1) var(--space-3);
+        color: var(--muted);
+      }
+
+      .item {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-1) var(--space-3) var(--space-1) calc(var(--space-3) + 2ch);
+      }
+
+      .item kbd {
+        color: var(--muted);
+        font: inherit;
+      }
+
+      .item[aria-checked="true"] {
+        background: var(--selection);
+        color: var(--selection-text);
+      }
+
+      .item[aria-checked="true"] kbd {
+        color: var(--selection-text);
+      }
+
+      .count {
+        color: var(--warning);
+      }
+
+      /* Panel */
+      .panel {
+        padding: var(--space-4) var(--space-5);
+        max-width: 80ch;
+      }
+
+      .panel h1 {
+        margin: 0 0 var(--space-1);
+        font-size: var(--text-xl);
+        font-weight: 700;
+      }
+
+      .lede {
+        margin: 0 0 var(--space-4);
+        color: var(--muted);
+      }
+
+      .fields {
+        display: grid;
+        grid-template-columns: max-content auto;
+        gap: var(--space-2) var(--space-3);
+        align-items: center;
+        margin-bottom: var(--space-4);
+      }
+
+      .fields label {
+        color: var(--muted);
+      }
+
+      .range input {
+        width: 6ch;
+        padding: var(--space-1) var(--space-2);
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--muted);
+        font: inherit;
+      }
+
+      .check {
+        color: var(--text);
+      }
+
+      .check::before {
+        content: "[x] ";
+        color: var(--accent);
+      }
+
+      .check.off::before {
+        content: "[ ] ";
+        color: var(--muted);
+      }
+
+      .check.off {
+        color: var(--muted);
+      }
+
+      .history {
+        display: flex;
+        gap: var(--space-4);
+        align-items: baseline;
+        margin-bottom: var(--space-5);
+        color: var(--muted);
+      }
+
+      .spark {
+        color: var(--accent);
+        letter-spacing: 0.1em;
+      }
+
+      .history strong {
+        color: var(--text);
+      }
+
+      .start {
+        display: inline-flex;
+        gap: var(--space-3);
+        padding: var(--space-2) var(--space-3);
+        background: var(--accent);
+        color: var(--surface);
+        border: none;
+        font: inherit;
+        font-weight: 700;
+      }
+
+      .start kbd {
+        font: inherit;
+        font-weight: 400;
+      }
+
+      /* Status line, Neovim style: segments, no separators. */
+      .status {
+        display: flex;
+        gap: var(--space-4);
+        padding: var(--space-1) 0;
+        padding-right: var(--space-3);
+        background: var(--surface);
+        color: var(--muted);
+        font-size: var(--text-sm);
+      }
+
+      .mode {
+        padding: 0 var(--space-3);
+        background: var(--accent);
+        color: var(--surface);
+        font-weight: 700;
+      }
+
+      .mode.play {
+        background: var(--correct);
+      }
+
+      .status kbd {
+        color: var(--text);
+        font: inherit;
+      }
+
+      .status .right {
+        margin-left: auto;
+      }
+
+      /* Game: the prompt is the moment. */
+      .game {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        padding: var(--space-4) var(--space-5);
+      }
+
+      .clock {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+      }
+
+      .clock .time {
+        color: var(--accent);
+        font-size: var(--text-xl);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .clock .score {
+        color: var(--text);
+        font-size: var(--text-xl);
+      }
+
+      .prompt {
+        align-self: start;
+        margin-top: var(--space-5);
+      }
+
+      .prompt .q {
+        font-size: var(--text-xxl);
+        font-weight: 700;
+        line-height: 1.1;
+      }
+
+      .prompt .answer {
+        margin-top: var(--space-3);
+        width: 12ch;
+        padding: var(--space-2) var(--space-3);
+        font: inherit;
+        font-size: var(--text-xl);
+        background: var(--surface);
+        color: var(--text);
+        border: 2px solid var(--accent);
+      }
+
+      /* The bold thing: verdicts in the judge's vocabulary. */
+      .queue {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-1);
+      }
+
+      .v {
+        min-width: 4ch;
+        padding: 0 var(--space-1);
+        text-align: center;
+        font-size: var(--text-sm);
+        font-weight: 700;
+        color: var(--surface);
+      }
+
+      .v.ac {
+        background: var(--correct);
+      }
+
+      .v.wa {
+        background: var(--wrong);
+      }
+
+      .v.sk {
+        background: var(--warning);
+      }
+
+      .v.now {
+        outline: 1px solid var(--correct);
+        outline-offset: 2px;
+      }
+
+      /* Results: an ICPC standings row. */
+      .standings {
+        border-collapse: collapse;
+        margin: var(--space-3) 0 var(--space-4);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .standings th {
+        padding: var(--space-1) var(--space-2);
+        color: var(--muted);
+        font-weight: 400;
+        text-align: center;
+      }
+
+      .standings th:first-child,
+      .standings td:first-child {
+        text-align: left;
+        padding-right: var(--space-3);
+      }
+
+      .standings td {
+        padding: var(--space-2);
+        text-align: center;
+        border: 2px solid var(--bg);
+      }
+
+      .standings td.ac {
+        background: var(--correct);
+        color: var(--surface);
+      }
+
+      .standings td.wa {
+        background: var(--wrong);
+        color: var(--surface);
+      }
+
+      .standings td.sk {
+        background: var(--warning);
+        color: var(--surface);
+      }
+
+      .standings small {
+        display: block;
+        font-size: var(--text-sm);
+        opacity: 0.85;
+      }
+
+      .stats {
+        display: flex;
+        gap: var(--space-5);
+        margin: 0 0 var(--space-3);
+      }
+
+      .stats div {
+        display: flex;
+        flex-direction: column-reverse;
+      }
+
+      .stats dt {
+        color: var(--muted);
+        font-size: var(--text-sm);
+      }
+
+      .stats dd {
+        margin: 0;
+        font-size: var(--text-lg);
+      }
+
+      .solved {
+        font-size: var(--text-xl);
+        font-weight: 700;
+      }
+
+      .seed {
+        color: var(--muted);
+        font-size: var(--text-sm);
+      }
+
+      /* Phone: the rail folds into the path bar. */
+      .phone {
+        width: 412px;
+        height: 860px;
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+      }
+
+      .phone .path {
+        flex-direction: column;
+        gap: var(--space-1);
+      }
+
+      .picker {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 44px;
+        padding: 0 var(--space-3);
+        background: var(--surface);
+        border-bottom: 1px solid var(--selection);
+      }
+
+      .picker span:last-child {
+        color: var(--muted);
+      }
+
+      .phone .panel {
+        padding: var(--space-3);
+      }
+
+      .phone .panel h1 {
+        font-size: var(--text-lg);
+      }
+
+      .phone .game {
+        padding: var(--space-3);
+      }
+
+      .phone .prompt {
+        margin-top: var(--space-3);
+      }
+
+      .phone .prompt .q {
+        font-size: var(--text-xl);
+      }
+
+      .phone .fields {
+        grid-template-columns: 1fr;
+        gap: var(--space-1);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Menu -->
+    <section class="frame" id="menu">
+      <header class="path">
+        <span>popis/<b>cálculo</b>/<b>aritmética</b></span>
+        <span class="brand"
+          ><span class="initial">P</span>ractice <span class="initial">O</span>f
+          <span class="initial">P</span>roblem-solving <span class="initial">I</span>n
+          <span class="initial">S</span>prints</span
+        >
+      </header>
+      <div class="body">
+        <nav class="rail" aria-label="Treinos">
+          <ul role="radiogroup">
+            <li class="folder">▾ Cálculo</li>
+            <li class="item" role="radio" aria-checked="true">Aritmética <kbd>1</kbd></li>
+            <li class="item" role="radio" aria-checked="false">Álgebra <kbd>2</kbd></li>
+            <li class="item" role="radio" aria-checked="false">Fatoração <kbd>3</kbd></li>
+            <li class="item" role="radio" aria-checked="false">Somatórios <kbd>4</kbd></li>
+            <li class="folder">▾ CP</li>
+            <li class="item" role="radio" aria-checked="false">Divisão inteira <kbd>5</kbd></li>
+            <li class="item" role="radio" aria-checked="false">Estimativa <kbd>6</kbd></li>
+            <li class="item" role="radio" aria-checked="false">Primos <kbd>7</kbd></li>
+            <li class="folder">▾ Treino</li>
+            <li class="item" role="radio" aria-checked="false">
+              Revisar <span class="count">12</span>
+            </li>
+            <li class="folder">▸ Digitação</li>
+            <li class="folder">▸ Vim</li>
+          </ul>
+        </nav>
+        <main class="panel">
+          <h1>Aritmética</h1>
+          <p class="lede">Responda o máximo de contas antes do tempo acabar.</p>
+          <div class="fields">
+            <span class="check">Adição</span>
+            <span class="range"
+              >(<input value="2" /> a <input value="100" />) + (<input value="2" /> a
+              <input value="100" />)</span
+            >
+            <span class="check">Subtração</span>
+            <span class="muted">a adição ao contrário</span>
+            <span class="check">Multiplicação</span>
+            <span class="range"
+              >(<input value="2" /> a <input value="12" />) × (<input value="2" /> a
+              <input value="100" />)</span
+            >
+            <span class="check off">Divisão</span>
+            <span></span>
+            <label>Duração</label>
+            <span class="range"><input value="120" /> s</span>
+          </div>
+          <p class="history">
+            <span>Últimas 10 rodadas</span>
+            <span class="spark">▁▃▄▃▆▅▅▇▆█</span>
+            <span>melhor <strong>52</strong></span>
+            <span>média <strong>46</strong></span>
+          </p>
+          <button class="start" type="button">Começar <kbd>Enter</kbd></button>
+        </main>
+      </div>
+      <footer class="status">
+        <span class="mode">NORMAL</span>
+        <span><kbd>j</kbd>/<kbd>k</kbd> mover</span>
+        <span><kbd>1</kbd>–<kbd>9</kbd> ir para</span>
+        <span><kbd>Enter</kbd> começar</span>
+        <span><kbd>Tab</kbd> opções</span>
+        <span><kbd>?</kbd> atalhos</span>
+      </footer>
+    </section>
+
+    <!-- Game -->
+    <section class="frame" id="game">
+      <header class="path">
+        <span>popis/<b>cálculo</b>/<b>aritmética</b></span>
+        <span>rodada em andamento</span>
+      </header>
+      <main class="game">
+        <div class="clock">
+          <span class="time">87</span>
+          <span>acertos <span class="score">21</span></span>
+        </div>
+        <div class="prompt">
+          <div class="q">47 × 8</div>
+          <input class="answer" value="37" aria-label="Resposta" />
+        </div>
+        <div class="queue" aria-label="Submissões">
+          <span class="v ac">AC</span><span class="v ac">AC</span><span class="v ac">AC</span
+          ><span class="v wa">WA</span><span class="v ac">AC</span><span class="v ac">AC</span
+          ><span class="v sk">SK</span><span class="v ac">AC</span><span class="v ac">AC</span
+          ><span class="v ac">AC</span><span class="v ac">AC</span><span class="v wa">WA</span
+          ><span class="v ac">AC</span><span class="v ac">AC</span><span class="v ac">AC</span
+          ><span class="v ac">AC</span><span class="v ac">AC</span><span class="v ac">AC</span
+          ><span class="v ac">AC</span><span class="v ac">AC</span><span class="v ac">AC</span
+          ><span class="v ac">AC</span><span class="v ac">AC</span><span class="v ac now">AC</span>
+        </div>
+      </main>
+      <footer class="status">
+        <span class="mode play">JOGANDO</span>
+        <span><kbd>Enter</kbd> pular</span>
+        <span><kbd>Esc</kbd> sair</span>
+        <span class="right">seed 2884674126</span>
+      </footer>
+    </section>
+
+    <!-- Results -->
+    <section class="frame" id="results">
+      <header class="path">
+        <span>popis/<b>cálculo</b>/<b>aritmética</b>/<b>resultado</b></span>
+        <span>120 s</span>
+      </header>
+      <main class="panel">
+        <p class="solved">12 resolvidas em 120 s</p>
+        <dl class="stats">
+          <div>
+            <dt>tentativas erradas</dt>
+            <dd>2</dd>
+          </div>
+          <div>
+            <dt>puladas</dt>
+            <dd>2</dd>
+          </div>
+          <div>
+            <dt>seu recorde</dt>
+            <dd>52</dd>
+          </div>
+        </dl>
+        <table class="standings" aria-label="Placar da rodada">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>1</th>
+              <th>2</th>
+              <th>3</th>
+              <th>4</th>
+              <th>5</th>
+              <th>6</th>
+              <th>7</th>
+              <th>8</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>adição</td>
+              <td class="ac">+<small>3,1 s</small></td>
+              <td class="ac">+<small>2,4 s</small></td>
+              <td class="wa">−1<small>pulada</small></td>
+              <td class="ac">+<small>1,9 s</small></td>
+              <td class="ac">+<small>2,2 s</small></td>
+              <td class="ac">+<small>2,0 s</small></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>multiplicação</td>
+              <td class="ac">+<small>4,8 s</small></td>
+              <td class="sk">?<small>pulada</small></td>
+              <td class="ac">+<small>3,9 s</small></td>
+              <td class="ac">+1<small>8,1 s</small></td>
+              <td class="ac">+<small>3,3 s</small></td>
+              <td class="ac">+<small>4,0 s</small></td>
+              <td class="ac">+<small>2,7 s</small></td>
+              <td class="ac">+<small>3,5 s</small></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="seed">seed 2884674126</p>
+        <button class="start" type="button">Jogar de novo <kbd>Enter</kbd></button>
+      </main>
+      <footer class="status">
+        <span class="mode">RESULTADO</span>
+        <span><kbd>Enter</kbd> jogar de novo</span>
+        <span><kbd>Esc</kbd> menu</span>
+        <span><kbd>r</kbd> revisar erros</span>
+      </footer>
+    </section>
+
+    <!-- Phone -->
+    <div style="display: flex; gap: 2rem; padding: 1rem; width: max-content">
+      <section class="phone" id="phone-menu">
+        <header class="path">
+          <span>popis/<b>cálculo</b>/<b>aritmética</b></span>
+        </header>
+        <div class="picker"><span>▾ Aritmética</span><span>trocar</span></div>
+        <main class="panel">
+          <h1>Aritmética</h1>
+          <p class="lede">Responda o máximo de contas antes do tempo acabar.</p>
+          <div class="fields">
+            <span class="check">Adição</span>
+            <span class="range">(<input value="2" /> a <input value="100" />) +</span>
+            <span class="range">(<input value="2" /> a <input value="100" />)</span>
+            <span class="check">Multiplicação</span>
+            <span class="check off">Divisão</span>
+          </div>
+          <p class="history">
+            <span class="spark">▁▃▄▃▆▅▅▇▆█</span><span>melhor <strong>52</strong></span>
+          </p>
+          <button class="start" type="button">Começar</button>
+        </main>
+        <footer class="status"><span class="mode">NORMAL</span></footer>
+      </section>
+      <section class="phone" id="phone-game">
+        <header class="path">
+          <span>popis/<b>cálculo</b>/<b>aritmética</b></span>
+        </header>
+        <div class="clock" style="padding: 0 1rem">
+          <span class="time">87</span><span>acertos <span class="score">21</span></span>
+        </div>
+        <main class="game">
+          <div class="prompt">
+            <div class="q">47 × 8</div>
+            <input class="answer" value="37" aria-label="Resposta" />
+            <div class="queue" style="margin-top: 1rem">
+              <span class="v ac">AC</span><span class="v wa">WA</span><span class="v ac">AC</span
+              ><span class="v sk">SK</span><span class="v ac now">AC</span>
+            </div>
+          </div>
+        </main>
+        <footer class="status"><span class="mode play">JOGANDO</span></footer>
+      </section>
+    </div>
+  </body>
+</html>

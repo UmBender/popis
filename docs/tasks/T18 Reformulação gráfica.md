@@ -28,78 +28,119 @@ Tudo é navegável pelo teclado. As cores continuam as do Kanagawa Dragon.
 
 Decisões do dono (2026-11-20): estilo terminal/IDE; manter a paleta
 Kanagawa Dragon (ADR-0001) e a fonte mono; fazer depois das tasks de Vim
-(T13–T16) e do acrônimo (T17).
+(T13–T16) e do acrônimo (T17). A direção de design foi refinada com a
+skill de frontend e está em [[Shell]], com um protótipo estático e
+capturas em `docs/architecture/shell/`. **O protótipo é a referência
+visual**: o app deve ficar igual às capturas, salvo o que este spec
+muda.
 
-- **AC-1**: **Layout em quatro áreas** (`src/ui/shell/`):
-  - **barra de título:** a marca da T17
-    ("POPIS · Practice Of Problem-solving In Sprints") e, à direita, a
-    tela atual;
-  - **barra lateral:** as seções, com títulos em maiúsculas e `--muted`,
-    e o item ativo em `--selection` com o texto em `--selection-text`;
-  - **painel principal:** a tela do item escolhido;
-  - **barra de status:** fixa embaixo, com o modo da tela ("NORMAL",
-    "JOGANDO", "DIGITANDO"), os atalhos válidos ali e, à direita, a seed
-    ou o tempo.
+- **AC-1**: **Janela de editor** (`src/ui/shell/`), com quatro áreas
+  em todas as telas:
+  - **barra de caminho:** `popis/<seção>/<item>` (`…/resultado` no fim
+    da rodada). À direita fica a marca da T17 no menu, e o estado da
+    rodada nas outras telas;
+  - **árvore:** as seções como pastas `▾`/`▸`, com só a inicial
+    maiúscula e o atalho numérico à direita de cada item. O item ativo
+    fica em `--selection` com `--selection-text`, e o Revisar mostra a
+    contagem em `--warning`;
+  - **painel principal;**
+  - **linha de status** no estilo do Neovim: o modo à esquerda num bloco
+    de cor (NORMAL em `--accent`, JOGANDO em `--correct`, RESULTADO em
+    `--accent`), seguido dos atalhos válidos, em segmentos separados por
+    espaço, sem `·`.
 
-  A partida, os resultados, as digitações e o Vim também usam esse
-  layout. Durante uma partida ou digitação, a barra lateral fica
-  recolhida, para não distrair.
-- **AC-2**: **Seções e itens** (a ordem é o padrão, e o dono pode mudar):
+  Durante uma partida ou digitação, a árvore some.
+- **AC-2**: **Árvore** (`src/ui/shell/sections.ts`, tabela única; a ordem
+  é o padrão, e o dono pode mudar):
 
-  | Seção | Itens |
+  | Pasta | Itens |
   |---|---|
-  | CÁLCULO | Aritmética, Álgebra, Fatoração, Somatórios |
+  | Cálculo | Aritmética, Álgebra, Fatoração, Somatórios |
   | CP | Divisão inteira, Estimativa, Primos |
-  | TREINO | Revisar (com a contagem de itens) |
-  | DIGITAÇÃO | Código, Texto |
-  | VIM | os treinos das T13–T16 |
+  | Treino | Revisar (com a contagem) |
+  | Digitação | Código, Texto |
+  | Vim | os treinos das T13–T16 |
 
-  A lista vem de uma tabela única (`src/ui/shell/sections.ts`), e um
-  teste garante que todo modo de `MODES` e toda tela aparecem uma vez.
+  Um teste garante que todo modo de `MODES` e toda tela aparecem uma vez.
+  Pastas abertas e fechadas ficam salvas.
 - **AC-3**: **Teclado em primeiro lugar:**
-  - fora de um campo de texto: `j`/`k` e as setas movem na barra
-    lateral, `1`–`9` pulam para o item `n` da lista visível, Enter
-    começa, `Tab` vai do menu para o painel e `Shift+Tab` volta;
+  - fora de um campo de texto: `j`/`k` e as setas movem na árvore,
+    `h`/`l` fecham e abrem pastas, `1`–`9` pulam para o item com esse
+    atalho, Enter começa, `Tab` vai para as opções do painel e
+    `Shift+Tab` volta;
   - `?` abre uma ajuda com todos os atalhos, e Esc fecha a ajuda ou volta
     ao menu;
+  - no resultado, Enter joga de novo, Esc volta ao menu e `r` abre o
+    Revisar;
   - dentro de um campo de texto ou de uma partida, essas teclas não são
     capturadas;
-  - o foco é sempre visível (contorno em `--accent`);
-  - a ordem de Tab segue a ordem visual.
-- **AC-4**: **Painel do item:** mostra a descrição de uma linha do modo,
-  as opções (os mesmos campos de hoje, alinhados numa grade de
-  rótulo/valor), o melhor resultado e a média dos últimos 10 daquele
-  modo e daquela configuração (do histórico já salvo), e o botão
-  principal "Começar (Enter)".
-- **AC-5**: **Acessibilidade e compatibilidade dos testes:** os itens da
-  barra lateral são um grupo de rádio (`role="radio"`) com os mesmos
-  nomes acessíveis de hoje ("Aritmética", "Fatoração"…). Os botões
-  "Começar", "Digitação", "Texto", "Vim", "Voltar", "Próximo" e
-  "Configurar" mantêm os nomes, ou ganham equivalentes registrados.
-  - Os testes existentes passam sem mudança.
-  - Se um seletor precisar mudar, a mudança vai em commit `test(T18)`
-    próprio, explicada no *Log*, sem tirar nenhuma asserção.
-- **AC-6**: **Tipografia e espaçamento:** uma escala única de tamanhos e
-  espaçamentos como variáveis CSS que não são cor (`--space-1…5`,
-  `--text-sm/md/lg/xl`, `--radius`) em `src/ui/app.css`, usada por todas
-  as telas. Nenhum literal de cor fora de `theme.css` (guarda de
-  `tests/colors.test.ts`). Nenhuma fonte ou dependência nova.
-- **AC-7**: **Celular** (Pixel 7):
-  - a barra lateral vira uma lista de seções no topo, que se recolhe ao
-    escolher um item;
-  - a barra de status vira uma linha curta;
+  - o foco é sempre visível (contorno em `--accent`), e a ordem de Tab
+    segue a ordem visual.
+- **AC-4**: **Painel do item:**
+  - o título em `--text-xl` e a descrição de uma linha em `--muted`;
+  - as opções numa grade rótulo/valor (as caixas de seleção aparecem como
+    `[x]`/`[ ]`, mas continuam `input type="checkbox"`);
+  - "Últimas 10 rodadas", com uma minibarra de caracteres de bloco e o
+    melhor e a média, do histórico já salvo;
+  - o botão "Começar" com a tecla `Enter` ao lado.
+
+  Sem rodadas, o painel diz "Nenhuma rodada nesta configuração. Enter
+  começa a primeira."
+- **AC-5**: **Vereditos na partida** (o ponto ousado do design):
+  - cada resposta aceita, cada tentativa errada e cada pulo acrescenta
+    `AC`, `WA` ou `SK` a uma fila de submissões, nas cores de [[Shell]];
+  - a fila fica no pé da tela no desktop, e logo abaixo do campo de
+    resposta no celular;
+  - a marca mais nova ganha um contorno que some em 300 ms (nada com
+    `prefers-reduced-motion`);
+  - a fila tem `aria-label="Submissões"` e não rouba o foco.
+
+  A pergunta fica no terço de cima, em `--text-xxl`.
+- **AC-6**: **Placar no resultado:**
+  - "N resolvidas em T s" em `--text-xl`;
+  - os pares tentativas erradas, puladas e seu recorde;
+  - uma tabela (`aria-label="Placar da rodada"`) com uma linha por tipo
+    de questão e uma célula por questão, na convenção do ICPC (`+`,
+    `+n`, `?`, `−n`), com o tempo ou "pulada";
+  - a seed, o botão "Jogar de novo" (`Enter`) e o atalho `r` para
+    revisar os erros.
+
+  O cálculo das células é uma função pura testada com uma tabela de logs
+  de tentativas.
+- **AC-7**: **Tokens que não são cor**, em `src/ui/app.css`, com os
+  valores de [[Shell]]: `--text-sm…xxl`, `--space-1…5` e `--rail`. Todas
+  as telas os usam.
+  - Nenhum literal de cor fora de `theme.css` (guarda de
+    `tests/colors.test.ts`).
+  - Nenhuma fonte ou dependência nova.
+  - Sem sombras, gradientes nem cartões arredondados.
+- **AC-8**: **Acessibilidade e compatibilidade dos testes:**
+  - os itens da árvore são um grupo de rádio (`role="radio"`) com os
+    mesmos nomes acessíveis de hoje;
+  - os botões "Começar", "Digitação", "Texto", "Vim", "Voltar",
+    "Próximo" e "Configurar" mantêm os nomes, ou ganham equivalentes
+    registrados;
+  - os testes existentes passam sem mudança. Se um seletor precisar
+    mudar, a mudança vai num commit `test(T18)` próprio, explicada no
+    *Log*, sem tirar nenhuma asserção.
+- **AC-9**: **Celular** (Pixel 7):
+  - a árvore vira a linha "▾ Item … trocar" (44px), que abre a árvore
+    inteira;
   - continuam valendo: nenhuma rolagem horizontal, alvos de toque de pelo
-    menos 44 px e a pergunta e o campo de resposta na metade de cima
-    (testes de `tests/e2e/mobile.spec.ts`);
-  - as telas só de desktop (Digitação de código, Vim) continuam
-    escondidas no toque.
-- **AC-8**: **Verificação visual:** capturas de cada tela, no desktop
-  (1280×800) e no Pixel 7, examinadas e anexadas ao *Log* por nome de
-  arquivo (antes e depois). Um e2e (`tests/e2e/shell.spec.ts`) percorre
-  o menu só com o teclado: `j`, `j`, Enter começa o terceiro item, Esc
-  volta, e `?` abre a ajuda.
-- **AC-9**: **ADR** novo para o layout e a navegação por teclado
-  (`ADR-T18-1`), citando o ADR-0001 (cores mantidas).
+    menos 44px, e a pergunta, o campo de resposta e a fila de vereditos
+    na metade de cima (`tests/e2e/mobile.spec.ts`);
+  - Digitação de código e Vim continuam escondidos no toque.
+- **AC-10**: **Verificação visual:** capturas de menu, partida e
+  resultado, no desktop (1280×800) e no Pixel 7, comparadas com as de
+  `docs/architecture/shell/`. As diferenças são corrigidas ou explicadas
+  no *Log*.
+  Um e2e (`tests/e2e/shell.spec.ts`) percorre o menu só com o teclado:
+  - `j`, `j` e Enter começam o terceiro item;
+  - Esc volta;
+  - `?` abre a ajuda.
+- **AC-11**: **ADR-T18-1** registra o layout de janela de editor, a
+  navegação por teclado e os vereditos, citando o ADR-0001 (cores
+  mantidas), e [[Shell]] passa para `status: accepted`.
 
 ## Out of scope
 
@@ -112,6 +153,8 @@ Kanagawa Dragon (ADR-0001) e a fonte mono; fazer depois das tasks de Vim
 ## Files owned
 
 - `src/ui/**`, menos `src/ui/theme.css`
+- `docs/architecture/Shell.md` (só o status e ajustes registrados no
+  *Log*)
 - `src/modes.ts` (só se um campo de apresentação, como a seção, entrar no
   registro; registre no *Log*)
 - `tests/e2e/shell.spec.ts`, `tests/e2e/mobile.spec.ts` e os outros e2e

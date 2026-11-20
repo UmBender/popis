@@ -25,8 +25,9 @@ In Sprints", em inglês. O resto do app continua em português.
 
 - **AC-1**: **Cabeçalho do app:** o `<h1>` da configuração mostra
   "POPIS" em maiúsculas, com o acrônimo por extenso logo abaixo em
-  `--muted` e fonte menor. As iniciais P, O, P, I e S ficam destacadas em
-  `--accent`. O nome acessível do cabeçalho continua sendo "POPIS".
+  `--muted` e fonte menor. As iniciais P, O, P, I e S ficam em `--text`
+  e negrito, sem outra cor, como em [[Shell]]. O nome acessível do
+  cabeçalho continua sendo "POPIS".
   *Teste:* `src/ui/App.test.tsx` ("config shows the POPIS acronym …").
 - **AC-2**: **Aba e metadados:** o `<title>` passa a ser "POPIS —
   Practice Of Problem-solving In Sprints", e o `index.html` ganha uma
