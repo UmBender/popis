@@ -104,9 +104,10 @@ describe("registers: insert paste", () => {
     expect(state.lines).toEqual(["one "]);
   });
 
-  it("<C-r> then Esc inserts nothing and leaves insert mode", () => {
+  it("<C-r> then Esc names no register: nothing is inserted and the insert goes on", () => {
     const state = run("one", "yiwA <C-r><Esc>");
-    expect(state.mode).toBe("normal");
+    expect(state.mode).toBe("insert");
     expect(state.lines).toEqual(["one "]);
+    expect(pressEditKey(state, "x").lines).toEqual(["one x"]);
   });
 });

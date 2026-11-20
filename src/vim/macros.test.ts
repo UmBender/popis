@@ -89,9 +89,9 @@ describe("macros: running", () => {
     expect(state.lines).toEqual(["ab!", "cd!"]);
   });
 
-  it("each change of a macro is its own undo step", () => {
+  it("a whole macro run, with its count, is one undo step", () => {
     const state = run("1\n2\n3", "qaA;<Esc>jq2@au");
-    expect(state.lines).toEqual(["1;", "2;", "3"]);
+    expect(state.lines).toEqual(["1;", "2", "3"]);
   });
 
   it("a failed motion marks the state as failed, and the next key clears it", () => {

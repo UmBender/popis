@@ -1,0 +1,136 @@
+import type { RegisterCase } from "./case";
+
+// Cases found while probing Neovim: how Esc after <C-r>, a visual delete, an
+// undo after a macro and `.` after a macro behave.
+export const REG_PROBE: readonly RegisterCase[] = [
+  [
+    "i_<C-r>: Esc names no register and the insert goes on",
+    "one",
+    [0, 0],
+    "yiwA <C-r><Esc>x<Esc>",
+    {
+      text: "one x",
+      cursor: [0, 4],
+      reg: "one",
+      regtype: "v",
+      regs: { "0": { reg: "one", regtype: "v" } },
+    },
+  ],
+  [
+    "vd: a small visual delete goes to the - register",
+    "one two",
+    [0, 0],
+    "vlld",
+    {
+      text: " two",
+      cursor: [0, 0],
+      reg: "one",
+      regtype: "v",
+      regs: { "-": { reg: "one", regtype: "v" } },
+    },
+  ],
+  [
+    "vd: a visual line delete goes to register 1",
+    "one\ntwo",
+    [0, 0],
+    "Vd",
+    {
+      text: "two",
+      cursor: [0, 0],
+      reg: "one\n",
+      regtype: "V",
+      regs: { "1": { reg: "one\n", regtype: "V" } },
+    },
+  ],
+  [
+    '"ad: a visual delete into a leaves the others alone',
+    "one two",
+    [0, 0],
+    'vl"ad',
+    {
+      text: "e two",
+      cursor: [0, 0],
+      reg: "on",
+      regtype: "v",
+      regs: { a: { reg: "on", regtype: "v" } },
+    },
+  ],
+  [
+    '"ay: a visual yank into a leaves register 0 alone',
+    "one two",
+    [0, 0],
+    'vl"ay',
+    {
+      text: "one two",
+      cursor: [0, 0],
+      reg: "on",
+      regtype: "v",
+      regs: { a: { reg: "on", regtype: "v" } },
+    },
+  ],
+  [
+    "@a: one undo undoes the whole macro run",
+    "1\n2\n3",
+    [0, 0],
+    "qaA;<Esc>jq@au",
+    {
+      text: "1;\n2\n3",
+      cursor: [1, 0],
+      reg: "",
+      regtype: "",
+      regs: { a: { reg: "A;\u001bj", regtype: "v" } },
+    },
+  ],
+  [
+    "@a: a second undo reaches the recording",
+    "1\n2\n3",
+    [0, 0],
+    "qaA;<Esc>jq@ajuu",
+    {
+      text: "1\n2\n3",
+      cursor: [0, 0],
+      reg: "",
+      regtype: "",
+      regs: { a: { reg: "A;\u001bj", regtype: "v" } },
+    },
+  ],
+  [
+    "@a: dot after a macro repeats its last change",
+    "1\n2\n3",
+    [0, 0],
+    "qaA;<Esc>jq@a.",
+    {
+      text: "1;\n2;\n3;",
+      cursor: [2, 1],
+      reg: "",
+      regtype: "",
+      regs: { a: { reg: "A;\u001bj", regtype: "v" } },
+    },
+  ],
+  [
+    "yy: a yank then a put keeps register 0",
+    "one\ntwo",
+    [0, 0],
+    "yyjp",
+    {
+      text: "one\ntwo\none",
+      cursor: [2, 0],
+      reg: "one\n",
+      regtype: "V",
+      regs: { "0": { reg: "one\n", regtype: "V" } },
+    },
+  ],
+  [
+    "q: an uppercase name appends to a macro",
+    "one two",
+    [0, 0],
+    "qaxqqAxq",
+    {
+      text: "e two",
+      cursor: [0, 0],
+      reg: "n",
+      regtype: "v",
+      regs: { "-": { reg: "n", regtype: "v" }, a: { reg: "xx", regtype: "v" } },
+    },
+  ],
+];

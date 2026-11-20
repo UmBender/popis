@@ -17,6 +17,7 @@ import { LINES } from "./lines";
 import { SEARCH } from "./search";
 import { SHIFT_JOIN } from "./shift-join";
 import { VISUAL_BLOCK } from "./visual-block";
+import { REG_PROBE } from "./zz-probe";
 import { VISUAL_OPS } from "./visual-ops";
 import { VISUAL_SELECT } from "./visual-select";
 import { WORDS } from "./words";
@@ -56,6 +57,7 @@ export const REGISTER_CASES: readonly RegisterCase[] = [
   ...REG_MACROS,
   ...REG_NUMBER,
   ...REG_INSERT,
+  ...REG_PROBE,
 ];
 
 /** The motion or command a case is about: its name up to the first ": ". */
