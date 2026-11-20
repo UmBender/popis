@@ -30,7 +30,7 @@ export default tseslint.config(
     ...reactHooks.configs.flat["recommended-latest"],
   },
   {
-    files: ["eslint.config.js"],
+    files: ["eslint.config.js", "scripts/**/*.mjs"],
     ...tseslint.configs.disableTypeChecked,
   },
 );

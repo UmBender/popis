@@ -458,3 +458,74 @@ th {
 .cursor-after {
   box-shadow: 2px 0 0 var(--accent);
 }
+
+/* Vim motion drill (T13, ADR-T13-1) */
+
+/* Touch screens have no keyboard for Vim (T13 AC-8). */
+@media (hover: none) and (pointer: coarse) {
+  .vim-entry {
+    display: none;
+  }
+}
+
+.vim-time {
+  margin: 0;
+  color: var(--accent);
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.vim-code {
+  margin: 0;
+  padding: 1rem;
+  overflow-x: auto;
+  background: var(--surface);
+  border-radius: 4px;
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: pre;
+  cursor: text;
+}
+
+.typing-area:focus-within .vim-code {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* The block cursor. */
+.vim-cursor {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.vim-target {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+.vim-status,
+.vim-last,
+.vim-blocked {
+  margin: 0.5rem 0 0;
+}
+
+.vim-pending {
+  color: var(--accent);
+}
+
+.vim-blocked {
+  color: var(--warning);
+}
+
+.vim-options {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+}
+
+.vim-commands ul,
+.vim-worst {
+  margin: 0;
+  padding-left: 1.25rem;
+}

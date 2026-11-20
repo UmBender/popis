@@ -1,10 +1,10 @@
 ---
 id: T13
 title: Vim - movimentos
-status: ready
+status: review
 depends_on: [T10]
 branch: task/T13-vim-motions
-adrs: []
+adrs: [ADR-T13-1]
 tags: [task]
 ---
 
@@ -134,7 +134,8 @@ instalado; a rodada dura 60 s; o texto vem do corpus de código da T10.
 
 ## Files owned
 
-- `src/vim/**` (motor, casos, ótimo, geradores)
+- `src/vim/**` (motor, casos, ótimo, geradores, rodada)
+- `docs/decisions/ADR-T13-1 *.md`
 - `scripts/vim-oracle.mjs`, `package.json` (só o script `vim:oracle`)
 - `src/storage/vim*.ts`
 - `src/ui/VimScreen*.tsx`, `src/ui/App.tsx`, `src/ui/App.test.tsx`,
@@ -150,4 +151,62 @@ instalado; a rodada dura 60 s; o texto vem do corpus de código da T10.
   difícil. O oráculo existe para isso, e uma discordância é bug do motor,
   não do caso.
 
+## Testes por critério
+
+- **AC-1**: `src/vim/keys.test.ts` (`parseKeys`, `formatKeys`, ida e volta,
+  `keyFromEvent`); `src/vim/engine.test.ts` (estado inicial, `curswant`
+  preservado por `j`/`k`).
+- **AC-2**: `src/vim/motions.test.ts` (contagens, falhas, bordas);
+  `src/vim/cases.test.ts` roda todos os casos de `src/vim/cases/*.ts`.
+- **AC-3**: `src/vim/cases.test.ts` (motor sobre os casos, mínimo de 5 casos
+  por movimento) e `npm run vim:oracle` (Neovim sobre os mesmos casos).
+- **AC-4**: `src/vim/levels.test.ts` (movimentos por nível, ajuda em
+  português) e `src/vim/engine.test.ts` (tecla bloqueada, `pending`).
+- **AC-5**: `src/vim/optimal.test.ts` (custos conhecidos, limite de teclas,
+  tempo) e `src/vim/optimal.prop.test.ts` (a sequência leva ao alvo; busca
+  exaustiva em textos pequenos não acha nada mais curto).
+- **AC-6**: `src/vim/drills/target.test.ts` e
+  `src/vim/drills/target.prop.test.ts` (alcançável, limites do nível, mesma
+  seed).
+- **AC-7**: `src/vim/round.test.ts`.
+- **AC-8**: `src/ui/VimScreen.test.tsx`; `src/ui/App.test.tsx` (botão
+  "Vim").
+- **AC-9**: `src/storage/vim.test.ts`.
+- **AC-10**: `tests/e2e/vim.spec.ts` e `tests/e2e/mobile.spec.ts`.
+
+## Subtasks
+
+- [x] Motor: teclas, estado, movimentos, níveis
+- [x] Casos e oráculo (`npm run vim:oracle`)
+- [x] Mínimo de teclas e alvos por seed
+- [x] Rodada e persistência
+- [x] Tela, botão na configuração, e2e
+- [x] Cobertura em `src/vim/**` e docs
+
 ## Log
+
+- 2026-11-20 — Implementado. Gates: `npm run check` verde (1185 testes),
+  `npm run coverage` verde (`src/vim/**` com limiar 100%), `npm run
+  test:e2e` 15/15, `npm run test:fuzz` verde, `npm run vim:oracle` 270/270.
+- Arquivos fora de *Files owned* (adicionados): `eslint.config.js` (os
+  `scripts/*.mjs` ficam fora do tsconfig e do lint com tipos) e
+  `docs/decisions/ADR-T13-1`.
+- Neovim venceu a nota: `startofline` é falso, então `gg`, `G`, `{n}G` e
+  `N%` mantêm a coluna desejada; a busca enumera ocorrências sem sobreposição
+  (`cpo-c`: `/aa` em `aaaa` vai para a coluna 2).
+- Correções de testes em commits próprios: casos com cursor além do fim da
+  linha, expectativas erradas em `engine.test.ts`, exemplo de `f` em
+  `optimal.test.ts`, tecla morta não deve ser impedida, tempo medido em
+  alvos reais (o pior caso sob cobertura passava de 50 ms), timeout das
+  propriedades de alvo.
+- UNATTENDED CHOICE: cada alvo sorteia seu próprio trecho (AC-6 manda
+  derivar tudo de `deriveSeed(seed, i)`), em vez de reusar o buffer.
+- UNATTENDED CHOICE: padrões de busca da solução ótima excluem caracteres de
+  regex (`\ / ? . * [ ] ~ ^ $`); contagens só de 1 a 9; a busca ótima
+  considera só comandos que movem o cursor ao final do caminho (um `fX` que
+  falha só importaria pela memória de `;`) — o teste exaustivo descarta os
+  mesmos casos.
+- `%` não suporta `#if` nem `/* */`; parágrafos só por linha vazia (sem
+  macros nroff).
+- Verificação manual pendente: jogar rodadas nos níveis 2, 4 e 7, ver se os
+  alvos são úteis, e o visual do cursor/alvo (não tirei capturas).

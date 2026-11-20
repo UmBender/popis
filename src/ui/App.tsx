@@ -23,6 +23,7 @@ import { GameScreen } from "./GameScreen";
 import { ResultsScreen } from "./ResultsScreen";
 import { TextTypingScreen } from "./TextTypingScreen";
 import { TypingScreen } from "./TypingScreen";
+import { VimScreen } from "./VimScreen";
 
 export type AppProps = {
   readonly clock: Clock;
@@ -36,7 +37,8 @@ type Screen =
   | { readonly name: "game"; readonly mode: Mode; readonly session: RunningSession<JsonValue> }
   | { readonly name: "results"; readonly mode: Mode; readonly log: readonly Attempt[] }
   | { readonly name: "typing" }
-  | { readonly name: "text" };
+  | { readonly name: "text" }
+  | { readonly name: "vim" };
 
 function sessionConfig<M extends Mode>(
   mode: M,
@@ -117,6 +119,9 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
           onText={() => {
             setScreen({ name: "text" });
           }}
+          onVim={() => {
+            setScreen({ name: "vim" });
+          }}
         />
       );
     case "game":
@@ -133,6 +138,8 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
       return <TypingScreen clock={clock} store={store} newSeed={newSeed} onBack={abort} />;
     case "text":
       return <TextTypingScreen clock={clock} store={store} newSeed={newSeed} onBack={abort} />;
+    case "vim":
+      return <VimScreen clock={clock} store={store} newSeed={newSeed} onBack={abort} />;
     case "results":
       return (
         <ResultsScreen
