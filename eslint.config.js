@@ -4,7 +4,19 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "dist-pages", "coverage", "test-results", "playwright-report", "docs"] },
+  {
+    ignores: [
+      "dist",
+      "dist-pages",
+      "coverage",
+      "test-results",
+      "playwright-report",
+      "docs",
+      // Unattended batch state (git-ignored; skill batch-tasks).
+      ".batch",
+      ".batch-*",
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
