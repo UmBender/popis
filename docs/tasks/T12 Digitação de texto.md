@@ -1,7 +1,7 @@
 ---
 id: T12
 title: Digitação de texto
-status: review
+status: done
 depends_on: [T10]
 branch: task/T12-text-typing
 adrs: [ADR-T12-1]
