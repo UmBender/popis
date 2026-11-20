@@ -361,8 +361,8 @@ const BUILDERS: Readonly<Record<EditKind, Builder>> = {
       reference: `r${digit}`,
     };
   },
+  // Every snippet of the corpus has at least 3 lines, so the block kinds always fit.
   "comment-block": (rng, lines, language) => {
-    if (lines.length < 3) return null;
     const count = rng.int(3, Math.min(6, lines.length));
     const line = rng.int(0, lines.length - count);
     const mark = language === "cpp" ? "// " : "# ";
@@ -374,7 +374,6 @@ const BUILDERS: Readonly<Record<EditKind, Builder>> = {
     };
   },
   "uncomment-block": (rng, lines, language) => {
-    if (lines.length < 3) return null;
     const count = rng.int(3, Math.min(6, lines.length));
     const line = rng.int(0, lines.length - count);
     const mark = language === "cpp" ? "// " : "# ";
@@ -387,10 +386,9 @@ const BUILDERS: Readonly<Record<EditKind, Builder>> = {
     };
   },
   "rename-variable": (rng, lines) => {
-    const names = renamable(lines.join("\n"));
-    if (names.length === 0) return null;
-    const old = rng.pick(names);
+    // Every snippet repeats some short name.
     const text = lines.join("\n");
+    const old = rng.pick(renamable(text));
     const name = rng.pick(RENAMES.filter((n) => !wordIn(text, n)));
     const line = rng.int(0, lines.length - 1);
     return {
@@ -437,7 +435,6 @@ const BUILDERS: Readonly<Record<EditKind, Builder>> = {
     };
   },
   "indent-lines": (rng, lines) => {
-    if (lines.length < 2) return null;
     const count = rng.int(1, Math.min(4, lines.length - 1));
     const line = rng.int(0, lines.length - 1 - count);
     return {
@@ -448,7 +445,6 @@ const BUILDERS: Readonly<Record<EditKind, Builder>> = {
     };
   },
   "join-lines": (rng, lines) => {
-    if (lines.length < 2) return null;
     const line = rng.int(0, lines.length - 2);
     return {
       lines,
@@ -528,24 +524,26 @@ function pickBlock(rng: Rng, lines: readonly string[]): Block | null {
       if (ch === "}") {
         const open = stack.pop();
         if (open !== undefined && open >= 0 && text.trimStart().startsWith("}")) {
-          if (line - open >= 2) pairs.push({ open, close: line });
+          pairs.push({ open, close: line });
         }
       }
     });
   });
-  const sites = pairs.flatMap((pair) => {
-    const nested = pairs.filter((p) => p.open > pair.open && p.close < pair.close);
-    const cursorLines = lines
-      .map((text, line) => ({ text, line }))
-      .filter(
-        ({ text, line }) =>
-          line > pair.open &&
-          line < pair.close &&
-          !/[{}]/.test(text) &&
-          !nested.some((p) => line > p.open && line < p.close),
-      );
-    return cursorLines.length === 0 ? [] : [{ pair, cursorLines }];
-  });
+  const sites = pairs
+    .map((pair) => {
+      const nested = pairs.filter((p) => p.open > pair.open && p.close < pair.close);
+      const cursorLines = lines
+        .map((text, line) => ({ text, line }))
+        .filter(
+          ({ text, line }) =>
+            line > pair.open &&
+            line < pair.close &&
+            !/[{}]/.test(text) &&
+            !nested.some((p) => line > p.open && line < p.close),
+        );
+      return { pair, cursorLines };
+    })
+    .filter((site) => site.cursorLines.length > 0);
   if (sites.length === 0) return null;
   const site = rng.pick(sites);
   const at = rng.pick(site.cursorLines);

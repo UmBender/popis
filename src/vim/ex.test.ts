@@ -101,6 +101,21 @@ describe(":s ranges", () => {
     expect(state.lines).toEqual(["0ne two", "tw0 three", "three four", "four one"]);
   });
 
+  it("a bare + is one line down and a missing second address is the cursor line", () => {
+    expect(run(":+s/o/0/<CR>").lines[1]).toBe("tw0 three");
+    expect(run(":1,s/o/0/<CR>", TEXT, { line: 2, col: 0 }).lines).toEqual([
+      "0ne two",
+      "tw0 three",
+      "three f0ur",
+      "four one",
+    ]);
+  });
+
+  it("a mark without a selection, or a backwards range, changes nothing", () => {
+    expect(run(":1,'<lt>s/o/0/<CR>").lines).toEqual(TEXT);
+    expect(run(":3,2s/o/0/<CR>").lines).toEqual(TEXT);
+  });
+
   it("a range past the buffer is an error (E16) and changes nothing", () => {
     expect(run(":3,99s/four/4/<CR>").lines).toEqual(TEXT);
     expect(run(":-1s/one/1/<CR>").lines).toEqual(TEXT);
@@ -125,6 +140,15 @@ describe(":s pattern and replacement", () => {
     expect(run(":s/a.c/X/<CR>", ["abc a.c"]).lines).toEqual(["X a.c"]);
     expect(run(":s/(x)/y/<CR>", ["f(x)"]).lines).toEqual(["fy"]);
     expect(run(":s/a+/y/<CR>", ["aa a+"]).lines).toEqual(["aa y"]);
+  });
+
+  it("a backslash makes the next character literal, the delimiter included", () => {
+    expect(run(":s/a\\.c/X/<CR>", ["abc a.c"]).lines).toEqual(["abc X"]);
+    expect(run(":s/a\\/b/X/<CR>", ["a/b"]).lines).toEqual(["X"]);
+  });
+
+  it("without a replacement the match is deleted", () => {
+    expect(run(":s/o<CR>", ["one"]).lines).toEqual(["ne"]);
   });
 
   it("^ and $ anchor the pattern", () => {

@@ -255,3 +255,84 @@ describe("shift and join", () => {
     expect(state.mode).toBe("visual");
   });
 });
+
+describe("visual mode edges", () => {
+  it("a text object that is not there leaves the selection alone", () => {
+    const state = run("vi(", ["no parentheses"], { line: 0, col: 3 });
+    expect(state.visual?.anchor).toEqual({ line: 0, col: 3 });
+    expect(state.cursor).toEqual({ line: 0, col: 3 });
+  });
+
+  it("an object ending before a closing quote stops on the last character inside", () => {
+    const state = run('vi"', ['say "hello" now'], { line: 0, col: 6 });
+    expect(state.visual?.anchor).toEqual({ line: 0, col: 5 });
+    expect(state.cursor).toEqual({ line: 0, col: 9 });
+  });
+
+  it("an object that is not a text object is dropped", () => {
+    const state = run("vix");
+    expect(state.mode).toBe("visual");
+    expect(state.pending).toEqual([]);
+  });
+
+  it("r needs a character, and a search waits for its Enter", () => {
+    expect(run("vr<CR>").pending).toEqual([]);
+    expect(run("v/ba").pending).toEqual(["/", "b", "a"]);
+  });
+
+  it("~ in block mode with $ toggles to the end of each line and skips short rows", () => {
+    const lines = ["abcd", "ab", "abcd"];
+    expect(run("<C-v>jj$~", lines, { line: 0, col: 2 }).lines).toEqual(["abCD", "ab", "abCD"]);
+    expect(run("<C-v>jj~", lines, { line: 0, col: 2 }).lines).toEqual(["abCd", "ab", "abCd"]);
+  });
+
+  it("d on every line leaves one empty line", () => {
+    expect(run("VGd", ["a", "b"], { line: 0, col: 0 }).lines).toEqual([""]);
+  });
+
+  it("c on a block that runs to the end of the lines types on every line", () => {
+    const state = run("<C-v>j$cX<Esc>", ["abc", "abcde"], { line: 0, col: 1 });
+    expect(state.lines).toEqual(["aX", "aX"]);
+  });
+
+  it("J on the last line changes nothing", () => {
+    const state = run("VJ", ["a", "b"], { line: 1, col: 0 });
+    expect(state.lines).toEqual(["a", "b"]);
+    expect(state.mode).toBe("normal");
+  });
+
+  it("I and A only work in block mode", () => {
+    for (const key of ["I", "A"]) {
+      const state = run(`v${key}`);
+      expect(state.mode).toBe("visual");
+      expect(state.pending).toEqual([]);
+    }
+  });
+
+  it("A pads the first row when it is shorter than the block", () => {
+    const state = run("<C-v>jlllAX<Esc>", ["ab", "abcdef"], { line: 0, col: 1 });
+    expect(state.lines).toEqual(["ab   X", "abcdeXf"]);
+  });
+
+  it("O swaps the corner of a block and acts as o in the other modes", () => {
+    const block = run("<C-v>jlO", ["abcd", "abcd"], { line: 0, col: 1 });
+    expect(block.cursor).toEqual({ line: 1, col: 1 });
+    expect(block.visual?.anchor).toEqual({ line: 0, col: 2 });
+    const chars = run("vllO");
+    expect(chars.cursor).toEqual({ line: 0, col: 4 });
+    expect(chars.visual?.anchor).toEqual({ line: 0, col: 6 });
+  });
+
+  it("< takes a tab as a whole indent", () => {
+    expect(run("<lt><lt>", ["\tx"], { line: 0, col: 1 }).lines).toEqual(["x"]);
+  });
+
+  it("5J on the last line changes nothing", () => {
+    expect(run("5J", ["a", "b"], { line: 1, col: 0 }).lines).toEqual(["a", "b"]);
+  });
+
+  it("a visual c with nothing to repeat leaves the dot empty", () => {
+    const state = run("vlcx<Esc>");
+    expect(state.lastChange).toBeNull();
+  });
+});

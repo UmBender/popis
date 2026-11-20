@@ -14,7 +14,8 @@ const closed = (state: VimState): VimState => ({ ...state, mode: "normal", cmdli
 
 /** One key typed on the command line. */
 export function pressCmdline(state: VimState, key: Key): VimState {
-  const text = state.cmdline ?? "";
+  // The command line mode always has its text.
+  const text = state.cmdline as string;
   if (key === "<Esc>") return closed(state);
   if (key === "<BS>") {
     return text === "" ? closed(state) : { ...state, cmdline: text.slice(0, -1) };
@@ -79,9 +80,9 @@ function parseRange(
     to = second.value ?? line + 1;
     rest = second.rest;
   }
-  const [a, b] = first.value <= to ? [first.value, to] : [to, first.value];
-  if (a < 1 || b > last) return undefined;
-  return { from: a - 1, to: b - 1, rest };
+  // A backwards range asks a question in Vim; here it is an error, like E16.
+  if (first.value < 1 || to > last || first.value > to) return undefined;
+  return { from: first.value - 1, to: to - 1, rest };
 }
 
 const escape = (ch: string): string => ch.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
@@ -135,7 +136,7 @@ function splitSubstitute(text: string): { pattern: string; rep: string; flags: s
       parts[part] += ch;
     }
   }
-  return { pattern: parts[0] ?? "", rep: parts[1] ?? "", flags: parts[2] ?? "" };
+  return { pattern: parts[0] as string, rep: parts[1] ?? "", flags: parts[2] ?? "" };
 }
 
 function substituteLine(

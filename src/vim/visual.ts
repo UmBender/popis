@@ -383,19 +383,17 @@ export function finishBlockInsert(state: VimState, session: Session): VimState {
   const plain = keys.every((key) => key.length === 1);
   const top = state.lines[block.top] as string;
   const grown = top.length - block.length;
-  let lines = state.lines;
   if (!plain || grown <= 0) return state;
-  if (state.lines.length > block.bottom) {
-    const text = keys.join("");
-    lines = lines.map((row, i) => {
-      if (i <= block.top || i > block.bottom) return row;
-      if (block.at === "end") return row + text;
-      if (row.length < block.col)
-        return block.pad ? row + spaces(block.col - row.length) + text : row;
-      if (row.length === block.col && !block.pad) return row;
-      return row.slice(0, block.col) + text + row.slice(block.col);
-    });
-  }
+  const text = keys.join("");
+  const lines = state.lines.map((row, i) => {
+    if (i <= block.top || i > block.bottom) return row;
+    if (block.at === "end") return row + text;
+    if (row.length < block.col) {
+      return block.pad ? row + spaces(block.col - row.length) + text : row;
+    }
+    if (row.length === block.col && !block.pad) return row;
+    return row.slice(0, block.col) + text + row.slice(block.col);
+  });
   const next = { ...state, lines };
   if (!block.home) return next;
   const cursor = normalCursor(lines, block.top, block.left);

@@ -435,14 +435,11 @@ function pressInsert(state: VimState, key: Key): VimState {
   }
   const { line, col } = at.cursor;
   const cursor = normalCursor(at.lines, line, col > 0 ? col - 1 : 0);
-  const change: Change =
-    session.noRepeat === true && state.lastChange !== null
-      ? state.lastChange
-      : {
-          count: session.change.count,
-          keys: session.change.keys,
-          typed: [...session.typed, "<Esc>"],
-        };
+  const change: Change = {
+    count: session.change.count,
+    keys: session.change.keys,
+    typed: [...session.typed, "<Esc>"],
+  };
   const done: VimState = {
     ...at,
     mode: "normal",
