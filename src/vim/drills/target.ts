@@ -1,4 +1,4 @@
-import { createRng, deriveSeed, type Rng } from "../../core/rng";
+import { createRng, deriveSeed, retry, type Rng } from "../../core/rng";
 import { CORPUS } from "../../typing/corpus";
 import { pressKey } from "../engine";
 import { formatKeys, parseKeys } from "../keys";
@@ -63,9 +63,10 @@ function randomCommand(
   names: readonly string[],
   lines: readonly string[],
 ): string {
-  const usable = (n: string) => (/^[2-9]$/.test(n) ? level >= 5 : (commandLevel(n) ?? 8) <= level);
+  const usable = (n: string) =>
+    /^[2-9]$/.test(n) ? level >= 5 : (commandLevel(n) as Level) <= level;
   const allowed = names.filter(usable);
-  const name = rng.pick(allowed.length > 0 ? allowed : ["l"]);
+  const name = rng.pick(allowed);
   const text = rng.pick(lines);
   const char = text.charAt(rng.int(0, Math.max(0, text.length - 1)));
   if (name === "f" || name === "F" || name === "t" || name === "T") {
@@ -74,7 +75,7 @@ function randomCommand(
   if (name === "/" || name === "?") {
     const from = rng.int(0, Math.max(0, text.length - 1));
     const word = text.slice(from, from + rng.int(1, 2)).replace(/[\\/?.*[\]~^$]/g, "a");
-    return `${name}${formatKeys([...(word || "a")])}<CR>`;
+    return `${name}${formatKeys([...word])}<CR>`;
   }
   if (/^[2-9]$/.test(name))
     return `${name}${rng.pick(["w", "b", "e", "j", "k", "l", "h", "G", "W", "B"])}`;
@@ -89,7 +90,8 @@ function walk(state: VimState, keys: string, level: Level): Pos | null {
     if (r.blocked !== null) return null;
     s = r.state;
   }
-  return s.pending.length === 0 ? s.cursor : null;
+  // Every command the walk types is complete, so nothing is left pending.
+  return s.cursor;
 }
 
 /** The `index`-th target of the round with `seed`. */
@@ -99,7 +101,8 @@ export function generateTarget(seed: number, index: number, level: Level): VimTa
   const { snippet, lines } = rng.pick(ELIGIBLE);
   const { min, max } = targetLimits(level);
 
-  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+  /** A random walk of the level's keys, kept when it makes a good target. */
+  const attempt = (): VimTarget | null => {
     const line = rng.int(0, lines.length - 1);
     const text = lines[line] as string;
     const start = createState(lines, { line, col: rng.int(0, Math.max(0, text.length - 1)) });
@@ -117,14 +120,14 @@ export function generateTarget(seed: number, index: number, level: Level): VimTa
     }
 
     const end = walk(start, keys, level);
-    if (end === null || (end.line === line && end.col === start.cursor.col)) continue;
+    if (end === null || (end.line === line && end.col === start.cursor.col)) return null;
     // Too easy: within reach of fewer keys than the minimum (cheap to check).
-    if (optimalSolution(start, end, level, min - 1) !== null) continue;
+    if (optimalSolution(start, end, level, min - 1) !== null) return null;
     // Without the new movements the target must take longer (or be out of
     // reach), so the best solution uses a movement of the level itself.
     const lower = level > 1 ? optimalSolution(start, end, (level - 1) as Level, max) : null;
     const best = optimalSolution(start, end, level, lower === null ? max : lower.cost - 1);
-    if (best === null) continue;
+    if (best === null) return null;
     return {
       index,
       seed: targetSeed,
@@ -136,8 +139,7 @@ export function generateTarget(seed: number, index: number, level: Level): VimTa
       minimum: best.cost,
       solution: best.keys,
     };
-  }
-  throw new Error(
-    `no target of level ${String(level)} for seed ${String(seed)} index ${String(index)}`,
-  );
+  };
+
+  return retry(attempt, (found) => found !== null, ATTEMPTS) as VimTarget;
 }

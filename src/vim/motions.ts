@@ -85,10 +85,19 @@ function dec(w: Walker): number {
   return -1;
 }
 
-/** Moves while the class stays `klass`; true when it hit an end of the buffer. */
-function skipChars(w: Walker, klass: number, forward: boolean): boolean {
+/**
+ * Moves forward while the class stays `klass`, which is never blank. Vim
+ * stops if inc() fails at the end of the buffer, but the end of a line is
+ * blank, so the loop ends there first.
+ */
+function skipForward(w: Walker, klass: number): void {
+  while (classOf(w) === klass) inc(w);
+}
+
+/** Moves back while the class stays `klass`; true when it hit the buffer start. */
+function skipBack(w: Walker, klass: number): boolean {
   while (classOf(w) === klass) {
-    if ((forward ? inc(w) : dec(w)) === -1) return true;
+    if (dec(w) === -1) return true;
   }
   return false;
 }
@@ -99,7 +108,7 @@ function fwdWord(w: Walker, count: number): void {
     const lastLine = w.pos.line === w.lines.length - 1;
     const i = inc(w);
     if (i === -1 || (i >= 1 && lastLine)) return;
-    if (sclass !== 0 && skipChars(w, sclass, true)) return;
+    if (sclass !== 0) skipForward(w, sclass);
     while (classOf(w) === 0) {
       if (onEmptyLine(w)) break;
       if (inc(w) === -1) return;
@@ -119,7 +128,7 @@ function bckWord(w: Walker, count: number): void {
       if (dec(w) === -1) return;
     }
     if (stoppedOnEmpty) continue;
-    if (skipChars(w, classOf(w), false)) return;
+    if (skipBack(w, classOf(w))) return;
     inc(w);
   }
 }
@@ -129,12 +138,12 @@ function endWord(w: Walker, count: number): void {
     const sclass = classOf(w);
     if (inc(w) === -1) return;
     if (classOf(w) === sclass && sclass !== 0) {
-      if (skipChars(w, sclass, true)) return;
+      skipForward(w, sclass);
     } else {
       while (classOf(w) === 0) {
         if (inc(w) === -1) return;
       }
-      if (skipChars(w, classOf(w), true)) return;
+      skipForward(w, classOf(w));
     }
     dec(w);
   }
@@ -144,7 +153,7 @@ function bckendWord(w: Walker, count: number): void {
   for (let left = count; left > 0; left--) {
     const sclass = classOf(w);
     if (dec(w) === -1) return;
-    if (sclass !== 0 && skipChars(w, sclass, false)) return;
+    if (sclass !== 0 && skipBack(w, sclass)) return;
     while (classOf(w) === 0) {
       if (onEmptyLine(w)) break;
       if (dec(w) === -1) return;
@@ -236,7 +245,7 @@ function paragraph(state: VimState, dir: 1 | -1, count: number): VimState {
   const { lines } = state;
   const last = lines.length - 1;
   let curr = state.cursor.line;
-  for (let left = count; left > 0; ) {
+  for (let left = count; left > 0;) {
     left--;
     let didSkip = false;
     for (let first = true; ; first = false) {
@@ -263,7 +272,11 @@ const CLOSERS = ")]}";
 function matchBracket(lines: readonly string[], from: Pos): Pos | null {
   const first = lines[from.line] as string;
   let col = from.col;
-  while (col < first.length && !OPENERS.includes(first.charAt(col)) && !CLOSERS.includes(first.charAt(col))) {
+  while (
+    col < first.length &&
+    !OPENERS.includes(first.charAt(col)) &&
+    !CLOSERS.includes(first.charAt(col))
+  ) {
     col++;
   }
   if (col >= first.length) return null;
@@ -373,11 +386,7 @@ function matchBracket(lines: readonly string[], from: Pos): Pos | null {
           }
         }
       } else if (at + 1 < text.length) {
-        if (
-          text.charAt(at + 1) === "\\" &&
-          at + 2 < text.length &&
-          text.charAt(at + 3) === "'"
-        ) {
+        if (text.charAt(at + 1) === "\\" && at + 2 < text.length && text.charAt(at + 3) === "'") {
           at += 3;
           continue;
         }
@@ -451,7 +460,7 @@ function searchFrom(
     index = ((next < 0 ? 0 : next) + count - 1) % total;
   } else {
     const prev = matches.findLastIndex((m) => before(m, from));
-    index = (((prev < 0 ? total - 1 : prev) - (count - 1)) % total + total) % total;
+    index = ((((prev < 0 ? total - 1 : prev) - (count - 1)) % total) + total) % total;
   }
   const hit = matches[index] as Pos;
   return colAt(state, hit.line, hit.col);
@@ -490,12 +499,7 @@ function searchWord(state: VimState, dir: SearchDir, count: number): VimState {
   return searchFrom(next, word.spec, dir, count, { line: state.cursor.line, col: word.col });
 }
 
-function searchPattern(
-  state: VimState,
-  spec: SearchSpec,
-  dir: SearchDir,
-  count: number,
-): VimState {
+function searchPattern(state: VimState, spec: SearchSpec, dir: SearchDir, count: number): VimState {
   const next = { ...state, lastSearch: { spec, dir } };
   return searchFrom(next, spec, dir, count, state.cursor);
 }

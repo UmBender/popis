@@ -32,7 +32,7 @@ const digitKey = (n: number): Key => String(n);
 function simpleSteps(level: Level): readonly Step[] {
   const steps: Step[] = [];
   for (const name of SIMPLE_NAMES) {
-    if ((commandLevel(name) ?? 8) > level) continue;
+    if ((commandLevel(name) as Level) > level) continue;
     const keys = [...name];
     steps.push({ command: { name, count: null }, keys });
     if (level < 5 || NO_COUNT.has(name)) continue;
@@ -162,7 +162,7 @@ export function optimalSolution(
   const settled = new Map<number, number>();
   const buckets: Node[][] = Array.from({ length: maxKeys + 1 }, () => []);
   const root: Node = { state: start, cost: 0, parent: null, keys: [] };
-  buckets[0]?.push(root);
+  (buckets[0] as Node[]).push(root);
   settled.set(nodeKey(start), 0);
   let best: Node | null = null;
 
@@ -181,11 +181,11 @@ export function optimalSolution(
     const known = settled.get(key);
     if (known !== undefined && known <= cost) return;
     settled.set(key, cost);
-    buckets[cost]?.push(node);
+    (buckets[cost] as Node[]).push(node);
   };
 
   for (let cost = 0; cost < maxKeys; cost++) {
-    for (const node of buckets[cost] ?? []) {
+    for (const node of buckets[cost] as Node[]) {
       if (settled.get(nodeKey(node.state)) !== cost) continue;
       const budget = maxKeys - cost;
       for (const step of simple) {

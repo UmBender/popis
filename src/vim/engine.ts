@@ -25,7 +25,8 @@ export function pressKey(state: VimState, key: Key, level: Level): KeyResult {
   const ignore: KeyResult = { state: { ...state, pending: [] }, blocked: null };
   const block = (name: string): KeyResult => ({ state: { ...state, pending: [] }, blocked: name });
   const wait = (): KeyResult => ({ state: { ...state, pending: [...typed, key] }, blocked: null });
-  const allowed = (name: string): boolean => (commandLevel(name) ?? 8) <= level;
+  // Only names of real commands are asked about, so each has a level.
+  const allowed = (name: string): boolean => (commandLevel(name) as Level) <= level;
   const run = (command: Command): KeyResult => ({
     state: execute({ ...state, pending: [] }, command),
     blocked: null,
@@ -39,7 +40,8 @@ export function pressKey(state: VimState, key: Key, level: Level): KeyResult {
   if (key === "<Esc>") return ignore;
 
   if (head === "/" || head === "?") {
-    if (key === "<CR>") return run({ name: head, pattern: typed.slice(digits + 1).join(""), count });
+    if (key === "<CR>")
+      return run({ name: head, pattern: typed.slice(digits + 1).join(""), count });
     if (key === "<BS>") {
       return typed.length === digits + 1
         ? ignore

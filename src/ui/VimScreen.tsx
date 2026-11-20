@@ -1,12 +1,4 @@
-import {
-  Fragment,
-  memo,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { Fragment, memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
 import type { KeyValueStore } from "../storage/history";
 import {
@@ -185,7 +177,13 @@ export function VimScreen({ clock, store, newSeed, onBack }: Props): ReactNode {
         />
 
         {finished ? (
-          <VimResults round={round} settings={settings} onNext={() => { restart(); }} />
+          <VimResults
+            round={round}
+            settings={settings}
+            onNext={() => {
+              restart();
+            }}
+          />
         ) : (
           <>
             <p className="vim-time" data-testid="vim-time">
@@ -214,8 +212,7 @@ export function VimScreen({ clock, store, newSeed, onBack }: Props): ReactNode {
               ))}
             </pre>
             <p className="vim-status" data-testid="vim-status">
-              <strong>NORMAL</strong>{" "}
-              <span className="vim-pending">{formatKeys(vim.pending)}</span>
+              <strong>NORMAL</strong> <span className="vim-pending">{formatKeys(vim.pending)}</span>
             </p>
             {round.blocked !== null && (
               <p className="vim-blocked" data-testid="vim-blocked">
@@ -291,8 +288,8 @@ export function VimScreen({ clock, store, newSeed, onBack }: Props): ReactNode {
 function Comparison({ result }: { readonly result: TargetResult }): ReactNode {
   return (
     <>
-      {result.skipped ? "pulado" : `você: ${String(result.keys)} teclas`} · ótimo: {result.minimum} (
-      <code>{result.solution}</code>)
+      {result.skipped ? "pulado" : `você: ${String(result.keys)} teclas`} · ótimo: {result.minimum}{" "}
+      (<code>{result.solution}</code>)
     </>
   );
 }

@@ -48,7 +48,11 @@ const HELP: readonly CommandHelp[] = [
   { level: 4, keys: "T{c}", text: "vai até depois do caractere {c} anterior" },
   { level: 4, keys: ";", text: "repete o último f, F, t ou T" },
   { level: 4, keys: ",", text: "repete o último f, F, t ou T ao contrário" },
-  { level: 5, keys: "{n}", text: "um número antes de um movimento o repete: 3w anda três palavras" },
+  {
+    level: 5,
+    keys: "{n}",
+    text: "um número antes de um movimento o repete: 3w anda três palavras",
+  },
   { level: 6, keys: "gg", text: "vai à primeira linha" },
   { level: 6, keys: "G", text: "vai à última linha" },
   { level: 6, keys: "{n}G", text: "vai à linha de número n" },

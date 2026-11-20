@@ -108,7 +108,10 @@ export function pressRoundKey(round: Round, key: Key, now: number): Round {
   const typed = pressKey(round.vim, key, round.config.level);
   const keys = round.keys + 1;
   const { cursor } = typed.state;
-  const started = { startedAt: round.startedAt ?? now, targetStartedAt: round.targetStartedAt ?? now };
+  const started = {
+    startedAt: round.startedAt ?? now,
+    targetStartedAt: round.targetStartedAt ?? now,
+  };
   if (cursor.line === round.target.target.line && cursor.col === round.target.target.col) {
     return finishTarget({ ...round, ...started }, now, keys, false);
   }
