@@ -1,10 +1,10 @@
 ---
 id: T18
 title: Reformulação gráfica
-status: todo
+status: in-progress
 depends_on: [T16, T17, T22]
 branch: task/T18-redesign
-adrs: []
+adrs: [ADR-0001, ADR-T22-1, ADR-T18-1]
 tags: [task]
 ---
 
@@ -192,6 +192,36 @@ muda.
   detalhado do treino]], que fica na configuração, vira o item "Dados" da
   árvore (pasta Treino). Os testes da T22 continuam passando.
 
+## Testes de cada critério
+
+| AC | Teste(s) |
+|----|----------|
+| AC-1 | `src/ui/shell/Shell.test.tsx` → `describe("shell window")`: barra de caminho, árvore, linha de status e árvore escondida na partida e na digitação |
+| AC-2 | `src/ui/shell/sections.test.ts` (ordem da tabela, todo modo e toda tela uma vez, atalhos 1–9); `Shell.test.tsx` → `"closed folders are saved"`; `App.test.tsx` e `VimScreen*.test.tsx` escolhem o item da árvore |
+| AC-3 | `Shell.test.tsx` → `describe("shell keyboard")`; `tests/e2e/shell.spec.ts` |
+| AC-4 | `Shell.test.tsx` → `describe("panel order")` (um caso por item da árvore); `"the mode panel shows the last 10 rounds"` e `"an empty history invites the first round"` |
+| AC-5 | `src/ui/verdicts.test.ts` → `describe("verdicts")`; `Shell.test.tsx` → `"the game shows a submissions queue"` |
+| AC-6 | `verdicts.test.ts` → `describe("scoreboard")` (tabela de logs); `Shell.test.tsx` → `describe("results scoreboard")` |
+| AC-7 | `tests/colors.test.ts` (já existe); `Shell.test.tsx` → `"app.css defines the text, space and rail tokens"` |
+| AC-8 | os testes existentes, com os seletores trocados num commit `test(T18)` próprio |
+| AC-9 | `Shell.test.tsx` → `describe("collapsible menu")`; `tests/e2e/mobile.spec.ts` → `"the drawer opens and closes on a phone"` |
+| AC-10 | `tests/e2e/mobile.spec.ts` (já existe, com a gaveta aberta antes de escolher o modo) |
+| AC-11 | `tests/e2e/shell.spec.ts`; capturas em `.batch/visual/` (Log) |
+| AC-12 | ADR-T18-1; [[Shell]] em `accepted` |
+| AC-13 | `Shell.test.tsx` → `"the Dados item holds the export and import"`; `src/ui/DataPanel.test.tsx` e `src/ui/TrainingLog.test.tsx` continuam passando |
+
+Detalhes decididos no spec (ADR-T18-1):
+- os itens da árvore são `input type="radio"` com `aria-label`, e o
+  atalho e a contagem do Revisar ficam fora do nome acessível;
+- os atalhos `1`–`9` vão para os nove primeiros itens da tabela
+  (Aritmética … Revisar);
+- `WA` é uma correção (a resposta encurtada), o mesmo `n` do placar;
+- o painel do item vem em blocos com `data-panel` = `title`, `options`,
+  `area`, `history` e `reference`; o teste de ordem usa esses blocos;
+- preferências da janela na chave `popis.shell.v1`;
+- a largura de gaveta vem de `matchMedia("(max-width: 48rem)")`, e o
+  `App` aceita `narrow` para os testes.
+
 ## Out of scope
 
 - Cores ou fontes novas (exigiriam um ADR que substitui o ADR-0001).
@@ -210,6 +240,20 @@ muda.
 - `tests/e2e/shell.spec.ts`, `tests/e2e/mobile.spec.ts` e os outros e2e
   (só seletores, em commit `test(T18)` próprio, conforme o AC-5)
 - `vite.config.ts` (só limiares de cobertura)
+- `docs/architecture/shell/prototype.html` (estados recolhido e gaveta,
+  conforme o AC-11)
+
+## Subtasks
+
+- [ ] Spec: testes por AC, ADR-T18-1, protótipo com árvore recolhida e
+      gaveta
+- [ ] Testes vermelhos (Shell, sections, verdicts, shell.spec) e troca de
+      seletores dos testes existentes
+- [ ] Modelos: `sections.ts`, `verdicts.ts`, preferências e props novas
+- [ ] Comportamento: janela, árvore, teclado, gaveta, painéis, vereditos
+      e placar
+- [ ] Qualidade: check, coverage, e2e e capturas
+- [ ] Docs: Log, [[Shell]] e ADR aceitos
 
 ## Notas para o batch
 
