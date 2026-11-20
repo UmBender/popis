@@ -1,10 +1,10 @@
 ---
 id: T16
 title: Vim - registradores e macros
-status: todo
+status: in-progress
 depends_on: [T15]
 branch: task/T16-vim-macros
-adrs: []
+adrs: [ADR-T16-1]
 tags: [task]
 ---
 
@@ -75,12 +75,36 @@ uma forma de praticar registradores e macros ligada a CP.
   a macro digitada no navegador, e o painel de registradores mostra a
   macro gravada.
 
+## Testes por critério
+
+- **AC-1**: `src/vim/registers.test.ts` (grupos "named and unnamed",
+  "numbered shift", "small delete", "black hole", "append", "insert
+  paste") e os casos `"ay`, `"_d`, `"1p`, `"-p`, `"Ay`, `<C-r>`.
+- **AC-2**: `src/vim/macros.test.ts` (gravar, `@a`, `@@`, contagem,
+  parada no primeiro erro, `"ap` mostra a macro) e os casos `q`, `@`.
+- **AC-3**: `src/vim/increment.test.ts` e os casos `<C-a>`, `<C-x>`.
+- **AC-4**: `src/vim/register-cases.test.ts` (o motor contra cada caso,
+  incluindo os registradores, pelo menos 5 casos por comando) e
+  `npm run vim:oracle`.
+- **AC-5**: `src/vim/drills/register-edit.test.ts` (8 tipos, forma da
+  referência) e `src/vim/drills/edit.prop.test.ts` (a referência dá o
+  "depois", para todo tipo).
+- **AC-6**: `src/vim/lessons.test.ts` (uma lição por tipo, o exemplo
+  chega ao "depois"), `src/storage/vim-learn.test.ts` (liberados salvos),
+  `src/ui/VimScreenLearn.test.tsx` (animação com relógio falso,
+  exercício guiado, liberação do tipo).
+- **AC-7**: `src/ui/VimScreenRegisters.test.tsx` ("gravando @a", painel
+  de registradores com `^J`) e `src/vim/edit-help.test.ts`.
+- **AC-8**: `tests/e2e/vim.spec.ts` (caso da T16).
+
 ## Out of scope
 
 - Registradores de sistema (`"+`, `"*`), que dependem da área de
   transferência, e os somente leitura (`".`, `"%`, `":`).
 - Macros recursivas e edição de macro colando e copiando de volta.
 - `:normal` e `:g`.
+- `<C-a>`/`<C-x>`/`g<C-a>` no modo visual e `p` no modo visual (a T15 não
+  tem `p` visual): o AC-5 usa `<C-a>` com `.` (ADR-T16-1).
 
 ## Files owned
 
@@ -89,6 +113,20 @@ uma forma de praticar registradores e macros ligada a CP.
 - `src/ui/VimScreen*.tsx`, `src/ui/vim/**`, `src/ui/app.css`
 - `tests/e2e/vim.spec.ts`
 - `vite.config.ts` (só limiares de cobertura)
+- `scripts/vim-oracle.mjs` (acrescentado: o AC-4 pede o conteúdo dos
+  registradores no oráculo, e o script é dele)
+- `src/ui/App.test.tsx`, só se um teste existente quebrar por causa da
+  tela nova (com motivo no *Log*)
+- `docs/decisions/ADR-T16-*.md`
+
+## Subtasks
+
+- [ ] Spec e ADR-T16-1.
+- [ ] Testes vermelhos (casos do oráculo, motor, geradores, lições, tela, e2e).
+- [ ] Modelos (tipos e assinaturas).
+- [ ] Comportamento (registradores, macros, `<C-a>`, geradores, Aprender, tela).
+- [ ] Qualidade: `check`, cobertura, oráculo.
+- [ ] Docs e *Log*.
 
 ## Notas para o batch
 
