@@ -144,6 +144,12 @@ describe("VimScreen", () => {
     expect(screen.getByTestId("vim-code").dataset["targetIndex"]).toBe("1");
   });
 
+  it("Meta+Enter skips the target too", () => {
+    setup(storeAt(2));
+    fireEvent.keyDown(box(), { key: "Enter", metaKey: true });
+    expect(screen.getByTestId("vim-code").dataset["targetIndex"]).toBe("1");
+  });
+
   it("Ctrl+V, Ctrl+A and Ctrl+R do not reach the browser", () => {
     setup(storeAt(1));
     for (const key of ["v", "a", "r"]) {
@@ -253,6 +259,39 @@ describe("VimScreen", () => {
     setup(storeAt(1));
     expect(screen.getByTestId("vim-summary").textContent).toBe(
       "Sem resultados nesta configuração.",
+    );
+  });
+
+  it("clicking the code puts the focus back on the key box", () => {
+    setup(storeAt(1));
+    box().blur();
+    expect(document.activeElement).not.toBe(box());
+    fireEvent.click(screen.getByTestId("vim-code"));
+    expect(document.activeElement).toBe(box());
+  });
+
+  it("keys pressed during a composition are left to the browser", () => {
+    setup(storeAt(3));
+    const before = pos(cursor());
+    expect(fireEvent.keyDown(box(), { key: "$", isComposing: true })).toBe(true);
+    expect(pos(cursor())).toEqual(before);
+  });
+
+  it("text of an input event during a composition waits for its end", () => {
+    setup(storeAt(3));
+    const before = pos(cursor());
+    fireEvent.input(box(), { target: { value: "$" }, isComposing: true });
+    expect(pos(cursor())).toEqual(before);
+    expect(box().value).toBe("$");
+  });
+
+  it("the line after a skipped target says it was skipped", () => {
+    setup(storeAt(2));
+    press("<Esc>");
+    fireEvent.keyDown(box(), { key: "Enter", ctrlKey: true });
+    const first = generateTarget(SEED, 0, 2);
+    expect(screen.getByTestId("vim-last").textContent).toBe(
+      `pulado · ótimo: ${String(first.minimum)} (${first.solution})`,
     );
   });
 
