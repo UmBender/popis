@@ -138,9 +138,9 @@ describe("config screen", () => {
 });
 
 describe("typing entry", () => {
-  it("config has a Digitação button that opens the typing screen and comes back", () => {
+  it("the Código item opens the typing screen and Voltar comes back", () => {
     setup();
-    fireEvent.click(screen.getByRole("button", { name: "Digitação" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Código" }));
     expect(screen.getByTestId("typing-code")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
     expect(screen.getByRole("button", { name: "Começar" })).toBeTruthy();
@@ -148,9 +148,9 @@ describe("typing entry", () => {
 });
 
 describe("text typing entry", () => {
-  it("config has a Texto button that opens the text typing screen and comes back", () => {
+  it("the Texto item opens the text typing screen and Voltar comes back", () => {
     setup();
-    fireEvent.click(screen.getByRole("button", { name: "Texto" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Texto" }));
     expect(screen.getByRole("textbox", { name: "Texto digitado" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
     expect(screen.getByRole("button", { name: "Começar" })).toBeTruthy();
@@ -158,9 +158,9 @@ describe("text typing entry", () => {
 });
 
 describe("vim entry", () => {
-  it("config has a Vim button that opens the Vim screen and comes back", () => {
+  it("the Movimento item opens the Vim screen and Voltar comes back", () => {
     setup();
-    fireEvent.click(screen.getByRole("button", { name: "Vim" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Movimento" }));
     expect(screen.getByRole("textbox", { name: "Teclas do Vim" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
     expect(screen.getByRole("button", { name: "Começar" })).toBeTruthy();

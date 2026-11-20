@@ -9,6 +9,7 @@ import { EDIT_KIND_LABELS } from "../vim/drills/edit";
 import { REGISTER_KINDS } from "../vim/drills/register-edit";
 import { formatKeys, parseKeys } from "../vim/keys";
 import { exampleFrames, exerciseFor, lessonFor } from "../vim/lessons";
+import { App } from "./App";
 import { VimScreen } from "./VimScreen";
 
 // AC-6: the Learn mode: an explanation, an animated example and a guided
@@ -36,6 +37,14 @@ function setup(store: KeyValueStore = memoryStore(), drill: "learn" | "edit" = "
   return store;
 }
 
+/** The whole app, with a Vim item chosen in the tree (T18). */
+function openFromTree(store: KeyValueStore, item: string) {
+  store.setItem(VIM_EDIT_SETTINGS_KEY, JSON.stringify({ durationS: 60, kinds: ["delete-line"] }));
+  render(<App clock={clock} store={store} newSeed={() => 21} />);
+  fireEvent.click(screen.getByRole("radio", { name: item }));
+  return store;
+}
+
 const box = () => screen.getByRole<HTMLTextAreaElement>("textbox", { name: "Teclas do Vim" });
 
 function advance(ms: number) {
@@ -58,11 +67,10 @@ const open = (kind: (typeof REGISTER_KINDS)[number]) => {
 };
 
 describe("VimScreen Learn mode", () => {
-  it("the Treino choice has Aprender, which is saved", () => {
-    const store = setup(memoryStore(), "edit");
-    fireEvent.change(screen.getByRole("combobox", { name: "Treino" }), {
-      target: { value: "learn" },
-    });
+  it("the Aprender item opens Learn, which is saved", () => {
+    // T18: the drill is a tree item, not a Treino choice.
+    const store = openFromTree(memoryStore(), "Edição");
+    fireEvent.click(screen.getByRole("radio", { name: "Aprender" }));
     expect(screen.getByRole("heading", { name: "Aprender" })).toBeTruthy();
     expect(loadVimEditSettings(store).drill).toBe("learn");
   });
@@ -219,16 +227,12 @@ describe("VimScreen Learn mode controls", () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it("the Treino choice goes from Aprender to the other drills and is saved", () => {
-    const store = setup();
-    fireEvent.change(screen.getByRole("combobox", { name: "Treino" }), {
-      target: { value: "edit" },
-    });
+  it("the tree goes from Aprender to the other drills and is saved", () => {
+    const store = openFromTree(memoryStore(), "Aprender");
+    fireEvent.click(screen.getByRole("radio", { name: "Edição" }));
     expect(screen.getByTestId("vim-after")).toBeTruthy();
     expect(loadVimEditSettings(store).drill).toBe("edit");
-    fireEvent.change(screen.getByRole("combobox", { name: "Treino" }), {
-      target: { value: "motion" },
-    });
+    fireEvent.click(screen.getByRole("radio", { name: "Movimento" }));
     expect(loadVimEditSettings(store).drill).toBe("motion");
   });
 

@@ -19,7 +19,7 @@ async function typeSolution(page: Page, solution: string) {
 test("a level 4 round typed with the optimal solutions has 100% efficiency", async ({ page }) => {
   await page.clock.install();
   await page.goto("/");
-  await page.getByRole("button", { name: "Vim", exact: true }).click();
+  await page.getByRole("radio", { name: "Movimento", exact: true }).check();
   await page.getByRole("combobox", { name: "Nível" }).selectOption("4");
   const box = page.getByRole("textbox", { name: "Teclas do Vim" });
   await expect(box).toBeFocused();
@@ -44,8 +44,7 @@ test("a level 4 round typed with the optimal solutions has 100% efficiency", asy
 test("T14 AC-10: an edit round typed with the references has 100% efficiency", async ({ page }) => {
   await page.clock.install();
   await page.goto("/");
-  await page.getByRole("button", { name: "Vim", exact: true }).click();
-  await page.getByRole("combobox", { name: "Treino" }).selectOption("edit");
+  await page.getByRole("radio", { name: "Edição", exact: true }).check();
   await expect(page.getByRole("textbox", { name: "Teclas do Vim" })).toBeFocused();
 
   for (let index = 0; index < 3; index++) {
@@ -76,7 +75,7 @@ test("T15 AC-8: comment and rename edits typed with <C-v> and :s are completed",
   });
   await page.clock.install();
   await page.goto("/");
-  await page.getByRole("button", { name: "Vim", exact: true }).click();
+  await page.getByRole("radio", { name: "Edição", exact: true }).check();
   await expect(page.getByRole("textbox", { name: "Teclas do Vim" })).toBeFocused();
 
   for (let index = 0; index < 4; index++) {
@@ -102,7 +101,7 @@ test("T16 AC-8: the number-lines edit is done with a macro and the panel shows i
   });
   await page.clock.install();
   await page.goto("/");
-  await page.getByRole("button", { name: "Vim", exact: true }).click();
+  await page.getByRole("radio", { name: "Edição", exact: true }).check();
   await expect(page.getByRole("textbox", { name: "Teclas do Vim" })).toBeFocused();
 
   const reference = (await page.getByTestId("vim-after").getAttribute("data-reference")) ?? "";
@@ -123,7 +122,7 @@ test("T16 AC-8: the number-lines edit is done with a macro and the panel shows i
 
 test("a blocked key shows which one and does not move the cursor", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Vim", exact: true }).click();
+  await page.getByRole("radio", { name: "Movimento", exact: true }).check();
   await page.getByRole("combobox", { name: "Nível" }).selectOption("1");
   const cursor = page.getByTestId("vim-cursor");
   const before = [await cursor.getAttribute("data-line"), await cursor.getAttribute("data-col")];
