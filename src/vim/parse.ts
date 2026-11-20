@@ -51,7 +51,12 @@ export type VisualParsed =
 
 const SIMPLE_MOTIONS = new Set<string>([..."hjklwbeWBE0^$G{}%;,nN*#"]);
 const FIND_KEYS = new Set<string>(["f", "F", "t", "T"]);
-const COMMANDS = new Set<string>([..."xXDCsS~pPYuaiAIoO.JvV:", "<C-r>", "<C-v>"]);
+const COMMANDS = new Set<string>([
+  ..."xXDCsS~pPYuaiAIoO.JvV:",
+  ...["<C-r>", "<C-v>", "<C-a>", "<C-x>"],
+]);
+const RECORD_NAME = /^[a-zA-Z]$/;
+const RUN_NAME = /^[a-z@]$/;
 const OPERATORS = new Set<string>(["d", "c", "y", ">", "<"]);
 const VISUAL_COMMANDS = new Set<string>([..."vVoOdxycs><~JIA:", "<C-v>"]);
 
@@ -141,6 +146,13 @@ export function parse(keys: readonly Key[]): Parsed {
     if (char === undefined) return WAIT;
     return isChar(char) || char === "<CR>"
       ? { kind: "command", name: "r", count: first.count, arg: char }
+      : INVALID;
+  }
+  if (key === "q" || key === "@") {
+    const char = keys[first.next + 1];
+    if (char === undefined) return WAIT;
+    return (key === "q" ? RECORD_NAME : RUN_NAME).test(char)
+      ? { kind: "command", name: key, count: first.count, arg: char }
       : INVALID;
   }
   if (key === "g" && keys[first.next + 1] === "v") {

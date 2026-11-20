@@ -27,6 +27,9 @@ export type Register = {
   readonly block?: number;
 };
 
+/** A macro being recorded into register `name`; `keys` are the keys typed so far. */
+export type Recording = { readonly name: string; readonly keys: readonly Key[] };
+
 export type VisualKind = "char" | "line" | "block";
 
 /** A selection in progress: the cursor is the other end (ADR-T15-1). */
@@ -69,6 +72,8 @@ export type Session = {
   readonly change: Pick<Change, "count" | "keys">;
   /** Keys typed since the session started. */
   readonly typed: readonly Key[];
+  /** `<C-r>` was typed: the next key names a register to paste. */
+  readonly ctrlR?: boolean;
   /** The `.` after a visual command does not repeat it (ADR-T15-1). */
   readonly noRepeat?: boolean;
   /** A block insert (`I`, `A`, `$A`) to copy to the other rows on Esc. */
@@ -97,7 +102,16 @@ export type BlockInsert = {
  */
 export type VimState = {
   readonly mode: Mode;
+  /** The unnamed register (`""`). */
   readonly register: Register | null;
+  /** The registers `0`-`9`, `-` and `a`-`z` that hold something (ADR-T16-1). */
+  readonly registers: Readonly<Record<string, Register>>;
+  /** The macro being recorded, or null. */
+  readonly recording: Recording | null;
+  /** The letter of the macro `@@` runs again. */
+  readonly lastMacro: string | null;
+  /** The last key was a command that failed (Vim beeps); a running macro stops. */
+  readonly failed: boolean;
   readonly undo: readonly UndoStep[];
   readonly redo: readonly UndoStep[];
   readonly lastChange: Change | null;
@@ -125,6 +139,10 @@ export function createState(lines: readonly string[], cursor: Pos): VimState {
   return {
     mode: "normal",
     register: null,
+    registers: {},
+    recording: null,
+    lastMacro: null,
+    failed: false,
     undo: [],
     redo: [],
     lastChange: null,

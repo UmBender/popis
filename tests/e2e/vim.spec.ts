@@ -90,6 +90,37 @@ test("T15 AC-8: comment and rename edits typed with <C-v> and :s are completed",
   await expect(page.getByTestId("vim-efficiency")).toHaveText("100%");
 });
 
+test("T16 AC-8: the number-lines edit is done with a macro and the panel shows it", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "popis.vim-edit-settings",
+      JSON.stringify({ drill: "edit", durationS: 60, kinds: ["number-lines"] }),
+    );
+    localStorage.setItem("popis.vim-learn", JSON.stringify({ unlocked: ["number-lines"] }));
+  });
+  await page.clock.install();
+  await page.goto("/");
+  await page.getByRole("button", { name: "Vim", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Teclas do Vim" })).toBeFocused();
+
+  const reference = (await page.getByTestId("vim-after").getAttribute("data-reference")) ?? "";
+  expect(reference).toMatch(/^qayyp<C-a>q\d*@a$/);
+  await typeSolution(page, "qa");
+  await expect(page.getByTestId("vim-status")).toContainText("gravando @a");
+  await typeSolution(page, "yyp<C-a>q");
+  await expect(page.getByTestId("vim-status")).not.toContainText("gravando");
+  await expect(page.getByTestId("vim-registers").locator('li[data-register="a"]')).toContainText(
+    "yyp^A",
+  );
+  await typeSolution(page, reference.slice("qayyp<C-a>q".length));
+  await expect(page.getByTestId("vim-code")).toHaveAttribute("data-edit-index", "1");
+  await page.clock.runFor(61_000);
+  await expect(page.getByTestId("vim-reached")).toHaveText("1");
+  await expect(page.getByTestId("vim-efficiency")).toHaveText("100%");
+});
+
 test("a blocked key shows which one and does not move the cursor", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Vim", exact: true }).click();

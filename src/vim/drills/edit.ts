@@ -3,6 +3,12 @@ import { CORPUS, type Language } from "../../typing/corpus";
 import { joinLines, shiftLine } from "../buffer";
 import { parseKeys } from "../keys";
 import type { Pos } from "../state";
+import {
+  REGISTER_BUILDERS,
+  REGISTER_KIND_LABELS,
+  REGISTER_KINDS,
+  type RegisterKind,
+} from "./register-edit";
 
 /** The kinds of edit a round can ask for (AC-6). */
 export const EDIT_KINDS = [
@@ -36,10 +42,17 @@ export const EDIT_KINDS = [
   "replace-endl",
 ] as const;
 
-export type EditKind = (typeof EDIT_KINDS)[number];
+type PlainKind = (typeof EDIT_KINDS)[number];
+
+/** Every kind: the plain ones and the ones of registers and macros (T16). */
+export type EditKind = PlainKind | RegisterKind;
+
+/** Every kind a round can ask for, once its lesson is done for the register kinds. */
+export const ALL_EDIT_KINDS: readonly EditKind[] = [...EDIT_KINDS, ...REGISTER_KINDS];
 
 /** What the checkbox of each kind says, in Portuguese. */
 export const EDIT_KIND_LABELS: Readonly<Record<EditKind, string>> = {
+  ...REGISTER_KIND_LABELS,
   "delete-word": "apagar uma palavra",
   "change-word": "trocar uma palavra",
   "change-parens": "trocar o conteúdo de ( )",
@@ -171,6 +184,7 @@ function changeQuotes(rng: Rng, lines: readonly string[]): Draft | null {
 }
 
 const BUILDERS: Readonly<Record<EditKind, Builder>> = {
+  ...REGISTER_BUILDERS,
   "delete-word": (rng, lines) => {
     // A word followed by blanks and more text: dw takes the word and the blanks.
     const hit = rng.pick(findAll(lines, /(?<!\w)[A-Za-z_]\w*( +)(?=\S)/));

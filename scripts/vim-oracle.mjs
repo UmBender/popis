@@ -36,7 +36,18 @@ vim.api.nvim_feedkeys(keys, "ntx", false)
 local pos = vim.api.nvim_win_get_cursor(0)
 local mode = vim.api.nvim_get_mode().mode
 local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+-- The registers a T16 case can leave behind (ADR-T16-1): empty ones are left out.
+local regs = vim.empty_dict()
+for name in ("0123456789-abcdefghijklmnopqrstuvwxyz"):gmatch(".") do
+  -- A recorded <BS> is the bytes 0x80 "kb"; JSON needs valid UTF-8, so the
+  -- 0x80 becomes the character U+0080, which is how the engine keeps it.
+  local value = vim.fn.getreg(name):gsub("\\128kb", "\\194\\128kb")
+  if value ~= "" then
+    regs[name] = { reg = value, regtype = vim.fn.getregtype(name) }
+  end
+end
 local out = vim.json.encode({
+  regs = regs,
   row = pos[1],
   col = pos[2],
   mode = mode,
@@ -51,6 +62,9 @@ vim.fn.writefile({ out }, arg[2])
 function toCursor(row, col) {
   return [row - 1, col];
 }
+
+/** A register case (ADR-T16-1) also expects the registers it leaves behind. */
+const isRegCase = (c) => !Array.isArray(c[4]) && c[4].regs !== undefined;
 
 /** An edit case has an object as its expectation; a motion case, a cursor. */
 const isEditCase = (c) => !Array.isArray(c[4]);
@@ -76,6 +90,7 @@ function runCase(dir, id, [, text, from, keys]) {
           text: out.text,
           reg: out.reg,
           regtype: out.regtype,
+          regs: out.regs,
         });
       },
     );
@@ -85,7 +100,7 @@ function runCase(dir, id, [, text, from, keys]) {
 function source(group, cases) {
   const rows = cases.map((c) => `  ${JSON.stringify(c)},\n`).join("");
   const edit = cases.length > 0 && isEditCase(cases[0]);
-  const type = edit ? "EditCase" : "VimCase";
+  const type = edit ? (isRegCase(cases[0]) ? "RegisterCase" : "EditCase") : "VimCase";
   return (
     `import type { ${type} } from "./case";\n\n` +
     `export const ${group}: readonly ${type}[] = [\n${rows}];\n`
@@ -93,18 +108,28 @@ function source(group, cases) {
 }
 
 /** What Neovim did, in the shape of an edit case's expectation. */
-const asExpectation = (result) => ({
+const asExpectation = (result, withRegs) => ({
   text: result.text,
   cursor: result.cursor,
   reg: result.reg,
   regtype: result.regtype,
+  ...(withRegs ? { regs: Object.fromEntries(Object.entries(result.regs).sort()) } : {}),
 });
+
+/** JSON with the keys of every object sorted, so that key order never matters. */
+function canonical(value) {
+  return JSON.stringify(value, (_key, item) =>
+    item !== null && typeof item === "object" && !Array.isArray(item)
+      ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b)))
+      : item,
+  );
+}
 
 function disagrees(c, result) {
   const expect = c[4];
   if (result.mode !== "n") return true;
   if (!isEditCase(c)) return result.cursor[0] !== expect[0] || result.cursor[1] !== expect[1];
-  return JSON.stringify(asExpectation(result)) !== JSON.stringify(expect);
+  return canonical(asExpectation(result, isRegCase(c))) !== canonical(expect);
 }
 
 async function loadFiles() {
@@ -151,7 +176,7 @@ async function main() {
       if (disagrees(job.c, result)) {
         const want = JSON.stringify(expect);
         const got = isEditCase(job.c)
-          ? JSON.stringify(asExpectation(result))
+          ? JSON.stringify(asExpectation(result, isRegCase(job.c)))
           : `[${result.cursor}]`;
         bad.push(`${name}  keys ${keys}: expected ${want}, nvim ${got} in mode ${result.mode}`);
       }
@@ -163,7 +188,13 @@ async function main() {
           const job = jobs.find((j) => j.c === c);
           const result = results.get(job);
           if (!result) return c;
-          return [c[0], c[1], c[2], c[3], isEditCase(c) ? asExpectation(result) : result.cursor];
+          return [
+            c[0],
+            c[1],
+            c[2],
+            c[3],
+            isEditCase(c) ? asExpectation(result, isRegCase(c)) : result.cursor,
+          ];
         });
         writeFileSync(join(CASES_DIR, file), source(group, fixed));
       }

@@ -28,6 +28,29 @@ export type EditCase = readonly [
   expect: EditExpect,
 ];
 
+/** One register after a case: `getreg()` and `getregtype()`, like `EditExpect`. */
+export type RegisterContent = {
+  readonly reg: string;
+  readonly regtype: "v" | "V" | `\x16${number}`;
+};
+
+/**
+ * What Neovim holds after a register case (ADR-T16-1): the edit expectation
+ * and every register that is not empty among `0`–`9`, `-` and `a`–`z`.
+ */
+export type RegisterExpect = EditExpect & {
+  readonly regs: Readonly<Record<string, RegisterContent>>;
+};
+
+/** An edit case that also checks the registers it leaves behind. */
+export type RegisterCase = readonly [
+  name: string,
+  text: string,
+  from: Cursor,
+  keys: string,
+  expect: RegisterExpect,
+];
+
 /**
  * One fidelity case (ADR-T13-1): the buffer `text` (lines joined by "\n"),
  * the cursor before, the keys typed in normal mode and the cursor after.

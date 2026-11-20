@@ -1,5 +1,10 @@
 import { BASIC } from "./basic";
-import type { EditCase, VimCase } from "./case";
+import type { EditCase, RegisterCase, VimCase } from "./case";
+import { REG_INSERT } from "./reg-insert";
+import { REG_MACROS } from "./reg-macros";
+import { REG_NAMED } from "./reg-named";
+import { REG_NUMBER } from "./reg-number";
+import { REG_NUMBERED } from "./reg-numbered";
 import { EDIT_EDGES } from "./edit-edges";
 import { EDIT_GRID } from "./edit-grid";
 import { EDIT_INSERT } from "./edit-insert";
@@ -12,6 +17,7 @@ import { LINES } from "./lines";
 import { SEARCH } from "./search";
 import { SHIFT_JOIN } from "./shift-join";
 import { VISUAL_BLOCK } from "./visual-block";
+import { REG_PROBE } from "./zz-probe";
 import { VISUAL_OPS } from "./visual-ops";
 import { VISUAL_SELECT } from "./visual-select";
 import { WORDS } from "./words";
@@ -41,7 +47,20 @@ export const VISUAL_CASES: readonly EditCase[] = [
   ...EX_SUB,
 ];
 
+/**
+ * Every register, macro and `<C-a>` case (ADR-T16-1): they also check the
+ * registers `0`–`9`, `-` and `a`–`z`.
+ */
+export const REGISTER_CASES: readonly RegisterCase[] = [
+  ...REG_NAMED,
+  ...REG_NUMBERED,
+  ...REG_MACROS,
+  ...REG_NUMBER,
+  ...REG_INSERT,
+  ...REG_PROBE,
+];
+
 /** The motion or command a case is about: its name up to the first ": ". */
-export function motionOf(vimCase: VimCase | EditCase): string {
+export function motionOf(vimCase: VimCase | EditCase | RegisterCase): string {
   return vimCase[0].slice(0, vimCase[0].indexOf(": "));
 }

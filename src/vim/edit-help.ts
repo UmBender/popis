@@ -121,4 +121,74 @@ export const EDIT_HELP: readonly EditHelp[] = [
     text: ":noh, :w e :q são aceitos e não fazem nada, para não atrapalhar o hábito",
     example: ":noh<CR> apaga o destaque de uma busca no Vim de verdade",
   },
+  {
+    keys: '"a',
+    text: 'registrador nomeado: "ayy copia para o a e "ap cola de lá (a a z; vale para y d c p P x e no visual)',
+    example: '"a2yy guarda um caso de teste de duas linhas e 3"ap cola três cópias',
+  },
+  {
+    keys: '"A',
+    text: 'letra maiúscula acrescenta ao registrador em vez de trocar o que ele tinha: "Ayy',
+    example: '"Ayy em linhas espalhadas junta tudo no a para colar de uma vez',
+  },
+  {
+    keys: '"0',
+    text: 'guarda a última cópia (y): um apagar não o troca, então "0p cola o que você copiou',
+    example: 'yy, depois dd numa linha de debug e "0p cola a linha que foi copiada',
+  },
+  {
+    keys: '"1',
+    text: 'guarda a última linha apagada; "2 a "9 guardam as anteriores (o "1p seguido de . cola a "2)',
+    example: '"1pu.u. passa pelas linhas apagadas até achar a que você queria de volta',
+  },
+  {
+    keys: '"-',
+    text: "guarda o último apagado dentro de uma linha (dw, x, D); o p comum cola o último apagado",
+    example: 'dw e depois "-p traz de volta a palavra apagada mesmo depois de um dd',
+  },
+  {
+    keys: '"_',
+    text: "buraco negro: apaga ou troca sem mexer em nenhum registrador, nem no sem nome",
+    example: 'yy e depois "_dd apaga a linha de debug sem perder a cópia; o p cola a cópia',
+  },
+  {
+    keys: '""',
+    text: "o registrador sem nome: o que y, d, c e x guardam por padrão e o p cola",
+    example: '""p é o mesmo que p; serve para lembrar de onde vem o que você cola',
+  },
+  {
+    keys: "q",
+    text: "qa começa a gravar uma macro no registrador a; o próximo q para a gravação",
+    example: "qayyp<C-a>q grava copiar a linha e somar 1: gera uma entrada numerada",
+  },
+  {
+    keys: "@a",
+    text: "executa a macro do registrador a; a macro para no primeiro comando que falha",
+    example: "@a repete a troca que você gravou numa linha, na linha seguinte",
+  },
+  {
+    keys: "@@",
+    text: "executa de novo a última macro executada (aceita contagem)",
+    example: "@a e depois @@ aplica a macro nas próximas linhas sem digitar o nome",
+  },
+  {
+    keys: "9@a",
+    text: "com contagem, a macro corre várias vezes e para sozinha no primeiro erro",
+    example: "99@a aplica a macro até o fim do arquivo, sem contar as linhas",
+  },
+  {
+    keys: "<C-a>",
+    text: "soma 1 ao próximo número da linha (5<C-a> soma 5; vale para hex e binário)",
+    example: "<C-a>j.j. soma 1 ao índice de três linhas seguidas",
+  },
+  {
+    keys: "<C-x>",
+    text: "subtrai 1 do próximo número da linha (aceita contagem e passa de zero para negativo)",
+    example: "<C-x> passa um índice de 1-base para 0-base",
+  },
+  {
+    keys: "i_<C-r>",
+    text: "no modo de inserção, <C-r> e o nome de um registrador cola o texto dele",
+    example: 'dw, A <C-r>"<Esc> põe no fim da linha a coluna que você apagou',
+  },
 ];

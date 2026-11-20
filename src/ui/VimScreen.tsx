@@ -11,6 +11,7 @@ import {
   saveVimEditSettings,
   saveVimSettings,
   vimSummary,
+  type VimDrill,
   type VimEditSettings,
   type VimResult,
   type VimSettings,
@@ -32,6 +33,7 @@ import {
 } from "../vim/round";
 import { DrillSelect } from "./vim/DrillSelect";
 import { EditDrill } from "./vim/EditDrill";
+import { LearnDrill } from "./vim/LearnDrill";
 
 type Props = {
   readonly clock: Clock;
@@ -47,6 +49,9 @@ export function VimScreen(props: Props): ReactNode {
   const [edit, setEdit] = useState<VimEditSettings>(() => loadVimEditSettings(store));
   if (edit.drill === "edit") {
     return <EditDrill {...props} settings={edit} onSettings={setEdit} />;
+  }
+  if (edit.drill === "learn") {
+    return <LearnDrill {...props} settings={edit} onSettings={setEdit} />;
   }
   return (
     <MotionDrill
@@ -87,7 +92,7 @@ function MotionDrill({
   newSeed,
   onBack,
   onDrill,
-}: Props & { readonly onDrill: (drill: "motion" | "edit") => void }): ReactNode {
+}: Props & { readonly onDrill: (drill: VimDrill) => void }): ReactNode {
   const [current, setCurrent] = useState<Run>(() => newRun(loadVimSettings(store), newSeed(), 0));
   const [results, setResults] = useState<readonly VimResult[]>(() => loadVimResults(store));
   const [now, setNow] = useState(() => clock.now());

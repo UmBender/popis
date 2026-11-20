@@ -1,10 +1,10 @@
 ---
 id: T16
 title: Vim - registradores e macros
-status: todo
+status: review
 depends_on: [T15]
 branch: task/T16-vim-macros
-adrs: []
+adrs: [ADR-T16-1]
 tags: [task]
 ---
 
@@ -75,12 +75,36 @@ uma forma de praticar registradores e macros ligada a CP.
   a macro digitada no navegador, e o painel de registradores mostra a
   macro gravada.
 
+## Testes por critério
+
+- **AC-1**: `src/vim/registers.test.ts` (grupos "named and unnamed",
+  "numbered shift", "small delete", "black hole", "append", "insert
+  paste") e os casos `"ay`, `"_d`, `"1p`, `"-p`, `"Ay`, `<C-r>`.
+- **AC-2**: `src/vim/macros.test.ts` (gravar, `@a`, `@@`, contagem,
+  parada no primeiro erro, `"ap` mostra a macro) e os casos `q`, `@`.
+- **AC-3**: `src/vim/increment.test.ts` e os casos `<C-a>`, `<C-x>`.
+- **AC-4**: `src/vim/register-cases.test.ts` (o motor contra cada caso,
+  incluindo os registradores, pelo menos 5 casos por comando) e
+  `npm run vim:oracle`.
+- **AC-5**: `src/vim/drills/register-edit.test.ts` (8 tipos, forma da
+  referência) e `src/vim/drills/edit.prop.test.ts` (a referência dá o
+  "depois", para todo tipo).
+- **AC-6**: `src/vim/lessons.test.ts` (uma lição por tipo, o exemplo
+  chega ao "depois"), `src/storage/vim-learn.test.ts` (liberados salvos),
+  `src/ui/VimScreenLearn.test.tsx` (animação com relógio falso,
+  exercício guiado, liberação do tipo).
+- **AC-7**: `src/ui/VimScreenRegisters.test.tsx` ("gravando @a", painel
+  de registradores com `^J`) e `src/vim/edit-help.test.ts`.
+- **AC-8**: `tests/e2e/vim.spec.ts` (caso da T16).
+
 ## Out of scope
 
 - Registradores de sistema (`"+`, `"*`), que dependem da área de
   transferência, e os somente leitura (`".`, `"%`, `":`).
 - Macros recursivas e edição de macro colando e copiando de volta.
 - `:normal` e `:g`.
+- `<C-a>`/`<C-x>`/`g<C-a>` no modo visual e `p` no modo visual (a T15 não
+  tem `p` visual): o AC-5 usa `<C-a>` com `.` (ADR-T16-1).
 
 ## Files owned
 
@@ -89,6 +113,20 @@ uma forma de praticar registradores e macros ligada a CP.
 - `src/ui/VimScreen*.tsx`, `src/ui/vim/**`, `src/ui/app.css`
 - `tests/e2e/vim.spec.ts`
 - `vite.config.ts` (só limiares de cobertura)
+- `scripts/vim-oracle.mjs` (acrescentado: o AC-4 pede o conteúdo dos
+  registradores no oráculo, e o script é dele)
+- `src/ui/App.test.tsx`, só se um teste existente quebrar por causa da
+  tela nova (com motivo no *Log*)
+- `docs/decisions/ADR-T16-*.md`
+
+## Subtasks
+
+- [x] Spec e ADR-T16-1.
+- [x] Testes vermelhos (casos do oráculo, motor, geradores, lições, tela, e2e).
+- [x] Modelos (tipos e assinaturas).
+- [x] Comportamento (registradores, macros, `<C-a>`, geradores, Aprender, tela).
+- [x] Qualidade: `check`, cobertura, oráculo.
+- [x] Docs e *Log*.
 
 ## Notas para o batch
 
@@ -98,3 +136,37 @@ uma forma de praticar registradores e macros ligada a CP.
   falso.
 
 ## Log
+
+- 2026-11-20 — Feito em `task/T16-vim-macros` (base `task/T15-vim-visual`).
+  `npm run check` verde (3682 testes), `npm run coverage` sem erro,
+  `npm run test:fuzz` verde, `npm run test:e2e` 18/18,
+  `npm run vim:oracle` 2161/2161 casos de acordo (158 casos novos em
+  `REGISTER_CASES`, que também comparam os registradores `0`–`9`, `-` e
+  `a`–`z`).
+- **Neovim venceu a nota:** uma execução inteira de `@a` (com contagem) é
+  um passo de desfazer só; `<C-r>` seguido de Esc não nomeia registrador e
+  a inserção continua; `x` numa linha vazia e `.` sem mudança não falham
+  numa macro, mas `l` no fim, `h` no começo, `p` de registrador vazio, `u`
+  sem histórico, `r` curto demais, `J` sem próxima linha, `<C-a>` sem
+  número e `@b` vazio falham e param a macro; `9j` só falha se já está na
+  última linha; `-` colado a um número é sinal, mesmo depois de uma
+  palavra; apagar visual pequeno vai para `"-`, e linha para `"1`.
+- Correções de teste, em commits próprios: o desfazer de macro e o
+  `<C-r><Esc>` esperavam o contrário do Neovim; o `copy-block` precisa de
+  um `j` antes do `"ap`; um teste de tela apertava a tecla dentro do `act`.
+- Desvios: `scripts/vim-oracle.mjs` entrou nos *Files owned* (registradores
+  no oráculo, comparação sem depender da ordem das chaves). Os tipos
+  liberados ficam em `popis.vim-learn`, não em `popis.vim-settings`
+  (UNATTENDED CHOICE, ADR-T16-1). Os oito tipos novos ficam fora de
+  `EDIT_KINDS` (em `ALL_EDIT_KINDS`) para não mudar os testes da T14; o
+  teste de propriedade deles é `register-edit.prop.test.ts`, não
+  `edit.prop.test.ts`. O arquivo de casos achados ao sondar o Neovim ficou
+  como `src/vim/cases/zz-probe.ts` (não consegui renomear sem `mv`).
+  Registros gravados com `r`/`f` mostram bytes internos no Neovim, então
+  nenhum caso grava esses comandos.
+- Fora do escopo (ADR-T16-1): `<C-a>` e `p` no visual, `g<C-a>`. A tela
+  Aprender é aberta pela escolha "Treino"; concluir o exercício liga o
+  tipo no treino de edição.
+- Verificação visual não feita (sem capturas nesta execução). Conferir à
+  mão: o painel de registradores, "gravando @a", a tela Aprender e se as
+  explicações das lições são claras (fluxo de macros).

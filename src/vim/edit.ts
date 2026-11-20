@@ -15,15 +15,31 @@ import {
 import { pressCmdline, startCmdline } from "./ex";
 import type { Key } from "./keys";
 import { endWord, fwdWord, runMotion, wordWalk } from "./motions";
-import { isChar, parse, toCommand, type Motion, type Op, type Target } from "./parse";
-import type { Change, Pos, Register, Session, Snapshot, VimState } from "./state";
+import { incrementAt } from "./increment";
+import {
+  isChar,
+  parse,
+  parseVisual,
+  toCommand,
+  type Motion,
+  type Op,
+  type Parsed,
+  type Target,
+} from "./parse";
+import {
+  getRegister,
+  isRegisterName,
+  macroKeys,
+  recordMacro,
+  registerText,
+  storeRegister,
+  type WriteKind,
+} from "./registers";
+import type { Change, Pos, Register, Session, Snapshot, UndoStep, VimState } from "./state";
 import { textObjectAt } from "./textobjects";
 import { enterVisual, finishBlockInsert, pressVisual, reselect } from "./visual";
 
-/** The text `getreg('"')` gives: "a\nb" for characters, "a\n" for lines. */
-export function registerText(register: Register): string {
-  return register.lines.join("\n") + (register.linewise ? "\n" : "");
-}
+export { registerText };
 
 /** The unnamed register as the Neovim oracle reports it. */
 export function registerView(state: VimState): {
@@ -343,7 +359,7 @@ function operate(
   keys: readonly Key[],
 ): VimState {
   const { range, base } = operatorRange(state, op, count, target);
-  if (range === null) return base;
+  if (range === null) return { ...base, failed: true };
   return applyOperator(base, op, count, keys, range);
 }
 
@@ -418,9 +434,30 @@ function startInsert(
   };
 }
 
+/**
+ * `<C-r>` and a register name: the text goes in as typed, and `.` repeats the
+ * text itself, not the `<C-r>`. A key that names no register is dropped.
+ */
+function pasteRegister(state: VimState, session: Session, key: Key): VimState {
+  const register = isRegisterName(key) ? getRegister(state, key) : null;
+  const waiting: Session = { ...session, ctrlR: false };
+  if (register === null) return { ...state, session: waiting };
+  let at: VimState = state;
+  const typed: Key[] = [];
+  // Code units, so every typed key is one character.
+  for (const ch of registerText(register).split("")) {
+    const pressed = ch === "\n" ? "<CR>" : ch;
+    at = ch === "\n" ? insertBreak(at) : insertText(at, ch);
+    typed.push(pressed);
+  }
+  return { ...at, session: { ...waiting, typed: [...session.typed, ...typed] } };
+}
+
 function pressInsert(state: VimState, key: Key): VimState {
   // Insert mode always has its session.
   const session = state.session as Session;
+  if (session.ctrlR === true) return pasteRegister(state, session, key);
+  if (key === "<C-r>") return { ...state, session: { ...session, ctrlR: true } };
   if (key !== "<Esc>") {
     const next = insertKey(state, key);
     if (next === null) return state;
@@ -461,7 +498,7 @@ function toggleCase(ch: string): string {
 
 function put(state: VimState, count: number | null, after: boolean): VimState {
   const { register } = state;
-  if (register === null) return state;
+  if (register === null) return { ...state, failed: true };
   const n = count ?? 1;
   const { line, col } = state.cursor;
   const before = snapshot(state);
@@ -499,7 +536,7 @@ function replaceChars(state: VimState, count: number | null, char: string): VimS
   const n = count ?? 1;
   const { line, col } = state.cursor;
   const text = state.lines[line] as string;
-  if (col + n > text.length) return state;
+  if (col + n > text.length) return { ...state, failed: true };
   const change: Change = { count, keys: ["r", char], typed: [] };
   const before = snapshot(state);
   if (char === "<CR>") {
@@ -546,7 +583,7 @@ function undo(state: VimState, count: number | null): VimState {
   let s = state;
   for (let left = count ?? 1; left > 0; left--) {
     const step = s.undo.at(-1);
-    if (step === undefined) break;
+    if (step === undefined) return { ...s, failed: true };
     const moved = afterUndo(s, step.before, step.before.cursor);
     s = { ...moved, undo: s.undo.slice(0, -1), redo: [...s.redo, step] };
   }
@@ -557,7 +594,7 @@ function redo(state: VimState, count: number | null): VimState {
   let s = state;
   for (let left = count ?? 1; left > 0; left--) {
     const step = s.redo.at(-1);
-    if (step === undefined) break;
+    if (step === undefined) return { ...s, failed: true };
     const moved = afterUndo(s, step.after, step.before.cursor);
     s = { ...moved, redo: s.redo.slice(0, -1), undo: [...s.undo, step] };
   }
@@ -568,9 +605,15 @@ function redo(state: VimState, count: number | null): VimState {
 function repeatChange(state: VimState, count: number | null): VimState {
   const change = state.lastChange;
   if (change === null) return state;
-  const keys = [...countKeys(count ?? change.count), ...change.keys, ...change.typed];
+  // A register prefix goes first; a numbered register moves on to the next one.
+  const named = change.keys[0] === '"';
+  const name = named ? (change.keys[1] as Key) : "";
+  const moved = /^[1-8]$/.test(name) ? String(Number(name) + 1) : name;
+  const prefix = named ? ['"', moved] : [];
+  const rest = named ? change.keys.slice(2) : change.keys;
+  const keys = [...prefix, ...countKeys(count ?? change.count), ...rest, ...change.typed];
   let s = state;
-  for (const key of keys) s = pressEditKey(s, key);
+  for (const key of keys) s = dispatch(s, key);
   return s;
 }
 
@@ -580,10 +623,10 @@ function joinCommand(state: VimState, count: number | null): VimState {
   const last = state.lines.length - 1;
   let n = Math.max(2, count ?? 2);
   if (from + n - 1 > last) {
-    if (n <= 2) return state;
+    if (n <= 2) return { ...state, failed: true };
     n = last - from + 1;
   }
-  if (n < 2) return state;
+  if (n < 2) return { ...state, failed: true };
   const joined = joinLines(state.lines, from, n);
   const change: Change = { count, keys: ["J"], typed: [] };
   const moved = withCursor({ ...state, lines: joined.lines, lastChange: change }, from, joined.col);
@@ -631,6 +674,14 @@ function runCommand(state: VimState, name: string, count: number | null, arg: st
       return enterVisual(state, "block");
     case "gv":
       return reselect(state);
+    case "q":
+      return { ...state, recording: { name: arg, keys: [] } };
+    case "@":
+      return runMacro(state, count, arg);
+    case "<C-a>":
+      return incrementAt(state, count, 1);
+    case "<C-x>":
+      return incrementAt(state, count, -1);
     case ":":
       return startCmdline(state);
     case "J":
@@ -661,7 +712,42 @@ function runCommand(state: VimState, name: string, count: number | null, arg: st
 
 // ---------------------------------------------------------------- entry point
 
-function pressNormal(state: VimState, key: Key): VimState {
+/** The movements that send a delete to register 1 even inside a line. */
+const REGISTER_ONE_MOTIONS = new Set<string>([..."%()`/?nN{}"]);
+
+type Write = { readonly kind: WriteKind; readonly one: boolean };
+
+/** What a command does to the registers: a copy, a delete, or nothing. */
+function writeOf(parsed: Extract<Parsed, { kind: "operator" | "command" }>): Write | null {
+  if (parsed.kind === "operator") {
+    if (parsed.op === "y") return { kind: "yank", one: false };
+    if (parsed.op === ">" || parsed.op === "<") return null;
+    const one =
+      parsed.target.kind === "motion" && REGISTER_ONE_MOTIONS.has(parsed.target.motion.name);
+    return { kind: "delete", one };
+  }
+  if (parsed.name === "Y") return { kind: "yank", one: false };
+  return "xXDCsS".includes(parsed.name) ? { kind: "delete", one: false } : null;
+}
+
+/** The same for a command typed in visual mode. */
+function visualWriteOf(keys: readonly Key[]): Write | null {
+  const parsed = parseVisual(keys);
+  if (parsed.kind !== "command") return null;
+  if (parsed.name === "y") return { kind: "yank", one: false };
+  return ["d", "x", "c", "s"].includes(parsed.name) ? { kind: "delete", one: false } : null;
+}
+
+function finishWrite(
+  idle: VimState,
+  next: VimState,
+  write: Write | null,
+  use: string | null,
+): VimState {
+  return write === null ? next : storeRegister(idle, next, write.kind, use, write.one);
+}
+
+function pressNormal(state: VimState, key: Key, use: string | null): VimState {
   const typed = state.pending;
   if (key === "<BS>") {
     const pending = parse(typed);
@@ -677,10 +763,21 @@ function pressNormal(state: VimState, key: Key): VimState {
       return { ...state, pending: keys };
     case "invalid":
       return idle;
-    case "motion":
-      return runMotion(idle, toCommand(parsed.motion, parsed.count)).state;
-    case "command":
-      return runCommand(idle, parsed.name, parsed.count, parsed.arg);
+    case "motion": {
+      const moved = runMotion(idle, toCommand(parsed.motion, parsed.count));
+      return { ...moved.state, failed: !moved.ok };
+    }
+    case "command": {
+      if ((parsed.name === "p" || parsed.name === "P") && use !== null) {
+        // Paste from the named register; the unnamed one is not touched.
+        const source = getRegister(idle, use);
+        if (source === null) return { ...idle, failed: true };
+        const put = runCommand({ ...idle, register: source }, parsed.name, parsed.count, "");
+        return { ...put, register: idle.register };
+      }
+      const next = runCommand(idle, parsed.name, parsed.count, parsed.arg);
+      return finishWrite(idle, next, writeOf(parsed), use);
+    }
     case "operator": {
       const target = parsed.target;
       const targetKeys =
@@ -689,8 +786,98 @@ function pressNormal(state: VimState, key: Key): VimState {
           : target.kind === "object"
             ? [...target.object]
             : target.motion.keys;
-      return operate(idle, parsed.op, parsed.count, target, [parsed.op, ...targetKeys]);
+      const next = operate(idle, parsed.op, parsed.count, target, [parsed.op, ...targetKeys]);
+      return finishWrite(idle, next, writeOf(parsed), use);
     }
+  }
+}
+
+/** The key the macro runner types for a character of the register. */
+const macroKey = (state: VimState, key: Key): Key =>
+  key === "\n" ? (state.mode === "insert" ? "<CR>" : "j") : key;
+
+/** `@x`, `@@` and a count: types the register again, and stops at the first failure. */
+function runMacro(state: VimState, count: number | null, name: string): VimState {
+  const letter = name === "@" ? state.lastMacro : name;
+  const register = letter === null ? null : getRegister(state, letter);
+  if (letter === null || register === null) return { ...state, failed: true };
+  const keys = macroKeys(registerText(register));
+  let s: VimState = { ...state, lastMacro: letter };
+  for (let n = count ?? 1; n > 0 && !s.failed; n--) {
+    for (const key of keys) {
+      s = dispatch({ ...s, failed: false }, macroKey(s, key));
+      if (s.failed) break;
+    }
+  }
+  return oneUndoStep(state, s);
+}
+
+/** Vim undoes a whole macro run at once: its undo steps become one. */
+function oneUndoStep(start: VimState, end: VimState): VimState {
+  const first = start.undo.length;
+  const added = end.undo.slice(first);
+  const grew =
+    end.undo.length > first && end.undo.slice(0, first).every((s, i) => s === start.undo[i]);
+  if (!grew || added.length < 2) return end;
+  const merged = { before: (added[0] as UndoStep).before, after: (added.at(-1) as UndoStep).after };
+  return { ...end, undo: [...end.undo.slice(0, first), merged] };
+}
+
+/** `lastChange` and the insert session that a register prefix opened remember it. */
+function withPrefix(before: VimState, next: VimState, prefix: readonly Key[]): VimState {
+  let result = next;
+  if (next.lastChange !== null && next.lastChange !== before.lastChange) {
+    result = {
+      ...result,
+      lastChange: { ...next.lastChange, keys: [...prefix, ...next.lastChange.keys] },
+    };
+  }
+  const session = next.session;
+  if (session !== null && session !== before.session) {
+    const change = { ...session.change, keys: [...prefix, ...session.change.keys] };
+    result = { ...result, session: { ...session, change } };
+  }
+  return result;
+}
+
+/** A key typed in normal or visual mode, with the `"x` register prefix in front of the command. */
+function pressCommand(state: VimState, key: Key): VimState {
+  const pending = state.pending;
+  const visual = state.mode === "visual";
+  const quote = pending.indexOf('"');
+  const isCount = (keys: readonly Key[]): boolean => keys.every((k) => k >= "0" && k <= "9");
+  // The prefix comes first or after a count: `"a3p` and `3"ap`.
+  if (quote < 0 || !isCount(pending.slice(0, quote))) {
+    if (key === '"' && isCount(pending)) return { ...state, pending: [...pending, '"'] };
+    if (!visual) return pressNormal(state, key, null);
+    return finishWrite(state, pressVisual(state, key), visualWriteOf([...pending, key]), null);
+  }
+  if (pending.length === quote + 1) {
+    return { ...state, pending: isRegisterName(key) ? [...pending, key] : [] };
+  }
+  const use = pending[quote + 1] as Key;
+  const rest = [...pending.slice(0, quote), ...pending.slice(quote + 2)];
+  const idle: VimState = { ...state, pending: rest };
+  let next: VimState;
+  if (visual) {
+    next = finishWrite(idle, pressVisual(idle, key), visualWriteOf([...rest, key]), use);
+  } else {
+    next = pressNormal(idle, key, use);
+  }
+  // A command still being typed keeps the prefix in front of its keys.
+  if (next.pending.length > 0) return { ...next, pending: ['"', use, ...next.pending] };
+  return withPrefix(idle, next, ['"', use]);
+}
+
+function dispatch(state: VimState, key: Key): VimState {
+  switch (state.mode) {
+    case "insert":
+      return pressInsert(state, key);
+    case "cmdline":
+      return pressCmdline(state, key);
+    case "normal":
+    case "visual":
+      return pressCommand(state, key);
   }
 }
 
@@ -699,14 +886,12 @@ function pressNormal(state: VimState, key: Key): VimState {
  * objects, the insert commands, `u`, `<C-r>` and `.` (ADR-T14-1).
  */
 export function pressEditKey(state: VimState, key: Key): VimState {
-  switch (state.mode) {
-    case "insert":
-      return pressInsert(state, key);
-    case "visual":
-      return pressVisual(state, key);
-    case "cmdline":
-      return pressCmdline(state, key);
-    case "normal":
-      return pressNormal(state, key);
+  const recording = state.recording;
+  if (recording !== null && key === "q" && state.mode === "normal" && state.pending.length === 0) {
+    return recordMacro(state, recording.name, recording.keys);
   }
+  const next = dispatch({ ...state, failed: false }, key);
+  if (recording === null || next.recording === null) return next;
+  // Only the keys typed here are recorded, not those a macro or `.` types.
+  return { ...next, recording: { name: recording.name, keys: [...recording.keys, key] } };
 }

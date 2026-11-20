@@ -10,7 +10,10 @@ import {
   type VimEditSettings,
 } from "../../storage/vim";
 import { diffText } from "../../vim/diff";
-import { EDIT_KIND_LABELS, EDIT_KINDS, type EditKind } from "../../vim/drills/edit";
+import { loadUnlocked } from "../../storage/vim-learn";
+import { ALL_EDIT_KINDS, EDIT_KIND_LABELS, EDIT_KINDS, type EditKind } from "../../vim/drills/edit";
+import { REGISTER_KINDS, type RegisterKind } from "../../vim/drills/register-edit";
+import { listRegisters } from "../../vim/registers";
 import { EDIT_HELP } from "../../vim/edit-help";
 import {
   editEfficiency,
@@ -50,17 +53,31 @@ type Run = {
   readonly run: number;
 };
 
-function newRun(settings: VimEditSettings, seed: number, run: number): Run {
+const isRegisterKind = (kind: EditKind): kind is RegisterKind =>
+  (REGISTER_KINDS as readonly string[]).includes(kind);
+
+/** The kinds a round can use: the register kinds only after their lesson is done. */
+function playable(kinds: readonly EditKind[], unlocked: readonly RegisterKind[]): EditKind[] {
+  const usable = kinds.filter((kind) => !isRegisterKind(kind) || unlocked.includes(kind));
+  return usable.length > 0 ? usable : [...EDIT_KINDS];
+}
+
+function newRun(
+  settings: VimEditSettings,
+  unlocked: readonly RegisterKind[],
+  seed: number,
+  run: number,
+): Run {
   const round = startEditRound({
     durationMs: settings.durationS * 1000,
     seed,
-    kinds: settings.kinds,
+    kinds: playable(settings.kinds, unlocked),
   });
   return { settings, round, run };
 }
 
 /** The mode as the status bar of Vim shows it. */
-function modeLabel(vim: VimState): string {
+export function modeLabel(vim: VimState): string {
   if (vim.mode === "insert") return "INSERT";
   if (vim.mode === "visual") {
     const kind = vim.visual?.kind;
@@ -80,7 +97,8 @@ export function EditDrill({
   settings,
   onSettings,
 }: Props): ReactNode {
-  const [current, setCurrent] = useState<Run>(() => newRun(settings, newSeed(), 0));
+  const [unlocked] = useState(() => loadUnlocked(store));
+  const [current, setCurrent] = useState<Run>(() => newRun(settings, unlocked, newSeed(), 0));
   const [results, setResults] = useState(() => loadVimEditResults(store));
   const [now, setNow] = useState(() => clock.now());
   // The latest run, read by the event handlers between renders.
@@ -144,7 +162,7 @@ export function EditDrill({
   };
 
   const restart = (next = latest.current.settings) => {
-    show(newRun(next, newSeed(), latest.current.run + 1));
+    show(newRun(next, unlocked, newSeed(), latest.current.run + 1));
   };
 
   /** Applies an option from the form, validated like stored settings. */
@@ -158,7 +176,7 @@ export function EditDrill({
   const toggleKind = (kind: EditKind, on: boolean) => {
     // The last kind left on has its checkbox disabled, so the list is never empty.
     change({
-      kinds: EDIT_KINDS.filter((k) =>
+      kinds: ALL_EDIT_KINDS.filter((k) =>
         k === kind ? on : latest.current.settings.kinds.includes(k),
       ),
     });
@@ -255,10 +273,14 @@ export function EditDrill({
               ) : (
                 <>
                   <strong>{modeLabel(vim)}</strong>{" "}
+                  {vim.recording !== null && (
+                    <span className="vim-recording">{`gravando @${vim.recording.name}`}</span>
+                  )}{" "}
                   <span className="vim-pending">{formatKeys(vim.pending)}</span>
                 </>
               )}
             </p>
+            <Registers vim={vim} />
             {round.last !== null && <LastEdit result={round.last} />}
             <p className="muted hint">Ctrl+Enter pula a edição · Esc volta ao modo normal.</p>
           </>
@@ -294,20 +316,25 @@ export function EditDrill({
       <fieldset>
         <legend>Tipos de edição</legend>
         <div className="vim-kinds">
-          {EDIT_KINDS.map((kind) => {
-            const on = current.settings.kinds.includes(kind);
+          {ALL_EDIT_KINDS.map((kind) => {
+            const locked = isRegisterKind(kind) && !unlocked.includes(kind);
+            const on = !locked && current.settings.kinds.includes(kind);
+            const only = on && playable(current.settings.kinds, unlocked).length === 1;
             return (
-              <label key={kind}>
-                <input
-                  type="checkbox"
-                  checked={on}
-                  disabled={on && current.settings.kinds.length === 1}
-                  onChange={(e) => {
-                    toggleKind(kind, e.target.checked);
-                  }}
-                />
-                {EDIT_KIND_LABELS[kind]}
-              </label>
+              <span key={kind} className="vim-kind">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    disabled={locked || only}
+                    onChange={(e) => {
+                      toggleKind(kind, e.target.checked);
+                    }}
+                  />
+                  {EDIT_KIND_LABELS[kind]}
+                </label>
+                {locked && <span className="muted"> (libere em Aprender)</span>}
+              </span>
             );
           })}
         </div>
@@ -343,6 +370,28 @@ export function EditDrill({
         </button>
       </div>
     </div>
+  );
+}
+
+/** The registers that hold something, as `:reg` lists them. */
+function Registers({ vim }: { readonly vim: VimState }): ReactNode {
+  const lines = listRegisters(vim);
+  return (
+    <fieldset className="vim-registers" data-testid="vim-registers">
+      <legend>Registradores</legend>
+      {lines.length === 0 ? (
+        <p className="muted">Nenhum registrador com texto.</p>
+      ) : (
+        <ul>
+          {lines.map((line) => (
+            <li key={line.name} data-register={line.name}>
+              <code>{`"${line.name}`}</code> <span className="muted">{line.type}</span>{" "}
+              <code>{line.text}</code>
+            </li>
+          ))}
+        </ul>
+      )}
+    </fieldset>
   );
 }
 
@@ -408,7 +457,7 @@ function EditResults({
  * The lines with the characters of `mask` marked, and the block cursor. In
  * insert mode the cursor is a bar and may sit past the last character.
  */
-function Buffer({
+export function Buffer({
   lines,
   mask,
   mark,
