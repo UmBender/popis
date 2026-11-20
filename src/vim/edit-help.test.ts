@@ -4,7 +4,7 @@ import { EDIT_HELP } from "./edit-help";
 // AC-7: a sentence and a competitive-programming example for each new command.
 
 const NEW_COMMANDS = [
-  ...["v", "V", "<C-v>", "o", "gv"],
+  ...["v", "V", "<C-v>", "vo", "gv"],
   ...["<C-v>I", "<C-v>A", "<C-v>$A"],
   ...[">>", "<<", ">", "J"],
   ...[":s", ":%s", ":noh"],

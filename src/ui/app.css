@@ -533,6 +533,17 @@ th {
   box-shadow: inset 2px 0 0 var(--text);
 }
 
+/* The visual selection (T15). */
+.vim-selected {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+.vim-selected.vim-cursor {
+  background: var(--text);
+  color: var(--bg);
+}
+
 .vim-after {
   margin: 0.5rem 0 0;
   padding: 0.75rem 1rem;

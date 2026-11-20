@@ -2,6 +2,30 @@ import type { EditCase } from "./case";
 
 export const EX_SUB: readonly EditCase[] = [
   [
+    ":s visual: renames only inside vi{",
+    "for (int i = 0; i < n; i++) {\n    a[i] = i;\n    s += a[i];\n}\nreturn i;",
+    [1, 6],
+    "vi{:s/\\<lt>i\\>/j/g<CR>",
+    {
+      text: "for (int i = 0; i < n; i++) {\n    a[j] = j;\n    s += a[j];\n}\nreturn i;",
+      cursor: [2, 4],
+      reg: "",
+      regtype: "",
+    },
+  ],
+  [
+    ":s visual: renames inside a nested vi{",
+    "while (x) {\n    if (i) {\n        i++;\n    }\n    i--;\n}",
+    [2, 9],
+    "vi{:s/\\<lt>i\\>/j/g<CR>",
+    {
+      text: "while (x) {\n    if (i) {\n        j++;\n    }\n    i--;\n}",
+      cursor: [2, 8],
+      reg: "",
+      regtype: "",
+    },
+  ],
+  [
     ":s: replaces the first match on the line",
     "int n = 5;\nint a[3];\ncout << n << endl;\nfor (int i = 0; i < n; i++) {\n    a[i] = n;\n}",
     [0, 0],

@@ -1,5 +1,6 @@
 import { createRng, deriveSeed, retry, type Rng } from "../../core/rng";
 import { CORPUS, type Language } from "../../typing/corpus";
+import { joinLines, shiftLine } from "../buffer";
 import { parseKeys } from "../keys";
 import type { Pos } from "../state";
 
@@ -360,17 +361,200 @@ const BUILDERS: Readonly<Record<EditKind, Builder>> = {
       reference: `r${digit}`,
     };
   },
-  "comment-block": () => null,
-  "uncomment-block": () => null,
-  "rename-variable": () => null,
-  "rename-in-function": () => null,
-  "indent-block": () => null,
-  "dedent-block": () => null,
-  "indent-lines": () => null,
-  "join-lines": () => null,
-  "append-semicolons": () => null,
-  "replace-endl": () => null,
+  "comment-block": (rng, lines, language) => {
+    if (lines.length < 3) return null;
+    const count = rng.int(3, Math.min(6, lines.length));
+    const line = rng.int(0, lines.length - count);
+    const mark = language === "cpp" ? "// " : "# ";
+    return {
+      lines,
+      start: { line, col: rng.int(0, (lines[line] as string).length - 1) },
+      after: lines.map((text, i) => (i >= line && i < line + count ? mark + text : text)),
+      reference: `0<C-v>${String(count - 1)}jI${typed(mark)}<Esc>`,
+    };
+  },
+  "uncomment-block": (rng, lines, language) => {
+    if (lines.length < 3) return null;
+    const count = rng.int(3, Math.min(6, lines.length));
+    const line = rng.int(0, lines.length - count);
+    const mark = language === "cpp" ? "// " : "# ";
+    const commented = lines.map((text, i) => (i >= line && i < line + count ? mark + text : text));
+    return {
+      lines: commented,
+      start: { line, col: rng.int(0, (commented[line] as string).length - 1) },
+      after: lines,
+      reference: `0<C-v>${String(count - 1)}j${"l".repeat(mark.length - 1)}d`,
+    };
+  },
+  "rename-variable": (rng, lines) => {
+    const names = renamable(lines.join("\n"));
+    if (names.length === 0) return null;
+    const old = rng.pick(names);
+    const text = lines.join("\n");
+    const name = rng.pick(RENAMES.filter((n) => !wordIn(text, n)));
+    const line = rng.int(0, lines.length - 1);
+    return {
+      lines,
+      start: { line, col: rng.int(0, (lines[line] as string).length - 1) },
+      after: lines.map((l) => renameWord(l, old, name)),
+      reference: `:%s/\\<lt>${old}\\>/${name}/g<CR>`,
+    };
+  },
+  "rename-in-function": (rng, lines) => {
+    const site = pickBlock(rng, lines);
+    if (site === null) return null;
+    const inner = lines.slice(site.open + 1, site.close);
+    const names = renamable(lines.join("\n")).filter((n) => inner.some((l) => wordIn(l, n)));
+    if (names.length === 0) return null;
+    const old = rng.pick(names);
+    const name = rng.pick(RENAMES.filter((n) => !wordIn(lines.join("\n"), n)));
+    return {
+      lines,
+      start: site.start,
+      after: lines.map((l, i) => (i > site.open && i < site.close ? renameWord(l, old, name) : l)),
+      reference: `vi{:s/\\<lt>${old}\\>/${name}/g<CR>`,
+    };
+  },
+  "indent-block": (rng, lines) => {
+    const site = pickBlock(rng, lines);
+    if (site === null) return null;
+    return {
+      lines,
+      start: site.start,
+      after: lines.map((l, i) => (i > site.open && i < site.close ? shiftLine(l, ">", 1) : l)),
+      reference: ">i{",
+    };
+  },
+  "dedent-block": (rng, lines) => {
+    const site = pickBlock(rng, lines);
+    if (site === null) return null;
+    const inBlock = (i: number): boolean => i > site.open && i < site.close;
+    return {
+      lines: lines.map((l, i) => (inBlock(i) ? shiftLine(l, ">", 1) : l)),
+      start: site.start,
+      after: lines,
+      reference: "<lt>i{",
+    };
+  },
+  "indent-lines": (rng, lines) => {
+    if (lines.length < 2) return null;
+    const count = rng.int(1, Math.min(4, lines.length - 1));
+    const line = rng.int(0, lines.length - 1 - count);
+    return {
+      lines,
+      start: { line, col: rng.int(0, (lines[line] as string).length - 1) },
+      after: lines.map((l, i) => (i >= line && i <= line + count ? shiftLine(l, ">", 1) : l)),
+      reference: `V${count === 1 ? "" : String(count)}j>`,
+    };
+  },
+  "join-lines": (rng, lines) => {
+    if (lines.length < 2) return null;
+    const line = rng.int(0, lines.length - 2);
+    return {
+      lines,
+      start: { line, col: rng.int(0, (lines[line] as string).length - 1) },
+      after: joinLines(lines, line, 2).lines,
+      reference: "J",
+    };
+  },
+  "append-semicolons": (rng, lines, language) => {
+    if (language !== "cpp") return null;
+    const runs: { line: number; room: number }[] = [];
+    const ends = (i: number): boolean => /[^;];$/.test(lines[i] ?? "");
+    for (let line = 0; line < lines.length; line++) {
+      let room = 0;
+      while (ends(line + room)) room++;
+      if (room >= 2 && !ends(line - 1)) runs.push({ line, room });
+    }
+    if (runs.length === 0) return null;
+    const run = rng.pick(runs);
+    const count = rng.int(2, Math.min(5, run.room));
+    const broken = lines.map((l, i) =>
+      i >= run.line && i < run.line + count ? l.slice(0, -1) : l,
+    );
+    return {
+      lines: broken,
+      start: { line: run.line, col: rng.int(0, (broken[run.line] as string).length - 1) },
+      after: lines,
+      reference: `<C-v>${count === 2 ? "" : String(count - 1)}j$A;<Esc>`,
+    };
+  },
+  "replace-endl": (rng, lines, language) => {
+    if (language !== "cpp" || !lines.some((l) => l.includes("'\\n'"))) return null;
+    const before = lines.map((l) => l.replaceAll("'\\n'", "endl"));
+    const line = rng.int(0, lines.length - 1);
+    return {
+      lines: before,
+      start: { line, col: rng.int(0, (before[line] as string).length - 1) },
+      after: lines,
+      reference: ":%s/endl/'\\\\n'/g<CR>",
+    };
+  },
 };
+
+const RENAMES = ["cnt", "val", "tmp", "idx", "acc", "res", "pos", "cur"];
+const NOT_VARIABLES = new Set(
+  "int for if else def in not and or is as try auto max min len sum map set pop abs str end".split(
+    " ",
+  ),
+);
+
+const wordIn = (text: string, word: string): boolean => new RegExp(`\\b${word}\\b`).test(text);
+
+const renameWord = (text: string, from: string, to: string): string =>
+  text.replace(new RegExp(`\\b${from}\\b`, "g"), to);
+
+/** Short names that appear at least twice as whole words: candidates for a rename. */
+function renamable(text: string): string[] {
+  const seen = new Map<string, number>();
+  for (const [word] of text.matchAll(/\b[A-Za-z_]\w{0,2}\b/g)) {
+    seen.set(word, (seen.get(word) ?? 0) + 1);
+  }
+  return [...seen].filter(([w, n]) => n >= 2 && !NOT_VARIABLES.has(w)).map(([w]) => w);
+}
+
+type Block = { readonly open: number; readonly close: number; readonly start: Pos };
+
+/**
+ * A block with `{` ending a line and `}` starting one, and a cursor inside it,
+ * on a line with no braces and not inside a block nested in it.
+ */
+function pickBlock(rng: Rng, lines: readonly string[]): Block | null {
+  const stack: number[] = [];
+  const pairs: { open: number; close: number }[] = [];
+  lines.forEach((text, line) => {
+    [...text].forEach((ch, col) => {
+      if (ch === "{") stack.push(text.length - 1 === col ? line : -1);
+      if (ch === "}") {
+        const open = stack.pop();
+        if (open !== undefined && open >= 0 && text.trimStart().startsWith("}")) {
+          if (line - open >= 2) pairs.push({ open, close: line });
+        }
+      }
+    });
+  });
+  const sites = pairs.flatMap((pair) => {
+    const nested = pairs.filter((p) => p.open > pair.open && p.close < pair.close);
+    const cursorLines = lines
+      .map((text, line) => ({ text, line }))
+      .filter(
+        ({ text, line }) =>
+          line > pair.open &&
+          line < pair.close &&
+          !/[{}]/.test(text) &&
+          !nested.some((p) => line > p.open && line < p.close),
+      );
+    return cursorLines.length === 0 ? [] : [{ pair, cursorLines }];
+  });
+  if (sites.length === 0) return null;
+  const site = rng.pick(sites);
+  const at = rng.pick(site.cursorLines);
+  return {
+    open: site.pair.open,
+    close: site.pair.close,
+    start: { line: at.line, col: rng.int(0, at.text.length - 1) },
+  };
+}
 
 const ATTEMPTS = 300;
 
