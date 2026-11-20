@@ -1,3 +1,4 @@
+import { EDIT_KINDS, type EditKind } from "../vim/drills/edit";
 import { LEVELS, type Level } from "../vim/levels";
 import { ROUND_DURATIONS_S } from "../vim/round";
 import type { KeyValueStore } from "./history";
@@ -16,6 +17,8 @@ export const DEFAULT_VIM_SETTINGS: VimSettings = { level: 1, durationS: 60 };
 /** One finished round (ADR-T13-1). */
 export type VimResult = {
   readonly version: 1;
+  /** Missing in results saved by T13; they load as "motion". */
+  readonly kind?: "motion";
   readonly level: Level;
   readonly durationS: number;
   readonly seed: number;
@@ -27,6 +30,68 @@ export type VimResult = {
 };
 
 export type VimSummary = { readonly best: number; readonly recentMean: number } | null;
+
+export const VIM_EDIT_SETTINGS_KEY = "popis.vim-edit-settings";
+
+/** Which drill the screen shows, and the options of the edit drill (ADR-T14-1). */
+export type VimEditSettings = {
+  readonly drill: "motion" | "edit";
+  readonly durationS: number;
+  readonly kinds: readonly EditKind[];
+};
+
+export const DEFAULT_VIM_EDIT_SETTINGS: VimEditSettings = {
+  drill: "motion",
+  durationS: 60,
+  kinds: EDIT_KINDS,
+};
+
+/** One finished edit round, stored in `popis.vim` with `kind: "edit"`. */
+export type VimEditResult = {
+  readonly version: 1;
+  readonly kind: "edit";
+  readonly durationS: number;
+  readonly seed: number;
+  readonly reached: number;
+  readonly skipped: number;
+  /** Mean efficiency of the reached edits; above 1 beats the reference. */
+  readonly efficiency: number;
+  readonly finishedAt: number;
+};
+
+export function parseVimEditSettings(value: unknown): VimEditSettings {
+  void value;
+  throw new Error("todo");
+}
+
+export function loadVimEditSettings(store: KeyValueStore): VimEditSettings {
+  void store;
+  throw new Error("todo");
+}
+
+export function saveVimEditSettings(store: KeyValueStore, settings: VimEditSettings): void {
+  void store;
+  void settings;
+  throw new Error("todo");
+}
+
+export function loadVimEditResults(store: KeyValueStore): VimEditResult[] {
+  void store;
+  throw new Error("todo");
+}
+
+export function appendVimEditResult(store: KeyValueStore, result: VimEditResult): void {
+  void store;
+  void result;
+  throw new Error("todo");
+}
+
+/** Best count of edits and mean of the last 10 edit rounds of a duration. */
+export function vimEditSummary(results: readonly VimEditResult[], durationS: number): VimSummary {
+  void results;
+  void durationS;
+  throw new Error("todo");
+}
 
 /** Parsed JSON at `key`, or undefined when missing, unreadable or corrupt. */
 function readJson(store: KeyValueStore, key: string): unknown {

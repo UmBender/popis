@@ -15,11 +15,54 @@ export type SearchSpec = {
   readonly endWord: boolean;
 };
 
+export type Mode = "normal" | "insert";
+
+/** The unnamed register: text by characters, or whole lines (ADR-T14-1). */
+export type Register = { readonly lines: readonly string[]; readonly linewise: boolean };
+
+/** The buffer and the cursor at one moment. */
+export type Snapshot = { readonly lines: readonly string[]; readonly cursor: Pos };
+
 /**
- * The editor state of normal mode (ADR-T13-1). Immutable: every movement
- * returns a new state.
+ * One undo step: the buffer before the change, with the cursor where Vim saves
+ * it (the start of the changed range), and the buffer after.
+ */
+export type UndoStep = { readonly before: Snapshot; readonly after: Snapshot };
+
+/**
+ * A change that `.` can repeat: the keys of the command without its counts,
+ * the total count, and the keys typed in insert mode (up to and including Esc).
+ */
+export type Change = {
+  readonly count: number | null;
+  readonly keys: readonly Key[];
+  readonly typed: readonly Key[];
+};
+
+/** An insert session in progress; it ends with Esc and is one undo step. */
+export type Session = {
+  readonly before: Snapshot;
+  /** The count typed before the command that opened it; the text is repeated. */
+  readonly count: number;
+  /** How the session started: text goes in place, or on a line opened below or above. */
+  readonly opened: "here" | "below" | "above";
+  /** The command that started it, for `.`. */
+  readonly change: Pick<Change, "count" | "keys">;
+  /** Keys typed since the session started. */
+  readonly typed: readonly Key[];
+};
+
+/**
+ * The editor state (ADR-T13-1, ADR-T14-1). Immutable: every key returns a new
+ * state.
  */
 export type VimState = {
+  readonly mode: Mode;
+  readonly register: Register | null;
+  readonly undo: readonly UndoStep[];
+  readonly redo: readonly UndoStep[];
+  readonly lastChange: Change | null;
+  readonly session: Session | null;
   readonly lines: readonly string[];
   readonly cursor: Pos;
   /** The column `j` and `k` aim for; Infinity after `$`. */
@@ -37,6 +80,12 @@ export function createState(lines: readonly string[], cursor: Pos): VimState {
   const length = (buffer[line] as string).length;
   const col = Math.min(Math.max(cursor.col, 0), Math.max(0, length - 1));
   return {
+    mode: "normal",
+    register: null,
+    undo: [],
+    redo: [],
+    lastChange: null,
+    session: null,
     lines: buffer,
     cursor: { line, col },
     curswant: col,
