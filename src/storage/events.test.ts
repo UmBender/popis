@@ -125,7 +125,7 @@ describe("recordEvents", () => {
   });
 
   it("a full store makes events summarize early and keeps the current round", () => {
-    const store = quotaStore(6000);
+    const store = quotaStore(12_000);
     let total = 0;
     let last: TrainingEvent[] = [];
 
@@ -143,22 +143,19 @@ describe("recordEvents", () => {
   });
 
   it("the quota notice is pending once", () => {
-    const store = quotaStore(3000);
+    const store = quotaStore(6000);
     expect(quotaNoticePending(store)).toBe(false);
+    const day = (k: number) => NOW - (60 - k) * DAY_MS;
 
-    for (let k = 0; k < 20; k++) {
-      recordEvents(
-        store,
-        [event(NOW - (30 - k) * DAY_MS, k), event(NOW - (30 - k) * DAY_MS, k + 100)],
-        NOW,
-      );
+    for (let k = 0; k < 30; k++) {
+      recordEvents(store, [event(day(k), 0), event(day(k), 1), event(day(k), 2)], NOW);
     }
     expect(quotaNoticePending(store)).toBe(true);
 
     clearQuotaNotice(store);
     expect(quotaNoticePending(store)).toBe(false);
-    for (let k = 20; k < 40; k++) {
-      recordEvents(store, [event(NOW - (30 - (k % 25)) * DAY_MS, k)], NOW);
+    for (let k = 30; k < 60; k++) {
+      recordEvents(store, [event(day(k), 0), event(day(k), 1), event(day(k), 2)], NOW);
     }
     expect(quotaNoticePending(store)).toBe(false);
   });
