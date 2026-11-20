@@ -1,7 +1,7 @@
 ---
 id: T15
 title: Vim - visual e substituição
-status: in-progress
+status: review
 depends_on: [T14]
 branch: task/T15-vim-visual
 adrs: [ADR-T15-1]
@@ -105,12 +105,12 @@ ligada a CP.
 
 ## Subtasks
 
-- [ ] Spec e ADR-T15-1.
-- [ ] Testes vermelhos (casos do oráculo, motor, `:s`, geradores, tela, e2e).
-- [ ] Modelos (tipos e assinaturas).
-- [ ] Comportamento (visual, bloco, `>`/`<`/`J`, `:`, geradores, tela).
-- [ ] Qualidade: `check`, cobertura, oráculo.
-- [ ] Docs e *Log*.
+- [x] Spec e ADR-T15-1.
+- [x] Testes vermelhos (casos do oráculo, motor, `:s`, geradores, tela, e2e).
+- [x] Modelos (tipos e assinaturas).
+- [x] Comportamento (visual, bloco, `>`/`<`/`J`, `:`, geradores, tela).
+- [x] Qualidade: `check`, cobertura, oráculo.
+- [x] Docs e *Log*.
 
 ## Notas para o batch
 
@@ -118,3 +118,42 @@ ligada a CP.
 - Comandos extras: os mesmos da T13.
 
 ## Log
+
+- 2026-11-20 — Feito em `task/T15-vim-visual` (base `task/T14-vim-editing`).
+  `npm run check` verde (3339 testes), `npm run coverage` sem erro (src/vim
+  100%), `npm run test:fuzz` verde, `npm run test:e2e` 17/17,
+  `npm run vim:oracle` 2014/2014 casos de acordo (163 casos novos de
+  visual, bloco, `>>`/`<<`/`J` e `:s`, em `VISUAL_CASES`).
+- **Neovim venceu a nota** (sem ADR além do ADR-T15-1): no visual o cursor
+  pode ficar na quebra de linha (`$`, `l` no fim, `j` para linha curta),
+  e a seleção então inclui a quebra; `>`/`<` e `V d` mantêm a coluna
+  desejada (`nostartofline`); um `y` em linhas deixa o cursor na coluna
+  0, salvo quando a ponta de cima é o cursor; no yank em bloco, linhas
+  mais curtas que o bloco entram preenchidas com espaços; depois de
+  `I`/`A` em bloco o cursor vai para o canto de cima à esquerda; `:s` deixa
+  o cursor no primeiro não-branco da última linha mudada e, num `g`, um
+  casamento vazio não vale no fim da linha (`:s/x*/-/g` em "ab" dá "-a-b");
+  `\n` na troca é NUL, então a referência de "trocar endl" usa `\\n`.
+- Desvios do spec, todos no ADR-T15-1 ou aqui: `.` depois de um comando
+  visual não repete a seleção; `>`/`<` em bloco são ignorados; `p` de um
+  registrador de bloco cola como caracteres (não foi implementado como
+  bloco); faixa de trás para a frente (`:3,2s`) é um erro (o Vim
+  perguntaria); `:q` e `:w` não têm caso no oráculo (o `nvim` fecharia) e
+  são cobertos só por teste unitário. `\<` precisa de `<lt>` nas teclas.
+- *Files owned*: `scripts/vim-oracle.mjs` entrou (`shiftwidth=4` e
+  `expandtab`). A análise das teclas e os auxiliares do buffer saíram de
+  `edit.ts` para `parse.ts` e `buffer.ts` (dentro de `src/vim/**`).
+- Correções de teste, em commit próprio: teclas `'<,'>` precisam de
+  `<lt>`, um caso terminava com operador pendente, e três expectativas de
+  coluna dos testes de tela estavam erradas.
+- Dez tipos de edição novos (total 28): `comment-block`,
+  `uncomment-block`, `rename-variable`, `rename-in-function`,
+  `indent-block`, `dedent-block`, `indent-lines`, `join-lines`,
+  `append-semicolons`, `replace-endl` (o corpus não tem `endl`: o "antes"
+  troca `'\n'` por `endl`). O painel "Comandos" ganhou 15 entradas com um
+  exemplo de CP. Quem já tem configurações salvas só vê os tipos novos
+  depois de marcá-los.
+- UNATTENDED CHOICE: um comando visual não mexe no `.`; a seleção ganhou
+  a classe `vim-selected` (tokens `--accent` e `--surface`, sem cor nova).
+- Verificação visual não feita: sem capturas de tela nesta execução.
+  Conferir à mão a linha de comando `:` na barra e a seleção em bloco.
