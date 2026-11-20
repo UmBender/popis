@@ -1,7 +1,9 @@
 import type { JsonValue } from "../core/problem";
 
 /** The drills that leave events (ADR-T22-1). */
-export type Drill = "calc" | "vim.motion" | "vim.edit" | "typing.code" | "typing.text";
+export const DRILLS = ["calc", "vim.motion", "vim.edit", "typing.code", "typing.text"] as const;
+
+export type Drill = (typeof DRILLS)[number];
 
 /** What every event carries besides its drill-specific data. */
 export type EventExtra = {

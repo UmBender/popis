@@ -89,6 +89,8 @@ type Props = {
   readonly onText: () => void;
   /** Opens the Vim motion drill (T13). */
   readonly onVim: () => void;
+  /** Export and import of the stored data (T22). */
+  readonly data: ReactNode;
 };
 
 export function ConfigScreen({
@@ -99,6 +101,7 @@ export function ConfigScreen({
   onTyping,
   onText,
   onVim,
+  data,
 }: Props): ReactNode {
   const reviewing = settings.mode === "review";
   const errors = [
@@ -249,6 +252,8 @@ export function ConfigScreen({
           Vim
         </button>
       </div>
+
+      {data}
     </form>
   );
 }

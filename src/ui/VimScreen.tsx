@@ -1,5 +1,7 @@
 import { Fragment, memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
+import { motionEvents } from "../stats/derive";
+import { recordEvents } from "../storage/events";
 import type { KeyValueStore } from "../storage/history";
 import {
   appendVimResult,
@@ -111,6 +113,7 @@ function MotionDrill({
       if (round === run.round) return;
       if (!isRoundFinished(run.round) && isRoundFinished(round)) {
         const stats = roundStats(round);
+        const at = clock.wallTime();
         appendVimResult(store, {
           version: 1,
           level: round.config.level,
@@ -119,8 +122,9 @@ function MotionDrill({
           reached: stats.reached,
           skipped: stats.skipped,
           efficiency: stats.efficiency,
-          finishedAt: clock.wallTime(),
+          finishedAt: at,
         });
+        recordEvents(store, motionEvents(round, at), at);
         setResults(loadVimResults(store));
       }
       show({ ...run, round });

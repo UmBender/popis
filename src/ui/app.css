@@ -233,6 +233,28 @@ th {
   color: var(--muted);
 }
 
+/* Export and import (T22): a fieldset would otherwise keep its content's width. */
+.data-panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.data-panel .actions {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.data-panel .op {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.data-panel input[type="file"] {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .levels {
   display: flex;
   flex-direction: column;
