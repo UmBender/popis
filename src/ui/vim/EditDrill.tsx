@@ -26,6 +26,8 @@ import {
 } from "../../vim/edit-round";
 import { formatKeys, keyFromEvent, type Key } from "../../vim/keys";
 import { ROUND_DURATIONS_S } from "../../vim/round";
+import type { VimState } from "../../vim/state";
+import { selectionRange } from "../../vim/visual";
 import { DrillSelect } from "./DrillSelect";
 
 type Props = {
@@ -55,6 +57,16 @@ function newRun(settings: VimEditSettings, seed: number, run: number): Run {
     kinds: settings.kinds,
   });
   return { settings, round, run };
+}
+
+/** The mode as the status bar of Vim shows it. */
+function modeLabel(vim: VimState): string {
+  if (vim.mode === "insert") return "INSERT";
+  if (vim.mode === "visual") {
+    const kind = vim.visual?.kind;
+    return kind === "line" ? "V-LINE" : kind === "block" ? "V-BLOCK" : "VISUAL";
+  }
+  return "NORMAL";
 }
 
 const percent = (fraction: number): string => `${String(Math.round(fraction * 100))}%`;
@@ -229,16 +241,23 @@ export function EditDrill({
                 lines={vim.lines}
                 mask={masks.aMask}
                 mark="vim-diff-del"
-                cursor={vim.cursor}
+                cursor={vim.mode === "cmdline" ? null : vim.cursor}
                 insert={insert}
+                selection={(line) => selectionRange(vim, line)}
               />
             </pre>
             <pre className="vim-after" data-testid="vim-after" data-reference={target.reference}>
               <Buffer lines={target.after} mask={masks.bMask} mark="vim-diff-add" cursor={null} />
             </pre>
             <p className="vim-status" data-testid="vim-status">
-              <strong>{insert ? "INSERT" : "NORMAL"}</strong>{" "}
-              <span className="vim-pending">{formatKeys(vim.pending)}</span>
+              {vim.mode === "cmdline" ? (
+                <span className="vim-pending">{`:${vim.cmdline ?? ""}`}</span>
+              ) : (
+                <>
+                  <strong>{modeLabel(vim)}</strong>{" "}
+                  <span className="vim-pending">{formatKeys(vim.pending)}</span>
+                </>
+              )}
             </p>
             {round.last !== null && <LastEdit result={round.last} />}
             <p className="muted hint">Ctrl+Enter pula a edição · Esc volta ao modo normal.</p>
@@ -300,6 +319,12 @@ export function EditDrill({
           {EDIT_HELP.map((help) => (
             <li key={help.keys}>
               <code>{help.keys}</code> — {help.text}
+              {help.example !== undefined && (
+                <>
+                  <br />
+                  <span className="muted">ex.: {help.example}</span>
+                </>
+              )}
             </li>
           ))}
         </ul>
@@ -389,12 +414,15 @@ function Buffer({
   mark,
   cursor,
   insert = false,
+  selection,
 }: {
   readonly lines: readonly string[];
   readonly mask: readonly boolean[];
   readonly mark: string;
   readonly cursor: { readonly line: number; readonly col: number } | null;
   readonly insert?: boolean;
+  /** The columns `[from, to)` of a line that are selected (visual mode). */
+  readonly selection?: (line: number) => { readonly from: number; readonly to: number } | null;
 }): ReactNode {
   // Where each line starts in the text the mask was made from.
   const starts = lines.map((_, i) => lines.slice(0, i).reduce((sum, l) => sum + l.length + 1, 0));
@@ -405,14 +433,17 @@ function Buffer({
         const at = cursor !== null && cursor.line === line ? cursor.col : -1;
         const chars = [...text];
         if (at >= chars.length) chars.push(" ");
+        const selected = selection?.(line) ?? null;
         return (
           <Fragment key={line}>
             {line > 0 ? "\n" : null}
             {chars.map((ch, col) => {
               const marked = mask[base + col] === true && col < text.length;
+              const picked = selected !== null && col >= selected.from && col < selected.to;
               const className = [
                 col === at ? `vim-cursor${insert ? " vim-insert" : ""}` : "",
                 marked ? mark : "",
+                picked && col < text.length ? "vim-selected" : "",
               ]
                 .filter(Boolean)
                 .join(" ");

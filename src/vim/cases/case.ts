@@ -8,8 +8,11 @@ export type EditExpect = {
   readonly cursor: Cursor;
   /** `getreg('"')`: "a\nb" for text, "a\n" for whole lines. */
   readonly reg: string;
-  /** `getregtype('"')`: "" (empty), "v" (characters) or "V" (lines). */
-  readonly regtype: "" | "v" | "V";
+  /**
+   * `getregtype('"')`: "" (empty), "v" (characters), "V" (lines) or, for a
+   * block, Ctrl-V and its width ("\x163").
+   */
+  readonly regtype: "" | "v" | "V" | `\x16${number}`;
 };
 
 /**

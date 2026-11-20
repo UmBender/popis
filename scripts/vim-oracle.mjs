@@ -22,6 +22,9 @@ const CONCURRENCY = 8;
 const LUA = `
 local input = vim.json.decode(vim.fn.join(vim.fn.readfile(arg[1]), "\\n"))
 vim.o.autoindent = false
+-- The screen indents with 4 spaces (ADR-T15-1).
+vim.o.shiftwidth = 4
+vim.o.expandtab = true
 -- Loading the text is not a change the user can undo.
 local undolevels = vim.bo.undolevels
 vim.bo.undolevels = -1

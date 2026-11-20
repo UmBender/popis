@@ -4,6 +4,8 @@ export type EditHelp = {
   readonly keys: string;
   /** A sentence in Portuguese. */
   readonly text: string;
+  /** A use in competitive programming, for the commands of the visual drill (T15). */
+  readonly example?: string;
 };
 
 /** Every command the edit drill accepts, besides the movements of the motion drill. */
@@ -44,4 +46,79 @@ export const EDIT_HELP: readonly EditHelp[] = [
   { keys: "u", text: "desfaz a última mudança (uma inserção inteira é uma mudança)" },
   { keys: "<C-r>", text: "refaz o que o u desfez" },
   { keys: ".", text: "repete a última mudança, com o texto inserido" },
+  {
+    keys: "v",
+    text: "seleciona caracteres; qualquer movimento ou objeto estende, d c y > < ~ r agem",
+    example: "vi(y copia o conteúdo dos parênteses de uma chamada",
+  },
+  {
+    keys: "V",
+    text: "seleciona linhas inteiras",
+    example: "V3j> indenta quatro linhas de um bloco colado",
+  },
+  {
+    keys: "<C-v>",
+    text: "seleciona um bloco retangular de colunas",
+    example: "<C-v>jjjld apaga duas colunas de quatro linhas",
+  },
+  {
+    keys: "vo",
+    text: "no modo visual, o troca a ponta da seleção (O troca o canto do bloco)",
+    example: "vllohh amplia a seleção para o outro lado sem recomeçar",
+  },
+  {
+    keys: "gv",
+    text: "seleciona de novo a última seleção visual",
+    example: "gv> indenta outra vez as linhas que você acabou de indentar",
+  },
+  {
+    keys: "<C-v>I",
+    text: "no bloco, I insere o texto digitado em todas as linhas ao dar Esc",
+    example: "<C-v>jjI// <Esc> comenta os prints de debug antes de enviar",
+  },
+  {
+    keys: "<C-v>A",
+    text: "no bloco, A acrescenta o texto depois da coluna direita do bloco",
+    example: "<C-v>jjlA, <Esc> põe uma vírgula depois de duas colunas",
+  },
+  {
+    keys: "<C-v>$A",
+    text: "com $, o A acrescenta no fim de cada linha, mesmo de tamanhos diferentes",
+    example: "<C-v>jjj$A;<Esc> põe o ; que faltou no fim de quatro linhas",
+  },
+  {
+    keys: ">>",
+    text: "indenta a linha com 4 espaços (3>> indenta três linhas, >i{ o conteúdo das chaves)",
+    example: ">i{ indenta o corpo de um laço colado sem recuo",
+  },
+  {
+    keys: "<<",
+    text: "tira até 4 espaços de recuo da linha (<i{ faz o mesmo no conteúdo das chaves)",
+    example: "<i{ desindenta o corpo de uma função copiada de dentro de uma classe",
+  },
+  {
+    keys: ">",
+    text: "operador de indentação: > com movimento, objeto ou seleção visual (< tira)",
+    example: "V3j> indenta quatro linhas selecionadas",
+  },
+  {
+    keys: "J",
+    text: "junta a linha com a próxima (3J junta três), com um espaço no lugar da quebra",
+    example: "J junta um if e o corpo que ficou na linha de baixo",
+  },
+  {
+    keys: ":s",
+    text: "troca texto: :s/velho/novo/ na linha, com g troca todos; no visual já vem com '<,'>",
+    example: "vi{ e depois :s/\\<i\\>/j/g troca i por j só dentro da função",
+  },
+  {
+    keys: ":%s",
+    text: "troca no arquivo todo; \\< e \\> marcam palavras inteiras, & é o trecho achado",
+    example: ":%s/endl/'\\\\n'/g<CR> troca endl por '\\n' no código todo",
+  },
+  {
+    keys: ":noh",
+    text: ":noh, :w e :q são aceitos e não fazem nada, para não atrapalhar o hábito",
+    example: ":noh<CR> apaga o destaque de uma busca no Vim de verdade",
+  },
 ];

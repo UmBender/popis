@@ -1,16 +1,24 @@
+import {
+  cmp,
+  countKeys,
+  firstNonBlank,
+  joinLines,
+  lineLength,
+  normalCursor,
+  replaceLine,
+  shiftLine,
+  snapshot,
+  withCursor,
+  withUndo,
+  type Mut,
+} from "./buffer";
+import { pressCmdline, startCmdline } from "./ex";
 import type { Key } from "./keys";
-import { endWord, fwdWord, runMotion, wordWalk, type Command, type SimpleName } from "./motions";
-import type {
-  Change,
-  FindKind,
-  Pos,
-  Register,
-  Session,
-  Snapshot,
-  UndoStep,
-  VimState,
-} from "./state";
-import { TEXT_OBJECTS, textObjectAt } from "./textobjects";
+import { endWord, fwdWord, runMotion, wordWalk } from "./motions";
+import { isChar, parse, toCommand, type Motion, type Op, type Target } from "./parse";
+import type { Change, Pos, Register, Session, Snapshot, VimState } from "./state";
+import { textObjectAt } from "./textobjects";
+import { enterVisual, finishBlockInsert, pressVisual, reselect } from "./visual";
 
 /** The text `getreg('"')` gives: "a\nb" for characters, "a\n" for lines. */
 export function registerText(register: Register): string {
@@ -18,197 +26,17 @@ export function registerText(register: Register): string {
 }
 
 /** The unnamed register as the Neovim oracle reports it. */
-export function registerView(state: VimState): { reg: string; regtype: "" | "v" | "V" } {
+export function registerView(state: VimState): {
+  reg: string;
+  regtype: "" | "v" | "V" | `\x16${number}`;
+} {
   const { register } = state;
   if (register === null) return { reg: "", regtype: "" };
-  return { reg: registerText(register), regtype: register.linewise ? "V" : "v" };
+  const reg = registerText(register);
+  if (register.block !== undefined)
+    return { reg, regtype: `\x16${String(register.block)}` as `\x16${number}` };
+  return { reg, regtype: register.linewise ? "V" : "v" };
 }
-
-// ---------------------------------------------------------------- parsing
-
-type Op = "d" | "c" | "y";
-
-/** A movement as typed: its name, the character or pattern it takes, and its keys. */
-type Motion = {
-  readonly name: string;
-  readonly char?: string;
-  readonly pattern?: string;
-  readonly keys: readonly Key[];
-};
-
-type Target =
-  | { readonly kind: "line" }
-  | { readonly kind: "object"; readonly object: string }
-  | { readonly kind: "motion"; readonly motion: Motion };
-
-type Parsed =
-  | { readonly kind: "incomplete"; readonly searching: boolean; readonly patternLength: number }
-  | { readonly kind: "invalid" }
-  | { readonly kind: "motion"; readonly count: number | null; readonly motion: Motion }
-  | {
-      readonly kind: "operator";
-      readonly op: Op;
-      readonly count: number | null;
-      readonly target: Target;
-    }
-  | {
-      readonly kind: "command";
-      readonly name: string;
-      readonly count: number | null;
-      readonly arg: string;
-    };
-
-const SIMPLE_MOTIONS = new Set<string>([..."hjklwbeWBE0^$G{}%;,nN*#"]);
-const FIND_KEYS = new Set<string>(["f", "F", "t", "T"]);
-const COMMANDS = new Set<string>([..."xXDCsS~pPYuaiAIoO.", "<C-r>"]);
-
-const INVALID: Parsed = { kind: "invalid" };
-const WAIT: Parsed = { kind: "incomplete", searching: false, patternLength: 0 };
-
-const isDigit = (key: Key): boolean => key.length === 1 && key >= "0" && key <= "9";
-const isChar = (key: Key): boolean => key.length === 1;
-
-/** A count at `from`; a leading 0 is the movement, not a count. */
-function readCount(keys: readonly Key[], from: number): { count: number | null; next: number } {
-  let count: number | null = null;
-  let i = from;
-  for (let key = keys[i]; key !== undefined && isDigit(key); key = keys[i]) {
-    if (count === null && key === "0") break;
-    count = (count ?? 0) * 10 + Number(key);
-    i++;
-  }
-  return { count, next: i };
-}
-
-function parseMotion(keys: readonly Key[], i: number): Motion | Parsed {
-  // The caller checked that a key is there.
-  const key = keys[i] as Key;
-  if (SIMPLE_MOTIONS.has(key)) return { name: key, keys: [key] };
-  if (FIND_KEYS.has(key)) {
-    const char = keys[i + 1];
-    if (char === undefined) return WAIT;
-    return isChar(char) ? { name: key, char, keys: [key, char] } : INVALID;
-  }
-  if (key === "g") {
-    const next = keys[i + 1];
-    if (next === undefined) return WAIT;
-    if (next === "g" || next === "e") return { name: `g${next}`, keys: [key, next] };
-    return INVALID;
-  }
-  if (key === "/" || key === "?") {
-    let pattern = "";
-    for (let j = i + 1; j < keys.length; j++) {
-      const k = keys[j] as Key;
-      if (k === "<CR>") return { name: key, pattern, keys: keys.slice(i, j + 1) };
-      if (!isChar(k)) return INVALID;
-      pattern += k;
-    }
-    return { kind: "incomplete", searching: true, patternLength: pattern.length };
-  }
-  return INVALID;
-}
-
-const isMotion = (value: Motion | Parsed): value is Motion => "name" in value && "keys" in value;
-
-/** What the keys typed so far add up to. */
-function parse(keys: readonly Key[]): Parsed {
-  const first = readCount(keys, 0);
-  const key = keys[first.next];
-  if (key === undefined) return WAIT;
-
-  if (key === "d" || key === "c" || key === "y") {
-    const second = readCount(keys, first.next + 1);
-    const next = keys[second.next];
-    if (next === undefined) return WAIT;
-    const count =
-      first.count === null && second.count === null
-        ? null
-        : (first.count ?? 1) * (second.count ?? 1);
-    const op = key;
-    if (next === key) return { kind: "operator", op, count, target: { kind: "line" } };
-    if (next === "i" || next === "a") {
-      const which = keys[second.next + 1];
-      if (which === undefined) return WAIT;
-      const object = `${next}${which}`;
-      return TEXT_OBJECTS.includes(object)
-        ? { kind: "operator", op, count, target: { kind: "object", object } }
-        : INVALID;
-    }
-    const motion = parseMotion(keys, second.next);
-    if (!isMotion(motion)) return motion;
-    return { kind: "operator", op, count, target: { kind: "motion", motion } };
-  }
-
-  if (key === "r") {
-    const char = keys[first.next + 1];
-    if (char === undefined) return WAIT;
-    return isChar(char) || char === "<CR>"
-      ? { kind: "command", name: "r", count: first.count, arg: char }
-      : INVALID;
-  }
-  if (COMMANDS.has(key)) return { kind: "command", name: key, count: first.count, arg: "" };
-
-  const motion = parseMotion(keys, first.next);
-  if (!isMotion(motion)) return motion;
-  return { kind: "motion", count: first.count, motion };
-}
-
-function toCommand(motion: Motion, count: number | null): Command {
-  if (motion.char !== undefined) {
-    return { name: motion.name as FindKind, char: motion.char, count };
-  }
-  if (motion.pattern !== undefined) {
-    return { name: motion.name as "/" | "?", pattern: motion.pattern, count };
-  }
-  return { name: motion.name as SimpleName, count };
-}
-
-// ---------------------------------------------------------------- helpers
-
-type Mut = { line: number; col: number };
-
-const cmp = (a: Pos, b: Pos): number => a.line - b.line || a.col - b.col;
-
-const lineLength = (lines: readonly string[], line: number): number =>
-  (lines[line] as string).length;
-
-/** The cursor in normal mode: inside the line, on its last character at most. */
-function normalCursor(lines: readonly string[], line: number, col: number): Pos {
-  const last = Math.max(0, lineLength(lines, line) - 1);
-  return { line, col: Math.max(0, Math.min(col, last)) };
-}
-
-function withCursor(state: VimState, line: number, col: number): VimState {
-  const cursor = normalCursor(state.lines, line, col);
-  return { ...state, cursor, curswant: cursor.col };
-}
-
-/** Vim's beginline(BL_WHITE | BL_FIX): the first non-blank, or the last character. */
-function firstNonBlank(text: string): number {
-  const at = text.search(/\S/);
-  return at >= 0 ? at : Math.max(0, text.length - 1);
-}
-
-const replaceLine = (lines: readonly string[], at: number, text: string): string[] =>
-  lines.map((l, i) => (i === at ? text : l));
-
-const sameLines = (a: readonly string[], b: readonly string[]): boolean =>
-  a.length === b.length && a.every((l, i) => l === b[i]);
-
-/** Pushes an undo step when the buffer changed, and drops the redo steps. */
-function withUndo(prev: VimState, before: Snapshot, next: VimState): VimState {
-  if (sameLines(before.lines, next.lines)) return next;
-  const step: UndoStep = { before, after: { lines: next.lines, cursor: next.cursor } };
-  return { ...next, undo: [...prev.undo, step], redo: [] };
-}
-
-const snapshot = (state: VimState, cursor: Pos = state.cursor): Snapshot => ({
-  lines: state.lines,
-  cursor,
-});
-
-/** The keys of a count, in Vim notation. */
-const countKeys = (count: number | null): Key[] => (count === null ? [] : [...String(count)]);
 
 // ---------------------------------------------------------------- operators
 
@@ -429,6 +257,21 @@ function applyOperator(
   const empty = !linewise && !inclusive && cmp(start, end) === 0;
   const change: Change = { count, keys, typed: [] };
 
+  if (op === ">" || op === "<") {
+    const last = lines.length - 1;
+    const bottom = Math.min(end.line, last);
+    const next = lines.map((text, i) =>
+      i >= start.line && i <= bottom ? shiftLine(text, op, 1) : text,
+    );
+    // The cursor keeps its wanted column on the first line (nostartofline).
+    const moved = withCursor(
+      { ...state, lines: next, lastChange: change },
+      start.line,
+      state.curswant,
+    );
+    return withUndo(state, snapshot(state, start), { ...moved, curswant: state.curswant });
+  }
+
   if (op === "y") {
     return withCursor({ ...state, register: rangeText(lines, range) }, start.line, start.col);
   }
@@ -603,9 +446,10 @@ function pressInsert(state: VimState, key: Key): VimState {
     session: null,
     cursor,
     curswant: cursor.col,
-    lastChange: change,
+    lastChange: session.noRepeat === true ? state.lastChange : change,
   };
-  return withUndo(state, session.before, done);
+  const finished = session.block === undefined ? done : finishBlockInsert(done, session);
+  return withUndo(state, session.before, finished);
 }
 
 // ---------------------------------------------------------------- other commands
@@ -730,6 +574,22 @@ function repeatChange(state: VimState, count: number | null): VimState {
   return s;
 }
 
+/** `J`: joins `count` lines (at least two); a count past the end joins what is left. */
+function joinCommand(state: VimState, count: number | null): VimState {
+  const from = state.cursor.line;
+  const last = state.lines.length - 1;
+  let n = Math.max(2, count ?? 2);
+  if (from + n - 1 > last) {
+    if (n <= 2) return state;
+    n = last - from + 1;
+  }
+  if (n < 2) return state;
+  const joined = joinLines(state.lines, from, n);
+  const change: Change = { count, keys: ["J"], typed: [] };
+  const moved = withCursor({ ...state, lines: joined.lines, lastChange: change }, from, joined.col);
+  return withUndo(state, snapshot(state), moved);
+}
+
 function runCommand(state: VimState, name: string, count: number | null, arg: string): VimState {
   const { cursor, lines } = state;
   const text = lines[cursor.line] as string;
@@ -763,6 +623,18 @@ function runCommand(state: VimState, name: string, count: number | null, arg: st
       return redo(state, count);
     case ".":
       return repeatChange(state, count);
+    case "v":
+      return enterVisual(state, "char");
+    case "V":
+      return enterVisual(state, "line");
+    case "<C-v>":
+      return enterVisual(state, "block");
+    case "gv":
+      return reselect(state);
+    case ":":
+      return startCmdline(state);
+    case "J":
+      return joinCommand(state, count);
     case "i":
       return startInsert(state, snapshot(state), count, ["i"], "here");
     case "a": {
@@ -827,5 +699,14 @@ function pressNormal(state: VimState, key: Key): VimState {
  * objects, the insert commands, `u`, `<C-r>` and `.` (ADR-T14-1).
  */
 export function pressEditKey(state: VimState, key: Key): VimState {
-  return state.mode === "insert" ? pressInsert(state, key) : pressNormal(state, key);
+  switch (state.mode) {
+    case "insert":
+      return pressInsert(state, key);
+    case "visual":
+      return pressVisual(state, key);
+    case "cmdline":
+      return pressCmdline(state, key);
+    case "normal":
+      return pressNormal(state, key);
+  }
 }
