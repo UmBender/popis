@@ -1,10 +1,10 @@
 ---
 id: T13
 title: Vim - movimentos
-status: ready
+status: in-progress
 depends_on: [T10]
 branch: task/T13-vim-motions
-adrs: []
+adrs: [ADR-T13-1]
 tags: [task]
 ---
 
@@ -134,7 +134,8 @@ instalado; a rodada dura 60 s; o texto vem do corpus de código da T10.
 
 ## Files owned
 
-- `src/vim/**` (motor, casos, ótimo, geradores)
+- `src/vim/**` (motor, casos, ótimo, geradores, rodada)
+- `docs/decisions/ADR-T13-1 *.md`
 - `scripts/vim-oracle.mjs`, `package.json` (só o script `vim:oracle`)
 - `src/storage/vim*.ts`
 - `src/ui/VimScreen*.tsx`, `src/ui/App.tsx`, `src/ui/App.test.tsx`,
@@ -149,5 +150,37 @@ instalado; a rodada dura 60 s; o texto vem do corpus de código da T10.
 - Risco: a fidelidade de `w`/`e`/`b` em pontuação e de `%` é a parte mais
   difícil. O oráculo existe para isso, e uma discordância é bug do motor,
   não do caso.
+
+## Testes por critério
+
+- **AC-1**: `src/vim/keys.test.ts` (`parseKeys`, `formatKeys`, ida e volta,
+  `keyFromEvent`); `src/vim/engine.test.ts` (estado inicial, `curswant`
+  preservado por `j`/`k`).
+- **AC-2**: `src/vim/motions.test.ts` (contagens, falhas, bordas);
+  `src/vim/cases.test.ts` roda todos os casos de `src/vim/cases/*.ts`.
+- **AC-3**: `src/vim/cases.test.ts` (motor sobre os casos, mínimo de 5 casos
+  por movimento) e `npm run vim:oracle` (Neovim sobre os mesmos casos).
+- **AC-4**: `src/vim/levels.test.ts` (movimentos por nível, ajuda em
+  português) e `src/vim/engine.test.ts` (tecla bloqueada, `pending`).
+- **AC-5**: `src/vim/optimal.test.ts` (custos conhecidos, limite de teclas,
+  tempo) e `src/vim/optimal.prop.test.ts` (a sequência leva ao alvo; busca
+  exaustiva em textos pequenos não acha nada mais curto).
+- **AC-6**: `src/vim/drills/target.test.ts` e
+  `src/vim/drills/target.prop.test.ts` (alcançável, limites do nível, mesma
+  seed).
+- **AC-7**: `src/vim/round.test.ts`.
+- **AC-8**: `src/ui/VimScreen.test.tsx`; `src/ui/App.test.tsx` (botão
+  "Vim").
+- **AC-9**: `src/storage/vim.test.ts`.
+- **AC-10**: `tests/e2e/vim.spec.ts` e `tests/e2e/mobile.spec.ts`.
+
+## Subtasks
+
+- [ ] Motor: teclas, estado, movimentos, níveis
+- [ ] Casos e oráculo (`npm run vim:oracle`)
+- [ ] Mínimo de teclas e alvos por seed
+- [ ] Rodada e persistência
+- [ ] Tela, botão na configuração, e2e
+- [ ] Cobertura em `src/vim/**` e docs
 
 ## Log
