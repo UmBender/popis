@@ -153,7 +153,8 @@ describe("VimScreen", () => {
 
   it("a dead key typed through composition acts as the key itself", () => {
     setup(storeAt(3));
-    expect(fireEvent.keyDown(box(), { key: "Dead" })).toBe(false);
+    // The dead key itself is not prevented: the browser must compose it.
+    expect(fireEvent.keyDown(box(), { key: "Dead" })).toBe(true);
     fireEvent.compositionEnd(box(), { target: { value: "$" } });
     const line = pos(cursor())[0] ?? 0;
     const lines = (screen.getByTestId("vim-code").textContent ?? "").split("\n");
