@@ -80,6 +80,9 @@ export type BlockInsert = {
   readonly top: number;
   readonly bottom: number;
   readonly col: number;
+  /** The left edge of the block; with `home` the cursor ends there on the top row. */
+  readonly left: number;
+  readonly home: boolean;
   /** Text goes at `col` on each row, or at the end of each row. */
   readonly at: "col" | "end";
   /** Pad short rows with spaces up to `col` (`A`). */
