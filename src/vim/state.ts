@@ -31,6 +31,17 @@ export type VimState = {
 };
 
 /** A state with the cursor clamped into the buffer. */
-export function createState(_lines: readonly string[], _cursor: Pos): VimState {
-  throw new Error("todo");
+export function createState(lines: readonly string[], cursor: Pos): VimState {
+  const buffer = lines.length === 0 ? [""] : lines;
+  const line = Math.min(Math.max(cursor.line, 0), buffer.length - 1);
+  const length = (buffer[line] as string).length;
+  const col = Math.min(Math.max(cursor.col, 0), Math.max(0, length - 1));
+  return {
+    lines: buffer,
+    cursor: { line, col },
+    curswant: col,
+    pending: [],
+    lastFind: null,
+    lastSearch: null,
+  };
 }
