@@ -1,10 +1,10 @@
 ---
 id: T15
 title: Vim - visual e substituição
-status: todo
+status: in-progress
 depends_on: [T14]
 branch: task/T15-vim-visual
-adrs: []
+adrs: [ADR-T15-1]
 tags: [task]
 ---
 
@@ -64,8 +64,29 @@ ligada a CP.
   tipos "comentar" e "renomear" são digitadas no navegador e completam
   as edições. `<C-v>` chega ao app em vez de colar.
 
+## Testes por critério
+
+- **AC-1**: `src/vim/visual.test.ts` (grupo "visual mode") e os casos
+  `v`, `V`, `<C-v>`, `o`, `vd`, `vc`, `vy`, `v>`, `v<`, `v~`, `vr`, `gv`.
+- **AC-2**: `src/vim/visual.test.ts` (grupo "block insert") e os casos
+  `<C-v>I`, `<C-v>A`, `$A`.
+- **AC-3**: `src/vim/visual.test.ts` (grupo "shift and join") e os casos
+  `>>`, `<<`, `J`.
+- **AC-4**: `src/vim/ex.test.ts` (faixas, padrão, troca, `:noh/:w/:q`,
+  linha de comando com `<BS>` e `<Esc>`) e os casos `:s` e `:noh`.
+- **AC-5**: `src/vim/visual-cases.test.ts` (o motor contra cada caso, pelo
+  menos 5 casos por comando) e `npm run vim:oracle`.
+- **AC-6**: `src/vim/drills/edit.test.ts` (22 tipos, cada tipo gera) e
+  `src/vim/drills/edit.prop.test.ts` (a referência dá o "depois").
+- **AC-7**: `src/vim/edit-help.test.ts` e `src/ui/VimScreenEdit.test.tsx`
+  (o painel lista cada comando novo, com um exemplo de CP).
+- **AC-8**: `tests/e2e/vim.spec.ts` (caso da T15, com `<C-v>`).
+- Tela (modo na barra, `:` na barra, seleção): `src/ui/VimScreenEdit.test.tsx`.
+
 ## Out of scope
 
+- `.` depois de um comando visual, `>`/`<` em bloco e `p` de um registrador
+  de bloco (ADR-T15-1).
 - Expressões regulares além do subconjunto do AC-4.
 - `:g`, `:norm` e comandos de arquivo (`:w` só é aceito).
 - Registradores e macros (T16).
@@ -76,6 +97,20 @@ ligada a CP.
 - `src/ui/VimScreen*.tsx`, `src/ui/vim/**`, `src/ui/app.css`
 - `tests/e2e/vim.spec.ts`
 - `vite.config.ts` (só limiares de cobertura)
+- `scripts/vim-oracle.mjs` (acrescentado: o AC-3 pede que o oráculo passe
+  `shiftwidth=4` e `expandtab` ao `nvim`, e o script é dele)
+- `src/ui/App.test.tsx`, só se um teste existente quebrar por causa do
+  painel novo (acrescentado na hora, com motivo no *Log*)
+- `docs/decisions/ADR-T15-*.md`
+
+## Subtasks
+
+- [ ] Spec e ADR-T15-1.
+- [ ] Testes vermelhos (casos do oráculo, motor, `:s`, geradores, tela, e2e).
+- [ ] Modelos (tipos e assinaturas).
+- [ ] Comportamento (visual, bloco, `>`/`<`/`J`, `:`, geradores, tela).
+- [ ] Qualidade: `check`, cobertura, oráculo.
+- [ ] Docs e *Log*.
 
 ## Notas para o batch
 
