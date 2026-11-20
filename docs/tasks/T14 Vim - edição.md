@@ -1,10 +1,10 @@
 ---
 id: T14
 title: Vim - edição
-status: in-progress
+status: review
 depends_on: [T13]
 branch: task/T14-vim-editing
-adrs: [ADR-T14-1]
+adrs: [ADR-T14-1, ADR-T14-2]
 tags: [task]
 ---
 
@@ -126,14 +126,14 @@ comportamento continua sendo o `nvim --clean`.
 
 ## Subtasks
 
-- [ ] Spec, ADR-T14-1 e testes por critério.
-- [ ] Testes vermelhos (motor, objetos, casos, geradores, rodada,
+- [x] Spec, ADR-T14-1 e testes por critério.
+- [x] Testes vermelhos (motor, objetos, casos, geradores, rodada,
       armazenamento, tela, e2e).
-- [ ] Modelos (tipos e assinaturas).
-- [ ] Comportamento (motor, objetos de texto, desfazer, `.`, geradores,
+- [x] Modelos (tipos e assinaturas).
+- [x] Comportamento (motor, objetos de texto, desfazer, `.`, geradores,
       rodada, armazenamento, tela).
-- [ ] Qualidade: `check`, cobertura, oráculo.
-- [ ] Docs e *Log*.
+- [x] Qualidade: `check`, cobertura, oráculo.
+- [x] Docs e *Log*.
 
 ## Notas para o batch
 
@@ -143,3 +143,36 @@ comportamento continua sendo o `nvim --clean`.
   cuidado. O oráculo decide.
 
 ## Log
+
+- 2026-11-20 — Feito em `task/T14-vim-editing` (base `task/T13-vim-motions`).
+  `npm run check` verde, `npm run coverage` sem erro (src/vim 100%),
+  `npm run test:fuzz` verde, `npm run test:e2e` 16/16, `npm run vim:oracle`
+  1849/1849 casos de acordo (1278 de edição + os de movimento).
+- Passo "quality" sem commit `chore` próprio: lint, formato e cobertura foram
+  resolvidos nos commits `test` e `fix` finais (casos novos do oráculo e
+  limpeza de ramos mortos).
+- **Neovim venceu a nota** (sem ADR além do ADR-T14-2): `Y` copia a linha
+  inteira (não `y$`); `dd` mantém a coluna desejada (`nostartofline`); objeto
+  de texto que vira linhas inteiras deixa o cursor no primeiro não-branco;
+  objeto de palavra que falha ainda move o cursor; `cw` em branco age como
+  `dw`.
+- UNATTENDED CHOICE: o `<Esc>` que fecha uma inserção depois de uma edição
+  que já terminou (buffer igual ao "depois" ainda em modo de inserção)
+  conta para a edição que acabou, não para a próxima; assim digitar a
+  referência inteira dá 100% e pular o `<Esc>` dá mais de 100%.
+- UNATTENDED CHOICE: os tipos de edição são 18 (a nota pedia 14) e as opções
+  da edição (treino, duração, tipos) ficam em `popis.vim-edit-settings`, sem
+  mexer em `popis.vim-settings`.
+- `scripts/vim-oracle.mjs` entrou em *Files owned*: o oráculo grava a saída
+  em arquivo, traduz `<lt>`, desliga `autoindent` e compara texto, cursor e
+  registrador sem nome.
+- Correções de teste, cada uma em commit próprio: expectativas erradas de
+  `dd`/`Y` e casos com `<` e coluna fora da linha (dados do oráculo);
+  limites de teclas da referência (1 a 40) no teste de propriedade.
+- Os tipos de edição só foram checados no motor próprio (a referência dá o
+  "depois"), não no `nvim`.
+- O `git stash pop` não é permitido no batch: o stash `batch-T14-wip` ficou
+  na lista (trabalho já refeito e commitado); pode ser descartado.
+- Conferir à mão: tentar cada tipo de edição uma vez e julgar as soluções de
+  referência; a aparência do realce `--wrong`/`--correct` e do cursor de
+  inserção (screenshot revisado: ok no desktop).
