@@ -87,6 +87,16 @@ function prompt() {
 }
 
 describe("config screen", () => {
+  it("config shows the POPIS acronym spelled out with bold initials", () => {
+    setup();
+    expect(screen.getByRole("heading", { level: 1, name: "POPIS" })).toBeTruthy();
+    const full = screen.getByTestId("brand-acronym");
+    expect(full.textContent).toBe("Practice Of Problem-solving In Sprints");
+    expect(full.className).toContain("muted");
+    const initials = Array.from(full.querySelectorAll("strong")).map((s) => s.textContent);
+    expect(initials).toEqual(["P", "O", "P", "I", "S"]);
+  });
+
   it("config offers the five durations with 120 s selected", () => {
     setup();
     const select = screen.getByRole<HTMLSelectElement>("combobox", { name: "Duração" });
