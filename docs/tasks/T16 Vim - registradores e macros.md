@@ -1,7 +1,7 @@
 ---
 id: T16
 title: Vim - registradores e macros
-status: review
+status: done
 depends_on: [T15]
 branch: task/T16-vim-macros
 adrs: [ADR-T16-1]
