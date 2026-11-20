@@ -167,9 +167,9 @@ describe("text trace", () => {
   });
 
   it("an extra letter is wrong with nothing expected", () => {
-    const { trace } = textRun(["a"], [typeWord("ab", 10)]);
+    const { trace } = textRun(["a", "c"], [typeWord("ab", 10)]);
 
-    const [event] = textEvents(trace, { at: 1, config: "c", seed: 1, words: ["a"] });
+    const [event] = textEvents(trace, { at: 1, config: "c", seed: 1, words: ["a", "c"] });
 
     expect(event?.extra["bad"]).toEqual([["", "b"]]);
   });
