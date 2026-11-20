@@ -1,7 +1,7 @@
 ---
 id: T14
 title: Vim - edição
-status: review
+status: done
 depends_on: [T13]
 branch: task/T14-vim-editing
 adrs: [ADR-T14-1, ADR-T14-2]
