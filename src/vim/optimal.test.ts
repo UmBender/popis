@@ -54,8 +54,8 @@ describe("optimalSolution", () => {
   });
 
   it("optimalSolution uses f for a character on the line", () => {
-    const s = start("foo(bar, baz)", { line: 0, col: 0 });
-    expect(optimalSolution(s, { line: 0, col: 3 }, 4)).toEqual({ keys: "f(", cost: 2 });
+    const s = start("a1 b2 c3 d4", { line: 0, col: 0 });
+    expect(optimalSolution(s, { line: 0, col: 7 }, 4)).toEqual({ keys: "f3", cost: 2 });
   });
 
   it("optimalSolution uses * for the next occurrence of the word", () => {

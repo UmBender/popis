@@ -103,6 +103,7 @@ describe("optimalSolution properties", () => {
   });
 
   it("no sequence of up to 3 keys is shorter than the one it returns", () => {
+    let compared = 0;
     fc.assert(
       fc.property(scenarioArb, ({ lines, from, to, level }) => {
         const start = createState(lines, from);
@@ -110,11 +111,14 @@ describe("optimalSolution properties", () => {
         const found = exhaustive(start, goal, level, 3);
         const solution = optimalSolution(start, goal, level, 3);
         if (found !== null) {
+          compared++;
           expect(solution).not.toBeNull();
           expect(solution?.cost).toBeLessThanOrEqual(found);
         }
       }),
     );
+    // The comparison must not be vacuous.
+    expect(compared).toBeGreaterThan(20);
   });
 
   it("on levels 1 to 4 no sequence of up to 4 keys is shorter", () => {
