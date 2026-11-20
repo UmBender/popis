@@ -17,7 +17,15 @@ function roundEvent(
   seed: number,
   data: Omit<EventExtra, "seed" | "i" | "legacy">,
 ): TrainingEvent {
-  return { at, drill, config, kc: "round", ok: true, timeMs, extra: { seed, i: 0, legacy: true, ...data } };
+  return {
+    at,
+    drill,
+    config,
+    kc: "round",
+    ok: true,
+    timeMs,
+    extra: { seed, i: 0, legacy: true, ...data },
+  };
 }
 
 /** The old per-round results of Vim and both typing drills as events. */

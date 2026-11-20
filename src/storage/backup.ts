@@ -89,15 +89,27 @@ const RESULT_LISTS: readonly {
   { key: TEXT_TYPING_KEY, load: loadTextResults, max: MAX_TEXT_RESULTS },
 ];
 
-const roundId = (r: Round): string => `${r.kind ?? "motion"}|${String(r.finishedAt)}|${String(r.seed)}`;
+const roundId = (r: Round): string =>
+  `${r.kind ?? "motion"}|${String(r.finishedAt)}|${String(r.seed)}`;
+
+/** The items whose id is not in `known`, once each. */
+function unseen<T>(items: readonly T[], id: (item: T) => string, known: readonly T[]): T[] {
+  const seen = new Set(known.map(id));
+  return items.filter((item) => {
+    if (seen.has(id(item))) return false;
+    seen.add(id(item));
+    return true;
+  });
+}
 
 /** Adds the results of `value` that the list does not have; returns how many. */
-function mergeResults(store: KeyValueStore, list: (typeof RESULT_LISTS)[number], value: unknown): number {
+function mergeResults(
+  store: KeyValueStore,
+  list: (typeof RESULT_LISTS)[number],
+  value: unknown,
+): number {
   const own = list.load(store);
-  const known = new Set(own.map(roundId));
-  const fresh = list.load(memoryStore({ [list.key]: JSON.stringify(value) })).filter(
-    (r) => !known.has(roundId(r)),
-  );
+  const fresh = unseen(list.load(memoryStore({ [list.key]: JSON.stringify(value) })), roundId, own);
   if (fresh.length === 0) return 0;
   const merged = [...own, ...fresh].sort((a, b) => a.finishedAt - b.finishedAt);
   tryWriteJson(store, list.key, merged.slice(-list.max));
@@ -108,10 +120,7 @@ function mergeSessions(store: KeyValueStore, value: unknown): number {
   const id = (s: { finishedAt: number; mode: string; seed: number }): string =>
     `${String(s.finishedAt)}|${s.mode}|${String(s.seed)}`;
   const own = loadHistory(store);
-  const known = new Set(own.map(id));
-  const fresh = (Array.isArray(value) ? value.filter(isSessionRecord) : []).filter(
-    (s) => !known.has(id(s)),
-  );
+  const fresh = unseen(Array.isArray(value) ? value.filter(isSessionRecord) : [], id, own);
   if (fresh.length === 0) return 0;
   const { keep, dropped } = trimHistory(
     [...own, ...fresh].sort((a, b) => a.finishedAt - b.finishedAt),
@@ -121,8 +130,7 @@ function mergeSessions(store: KeyValueStore, value: unknown): number {
 }
 
 function mergeEvents(store: KeyValueStore, value: unknown, now: number): number {
-  const known = new Set(loadEvents(store).map(eventKey));
-  const fresh = decodeEvents(value).filter((e) => !known.has(eventKey(e)));
+  const fresh = unseen(decodeEvents(value), eventKey, loadEvents(store));
   if (fresh.length > 0) recordEvents(store, fresh, now);
   return fresh.length;
 }
@@ -161,7 +169,9 @@ export function importData(store: KeyValueStore, text: string, now: number): Imp
       tryWriteJson(store, key, data[key]);
     }
   }
-  const unlocked = parseUnlocked({ unlocked: [...loadUnlocked(store), ...parseUnlocked(data[VIM_LEARN_KEY])] });
+  const unlocked = parseUnlocked({
+    unlocked: [...loadUnlocked(store), ...parseUnlocked(data[VIM_LEARN_KEY])],
+  });
   if (unlocked.length > 0) saveUnlocked(store, unlocked);
   if (readJson(store, MIGRATED_KEY) === undefined) tryWriteJson(store, MIGRATED_KEY, 1);
   return { ok: true, added };

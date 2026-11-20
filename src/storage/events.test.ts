@@ -177,6 +177,15 @@ describe("recordEvents", () => {
 
     expect(loadEvents(store)).toEqual([]);
     expect(loadDaily(store)).toEqual([]);
+    const bad = (extra: unknown) =>
+      loadEvents(
+        memoryStore({ [EVENTS_KEY]: JSON.stringify([[1, "vim.edit", "edit", "dd", 1, 5, extra]]) }),
+      );
+    expect(bad("x")).toEqual([]);
+    expect(bad(null)).toEqual([]);
+    expect(bad({ i: 0 })).toEqual([]);
+    expect(bad({ seed: 1 })).toEqual([]);
+    expect(bad({ seed: 1, i: 0 })).toHaveLength(1);
     expect(loadEvents(memoryStore({ [EVENTS_KEY]: "{" }))).toEqual([]);
     expect(loadDaily(memoryStore({ [DAILY_KEY]: "{}" }))).toEqual([]);
   });

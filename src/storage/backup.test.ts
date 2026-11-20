@@ -296,6 +296,48 @@ describe("export and import", () => {
     expect(target.getItem(MIGRATED_KEY)).toBeNull();
   });
 
+  it("import drops duplicates inside the file", () => {
+    const session1 = JSON.parse(exportData(populated(), NOW)) as {
+      data: Record<string, unknown[]>;
+    };
+    const data = session1.data;
+    const text = JSON.stringify({
+      app: "popis",
+      version: 1,
+      data: {
+        "popis.history.v1": [
+          ...(data["popis.history.v1"] ?? []),
+          ...(data["popis.history.v1"] ?? []),
+        ],
+        "popis.events.v1": [...(data["popis.events.v1"] ?? []), ...(data["popis.events.v1"] ?? [])],
+        "popis.typing": [...(data["popis.typing"] ?? []), ...(data["popis.typing"] ?? [])],
+      },
+    });
+    const target = memoryStore();
+
+    importData(target, text, NOW);
+
+    expect(loadHistory(target)).toHaveLength(2);
+    expect(loadEvents(target)).toHaveLength(2);
+    expect(loadTypingResults(target)).toHaveLength(1);
+  });
+
+  it("import ignores values of the wrong type", () => {
+    const text = JSON.stringify({
+      app: "popis",
+      version: 1,
+      data: { "popis.history.v1": "no", "popis.events.v1": {}, "popis.daily.v1": "no" },
+    });
+    const target = memoryStore();
+
+    expect(importData(target, text, NOW)).toEqual({ ok: true, added: 0 });
+    expect(importData(target, "null", NOW)).toEqual({ ok: false, error: "invalid" });
+    expect(importData(target, '{"app":"popis","version":1,"data":[]}', NOW)).toEqual({
+      ok: false,
+      error: "invalid",
+    });
+  });
+
   it("import ignores malformed entries inside a valid file", () => {
     const text = JSON.stringify({
       app: "popis",

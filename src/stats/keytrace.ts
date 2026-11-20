@@ -38,7 +38,13 @@ export function traceCode(
   }
   const stamps = [...inserted].map((typed, k): Stamp => {
     const expected = after.target[pos + k] as string;
-    return { at: now, unit: lineAt(after.target, pos + k), expected, typed, ok: typed === expected };
+    return {
+      at: now,
+      unit: lineAt(after.target, pos + k),
+      expected,
+      typed,
+      ok: typed === expected,
+    };
   });
   return [...trace, ...stamps];
 }
@@ -96,7 +102,9 @@ function summarizeUnits(trace: KeyTrace): UnitSummary[] {
       unit,
       ok: stamps.every((s) => s.ok),
       timeMs: last.at - start,
-      iv: indexes.filter((i) => i > 0).map((i) => (trace[i] as Stamp).at - (trace[i - 1] as Stamp).at),
+      iv: indexes
+        .filter((i) => i > 0)
+        .map((i) => (trace[i] as Stamp).at - (trace[i - 1] as Stamp).at),
       bad: stamps.filter((s) => !s.ok && s.expected !== s.typed).map((s) => [s.expected, s.typed]),
     };
   });

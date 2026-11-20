@@ -68,7 +68,8 @@ function rowKey(row: Pick<DailyRow, "day" | "drill" | "config" | "kc">): string 
 function sortRows(rows: Iterable<DailyRow>): DailyRow[] {
   return [...rows].sort((a, b) => {
     const [ka, kb] = [rowKey(a), rowKey(b)];
-    return ka < kb ? -1 : ka > kb ? 1 : 0;
+    // Keys are unique, so there is no tie.
+    return ka < kb ? -1 : 1;
   });
 }
 
@@ -76,7 +77,12 @@ function sortRows(rows: Iterable<DailyRow>): DailyRow[] {
 export function summarize(events: readonly TrainingEvent[]): DailyRow[] {
   const groups = new Map<string, TrainingEvent[]>();
   for (const event of events) {
-    const key = rowKey({ day: dayOf(event.at), drill: event.drill, config: event.config, kc: event.kc });
+    const key = rowKey({
+      day: dayOf(event.at),
+      drill: event.drill,
+      config: event.config,
+      kc: event.kc,
+    });
     const group = groups.get(key);
     if (group === undefined) groups.set(key, [event]);
     else group.push(event);

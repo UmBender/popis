@@ -14,11 +14,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function withSession(store: KeyValueStore = memoryStore()): KeyValueStore {
+function withSession(store: KeyValueStore = memoryStore(), finishedAt = NOW - 1000): KeyValueStore {
   appendSession(store, {
     version: 1,
     mode: "arithmetic",
-    finishedAt: NOW - 1000,
+    finishedAt,
     durationMs: 120_000,
     seed: 4,
     params: DEFAULT_ARITHMETIC,
@@ -60,15 +60,10 @@ describe("DataPanel", () => {
 
   it("export saves a file through the browser by default", () => {
     // jsdom has no object URLs.
-    const createObjectURL = vi.fn((_blob: Blob) => "blob:fake");
+    const createObjectURL = vi.fn<(blob: Blob) => string>(() => "blob:fake");
     const revokeObjectURL = vi.fn();
     Object.assign(URL, { createObjectURL, revokeObjectURL });
-    let anchor: HTMLAnchorElement | undefined;
-    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
-      this: HTMLAnchorElement,
-    ) {
-      anchor = this;
-    });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     render(<DataPanel store={withSession()} clock={manualClock(NOW)} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Exportar dados" }));
@@ -77,8 +72,9 @@ describe("DataPanel", () => {
 
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     expect(createObjectURL.mock.calls[0]?.[0].type).toBe("application/json");
-    expect(anchor?.download).toBe("popis-2026-11-20.json");
-    expect(anchor?.getAttribute("href")).toBe("blob:fake");
+    const anchor = click.mock.contexts[0] as HTMLAnchorElement;
+    expect(anchor.download).toBe("popis-2026-11-20.json");
+    expect(anchor.getAttribute("href")).toBe("blob:fake");
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:fake");
   });
 
@@ -96,6 +92,22 @@ describe("DataPanel", () => {
       expect(screen.getByRole("status").textContent).toBe("Importado: 1 registro novo.");
     });
     expect(loadHistory(target)).toHaveLength(1);
+  });
+
+  it("import says how many records are new, in the plural too", async () => {
+    const store = withSession(withSession(memoryStore(), NOW - 5000));
+    const target = memoryStore();
+    const save = setup(store);
+    fireEvent.click(screen.getByRole("button", { name: "Exportar dados" }));
+    const text = (save.mock.calls[0] as [string, string])[1];
+    cleanup();
+    setup(target);
+
+    upload(text);
+
+    await waitFor(() => {
+      expect(screen.getByRole("status").textContent).toBe("Importado: 2 registros novos.");
+    });
   });
 
   it("an invalid file shows an error", async () => {

@@ -22,7 +22,8 @@ function readText(file: File): Promise<string> {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      resolve(String(reader.result));
+      // A failed read leaves null, which parses as JSON and is rejected as invalid.
+      resolve(reader.result as string);
     };
     reader.readAsText(file);
   });

@@ -118,7 +118,11 @@ export function TextTypingScreen({ clock, store, newSeed, onBack }: Props): Reac
           timeMs: stats.timeMs,
           finishedAt: at,
         });
-        recordEvents(store, textEvents(trace, { at, config, seed: run.seed, words: next.words }), at);
+        recordEvents(
+          store,
+          textEvents(trace, { at, config, seed: run.seed, words: next.words }),
+          at,
+        );
         setResults(loadTextResults(store));
       }
       show({ ...run, state: next, trace });

@@ -44,9 +44,7 @@ export function decodeEvents(value: unknown): TrainingEvent[] {
     ) {
       return [];
     }
-    return [
-      { at, drill, config, kc, ok: ok === 1, timeMs, extra } as unknown as TrainingEvent,
-    ];
+    return [{ at, drill, config, kc, ok: ok === 1, timeMs, extra } as unknown as TrainingEvent];
   });
 }
 
