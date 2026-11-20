@@ -178,8 +178,10 @@ describe("training log", () => {
     expect(store.getItem("popis.migrated.v1")).not.toBeNull();
   });
 
-  it("the config screen offers export and import", () => {
+  it("the Dados item offers export and import", () => {
     render(<App clock={clock} store={memoryStore()} newSeed={() => SEED} />);
+    // T18 AC-13: export and import moved from the config screen to the Dados item.
+    fireEvent.click(screen.getByRole("radio", { name: "Dados" }));
 
     expect(screen.getByRole("button", { name: "Exportar dados" })).toBeTruthy();
     expect(screen.getByLabelText("Importar dados")).toBeTruthy();
