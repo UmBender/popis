@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TrainingEvent } from "./event";
-import { fit, RAW_DAYS, retire } from "./retention";
+import { fitBudget, RAW_DAYS, retire } from "./retention";
 import { DAY_MS, dayStart } from "./summary";
 
 const NOW = Date.UTC(2026, 10, 20, 15);
@@ -42,13 +42,13 @@ describe("fit", () => {
   it("fit keeps everything that is within the budget", () => {
     const events = [...day(1, 2), ...day(2, 2)];
 
-    expect(fit(events, 40, sizeOf)).toEqual({ keep: events, old: [] });
+    expect(fitBudget(events, 40, sizeOf)).toEqual({ keep: events, old: [] });
   });
 
   it("fit moves the oldest whole days until the budget holds", () => {
     const events = [...day(1, 3), ...day(2, 2), ...day(3, 2)];
 
-    const { keep, old } = fit(events, 40, sizeOf);
+    const { keep, old } = fitBudget(events, 40, sizeOf);
 
     expect(old).toEqual(day(1, 3));
     expect(keep).toEqual([...day(2, 2), ...day(3, 2)]);
@@ -57,7 +57,7 @@ describe("fit", () => {
   it("fit moves everything when even the newest day is over the budget", () => {
     const events = [...day(1, 1), ...day(2, 5)];
 
-    const { keep, old } = fit(events, 10, sizeOf);
+    const { keep, old } = fitBudget(events, 10, sizeOf);
 
     expect(keep).toEqual([]);
     expect(old).toEqual(events);
