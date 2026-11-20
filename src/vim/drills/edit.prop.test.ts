@@ -34,8 +34,9 @@ describe.each(EDIT_KINDS)("generateEdit properties: %s", (kind) => {
         expect(edit.lines.length).toBeLessThanOrEqual(15);
         expect(edit.after.length).toBeLessThanOrEqual(16);
         expect(edit.lines.join("\n")).not.toBe(edit.after.join("\n"));
-        expect(edit.referenceKeys).toBeGreaterThanOrEqual(2);
-        expect(edit.referenceKeys).toBeLessThanOrEqual(24);
+        // D is one key; an opened line counts the indentation typed by hand.
+        expect(edit.referenceKeys).toBeGreaterThanOrEqual(1);
+        expect(edit.referenceKeys).toBeLessThanOrEqual(40);
       }),
     );
   });
