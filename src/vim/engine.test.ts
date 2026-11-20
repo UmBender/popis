@@ -32,7 +32,7 @@ describe("createState", () => {
 
   it("createState clamps the cursor into the buffer", () => {
     expect(at(start([99, 99]))).toEqual([3, 2]);
-    expect(at(start([1, 99]))).toEqual([1, 8]);
+    expect(at(start([1, 99]))).toEqual([1, 7]);
     expect(at(start([2, 5]))).toEqual([2, 0]);
     expect(at(start([-1, -3]))).toEqual([0, 0]);
   });
@@ -65,9 +65,9 @@ describe("pressKey", () => {
     expect(s.pending).toEqual(["2"]);
     s = pressKey(s, "f", 7).state;
     expect(s.pending).toEqual(["2", "f"]);
-    s = pressKey(s, "(", 7).state;
+    s = pressKey(s, "a", 7).state;
     expect(s.pending).toEqual([]);
-    expect(at(s)).toEqual([0, 3]);
+    expect(at(s)).toEqual([0, 10]);
   });
 
   it("pressKey reads a count of several digits", () => {
@@ -209,7 +209,8 @@ describe("pressKey blocking", () => {
 
   it("pressKey blocks counts before level 5", () => {
     expect(type("3", 4).blocked).toBe("3");
-    expect(at(type("3w", 4).state)).toEqual([0, 0]);
+    // The blocked 3 is dropped, so the w that follows moves one word only.
+    expect(at(type("3w", 4).state)).toEqual([0, 3]);
     expect(at(type("3w", 5).state)).toEqual([0, 7]);
   });
 
@@ -232,9 +233,10 @@ describe("pressKey blocking", () => {
   });
 
   it("pressKey keeps a blocked count from moving the cursor", () => {
-    const { state, blocked } = type("2j", 4);
-    expect(blocked).toBe("2");
-    expect(at(state)).toEqual([1, 0]);
+    const count = pressKey(start(), "2", 4);
+    expect(count.blocked).toBe("2");
+    expect(at(count.state)).toEqual([0, 0]);
+    expect(at(pressKey(count.state, "j", 4).state)).toEqual([1, 0]);
   });
 
   it("pressKey clears the blocked report on the next allowed key", () => {

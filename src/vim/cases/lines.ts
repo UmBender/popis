@@ -20,7 +20,7 @@ export const LINES: readonly VimCase[] = [
   ["nG: multi-digit count", "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12", [0, 0], "12G", [11, 0]],
   ["nG: with indentation keeps the column", "x\n    y\nz", [0, 0], "2G", [1, 0]],
   ["{: goes to the previous empty line", "a\n\nb\nc", [3, 0], "{", [1, 0]],
-  ["{: goes to the first line without one", "a\nb\nc", [2, 1], "{", [0, 0]],
+  ["{: goes to the first line without one", "a\nb\nc", [2, 0], "{", [0, 0]],
   ["{: from an empty line goes to the one before", "a\n\nb\n\nc", [3, 0], "{", [1, 0]],
   ["{: count crosses that many paragraphs", "a\n\nb\n\nc\n\nd", [6, 0], "2{", [3, 0]],
   ["{: count past the start fails", "a\n\nb", [2, 0], "3{", [2, 0]],
