@@ -21,6 +21,7 @@ import { reviewItems } from "../storage/review";
 import { ConfigScreen } from "./ConfigScreen";
 import { GameScreen } from "./GameScreen";
 import { ResultsScreen } from "./ResultsScreen";
+import { TextTypingScreen } from "./TextTypingScreen";
 import { TypingScreen } from "./TypingScreen";
 
 export type AppProps = {
@@ -34,7 +35,8 @@ type Screen =
   | { readonly name: "config" }
   | { readonly name: "game"; readonly mode: Mode; readonly session: RunningSession<JsonValue> }
   | { readonly name: "results"; readonly mode: Mode; readonly log: readonly Attempt[] }
-  | { readonly name: "typing" };
+  | { readonly name: "typing" }
+  | { readonly name: "text" };
 
 function sessionConfig<M extends Mode>(
   mode: M,
@@ -112,6 +114,9 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
           onTyping={() => {
             setScreen({ name: "typing" });
           }}
+          onText={() => {
+            setScreen({ name: "text" });
+          }}
         />
       );
     case "game":
@@ -126,6 +131,8 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
       );
     case "typing":
       return <TypingScreen clock={clock} store={store} newSeed={newSeed} onBack={abort} />;
+    case "text":
+      return <TextTypingScreen clock={clock} store={store} newSeed={newSeed} onBack={abort} />;
     case "results":
       return (
         <ResultsScreen

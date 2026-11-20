@@ -20,7 +20,7 @@ export default defineConfig({
         "src/math/**": { lines: 99, statements: 99, functions: 100, branches: 96 },
         "src/session/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
         "src/storage/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
-        "src/ui/**": { lines: 100, statements: 100, functions: 100, branches: 96 },
+        "src/ui/**": { lines: 100, statements: 100, functions: 100, branches: 97 },
         "src/typing/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
         "src/modes.ts": { lines: 100, statements: 100, functions: 100, branches: 100 },
       },

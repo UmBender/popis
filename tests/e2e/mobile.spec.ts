@@ -52,6 +52,29 @@ test("typing is hidden on touch screens", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Digitação" })).toBeHidden();
 });
 
+test("text typing fits a phone", async ({ page }) => {
+  // T12 AC-10: text typing stays visible on touch screens.
+  await page.goto("./");
+  await page.getByRole("button", { name: "Texto", exact: true }).click();
+  const box = page.getByRole("textbox", { name: "Texto digitado" });
+  await expect(box).toBeFocused();
+  await expect(box).toHaveAttribute("autocapitalize", "off");
+  await expect(box).toHaveAttribute("autocorrect", "off");
+  await expect(box).toHaveAttribute("spellcheck", "false");
+  await expectNoHorizontalScroll(page, "text typing");
+  await expectTouchTargets(page.locator("label.op, select, button"), "text typing");
+  await expectInTopHalf(page, page.getByTestId("text-words"), "text typing words");
+
+  await page.getByRole("combobox", { name: "Modo" }).selectOption("words");
+  await page.getByRole("combobox", { name: "Tamanho" }).selectOption("10");
+  const words = await page.getByTestId("text-words").locator("[data-word]").allTextContents();
+  await box.focus();
+  await page.keyboard.type(words.join(" "));
+  await expect(page.getByTestId("text-accuracy")).toHaveText("100%");
+  await expectNoHorizontalScroll(page, "text typing results");
+  await expectTouchTargets(page.locator("button"), "text typing results");
+});
+
 test("every mode fits a phone in config, game and results", async ({ page }) => {
   await page.clock.install();
   await page.goto("./");
