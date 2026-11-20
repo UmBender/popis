@@ -1,7 +1,7 @@
 ---
 id: T17
 title: Nome e acrônimo
-status: in-progress
+status: review
 depends_on: []
 branch: task/T17-acronym
 adrs: []
@@ -67,9 +67,15 @@ In Sprints", em inglês. O resto do app continua em português.
 
 ## Subtasks
 
-- [ ] Testes: `App.test.tsx` e `identity.spec.ts`
-- [ ] `Brand.tsx` e CSS
-- [ ] `index.html`, README, Home, AGENTS
-- [ ] Gates
+- [x] Testes: `App.test.tsx` e `identity.spec.ts`
+- [x] `Brand.tsx` e CSS
+- [x] `index.html`, README, Home, AGENTS
+- [x] Gates
 
 ## Log
+
+- 2026-11-20 — Implementada em batch. Passo de modelos pulado: `Brand`
+  é pequeno e entrou junto com o comportamento. `npm run check`,
+  `npm run coverage` e `npm run test:e2e` (13 testes) verdes. Sem ADR.
+  Verificação manual pendente: o visual do cabeçalho no desktop e no
+  celular.
