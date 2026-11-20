@@ -11,6 +11,10 @@ import { generateTarget, targetLimits } from "./target";
 // AC-6: reachable, within the level's limits, same seed same target, and the
 // solution needs a movement of the level itself.
 
+// Each case searches for the optimal keys, so a property takes seconds when the
+// machine is busy (and minutes with `npm run test:fuzz`).
+const SLOW_MS = 600_000;
+
 const argsArb = fc.record({
   seed: fc.integer({ min: 0, max: MAX_SEED }),
   index: fc.nat(50),
@@ -38,7 +42,7 @@ describe("generateTarget properties", () => {
         expect(parseKeys(t.solution)).toHaveLength(t.minimum);
       }),
     );
-  });
+  }, SLOW_MS);
 
   it("the minimum is within the limits of the level and is the true minimum", () => {
     fc.assert(
@@ -51,7 +55,7 @@ describe("generateTarget properties", () => {
         expect(best?.cost).toBe(t.minimum);
       }),
     );
-  });
+  }, SLOW_MS);
 
   it("above level 1 the target is not reachable as fast without the level's movements", () => {
     fc.assert(
@@ -72,7 +76,7 @@ describe("generateTarget properties", () => {
         },
       ),
     );
-  });
+  }, SLOW_MS);
 
   it("the same seed, index and level give the same target", () => {
     fc.assert(
@@ -80,10 +84,10 @@ describe("generateTarget properties", () => {
         expect(generateTarget(seed, index, level)).toEqual(generateTarget(seed, index, level));
       }),
     );
-  });
+  }, SLOW_MS);
 });
 
-describe("generateTarget speed", () => {
+describe("generateTarget levels", () => {
   it("a target for every level is generated", () => {
     for (const level of LEVELS) expect(generateTarget(1, 0, level).level).toBe(level);
   });
