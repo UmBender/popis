@@ -46,22 +46,48 @@ function simpleSteps(level: Level): readonly Step[] {
 /** A literal pattern that matches the same places as the others, with its keys. */
 type PatternStep = { readonly spec: SearchSpec; readonly id: number; readonly length: number };
 
+/** The patterns of a buffer, and the id of each distinct set of matches. */
+type PatternSet = {
+  readonly patterns: readonly PatternStep[];
+  readonly byMatches: ReadonlyMap<string, number>;
+};
+
+const NO_PATTERNS: PatternSet = { patterns: [], byMatches: new Map() };
+
 /** The shortest literal pattern for each distinct set of matches. */
-function searchPatterns(lines: readonly string[], maxLength: number): readonly PatternStep[] {
+function searchPatterns(lines: readonly string[], maxLength: number): PatternSet {
+  let byLength = patternCache.get(lines);
+  if (byLength === undefined) {
+    byLength = new Map();
+    patternCache.set(lines, byLength);
+  }
+  const cached = byLength.get(maxLength);
+  if (cached !== undefined) return cached;
+
   const byMatches = new Map<string, PatternStep>();
+  const seen = new Set<string>();
   for (let length = 1; length <= maxLength; length++) {
     for (const text of lines) {
       for (let col = 0; col + length <= text.length; col++) {
         const pattern = text.slice(col, col + length);
-        if (REGEX_SPECIAL.test(pattern)) continue;
+        if (seen.has(pattern) || REGEX_SPECIAL.test(pattern)) continue;
+        seen.add(pattern);
         const spec = { pattern, startWord: false, endWord: false };
         const key = matchesKey(lines, spec);
         if (!byMatches.has(key)) byMatches.set(key, { spec, id: byMatches.size + 1, length });
       }
     }
   }
-  return [...byMatches.values()];
+  const set: PatternSet = {
+    patterns: [...byMatches.values()],
+    byMatches: new Map([...byMatches].map(([key, p]) => [key, p.id])),
+  };
+  byLength.set(maxLength, set);
+  return set;
 }
+
+/** The patterns of a buffer by maximum length; buffers are never mutated. */
+const patternCache = new WeakMap<readonly string[], Map<number, PatternSet>>();
 
 const matchesKey = (lines: readonly string[], spec: SearchSpec): string =>
   searchMatches(lines, spec)
@@ -90,32 +116,46 @@ export function optimalSolution(
   if (isTarget(start)) return { keys: "", cost: 0 };
 
   const simple = simpleSteps(level);
-  const patterns =
-    level >= 7 && maxKeys >= 3 ? searchPatterns(lines, Math.min(MAX_PATTERN, maxKeys - 2)) : [];
-  const patternIds = new Map<string, number>();
-  for (const p of patterns) patternIds.set(matchesKey(lines, p.spec), p.id);
-  let nextId = patterns.length + 1;
-  const specIds = new Map<string, number>();
+  const patternLength = Math.min(MAX_PATTERN, maxKeys - 2);
+  const { patterns, byMatches } =
+    level >= 7 && patternLength >= 1 ? searchPatterns(lines, patternLength) : NO_PATTERNS;
+  // Searches of `*` and `#` can match where no pattern of the list does.
+  const extraIds = new Map<string, number>();
+  const specIds = new WeakMap<SearchSpec, number>();
   const searchId = (spec: SearchSpec): number => {
-    const memo = `${spec.startWord ? "<" : ""}${spec.pattern}${spec.endWord ? ">" : ""}`;
-    let id = specIds.get(memo);
+    let id = specIds.get(spec);
     if (id === undefined) {
       const key = matchesKey(lines, spec);
-      id = patternIds.get(key);
+      id = byMatches.get(key) ?? extraIds.get(key);
       if (id === undefined) {
-        id = nextId++;
-        patternIds.set(key, id);
+        id = patterns.length + extraIds.size + 1;
+        extraIds.set(key, id);
       }
-      specIds.set(memo, id);
+      specIds.set(spec, id);
     }
     return id;
   };
+  // A search that ends the path must land on the target, so it must match
+  // there: its pattern is the text that starts at the target.
+  const matchesTarget = new Set<number>();
+  const targetText = lines[target.line] as string;
+  for (let length = 1; level >= 7 && length <= patternLength; length++) {
+    const pattern = targetText.slice(target.col, target.col + length);
+    const id = byMatches.get(matchesKey(lines, { pattern, startWord: false, endWord: false }));
+    if (id !== undefined) matchesTarget.add(id);
+  }
 
   /** A number that tells states apart by everything a later key can depend on. */
   const nodeKey = (s: VimState): number => {
     const want = s.curswant === Infinity ? 255 : Math.min(s.curswant, 254);
-    const find = s.lastFind === null ? 0 : 1 + KIND_INDEX[s.lastFind.kind] * 256 + s.lastFind.char.charCodeAt(0);
-    const search = s.lastSearch === null ? 0 : searchId(s.lastSearch.spec) * 2 + (s.lastSearch.dir === 1 ? 1 : 2);
+    const find =
+      s.lastFind === null
+        ? 0
+        : 1 + KIND_INDEX[s.lastFind.kind] * 256 + s.lastFind.char.charCodeAt(0);
+    const search =
+      s.lastSearch === null
+        ? 0
+        : searchId(s.lastSearch.spec) * 2 + (s.lastSearch.dir === 1 ? 1 : 2);
     return (((s.cursor.line * 256 + s.cursor.col) * 256 + want) * 1100 + find) * 8192 + search;
   };
 
@@ -152,10 +192,11 @@ export function optimalSolution(
         if (step.keys.length > budget) break;
         reach(node, step.command, step.keys);
       }
-      if (level >= 4 && budget >= 2) expandFinds(node, budget, level, reach);
+      if (level >= 4 && budget >= 2) expandFinds(node, budget, level, target, reach);
       if (level >= 7) {
         for (const p of patterns) {
-          if (p.length + 2 > budget) continue;
+          const length = p.length + 2;
+          if (length > budget || (length === budget && !matchesTarget.has(p.id))) continue;
           const keys = [..."/"].concat([...p.spec.pattern], ["<CR>"]);
           reach(node, { name: "/", pattern: p.spec.pattern, count: null }, keys);
           reach(node, { name: "?", pattern: p.spec.pattern, count: null }, ["?", ...keys.slice(1)]);
@@ -178,20 +219,35 @@ function expandFinds(
   node: Node,
   budget: number,
   level: Level,
+  target: Pos,
   reach: (from: Node, command: Command, keys: readonly Key[]) => void,
 ): void {
   const { cursor, lines } = node.state;
   const text = lines[cursor.line] as string;
+  // A find that ends the path must land on the target: the character it
+  // looks for is the one on the target (f, F), after it (t) or before it (T).
+  const onLine = target.line === cursor.line;
+  const wanted = {
+    f: text.charAt(target.col),
+    F: text.charAt(target.col),
+    t: text.charAt(target.col + 1),
+    T: text.charAt(target.col - 1),
+  };
   for (const kind of ["f", "F", "t", "T"] as const) {
     const forward = kind === "f" || kind === "t";
     const seen = new Map<string, number>();
-    for (let col = forward ? cursor.col + 1 : cursor.col - 1; col >= 0 && col < text.length; col += forward ? 1 : -1) {
+    for (
+      let col = forward ? cursor.col + 1 : cursor.col - 1;
+      col >= 0 && col < text.length;
+      col += forward ? 1 : -1
+    ) {
       const char = text.charAt(col);
       seen.set(char, (seen.get(char) ?? 0) + 1);
     }
     for (const [char, occurrences] of seen) {
-      reach(node, { name: kind, char, count: null }, [kind, char]);
-      if (level < 5 || budget < 3) continue;
+      const last = onLine && char === wanted[kind];
+      if (budget > 2 || last) reach(node, { name: kind, char, count: null }, [kind, char]);
+      if (level < 5 || budget < 3 || (budget === 3 && !last)) continue;
       for (let count = 2; count <= Math.min(MAX_COUNT, occurrences); count++) {
         reach(node, { name: kind, char, count }, [digitKey(count), kind, char]);
       }

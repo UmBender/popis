@@ -24,7 +24,13 @@ export type VimTarget = {
 
 const MAX_LINES = 15;
 const ATTEMPTS = 2000;
-const ELIGIBLE = CORPUS.filter((c) => c.text.split("\n").length <= MAX_LINES);
+/**
+ * The snippets with their lines. The arrays are shared by every target, so
+ * the search caches keyed on a buffer last from one target to the next.
+ */
+const ELIGIBLE = CORPUS.map((snippet) => ({ snippet, lines: snippet.text.split("\n") })).filter(
+  (c) => c.lines.length <= MAX_LINES,
+);
 
 /**
  * Fewest and most optimal keys a target of the level may need. The smaller
@@ -51,9 +57,13 @@ const POOL = [
 ];
 
 /** Keys of one random command of a level, using characters of the buffer. */
-function randomCommand(rng: Rng, level: Level, names: readonly string[], lines: readonly string[]): string {
-  const usable = (n: string) =>
-    /^[2-9]$/.test(n) ? level >= 5 : (commandLevel(n) ?? 8) <= level;
+function randomCommand(
+  rng: Rng,
+  level: Level,
+  names: readonly string[],
+  lines: readonly string[],
+): string {
+  const usable = (n: string) => (/^[2-9]$/.test(n) ? level >= 5 : (commandLevel(n) ?? 8) <= level);
   const allowed = names.filter(usable);
   const name = rng.pick(allowed.length > 0 ? allowed : ["l"]);
   const text = rng.pick(lines);
@@ -66,7 +76,8 @@ function randomCommand(rng: Rng, level: Level, names: readonly string[], lines: 
     const word = text.slice(from, from + rng.int(1, 2)).replace(/[\\/?.*[\]~^$]/g, "a");
     return `${name}${formatKeys([...(word || "a")])}<CR>`;
   }
-  if (/^[2-9]$/.test(name)) return `${name}${rng.pick(["w", "b", "e", "j", "k", "l", "h", "G", "W", "B"])}`;
+  if (/^[2-9]$/.test(name))
+    return `${name}${rng.pick(["w", "b", "e", "j", "k", "l", "h", "G", "W", "B"])}`;
   return name;
 }
 
@@ -85,8 +96,7 @@ function walk(state: VimState, keys: string, level: Level): Pos | null {
 export function generateTarget(seed: number, index: number, level: Level): VimTarget {
   const targetSeed = deriveSeed(seed, index);
   const rng = createRng(targetSeed);
-  const snippet = rng.pick(ELIGIBLE);
-  const lines = snippet.text.split("\n");
+  const { snippet, lines } = rng.pick(ELIGIBLE);
   const { min, max } = targetLimits(level);
 
   for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
@@ -108,11 +118,13 @@ export function generateTarget(seed: number, index: number, level: Level): VimTa
 
     const end = walk(start, keys, level);
     if (end === null || (end.line === line && end.col === start.cursor.col)) continue;
-    const best = optimalSolution(start, end, level, max);
-    if (best === null || best.cost < min) continue;
-    // Without the new movements the target must take longer (or be out of reach),
-    // so the best solution uses a movement of the level itself.
-    if (level > 1 && optimalSolution(start, end, (level - 1) as Level, best.cost) !== null) continue;
+    // Too easy: within reach of fewer keys than the minimum (cheap to check).
+    if (optimalSolution(start, end, level, min - 1) !== null) continue;
+    // Without the new movements the target must take longer (or be out of
+    // reach), so the best solution uses a movement of the level itself.
+    const lower = level > 1 ? optimalSolution(start, end, (level - 1) as Level, max) : null;
+    const best = optimalSolution(start, end, level, lower === null ? max : lower.cost - 1);
+    if (best === null) continue;
     return {
       index,
       seed: targetSeed,
@@ -125,5 +137,7 @@ export function generateTarget(seed: number, index: number, level: Level): VimTa
       solution: best.keys,
     };
   }
-  throw new Error(`no target of level ${String(level)} for seed ${String(seed)} index ${String(index)}`);
+  throw new Error(
+    `no target of level ${String(level)} for seed ${String(seed)} index ${String(index)}`,
+  );
 }
