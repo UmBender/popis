@@ -1,7 +1,7 @@
 ---
 id: T15
 title: Vim - visual e substituição
-status: review
+status: done
 depends_on: [T14]
 branch: task/T15-vim-visual
 adrs: [ADR-T15-1]
