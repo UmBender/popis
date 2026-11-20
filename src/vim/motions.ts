@@ -40,24 +40,28 @@ export type Command =
 
 type Mut = { line: number; col: number };
 
-const isKeyword = (ch: string): boolean => /^[\wÀ-ÿ]$/.test(ch);
+export const isKeyword = (ch: string): boolean => /^[\wÀ-ÿ]$/.test(ch);
 
 /** Vim's cls(): 0 blank (or end of line), 1 punctuation, 2 keyword. */
-function charClass(ch: string, big: boolean): 0 | 1 | 2 {
+export function charClass(ch: string, big: boolean): 0 | 1 | 2 {
   if (ch === "" || ch === " " || ch === "\t") return 0;
   if (big) return 1;
   return isKeyword(ch) ? 2 : 1;
 }
 
 /** A cursor that the word routines move in place. */
-type Walker = { readonly lines: readonly string[]; readonly pos: Mut; readonly big: boolean };
+export type Walker = {
+  readonly lines: readonly string[];
+  readonly pos: Mut;
+  readonly big: boolean;
+};
 
 const textOf = (w: Walker): string => w.lines[w.pos.line] as string;
-const classOf = (w: Walker): 0 | 1 | 2 => charClass(textOf(w).charAt(w.pos.col), w.big);
+export const classOf = (w: Walker): 0 | 1 | 2 => charClass(textOf(w).charAt(w.pos.col), w.big);
 const onEmptyLine = (w: Walker): boolean => w.pos.col === 0 && textOf(w) === "";
 
 /** Vim's inc(): 0 inside a line, 2 onto the end of a line, 1 onto the next line, -1 at the end. */
-function inc(w: Walker): number {
+export function inc(w: Walker): number {
   const length = textOf(w).length;
   if (w.pos.col < length) {
     w.pos.col++;
@@ -72,7 +76,7 @@ function inc(w: Walker): number {
 }
 
 /** Vim's dec(): 0 inside a line, 1 onto the end of the previous line, -1 at the start. */
-function dec(w: Walker): number {
+export function dec(w: Walker): number {
   if (w.pos.col > 0) {
     w.pos.col--;
     return 0;
@@ -102,64 +106,100 @@ function skipBack(w: Walker, klass: number): boolean {
   return false;
 }
 
-function fwdWord(w: Walker, count: number): void {
+/**
+ * Vim's fwd_word(). With `eol` (an operator is pending) the last word of the
+ * count stops at the end of its line. False when Vim says FAIL.
+ */
+export function fwdWord(w: Walker, count: number, eol = false): boolean {
   for (let left = count; left > 0; left--) {
     const sclass = classOf(w);
     const lastLine = w.pos.line === w.lines.length - 1;
     const i = inc(w);
-    if (i === -1 || (i >= 1 && lastLine)) return;
-    if (sclass !== 0) skipForward(w, sclass);
+    if (i === -1 || (i >= 1 && lastLine)) return false;
+    const stopAtEol = eol && left === 1;
+    if (i >= 1 && stopAtEol) return true;
+    if (sclass !== 0) {
+      while (classOf(w) === sclass) {
+        const j = inc(w);
+        if (j === -1 || (j >= 1 && stopAtEol)) return true;
+      }
+    }
     while (classOf(w) === 0) {
       if (onEmptyLine(w)) break;
-      if (inc(w) === -1) return;
+      const j = inc(w);
+      if (j === -1 || (j >= 1 && stopAtEol)) return true;
     }
   }
+  return true;
 }
 
-function bckWord(w: Walker, count: number): void {
+/** Vim's bck_word(): false only when the cursor starts at the start of the buffer. */
+function bckWord(w: Walker, count: number): boolean {
   for (let left = count; left > 0; left--) {
-    if (dec(w) === -1) return;
+    if (dec(w) === -1) return false;
     let stoppedOnEmpty = false;
     while (classOf(w) === 0) {
       if (onEmptyLine(w)) {
         stoppedOnEmpty = true;
         break;
       }
-      if (dec(w) === -1) return;
+      if (dec(w) === -1) return true;
     }
     if (stoppedOnEmpty) continue;
-    if (skipBack(w, classOf(w))) return;
+    if (skipBack(w, classOf(w))) return true;
     inc(w);
   }
+  return true;
 }
 
-function endWord(w: Walker, count: number): void {
+/**
+ * Vim's end_word(). With `stop`, a cursor already at the end of a word stays
+ * there for the first word of the count (`cw`); with `empty`, an empty line
+ * ends the search (text objects).
+ */
+export function endWord(w: Walker, count: number, stop = false, empty = false): boolean {
+  let stopHere = stop;
   for (let left = count; left > 0; left--) {
     const sclass = classOf(w);
-    if (inc(w) === -1) return;
+    if (inc(w) === -1) return false;
+    let finished = false;
     if (classOf(w) === sclass && sclass !== 0) {
       skipForward(w, sclass);
-    } else {
+    } else if (!stopHere || sclass === 0) {
       while (classOf(w) === 0) {
-        if (inc(w) === -1) return;
+        if (empty && onEmptyLine(w)) {
+          finished = true;
+          break;
+        }
+        if (inc(w) === -1) return false;
       }
-      skipForward(w, classOf(w));
+      if (!finished) skipForward(w, classOf(w));
     }
-    dec(w);
+    if (!finished) dec(w);
+    stopHere = false;
   }
+  return true;
 }
 
-function bckendWord(w: Walker, count: number): void {
+/** Vim's bckend_word(): false only when the cursor starts at the start of the buffer. */
+function bckendWord(w: Walker, count: number): boolean {
   for (let left = count; left > 0; left--) {
     const sclass = classOf(w);
-    if (dec(w) === -1) return;
-    if (sclass !== 0 && skipBack(w, sclass)) return;
+    if (dec(w) === -1) return false;
+    if (sclass !== 0 && skipBack(w, sclass)) return true;
     while (classOf(w) === 0) {
       if (onEmptyLine(w)) break;
-      if (dec(w) === -1) return;
+      if (dec(w) === -1) return true;
     }
   }
+  return true;
 }
+
+/** The backward word motions, for an operator: false when Vim says FAIL. */
+export const wordWalk = {
+  b: (w: Walker, count: number): boolean => bckWord(w, count),
+  ge: (w: Walker, count: number): boolean => bckendWord(w, count),
+};
 
 const WORD_MOTIONS = {
   w: [fwdWord, false],
@@ -205,7 +245,7 @@ function findChar(
   char: string,
   count: number,
   stopAtNext: boolean,
-): VimState {
+): VimState | null {
   const dir = kind === "f" || kind === "t" ? 1 : -1;
   const text = state.lines[state.cursor.line] as string;
   let col = state.cursor.col;
@@ -214,9 +254,9 @@ function findChar(
     for (;;) {
       if (dir > 0) {
         col++;
-        if (col >= text.length) return state;
+        if (col >= text.length) return null;
       } else {
-        if (col === 0) return state;
+        if (col === 0) return null;
         col--;
       }
       if (text.charAt(col) === char && stop) break;
@@ -229,9 +269,9 @@ function findChar(
 
 const REVERSED: Readonly<Record<FindKind, FindKind>> = { f: "F", F: "f", t: "T", T: "t" };
 
-function repeatFind(state: VimState, reverse: boolean, count: number): VimState {
+function repeatFind(state: VimState, reverse: boolean, count: number): VimState | null {
   const last = state.lastFind;
-  if (last === null) return state;
+  if (last === null) return null;
   const kind = reverse ? REVERSED[last.kind] : last.kind;
   // Repeating t or T must move, even when the cursor is next to the character.
   const stop = !(count === 1 && (kind === "t" || kind === "T"));
@@ -241,7 +281,7 @@ function repeatFind(state: VimState, reverse: boolean, count: number): VimState 
 /** An empty line, or one that starts with a form feed, ends a paragraph. */
 const endsParagraph = (text: string): boolean => text === "" || text.startsWith("\f");
 
-function paragraph(state: VimState, dir: 1 | -1, count: number): VimState {
+function paragraph(state: VimState, dir: 1 | -1, count: number): VimState | null {
   const { lines } = state;
   const last = lines.length - 1;
   let curr = state.cursor.line;
@@ -254,7 +294,7 @@ function paragraph(state: VimState, dir: 1 | -1, count: number): VimState {
       if (!first && didSkip && endsParagraph(text)) break;
       curr += dir;
       if (curr < 0 || curr > last) {
-        if (left > 0) return state;
+        if (left > 0) return null;
         curr -= dir;
         break;
       }
@@ -285,18 +325,36 @@ function matchBracket(lines: readonly string[], from: Pos): Pos | null {
   const findc = backwards
     ? OPENERS.charAt(CLOSERS.indexOf(initc))
     : CLOSERS.charAt(OPENERS.indexOf(initc));
-  const backslashes = (text: string, at: number): number => {
-    let n = 0;
-    while (at - 1 - n >= 0 && text.charAt(at - 1 - n) === "\\") n++;
-    return n;
-  };
   const matchEscaped = backslashes(first, col) & 1;
+  return scanPair(lines, { line: from.line, col }, initc, findc, backwards, matchEscaped, true);
+}
 
+const backslashes = (text: string, at: number): number => {
+  let n = 0;
+  while (at - 1 - n >= 0 && text.charAt(at - 1 - n) === "\\") n++;
+  return n;
+};
+
+/**
+ * The scan of Vim's findmatchlimit(): from `from`, looks for the unmatched
+ * `findc`, counting `initc` as a nested opener. `smart` is Vim's 'cpoptions'
+ * without `%`: brackets inside quotes are skipped and so are `'('`. Text
+ * objects scan with `smart` off, so quotes do not matter.
+ */
+export function scanPair(
+  lines: readonly string[],
+  from: Pos,
+  initc: string,
+  findc: string,
+  backwards: boolean,
+  matchEscaped: number,
+  smart: boolean,
+): Pos | null {
   let line = from.line;
-  let text = first;
-  let at = col;
+  let text = lines[line] as string;
+  let at = from.col;
   let count = 0;
-  let doQuotes = -1;
+  let doQuotes = smart ? -1 : 0;
   let startInQuotes: boolean | null = null;
   let inquote = false;
   for (;;) {
@@ -306,7 +364,7 @@ function matchBracket(lines: readonly string[], from: Pos): Pos | null {
         line--;
         text = lines[line] as string;
         at = text.length;
-        doQuotes = -1;
+        doQuotes = smart ? -1 : 0;
       } else {
         at--;
       }
@@ -315,7 +373,7 @@ function matchBracket(lines: readonly string[], from: Pos): Pos | null {
       line++;
       text = lines[line] as string;
       at = 0;
-      doQuotes = -1;
+      doQuotes = smart ? -1 : 0;
     } else {
       at++;
     }
@@ -373,7 +431,7 @@ function matchBracket(lines: readonly string[], from: Pos): Pos | null {
       }
       continue;
     }
-    if (c === "'") {
+    if (c === "'" && smart) {
       if (backwards) {
         if (at > 1) {
           if (text.charAt(at - 2) === "'") {
@@ -450,10 +508,10 @@ function searchFrom(
   dir: SearchDir,
   count: number,
   from: Pos,
-): VimState {
+): VimState | null {
   const matches = searchMatches(state.lines, spec);
   const total = matches.length;
-  if (total === 0) return state;
+  if (total === 0) return null;
   let index: number;
   if (dir === 1) {
     const next = matches.findIndex((m) => before(from, m));
@@ -490,37 +548,85 @@ function identAt(text: string, startCol: number): { spec: SearchSpec; col: numbe
   return { spec, col };
 }
 
-function searchWord(state: VimState, dir: SearchDir, count: number): VimState {
-  const text = state.lines[state.cursor.line] as string;
-  const word = identAt(text, state.cursor.col);
-  if (word === null) return state;
-  // Starting at the word's first column makes the search skip the word itself.
-  const next = { ...state, lastSearch: { spec: word.spec, dir } };
-  return searchFrom(next, word.spec, dir, count, { line: state.cursor.line, col: word.col });
-}
+/** What a movement did: the new state, and false when Vim says the movement failed. */
+export type MotionResult = { readonly state: VimState; readonly ok: boolean };
 
-function searchPattern(state: VimState, spec: SearchSpec, dir: SearchDir, count: number): VimState {
-  const next = { ...state, lastSearch: { spec, dir } };
-  return searchFrom(next, spec, dir, count, state.cursor);
+const done = (state: VimState): MotionResult => ({ state, ok: true });
+const failed = (state: VimState): MotionResult => ({ state, ok: false });
+const orFail = (state: VimState, hit: VimState | null): MotionResult =>
+  hit === null ? failed(state) : done(hit);
+
+/**
+ * Runs a movement like Neovim does. A failing movement leaves the cursor
+ * (a failed `f` or search still remembers what it looked for).
+ */
+export function runMotion(state: VimState, command: Command): MotionResult {
+  const n = command.count ?? 1;
+  switch (command.name) {
+    case "f":
+    case "F":
+    case "t":
+    case "T": {
+      const next = { ...state, lastFind: { kind: command.name, char: command.char } };
+      return orFail(next, findChar(next, command.name, command.char, n, true));
+    }
+    case "/":
+    case "?": {
+      const dir = command.name === "/" ? 1 : -1;
+      const spec =
+        command.pattern !== ""
+          ? { pattern: command.pattern, startWord: false, endWord: false }
+          : (state.lastSearch?.spec ?? null);
+      if (spec === null) return failed(state);
+      const next = { ...state, lastSearch: { spec, dir } as const };
+      return orFail(next, searchFrom(next, spec, dir, n, state.cursor));
+    }
+    case "n":
+    case "N": {
+      const memo = state.lastSearch;
+      if (memo === null) return failed(state);
+      const dir = command.name === "n" ? memo.dir : (-memo.dir as SearchDir);
+      return orFail(state, searchFrom(state, memo.spec, dir, n, state.cursor));
+    }
+    case "*":
+    case "#": {
+      const dir = command.name === "*" ? 1 : -1;
+      const word = identAt(state.lines[state.cursor.line] as string, state.cursor.col);
+      if (word === null) return failed(state);
+      // Starting at the word's first column makes the search skip the word itself.
+      const next = { ...state, lastSearch: { spec: word.spec, dir } as const };
+      const from = { line: state.cursor.line, col: word.col };
+      return orFail(next, searchFrom(next, word.spec, dir, n, from));
+    }
+    default:
+      return orFail(state, plainMotion(state, command.name, command.count));
+  }
 }
 
 /** Runs a movement like Neovim does; a failing movement leaves the cursor. */
 export function execute(state: VimState, command: Command): VimState {
-  const n = command.count ?? 1;
+  return runMotion(state, command).state;
+}
+
+type PlainName = Exclude<SimpleName, "n" | "N" | "*" | "#">;
+
+/** The movements that need only the state and a count; null when they fail. */
+function plainMotion(state: VimState, name: PlainName, count: number | null): VimState | null {
+  const n = count ?? 1;
   const { cursor, lines } = state;
   const last = lines.length - 1;
   const text = lines[cursor.line] as string;
-  switch (command.name) {
+  switch (name) {
     case "h":
-      return cursor.col === 0 ? state : colAt(state, cursor.line, Math.max(0, cursor.col - n));
+      return cursor.col === 0 ? null : colAt(state, cursor.line, Math.max(0, cursor.col - n));
     case "l": {
       const max = Math.max(0, text.length - 1);
-      return cursor.col >= max ? state : colAt(state, cursor.line, Math.min(max, cursor.col + n));
+      return cursor.col >= max ? null : colAt(state, cursor.line, Math.min(max, cursor.col + n));
     }
     case "j":
-      return cursor.line >= last ? state : toLine(state, Math.min(last, cursor.line + n));
+      return cursor.line >= last ? null : toLine(state, Math.min(last, cursor.line + n));
     case "k":
-      return cursor.line <= 0 ? state : toLine(state, Math.max(0, cursor.line - n));
+      return cursor.line <= 0 ? null : toLine(state, Math.max(0, cursor.line - n));
     case "w":
     case "W":
     case "b":
@@ -528,7 +634,7 @@ export function execute(state: VimState, command: Command): VimState {
     case "e":
     case "E":
     case "ge":
-      return wordMotion(state, command.name, n);
+      return wordMotion(state, name, n);
     case "0":
       return colAt(state, cursor.line, 0);
     case "^": {
@@ -536,68 +642,31 @@ export function execute(state: VimState, command: Command): VimState {
       return colAt(state, cursor.line, indent >= 0 ? indent : Math.max(0, text.length - 1));
     }
     case "$": {
-      if (n > 1 && cursor.line >= last) return state;
+      if (n > 1 && cursor.line >= last) return null;
       const line = Math.min(last, cursor.line + n - 1);
       const end = Math.max(0, (lines[line] as string).length - 1);
       return colAt(state, line, end, Infinity);
     }
     case "gg":
-      return toLine(state, Math.min(last, (command.count ?? 1) - 1));
+      return toLine(state, Math.min(last, (count ?? 1) - 1));
     case "G":
-      return toLine(state, command.count === null ? last : Math.min(last, command.count - 1));
+      return toLine(state, count === null ? last : Math.min(last, count - 1));
     case "%": {
-      if (command.count !== null) {
-        if (command.count > 100) return state;
-        const line = Math.floor((lines.length * command.count + 99) / 100);
+      if (count !== null) {
+        if (count > 100) return null;
+        const line = Math.floor((lines.length * count + 99) / 100);
         return toLine(state, Math.min(last, Math.max(0, line - 1)));
       }
       const hit = matchBracket(lines, cursor);
-      return hit === null ? state : colAt(state, hit.line, hit.col);
+      return hit === null ? null : colAt(state, hit.line, hit.col);
     }
     case "{":
       return paragraph(state, -1, n);
     case "}":
       return paragraph(state, 1, n);
-    case "f":
-    case "F":
-    case "t":
-    case "T":
-      return findChar(
-        { ...state, lastFind: { kind: command.name, char: command.char } },
-        command.name,
-        command.char,
-        n,
-        true,
-      );
     case ";":
       return repeatFind(state, false, n);
     case ",":
       return repeatFind(state, true, n);
-    case "/":
-    case "?": {
-      const dir = command.name === "/" ? 1 : -1;
-      if (command.pattern !== "") {
-        return searchPattern(
-          state,
-          { pattern: command.pattern, startWord: false, endWord: false },
-          dir,
-          n,
-        );
-      }
-      return state.lastSearch === null
-        ? state
-        : searchPattern(state, state.lastSearch.spec, dir, n);
-    }
-    case "n":
-    case "N": {
-      const memo = state.lastSearch;
-      if (memo === null) return state;
-      const dir = command.name === "n" ? memo.dir : (-memo.dir as SearchDir);
-      return searchFrom(state, memo.spec, dir, n, cursor);
-    }
-    case "*":
-      return searchWord(state, 1, n);
-    case "#":
-      return searchWord(state, -1, n);
   }
 }

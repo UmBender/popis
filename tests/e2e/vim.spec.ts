@@ -39,6 +39,26 @@ test("a level 4 round typed with the optimal solutions has 100% efficiency", asy
   await expect(page.getByRole("button", { name: "Começar" })).toBeVisible();
 });
 
+test("T14 AC-10: an edit round typed with the references has 100% efficiency", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("/");
+  await page.getByRole("button", { name: "Vim", exact: true }).click();
+  await page.getByRole("combobox", { name: "Treino" }).selectOption("edit");
+  await expect(page.getByRole("textbox", { name: "Teclas do Vim" })).toBeFocused();
+
+  for (let index = 0; index < 3; index++) {
+    await expect(page.getByTestId("vim-code")).toHaveAttribute("data-edit-index", String(index));
+    const reference = await page.getByTestId("vim-after").getAttribute("data-reference");
+    expect(reference).toBeTruthy();
+    await typeSolution(page, reference ?? "");
+  }
+  await expect(page.getByTestId("vim-last")).toContainText("referência");
+
+  await page.clock.runFor(61_000);
+  await expect(page.getByTestId("vim-reached")).toHaveText("3");
+  await expect(page.getByTestId("vim-efficiency")).toHaveText("100%");
+});
+
 test("a blocked key shows which one and does not move the cursor", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Vim", exact: true }).click();

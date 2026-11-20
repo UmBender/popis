@@ -7,7 +7,7 @@
 //
 // Needs `nvim` in the PATH, so it stays out of `npm run check`.
 import { execFile } from "node:child_process";
-import { mkdtempSync, readdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -16,15 +16,32 @@ const CASES_DIR = join(import.meta.dirname, "..", "src", "vim", "cases");
 const NOT_CASES = new Set(["case.ts", "index.ts"]);
 const CONCURRENCY = 8;
 
+// The Lua script writes its answer to a file: Neovim prints mode messages on
+// the standard output, which would corrupt it. `autoindent` is off because
+// the inserted text goes in as typed (ADR-T14-1).
 const LUA = `
 local input = vim.json.decode(vim.fn.join(vim.fn.readfile(arg[1]), "\\n"))
+vim.o.autoindent = false
+-- Loading the text is not a change the user can undo.
+local undolevels = vim.bo.undolevels
+vim.bo.undolevels = -1
 vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.split(input.text, "\\n", { plain = true }))
+vim.bo.undolevels = undolevels
 vim.api.nvim_win_set_cursor(0, { input.line + 1, input.col })
-local keys = vim.api.nvim_replace_termcodes(input.keys, true, false, true)
+local keys = vim.api.nvim_replace_termcodes(input.keys, true, true, true)
 vim.api.nvim_feedkeys(keys, "ntx", false)
 local pos = vim.api.nvim_win_get_cursor(0)
 local mode = vim.api.nvim_get_mode().mode
-io.stdout:write(vim.json.encode({ row = pos[1], col = pos[2], mode = mode }))
+local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+local out = vim.json.encode({
+  row = pos[1],
+  col = pos[2],
+  mode = mode,
+  text = table.concat(lines, "\\n"),
+  reg = vim.fn.getreg('"'),
+  regtype = vim.fn.getregtype('"'),
+})
+vim.fn.writefile({ out }, arg[2])
 `;
 
 /** Neovim counts lines from 1; the cases count both from 0. The one place that converts. */
@@ -32,21 +49,31 @@ function toCursor(row, col) {
   return [row - 1, col];
 }
 
+/** An edit case has an object as its expectation; a motion case, a cursor. */
+const isEditCase = (c) => !Array.isArray(c[4]);
+
 function runCase(dir, id, [, text, from, keys]) {
   const input = join(dir, `${id}.json`);
+  const output = join(dir, `${id}.out.json`);
   writeFileSync(input, JSON.stringify({ text, line: from[0], col: from[1], keys }));
   return new Promise((resolve, reject) => {
     execFile(
       "nvim",
-      ["--clean", "--headless", "-l", join(dir, "oracle.lua"), input],
+      ["--clean", "--headless", "-l", join(dir, "oracle.lua"), input, output],
       { timeout: 20000 },
-      (error, stdout, stderr) => {
+      (error, _stdout, stderr) => {
         if (error) {
           reject(new Error(`nvim failed on case ${String(id)}: ${stderr || error.message}`));
           return;
         }
-        const out = JSON.parse(stdout);
-        resolve({ cursor: toCursor(out.row, out.col), mode: out.mode });
+        const out = JSON.parse(readFileSync(output, "utf8"));
+        resolve({
+          cursor: toCursor(out.row, out.col),
+          mode: out.mode,
+          text: out.text,
+          reg: out.reg,
+          regtype: out.regtype,
+        });
       },
     );
   });
@@ -54,10 +81,27 @@ function runCase(dir, id, [, text, from, keys]) {
 
 function source(group, cases) {
   const rows = cases.map((c) => `  ${JSON.stringify(c)},\n`).join("");
+  const edit = cases.length > 0 && isEditCase(cases[0]);
+  const type = edit ? "EditCase" : "VimCase";
   return (
-    `import type { VimCase } from "./case";\n\n` +
-    `export const ${group}: readonly VimCase[] = [\n${rows}];\n`
+    `import type { ${type} } from "./case";\n\n` +
+    `export const ${group}: readonly ${type}[] = [\n${rows}];\n`
   );
+}
+
+/** What Neovim did, in the shape of an edit case's expectation. */
+const asExpectation = (result) => ({
+  text: result.text,
+  cursor: result.cursor,
+  reg: result.reg,
+  regtype: result.regtype,
+});
+
+function disagrees(c, result) {
+  const expect = c[4];
+  if (result.mode !== "n") return true;
+  if (!isEditCase(c)) return result.cursor[0] !== expect[0] || result.cursor[1] !== expect[1];
+  return JSON.stringify(asExpectation(result)) !== JSON.stringify(expect);
 }
 
 async function loadFiles() {
@@ -101,11 +145,12 @@ async function main() {
     const bad = [];
     for (const [job, result] of results) {
       const [name, , , keys, expect] = job.c;
-      const same = result.cursor[0] === expect[0] && result.cursor[1] === expect[1];
-      if (!same || result.mode !== "n") {
-        bad.push(
-          `${name}  keys ${keys}: expected [${expect}], nvim [${result.cursor}] in mode ${result.mode}`,
-        );
+      if (disagrees(job.c, result)) {
+        const want = JSON.stringify(expect);
+        const got = isEditCase(job.c)
+          ? JSON.stringify(asExpectation(result))
+          : `[${result.cursor}]`;
+        bad.push(`${name}  keys ${keys}: expected ${want}, nvim ${got} in mode ${result.mode}`);
       }
     }
 
@@ -114,7 +159,8 @@ async function main() {
         const fixed = cases.map((c) => {
           const job = jobs.find((j) => j.c === c);
           const result = results.get(job);
-          return result ? [c[0], c[1], c[2], c[3], result.cursor] : c;
+          if (!result) return c;
+          return [c[0], c[1], c[2], c[3], isEditCase(c) ? asExpectation(result) : result.cursor];
         });
         writeFileSync(join(CASES_DIR, file), source(group, fixed));
       }
