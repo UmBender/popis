@@ -85,8 +85,8 @@ navegador. Não muda nenhuma tela de treino.
 
 ## Notas para o batch
 
-- **Ordem:** independente das tasks de tela. Pode rodar em paralelo à
-  T18 em outra noite, mas as duas mexem nos pontos de gravação: rode
-  depois da T19 para evitar conflito.
+- **Ordem:** roda antes da T18 (decisão do dono, 2026-11-20), partindo
+  da `main`. O botão de exportar e importar fica na configuração, e a
+  T18 o move para o item "Dados" da árvore.
 
 ## Log

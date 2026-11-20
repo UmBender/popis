@@ -107,9 +107,14 @@ nome, o mesmo lugar e a mesma tecla em todas as telas.
   em `src/ui/keys.ts` (a fonte da ajuda `?` da T18 e da linha de
   status):
   - **Esc** sai do treino e volta ao painel do item. A exceção é o Vim,
-    onde Esc é do Vim; lá, sair é Ctrl+Esc;
+    onde Esc é do Vim; lá, sair é `:q` (Enter), como no Neovim, nos três
+    treinos (no Movimento, `:` passa a abrir só a linha de comando de
+    `:q`). Decisão do dono (2026-11-20): Ctrl+Esc não, porque o KDE e o
+    Windows o capturam;
   - **Ctrl+Enter** pula o item atual (questão, trecho, alvo, edição);
-  - **Ctrl+R** recomeça a rodada com uma seed nova.
+  - **Ctrl+R** recomeça a rodada com uma seed nova. Se o navegador não
+    deixar capturar o Ctrl+R (`preventDefault` sem efeito no Chromium ou
+    no Firefox), use Ctrl+Shift+Enter e registre no *Log*.
 
   Um teste percorre todas as telas de treino e confere as três ações.
   As dicas soltas (item 9) somem: as teclas aparecem só na linha de

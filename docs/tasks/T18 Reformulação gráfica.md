@@ -1,8 +1,8 @@
 ---
 id: T18
 title: Reformulação gráfica
-status: ready
-depends_on: [T16, T17]
+status: todo
+depends_on: [T16, T17, T22]
 branch: task/T18-redesign
 adrs: []
 tags: [task]
@@ -187,6 +187,10 @@ muda.
   recolhível e a gaveta, a ordem fixa do painel, a navegação por teclado
   e os vereditos, citando o ADR-0001 (cores mantidas), e [[Shell]] passa
   para `status: accepted`.
+
+- **AC-13**: **Dados:** o botão de exportar e importar da [[T22 Registro
+  detalhado do treino]], que fica na configuração, vira o item "Dados" da
+  árvore (pasta Treino). Os testes da T22 continuam passando.
 
 ## Out of scope
 
