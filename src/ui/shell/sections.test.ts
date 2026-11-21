@@ -7,6 +7,7 @@ import { folderOf, ITEMS, itemById, itemByShortcut, SECTIONS, type ItemId } from
 /** Every screen that is not a mode of MODES. */
 const SCREENS: readonly ItemId[] = [
   "data",
+  "progress",
   "typing",
   "text",
   "vim-learn",
@@ -19,7 +20,7 @@ describe("sections", () => {
     expect(SECTIONS.map((f) => [f.label, f.items.map((i) => i.label)])).toEqual([
       ["Cálculo", ["Aritmética", "Álgebra", "Fatoração", "Somatórios"]],
       ["CP", ["Divisão inteira", "Estimativa", "Primos"]],
-      ["Treino", ["Revisar", "Dados"]],
+      ["Treino", ["Revisar", "Dados", "Evolução"]],
       ["Digitação", ["Código", "Texto"]],
       ["Vim", ["Aprender", "Movimento", "Edição"]],
     ]);
