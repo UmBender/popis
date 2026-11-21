@@ -26,7 +26,7 @@ let clock: ManualClock;
 
 beforeEach(() => {
   vi.useFakeTimers();
-  clock = manualClock(0, NOW);
+  clock = manualClock(NOW);
 });
 
 afterEach(() => {
