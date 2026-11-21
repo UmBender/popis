@@ -1,6 +1,6 @@
 ---
 name: batch-tasks
-description: Plan a list of tasks from docs/tasks with the owner, then run them unattended (e.g. overnight), one Claude Code session at a time, surviving usage limits, network loss, crashes, reboots and commands that were not pre-approved; blocked tasks are recorded and skipped so the rest continues. Use when asked to plan, run, resume or report a batch of tasks, or to "implement these tasks while I sleep".
+description: Plan a list of tasks from docs/tasks with the owner, then run them unattended (e.g. overnight), one agent session at a time (Claude Code or Google's agy), surviving usage limits, network loss, crashes, reboots and commands that were not pre-approved; blocked tasks are recorded and skipped so the rest continues. Use when asked to plan, run, resume or report a batch of tasks, or to "implement these tasks while I sleep".
 argument-hint: plan <IDs…> | status | report | resume | triage
 ---
 
@@ -20,6 +20,28 @@ Implements several tasks without anyone at the keyboard. Two phases:
 Files: `batch.sh` (runner), `unattended.md` (rules appended to every
 session's system prompt), `settings.template.json` (base allow/deny
 list), `plan.template.md`. State lives in `.batch/` (git-ignored).
+
+**Agents.** Each task runs on Claude Code (`claude -p`, the default) or
+on Google's Antigravity CLI (`agy -p`), chosen per task in the queue
+(`agent=agy`) or for all with `BATCH_AGENT=agy`. agy has no allow/deny
+flags, so:
+- `agy-gate.py`, a `PreToolUse` hook in `.agents/hooks.json`, applies the
+  same `.batch/settings.json` (Claude Code syntax) to agy's tools: the
+  `Bash(...)` rules to `run_command`, writes only inside the repository,
+  `WebFetch(domain:...)` to URL tools, asking the user denied. It logs
+  every call to `.batch/logs/<ID>-tools.jsonl` and answers "ask" outside
+  a batch;
+- the rules of `unattended.md` plus `unattended-agy.md` go in the first
+  prompt, and the session reads `implement-task` from its file;
+- conversations resume with `--conversation <id>`, and a quota message
+  counts as a usage limit.
+
+`run` and `check` re-exec from `.batch/runner/`, a copy of this folder
+extracted from `main`: task branches made before a runner change carry an
+older `batch.sh`. They also install `.agents/` (the gate and a link
+`.agents/skills → .claude/skills`, so `/implement-task` works in agy too),
+ignored through `.git/info/exclude`. Commit runner changes to `main`
+before starting a run.
 
 ## What can go wrong, and what happens
 
@@ -76,8 +98,10 @@ Do this with the owner present; it is the only time questions are allowed.
      order, one section per task with owner decisions, defaults, extra
      commands, block conditions, manual checks);
    - `.batch/queue`: one line per task, `<ID> <base>`, in order,
-     optionally followed by `model=<alias>` and `effort=<level>` for that
-     task (defaults: `BATCH_MODEL`/`BATCH_EFFORT`, sonnet/medium). Pick
+     optionally followed by `agent=<claude|agy>`, `model=<name>` and
+     `effort=<level>` for that task (defaults: `BATCH_AGENT`,
+     `BATCH_MODEL`, `BATCH_EFFORT`: claude, sonnet, medium; for agy the
+     model is an id from `agy models`, such as `gemini-4-hydrogen-high`). Pick
      them with the owner to spare the usage limit: the cheapest model and
      effort that the task's risk allows (mechanical or content-heavy work
      → sonnet medium; tricky logic → sonnet high; broad design judgment →

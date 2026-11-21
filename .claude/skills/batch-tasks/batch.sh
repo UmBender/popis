@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Unattended runner for a planned batch of tasks (skill: batch-tasks).
 #
-# Runs one non-interactive Claude Code session per task, strictly one at a
-# time, in the order of .batch/queue. Survives what usually kills a night
+# Runs one non-interactive agent session per task (Claude Code, or Google's
+# Antigravity CLI `agy`), strictly one at a time, in the order of
+# .batch/queue. Survives what usually kills a night
 # run: usage limits (waits for the reset and resumes the same session),
 # network loss (waits for the network), crashes and reboots (run again: the
 # interrupted task resumes), and commands that were not allowed (the session
@@ -13,10 +14,16 @@
 # Environment (all optional):
 #   BATCH_TASK_TIMEOUT   seconds per session attempt        (default 14400)
 #   BATCH_MAX_ATTEMPTS   failed attempts before giving up   (default 2)
-#   BATCH_MODEL          default model of a session         (default sonnet)
-#   BATCH_EFFORT         default effort level of a session  (default medium)
-#                        A queue line can override both for its task:
-#                        `T18 after:T22 model=opus effort=high`.
+#   BATCH_AGENT          default agent: claude or agy       (default claude)
+#   BATCH_MODEL          default model of a session         (default sonnet
+#                        for claude, gemini-4-hydrogen-high for agy)
+#   BATCH_EFFORT         default effort level of a session  (default medium;
+#                        agy gets --effort only from a queue line)
+#                        A queue line can override all three for its task:
+#                        `T18 after:T22 agent=agy model=gemini-4-argon-high`.
+#                        agy sessions get the allow/deny list of
+#                        .batch/settings.json through the PreToolUse hook in
+#                        .agents/hooks.json (agy-gate.py).
 #   BATCH_LIMIT_WAIT     seconds between checks while a usage limit
 #                        lasts (no cap: waits until it is restored)
 #                                                           (default 900)
@@ -24,6 +31,7 @@
 #   BATCH_STOP_AT        epoch seconds: start nothing new after this
 #   BATCH_MIN_FREE_GB    free disk space required           (default 5)
 #   CLAUDE_BIN           claude executable                  (default claude)
+#   AGY_BIN              agy executable                     (default agy)
 #   BATCH_VERIFY         gates re-run on a branch in review
 #                        (default: npm run check && npm run coverage)
 set -uo pipefail
@@ -33,15 +41,17 @@ cd "$ROOT" || exit 2
 SKILL_DIR=$(cd "$(dirname "$0")" && pwd)
 B="$ROOT/.batch"
 CLAUDE_BIN=${CLAUDE_BIN:-claude}
+AGY_BIN=${AGY_BIN:-agy}
+AGENT=${BATCH_AGENT:-claude}
 TASK_TIMEOUT=${BATCH_TASK_TIMEOUT:-14400}
 MAX_ATTEMPTS=${BATCH_MAX_ATTEMPTS:-2}
-MODEL=${BATCH_MODEL:-sonnet}
+MODEL=${BATCH_MODEL:-}
 EFFORT=${BATCH_EFFORT:-medium}
 LIMIT_WAIT=${BATCH_LIMIT_WAIT:-900}
 NET_WAIT=${BATCH_NET_WAIT:-120}
 STOP_AT=${BATCH_STOP_AT:-}
 MIN_FREE_GB=${BATCH_MIN_FREE_GB:-5}
-NET_URL=${BATCH_NET_URL:-https://api.anthropic.com}
+if [[ $AGENT == agy ]]; then NET_URL=${BATCH_NET_URL:-https://www.googleapis.com}; else NET_URL=${BATCH_NET_URL:-https://api.anthropic.com}; fi
 VERIFY=${BATCH_VERIFY:-npm run check && npm run coverage}
 
 log() {
@@ -106,7 +116,13 @@ task_opt() { # task_opt ID KEY → value of KEY=value on ID's queue line, if any
     }'
 }
 
-task_model() { local m; m=$(task_opt "$1" model); echo "${m:-$MODEL}"; }
+task_agent() { local a; a=$(task_opt "$1" agent); echo "${a:-$AGENT}"; }
+task_model() {
+    local m; m=$(task_opt "$1" model)
+    [[ -n $m ]] && { echo "$m"; return; }
+    [[ -n $MODEL ]] && { echo "$MODEL"; return; }
+    [[ $(task_agent "$1") == agy ]] && echo gemini-4-hydrogen-high || echo sonnet
+}
 task_effort() { local e; e=$(task_opt "$1" effort); echo "${e:-$EFFORT}"; }
 
 in_queue() { queue | awk '{print $1}' | grep -qx "$1"; }
@@ -163,7 +179,19 @@ cmd_check() {
     else
         say FAIL "$B/settings.json missing or has no permissions.allow"
     fi
-    command -v "$CLAUDE_BIN" >/dev/null && say ok "claude: $("$CLAUDE_BIN" --version 2>/dev/null | head -1)" || say FAIL "claude not found ($CLAUDE_BIN)"
+    local agents a
+    agents=$(while read -r id base; do task_agent "$id"; done < <(queue) | sort -u)
+    for a in $agents; do
+        case $a in
+            claude) command -v "$CLAUDE_BIN" >/dev/null && say ok "claude: $("$CLAUDE_BIN" --version 2>/dev/null | head -1)" || say FAIL "claude not found ($CLAUDE_BIN)" ;;
+            agy)
+                command -v "$AGY_BIN" >/dev/null && say ok "agy: $("$AGY_BIN" --version 2>/dev/null | head -1)" || say FAIL "agy not found ($AGY_BIN)"
+                [[ -f .agents/hooks.json ]] && grep -q agy-gate .agents/hooks.json && say ok "agy: permission gate in .agents/hooks.json" || say FAIL "agy: .agents/hooks.json does not run agy-gate.py (no allow/deny list)"
+                command -v python3 >/dev/null && say ok "python3 (agy gate)" || say FAIL "python3 missing (agy gate)"
+                ;;
+            *) say FAIL "unknown agent '$a' (claude or agy)" ;;
+        esac
+    done
     git check-ignore -q "$B/queue" && say ok ".batch/ is git-ignored" || say FAIL ".batch/ is not git-ignored"
     if tree_clean; then
         say ok "working tree clean ($(current_branch))"
@@ -191,7 +219,7 @@ cmd_check() {
             [[ $(front "$dep" status) == done ]] || say WARN "$id: depends on $dep, which is not done and not in the queue"
         done
         case $(task_effort "$id") in low | medium | high | xhigh | max) ;; *) say FAIL "$id: bad effort '$(task_effort "$id")'" ;; esac
-        say ok "$id: $(get "$id" status), base $base, $(task_model "$id")/$(task_effort "$id")"
+        say ok "$id: $(get "$id" status), base $base, $(task_agent "$id") $(task_model "$id")/$(task_effort "$id")"
     done < <(queue)
     return $ok
 }
@@ -199,28 +227,35 @@ cmd_check() {
 # --- one task ------------------------------------------------------------------
 
 ended_in_error() { # ended_in_error RC JSONFILE: non-zero exit or an error result
-    (($1 != 0)) || jq -e '.is_error == true' "$2" >/dev/null 2>&1
+    (($1 != 0)) || jq -e '.is_error == true or ((.status // "SUCCESS") != "SUCCESS")' "$2" >/dev/null 2>&1
 }
 
 rate_limited() { # rate_limited LOGFILE...
-    grep -qiE 'usage limit|hit your (usage )?limit|rate.?limit|limit reached|resets (at )?[0-9]|overloaded|API Error: (429|529)|Too Many Requests' "$@" 2>/dev/null
+    grep -qiE 'usage limit|hit your (usage )?limit|rate.?limit|limit reached|resets (at )?[0-9]|overloaded|API Error: (429|529)|Too Many Requests|quota|RESOURCE_EXHAUSTED|exhausted|out of capacity' "$@" 2>/dev/null
 }
 
 network_error() {
     grep -qiE 'ENOTFOUND|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|network error|fetch failed|socket hang up|Connection error' "$@" 2>/dev/null
 }
 
-no_session() { grep -qiE 'no conversation found|session .* not found' "$@" 2>/dev/null; }
+no_session() { grep -qiE 'no conversation found|session .* not found|conversation .*not found|unknown conversation|invalid conversation' "$@" 2>/dev/null; }
 
-service_ok() { # a one-line probe session answers without an error
-    local out
-    out=$(timeout 300 "$CLAUDE_BIN" -p --output-format json --no-session-persistence \
-        --permission-mode dontAsk --permission-prompts none \
-        "Reply with the single word OK." </dev/null 2>&1) || return 1
-    jq -e '.is_error != true' <<<"$out" >/dev/null 2>&1
+service_ok() { # service_ok [ID]: a one-line probe session (that task's agent and model) answers
+    local out agent=${1:+$(task_agent "$1")}
+    agent=${agent:-$AGENT}
+    if [[ $agent == agy ]]; then
+        out=$(timeout 300 "$AGY_BIN" -p "Reply with the single word OK." --output-format json \
+            --model "$(if [[ -n ${1:-} ]]; then task_model "$1"; else echo "${MODEL:-gemini-4-hydrogen-high}"; fi)" </dev/null 2>&1) || return 1
+    else
+        out=$(timeout 300 "$CLAUDE_BIN" -p --output-format json --no-session-persistence \
+            --permission-mode dontAsk --permission-prompts none \
+            "Reply with the single word OK." </dev/null 2>&1) || return 1
+    fi
+    jq -e '.is_error != true and ((.status // "SUCCESS") == "SUCCESS")' <<<"$out" >/dev/null 2>&1
 }
 
-wait_until_available() { # wait_until_available LOGFILE...: no cap
+wait_until_available() { # wait_until_available ID LOGFILE...: no cap
+    local task=$1; shift
     local reset now
     reset=$(grep -ohE 'limit reached\|[0-9]{10}' "$@" 2>/dev/null | head -1 | cut -d'|' -f2)
     now=$(date +%s)
@@ -228,7 +263,7 @@ wait_until_available() { # wait_until_available LOGFILE...: no cap
         log "usage limit: waiting until the printed reset, $(date -d "@$reset" -Is)"
         sleep $((reset - now + 60))
     fi
-    until service_ok; do
+    until service_ok "$task"; do
         past_stop && return 1
         log "usage limit (or service unavailable): checking again in ${LIMIT_WAIT}s"
         sleep "$LIMIT_WAIT"
@@ -241,6 +276,10 @@ prompt_start() { # prompt_start ID BASE
     printf '/implement-task %s\n\nUnattended batch run (skill batch-tasks). Base branch: %s. Follow the unattended rules in your system prompt and the plan section for %s in .batch/plan.md. End by writing .batch/out/%s.status.\n' "$1" "$(base_branch "$2")" "$1" "$1"
 }
 
+prompt_start_agy() { # prompt_start_agy ID BASE (agy: the skill is read from its file)
+    printf 'Implement task %s of this repository: read .claude/skills/implement-task/SKILL.md (skill implement-task) and follow it.\n\nUnattended batch run (skill batch-tasks). Base branch: %s. Follow the unattended rules above and the plan section for %s in .batch/plan.md. End by writing .batch/out/%s.status.\n' "$1" "$(base_branch "$2")" "$1" "$1"
+}
+
 prompt_resume() { # prompt_resume ID BASE REASON
     printf 'You were interrupted (%s). Continue task %s (base branch %s) from where the repository says you are: check git status, the current branch, `git log --oneline %s..HEAD` and the task note before doing anything; never redo a committed step. Then finish and write .batch/out/%s.status.\n' "$3" "$1" "$(base_branch "$2")" "$(base_branch "$2")" "$1"
 }
@@ -251,6 +290,10 @@ session() { # session ID BASE MODE(start|resume) REASON → exit code; output in
     out="$B/logs/$id-$n.json"
     err="$B/logs/$id-$n.err"
     mkdir -p "$B/logs" "$B/out"
+    if [[ $(task_agent "$id") == agy ]]; then
+        session_agy "$id" "$base" "$mode" "$reason" "$n" "$out" "$err"
+        return
+    fi
     local -a common=(
         -p --output-format json
         --model "$(task_model "$id")" --effort "$(task_effort "$id")"
@@ -259,19 +302,63 @@ session() { # session ID BASE MODE(start|resume) REASON → exit code; output in
         --disallowedTools AskUserQuestion
         --append-system-prompt "$(cat "$SKILL_DIR/unattended.md")"
     )
+    if [[ $mode == resume && $(get "$id" session_agent) == agy ]]; then
+        mode=start
+        log "$id: the last session was an agy conversation; claude starts over from the git state"
+    fi
     if [[ $mode == resume ]]; then
         sid=$(get "$id" session)
-        log "$id: session run $n ($(task_model "$id")/$(task_effort "$id")), resuming session $sid ($reason)"
+        log "$id: session run $n (claude $(task_model "$id")/$(task_effort "$id")), resuming session $sid ($reason)"
         timeout --kill-after=60 "$TASK_TIMEOUT" "$CLAUDE_BIN" "${common[@]}" --resume "$sid" \
             "$(prompt_resume "$id" "$base" "$reason")" >"$out" 2>"$err" </dev/null
     else
         sid=$(uuidgen)
         set_state "$id" session "$sid"
-        log "$id: session run $n ($(task_model "$id")/$(task_effort "$id")), new session $sid"
+        set_state "$id" session_agent claude
+        log "$id: session run $n (claude $(task_model "$id")/$(task_effort "$id")), new session $sid"
         timeout --kill-after=60 "$TASK_TIMEOUT" "$CLAUDE_BIN" "${common[@]}" --session-id "$sid" \
             "$(prompt_start "$id" "$base")" >"$out" 2>"$err" </dev/null
     fi
     local rc=$?
+    echo "$out $err $rc"
+}
+
+agy_rules() { # the unattended rules, sent in the first prompt (agy has no system-prompt flag)
+    cat "$SKILL_DIR/unattended.md" "$SKILL_DIR/unattended-agy.md"
+}
+
+session_agy() { # session_agy ID BASE MODE REASON N OUT ERR
+    local id=$1 base=$2 mode=$3 reason=$4 n=$5 out=$6 err=$7 sid prompt e rc
+    local -a cmd=("$AGY_BIN" --output-format json --model "$(task_model "$id")")
+    e=$(task_opt "$id" effort)
+    [[ -n $e ]] && cmd+=(--effort "$e")
+    sid=""
+    [[ $(get "$id" session_agent) == agy ]] && sid=$(get "$id" session)
+    [[ -z $sid && -s $B/logs/$id.conversation ]] && sid=$(head -1 "$B/logs/$id.conversation")
+    if [[ $mode == resume && -n $sid ]]; then
+        log "$id: session run $n (agy $(task_model "$id")${e:+/$e}), resuming conversation $sid ($reason)"
+        prompt=$(prompt_resume "$id" "$base" "$reason")
+        cmd+=(--conversation "$sid")
+    else
+        rm -f "$B/logs/$id.conversation"
+        set_state "$id" session ""
+        if [[ $mode == resume ]]; then
+            log "$id: session run $n (agy $(task_model "$id")${e:+/$e}), new conversation continuing from git ($reason)"
+            prompt="$(agy_rules)"$'\n\n'"$(prompt_resume "$id" "$base" "$reason")"
+        else
+            log "$id: session run $n (agy $(task_model "$id")${e:+/$e}), new conversation"
+            prompt="$(agy_rules)"$'\n\n'"$(prompt_start_agy "$id" "$base")"
+        fi
+    fi
+    BATCH_TASK_ID=$id BATCH_ROOT=$ROOT timeout --kill-after=60 "$TASK_TIMEOUT" "${cmd[@]}" -p "$prompt" \
+        >"$out" 2>"$err" </dev/null
+    rc=$?
+    sid=$(jq -r '.conversation_id // empty' "$out" 2>/dev/null)
+    [[ -z $sid && -s $B/logs/$id.conversation ]] && sid=$(head -1 "$B/logs/$id.conversation")
+    if [[ -n $sid ]]; then
+        set_state "$id" session "$sid"
+        set_state "$id" session_agent agy
+    fi
     echo "$out $err $rc"
 }
 
@@ -351,9 +438,9 @@ run_task() { # run_task ID BASE → 0 done (any final status), 1 stop the batch
         fi
         # A usage limit, recognised by its message or not: the probe fails
         # while it lasts. Wait until it is restored; not a failed attempt.
-        if ended_in_error "$rc" "$out" && { rate_limited "$out" "$err" || ! service_ok; }; then
+        if ended_in_error "$rc" "$out" && { rate_limited "$out" "$err" || ! service_ok "$id"; }; then
             set_state "$id" limit_waits $(($(get "$id" limit_waits) + 1))
-            wait_until_available "$out" "$err" || return 1
+            wait_until_available "$id" "$out" "$err" || return 1
             mode=resume reason="usage limit"
             continue
         fi
@@ -389,7 +476,7 @@ cmd_run() {
     if [[ -z ${BATCH_INHIBITED:-} ]] && command -v systemd-inhibit >/dev/null; then
         export BATCH_INHIBITED=1
         exec systemd-inhibit --what=sleep:idle:handle-lid-switch --who=batch-tasks \
-            --why="unattended task batch" "$0" run
+            --why="unattended task batch" bash "$0" run
     fi
     exec 9>"$B/lock"
     flock -n 9 || die "another runner holds $B/lock"
@@ -465,6 +552,60 @@ cmd_unblock() { # run again, resuming its last session
     rm -f "$B/out/$1.status"
     log "$1: unblocked; it resumes its last session on the next run"
 }
+
+# --- the runner runs from a copy of main's skill --------------------------------
+# Task branches made before a runner change carry an older batch.sh (and
+# no agy gate), and the runner switches branches while it runs. So `run`
+# and `check` re-exec from .batch/runner, extracted from `main`.
+
+RUNNER_DIR="$B/runner"
+
+install_runner() {
+    local tmp
+    mkdir -p "$B"
+    tmp=$(mktemp -d "$B/.runner.XXXX")
+    if git archive main .claude/skills/batch-tasks | tar -x -C "$tmp"; then
+        rm -rf "$RUNNER_DIR"
+        mv "$tmp/.claude/skills/batch-tasks" "$RUNNER_DIR"
+        rm -rf "$tmp"
+    else
+        rm -rf "$tmp"
+        return 1
+    fi
+}
+
+uses_agy() { local id base; while read -r id base; do [[ $(task_agent "$id") == agy ]] && return 0; done < <(queue); return 1; }
+
+install_agy() { # .agents/ (locally ignored): the permission gate and the skills
+    local exclude
+    mkdir -p .agents
+    [[ -e .agents/skills ]] || ln -s ../.claude/skills .agents/skills
+    if [[ ! -f .agents/hooks.json ]] || grep -q agy-gate .agents/hooks.json; then
+        cat >.agents/hooks.json <<'JSON'
+{
+  "batch-gate": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "python3 ../.batch/runner/agy-gate.py", "timeout": 10 }
+        ]
+      }
+    ]
+  }
+}
+JSON
+    fi
+    exclude=$(git rev-parse --git-path info/exclude)
+    mkdir -p "$(dirname "$exclude")"
+    grep -qx '/.agents/' "$exclude" 2>/dev/null || echo '/.agents/' >>"$exclude"
+}
+
+if [[ ${1:-} =~ ^(run|check)$ && $(cd "$SKILL_DIR" && pwd -P) != "$(cd "$RUNNER_DIR" 2>/dev/null && pwd -P)" ]]; then
+    install_runner || die "cannot extract .claude/skills/batch-tasks from main into $RUNNER_DIR"
+    exec bash "$RUNNER_DIR/batch.sh" "$@"
+fi
+[[ ${1:-} =~ ^(run|check)$ ]] && [[ -f $B/queue ]] && uses_agy && install_agy
 
 case ${1:-} in
     check) cmd_check ;;

@@ -91,7 +91,9 @@
       "Bash(npx playwright install *)",
       "Bash(*.batch/state*)",
       "Bash(*.batch/queue*)",
-      "Bash(*batch.sh*)"
+      "Bash(*batch.sh*)",
+      "Bash(*agy *)",
+      "Bash(*antigravity*)"
     ]
   }
 }
