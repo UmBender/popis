@@ -6,6 +6,7 @@ import { folderOf, ITEMS, itemById, itemByShortcut, SECTIONS, type ItemId } from
 
 /** Every screen that is not a mode of MODES. */
 const SCREENS: readonly ItemId[] = [
+  "daily",
   "data",
   "progress",
   "typing",
@@ -18,6 +19,7 @@ const SCREENS: readonly ItemId[] = [
 describe("sections", () => {
   it("sections list the folders and items in the default order", () => {
     expect(SECTIONS.map((f) => [f.label, f.items.map((i) => i.label)])).toEqual([
+      ["Hoje", ["Treino do dia"]],
       ["Cálculo", ["Aritmética", "Álgebra", "Fatoração", "Somatórios"]],
       ["CP", ["Divisão inteira", "Estimativa", "Primos"]],
       ["Treino", ["Revisar", "Dados", "Evolução"]],
@@ -37,9 +39,12 @@ describe("sections", () => {
     expect(ids).toHaveLength(MODE_IDS.length + SCREENS.length);
   });
 
-  it("sections give the shortcuts 1 to 9 to the first nine items", () => {
-    expect(ITEMS.slice(0, 9).map((i) => i.shortcut)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    expect(ITEMS.slice(9).every((i) => i.shortcut === null)).toBe(true);
+  it("sections place Treino do dia at the top and keep shortcuts 1 to 9 for the modes and tools", () => {
+    expect(ITEMS[0]?.id).toBe("daily");
+    expect(ITEMS[0]?.shortcut).toBeNull();
+    const numbered = ITEMS.slice(1, 10);
+    expect(numbered.map((i) => i.shortcut)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(ITEMS.slice(10).every((i) => i.shortcut === null)).toBe(true);
     expect(itemByShortcut(3)?.id).toBe("factoring");
     expect(itemByShortcut(10)).toBeUndefined();
   });

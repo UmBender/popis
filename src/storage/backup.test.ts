@@ -29,6 +29,9 @@ import {
   saveTypingLanguages,
 } from "./typing";
 import { loadUnlocked, unlockKind } from "./vim-learn";
+import { DEFAULT_ADAPTIVE_SETTINGS, loadAdaptiveSettings, saveAdaptiveSettings } from "./adaptive";
+import { loadReviewCards, saveReviewCards } from "./review";
+import { newCard } from "../stats/fsrs";
 import {
   appendVimEditResult,
   appendVimResult,
@@ -356,5 +359,37 @@ describe("export and import", () => {
 
     expect(importData(target, text, NOW)).toEqual({ ok: true, added: 0 });
     expect(loadHistory(target)).toEqual([]);
+  });
+
+  it("exports and imports FSRS review cards and adaptive settings", () => {
+    const source = memoryStore();
+    saveAdaptiveSettings(source, {
+      ...DEFAULT_ADAPTIVE_SETTINGS,
+      targetAccuracy: 0.9,
+      dailyMode: "blocked",
+    });
+    saveReviewCards(source, [
+      {
+        id: "vim.motion#cpp-1#1",
+        kind: "vim-motion",
+        kc: "f",
+        level: 4,
+        snippetId: "cpp-1",
+        lines: ["foo(x)"],
+        start: { line: 0, col: 0 },
+        target: { line: 0, col: 3 },
+        minimum: 2,
+        solution: "f(",
+        label: "chegar ao `(` com 2 teclas",
+        card: newCard(NOW),
+      },
+    ]);
+
+    const backup = exportData(source, NOW);
+    const target = memoryStore();
+    const res = importData(target, backup, NOW);
+    expect(res.ok).toBe(true);
+    expect(loadAdaptiveSettings(target).targetAccuracy).toBe(0.9);
+    expect(loadReviewCards(target)).toHaveLength(1);
   });
 });

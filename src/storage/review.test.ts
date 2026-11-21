@@ -4,8 +4,21 @@ import { arithmetic, DEFAULT_ARITHMETIC } from "../gen/arithmetic";
 import { division, type DivisionSettings } from "../gen/division";
 import type { ReviewItem } from "../gen/review";
 import type { Attempt, Outcome } from "../session/engine";
-import type { Mode, SessionRecord } from "./history";
-import { MAX_REVIEW_ITEMS, reviewItems } from "./review";
+import { memoryStore, type Mode, type SessionRecord } from "./history";
+import {
+  dueReviewCards,
+  formatVimCardLabel,
+  loadReviewCards,
+  MAX_REVIEW_ITEMS,
+  recordSessionReview,
+  recordVimMotionReview,
+  REVIEW_CARDS_KEY,
+  reviewItems,
+  reviewVimCardAttempt,
+  syncReviewDeck,
+} from "./review";
+import { DAY_MS } from "../stats/summary";
+import { generateTarget } from "../vim/drills/target";
 
 const FLOOR: DivisionSettings = { kinds: ["floor"] };
 const CEIL: DivisionSettings = { kinds: ["ceil"] };
@@ -167,5 +180,71 @@ describe("review items", () => {
     ] as unknown as Attempt[];
     const log = [...malformed, attempt(floor(4), "skipped")];
     expect(reviewItems([session(log)])).toEqual([item(floor(4))]);
+  });
+});
+
+describe("FSRS review deck (AC-3)", () => {
+  const NOW = Date.UTC(2026, 10, 21, 12, 0, 0);
+
+  it("migrates legacy review items into new due FSRS cards", () => {
+    const store = memoryStore();
+    const hist = [session([attempt(floor(1), "skipped"), attempt(floor(2), "skipped")])];
+    const deck = syncReviewDeck(store, hist, NOW);
+    expect(deck).toHaveLength(2);
+    expect(dueReviewCards(deck, NOW)).toHaveLength(2);
+    expect(loadReviewCards(store)).toHaveLength(2);
+  });
+
+  it("schedules reviewed calc cards into the future so due count drops", () => {
+    const store = memoryStore();
+    const p = floor(1);
+    const initial = session([attempt(p, "skipped")]);
+    syncReviewDeck(store, [initial], NOW);
+
+    const reviewSess: SessionRecord = {
+      ...session([attempt(p, "correct", 900, 0)], "review"),
+      finishedAt: NOW,
+    };
+    const updated = recordSessionReview(store, reviewSess, [], NOW);
+    expect(updated).toHaveLength(1);
+    expect(updated[0]?.card.reps).toBe(1);
+    expect(updated[0]?.card.dueAt).toBeGreaterThan(NOW);
+    expect(dueReviewCards(updated, NOW)).toHaveLength(0);
+    expect(dueReviewCards(updated, NOW + 30 * DAY_MS)).toHaveLength(1);
+  });
+
+  it("adds failed Vim motion commands as FSRS cards with readable descriptions", () => {
+    const store = memoryStore();
+    const target = generateTarget(7, 0, 4);
+    const label = formatVimCardLabel(["foo(bar)"], { line: 0, col: 3 }, "f(", 2);
+    expect(label).toBe("chegar ao `(` com 2 teclas");
+
+    const deck = recordVimMotionReview(
+      store,
+      {
+        config: { level: 4, durationMs: 60_000, seed: 7 },
+        results: [
+          {
+            index: 0,
+            seed: target.seed,
+            snippetId: target.snippetId,
+            keys: target.minimum + 5,
+            minimum: target.minimum,
+            solution: target.solution,
+            timeMs: 3000,
+            skipped: true,
+          },
+        ],
+      },
+      [],
+      NOW,
+    );
+    expect(deck).toHaveLength(1);
+    expect(deck[0]?.kind).toBe("vim-motion");
+    expect(dueReviewCards(deck, NOW)).toHaveLength(1);
+
+    const after = reviewVimCardAttempt(store, deck[0]!.id, 3, NOW);
+    expect(dueReviewCards(after, NOW)).toHaveLength(0);
+    expect(store.getItem(REVIEW_CARDS_KEY)).not.toBeNull();
   });
 });
