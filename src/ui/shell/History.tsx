@@ -12,6 +12,8 @@ export type HistoryProps = {
   readonly scores: readonly number[];
   /** Optional unit shown after best and mean (e.g. "WPM", "alvos", "edições"). */
   readonly unit?: string;
+  /** Assisted rounds excluded from best/mean (T21 AC-4). */
+  readonly excluded?: number;
   readonly testId?: string;
   readonly sparkTestId?: string;
 };

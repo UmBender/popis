@@ -22,6 +22,8 @@ export type EditResult = {
   readonly reference: string;
   readonly timeMs: number;
   readonly skipped: boolean;
+  /** Whether the optimal preview was visible at any point during this edit (T21 AC-4). */
+  readonly assisted?: boolean;
 };
 
 export type EditRound = {
@@ -34,6 +36,12 @@ export type EditRound = {
   readonly startedAt: number | null;
   /** When the current edit appeared (or the first key came). */
   readonly targetStartedAt: number | null;
+  /** When the current edit started or the last key was typed. */
+  readonly lastActivityAt: number | null;
+  /** When the round was paused, or null. */
+  readonly pausedAt: number | null;
+  /** Whether the optimal preview was shown on the current edit. */
+  readonly assisted: boolean;
   readonly results: readonly EditResult[];
   /** The last finished edit. */
   readonly last: EditResult | null;
@@ -65,6 +73,9 @@ export function startEditRound(config: EditRoundConfig): EditRound {
     keys: 0,
     startedAt: null,
     targetStartedAt: null,
+    lastActivityAt: null,
+    pausedAt: null,
+    assisted: false,
     results: [],
     last: null,
     closingEsc: false,
@@ -173,4 +184,20 @@ export function editRoundStats(round: Pick<EditRound, "results">): EditRoundStat
     efficiency: reached.length === 0 ? 0 : total / reached.length,
     worst: [...reached].sort((a, b) => editEfficiency(a) - editEfficiency(b)).slice(0, WORST_COUNT),
   };
+}
+
+export function markEditAssisted(_round: EditRound): EditRound {
+  throw new Error("todo");
+}
+
+export function pauseEditRound(_round: EditRound, _now: number): EditRound {
+  throw new Error("todo");
+}
+
+export function resumeEditRound(_round: EditRound, _now: number): EditRound {
+  throw new Error("todo");
+}
+
+export function editIdleMs(_round: EditRound, _now: number): number {
+  throw new Error("todo");
 }

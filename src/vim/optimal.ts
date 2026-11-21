@@ -214,6 +214,16 @@ export function optimalSolution(
   return { keys: formatKeys(keys), cost: found.cost };
 }
 
+/** Recalculates an optimal (or bounded fallback) path from any state to `target` (T21 AC-2, AC-3). */
+export function recalculateOptimal(
+  _state: VimState,
+  _target: Pos,
+  _level: Level,
+  _maxKeys: number = DEFAULT_MAX_KEYS,
+): Solution {
+  throw new Error("todo");
+}
+
 /** `f F t T` with each character that the cursor's line holds in that direction. */
 function expandFinds(
   node: Node,

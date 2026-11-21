@@ -1,5 +1,6 @@
 import { ALL_EDIT_KINDS, EDIT_KINDS, type EditKind } from "../vim/drills/edit";
 import { LEVELS, type Level } from "../vim/levels";
+import type { PreviewMode } from "../vim/preview";
 import { ROUND_DURATIONS_S } from "../vim/round";
 import type { KeyValueStore } from "./history";
 
@@ -10,7 +11,11 @@ export const MAX_VIM_RESULTS = 200;
 /** Rounds averaged in the summary. */
 const RECENT = 10;
 
-export type VimSettings = { readonly level: Level; readonly durationS: number };
+export type VimSettings = {
+  readonly level: Level;
+  readonly durationS: number;
+  readonly preview?: PreviewMode;
+};
 
 export const DEFAULT_VIM_SETTINGS: VimSettings = { level: 1, durationS: 60 };
 
@@ -27,6 +32,8 @@ export type VimResult = {
   /** Mean efficiency of the reached targets, 0 to 1. */
   readonly efficiency: number;
   readonly finishedAt: number;
+  /** Whether any target in the round used the optimal preview (T21 AC-4). */
+  readonly assisted?: boolean;
 };
 
 export type VimSummary = { readonly best: number; readonly recentMean: number } | null;
@@ -40,6 +47,7 @@ export type VimEditSettings = {
   readonly drill: VimDrill;
   readonly durationS: number;
   readonly kinds: readonly EditKind[];
+  readonly preview?: PreviewMode;
 };
 
 export const DEFAULT_VIM_EDIT_SETTINGS: VimEditSettings = {
@@ -59,6 +67,8 @@ export type VimEditResult = {
   /** Mean efficiency of the reached edits; above 1 beats the reference. */
   readonly efficiency: number;
   readonly finishedAt: number;
+  /** Whether any target in the round used the optimal preview (T21 AC-4). */
+  readonly assisted?: boolean;
 };
 
 /** Parsed JSON at `key`, or undefined when missing, unreadable or corrupt. */
@@ -206,4 +216,23 @@ export function vimSummary(
     best: Math.max(...counts),
     recentMean: recent.reduce((a, b) => a + b, 0) / recent.length,
   };
+}
+
+export function defaultPreviewMode(_store: KeyValueStore): PreviewMode {
+  throw new Error("todo");
+}
+
+export function assistedRoundCount(
+  _results: readonly VimResult[],
+  _level: Level,
+  _durationS: number,
+): number {
+  throw new Error("todo");
+}
+
+export function assistedEditRoundCount(
+  _results: readonly VimEditResult[],
+  _durationS: number,
+): number {
+  throw new Error("todo");
 }

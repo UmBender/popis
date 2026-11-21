@@ -24,6 +24,8 @@ export type TargetResult = {
   readonly solution: string;
   readonly timeMs: number;
   readonly skipped: boolean;
+  /** Whether the optimal preview was visible at any point during this target (T21 AC-4). */
+  readonly assisted?: boolean;
 };
 
 export type Round = {
@@ -36,6 +38,12 @@ export type Round = {
   readonly startedAt: number | null;
   /** When the current target appeared (or the first key came). */
   readonly targetStartedAt: number | null;
+  /** When the current target started or the last key was typed. */
+  readonly lastActivityAt: number | null;
+  /** When the round was paused (e.g. reading a lesson), or null. */
+  readonly pausedAt: number | null;
+  /** Whether the optimal preview was shown on the current target. */
+  readonly assisted: boolean;
   readonly results: readonly TargetResult[];
   /** The blocked command of the last key, or null. */
   readonly blocked: string | null;
@@ -67,6 +75,9 @@ export function startRound(config: RoundConfig): Round {
     keys: 0,
     startedAt: null,
     targetStartedAt: null,
+    lastActivityAt: null,
+    pausedAt: null,
+    assisted: false,
     results: [],
     blocked: null,
     last: null,
@@ -156,4 +167,20 @@ export function roundStats(round: Pick<Round, "results">): RoundStats {
       .sort((a, b) => targetEfficiency(a) - targetEfficiency(b))
       .slice(0, WORST_COUNT),
   };
+}
+
+export function markAssisted(_round: Round): Round {
+  throw new Error("todo");
+}
+
+export function pauseRound(_round: Round, _now: number): Round {
+  throw new Error("todo");
+}
+
+export function resumeRound(_round: Round, _now: number): Round {
+  throw new Error("todo");
+}
+
+export function idleMs(_round: Round, _now: number): number {
+  throw new Error("todo");
 }
