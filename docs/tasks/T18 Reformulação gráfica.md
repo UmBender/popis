@@ -1,7 +1,7 @@
 ---
 id: T18
 title: Reformulação gráfica
-status: review
+status: done
 depends_on: [T16, T17, T22]
 branch: task/T18-redesign
 adrs: [ADR-0001, ADR-T22-1, ADR-T18-1]
