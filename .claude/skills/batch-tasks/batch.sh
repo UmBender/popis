@@ -30,6 +30,13 @@
 #   BATCH_NET_WAIT       seconds between network checks     (default 120)
 #   BATCH_STOP_AT        epoch seconds: start nothing new after this
 #   BATCH_MIN_FREE_GB    free disk space required           (default 5)
+#   BATCH_MEMORY_HIGH    memory where the kernel starts to throttle the
+#                        batch (systemd scope MemoryHigh)    (default 3584M)
+#   BATCH_MEMORY_MAX     hard memory cap of the batch       (default 4608M)
+#                        "off" disables both. Without a cap, a test run that
+#                        eats the RAM (e2e with many Chromium) froze the
+#                        whole machine; with it, only the test dies and the
+#                        session resumes.
 #   CLAUDE_BIN           claude executable                  (default claude)
 #   AGY_BIN              agy executable                     (default agy)
 #   BATCH_VERIFY         gates re-run on a branch in review
@@ -480,6 +487,12 @@ skip_reason() { # skip_reason ID BASE: why ID cannot run now, if a queued
 
 cmd_run() {
     mkdir -p "$B"
+    if [[ -z ${BATCH_SCOPED:-} && ${BATCH_MEMORY_MAX:-} != off ]] && command -v systemd-run >/dev/null; then
+        export BATCH_SCOPED=1
+        exec systemd-run --user --scope --quiet --unit="popis-batch-$$" \
+            -p MemoryHigh="${BATCH_MEMORY_HIGH:-3584M}" -p MemoryMax="${BATCH_MEMORY_MAX:-4608M}" \
+            -p MemorySwapMax=1G bash "$0" run
+    fi
     if [[ -z ${BATCH_INHIBITED:-} ]] && command -v systemd-inhibit >/dev/null; then
         export BATCH_INHIBITED=1
         exec systemd-inhibit --what=sleep:idle:handle-lid-switch --who=batch-tasks \
