@@ -116,8 +116,15 @@ def gate_command(command, settings):
 
 
 def paths(args):
+    """Arguments that name a file: keys ending in Path, File or Dir(ectory),
+    never the text arguments (TargetContent, Replacement, Content…)."""
     for key, value in args.items():
-        if isinstance(value, str) and re.search(r"path|file|dir|target|dest|source", key, re.I):
+        if (
+            isinstance(value, str)
+            and re.search(r"(path|file|dir|directory)$", key, re.I)
+            and "content" not in key.lower()
+            and "\n" not in value
+        ):
             yield value
 
 
