@@ -77,6 +77,12 @@ describe("fitPowerLaw", () => {
       score: 40,
     }));
     expect(fitPowerLaw(flat)).toBeNull();
+
+    const declining: RoundPoint[] = Array.from({ length: 12 }, (_, i) => ({
+      at: BASE_DAY + i * DAY_MS,
+      score: 60 - i * 2,
+    }));
+    expect(fitPowerLaw(declining)).toBeNull();
   });
 });
 
@@ -143,7 +149,8 @@ describe("weeklyRate", () => {
     expect(weeklyRate(pts, now)).toBeCloseTo(1.5, 4);
   });
 
-  it("weeklyRate returns null when points span less than a day", () => {
+  it("weeklyRate returns null when fewer than 2 recent points or span is under a day", () => {
+    expect(weeklyRate([{ at: BASE_DAY, score: 30 }], BASE_DAY)).toBeNull();
     const pts: RoundPoint[] = [
       { at: BASE_DAY, score: 30 },
       { at: BASE_DAY + 60_000, score: 35 },

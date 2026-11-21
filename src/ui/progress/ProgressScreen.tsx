@@ -1,7 +1,12 @@
 import { useMemo, useState, type ReactNode } from "react";
 import type { Clock } from "../../core/clock";
 import { evaluateGoal, parseDay, type GoalLine } from "../../stats/learning";
-import { computeProgress, seriesSummaryLine, type ConfigSeries, type DrillProgress } from "../../stats/progress";
+import {
+  computeProgress,
+  seriesSummaryLine,
+  type ConfigSeries,
+  type DrillProgress,
+} from "../../stats/progress";
 import { loadEvents } from "../../storage/events";
 import { loadGoals, removeGoal, saveGoal, type StoredGoals } from "../../storage/goals";
 import { loadHistory } from "../../storage/history";
@@ -63,25 +68,26 @@ export function ProgressScreen({ store, clock, focusItem }: ProgressScreenProps)
         Curvas de aprendizado, platôs, habilidades mais fracas e metas pessoais.
       </PanelTitle>
 
-      {ordered.length === 0 ? (
-        <p className="muted" data-testid="progress-empty">
-          Nenhuma rodada registrada ainda. Complete uma rodada em qualquer treino para acompanhar
-          sua evolução.
-        </p>
-      ) : (
-        <div className="progress-sections">
-          {ordered.map((drill) => (
-            <DrillSection
-              key={drill.id}
-              drill={drill}
-              goals={goals}
-              now={now}
-              onSaveGoal={handleSaveGoal}
-              onRemoveGoal={handleRemoveGoal}
-            />
-          ))}
-        </div>
-      )}
+      <div data-panel="options">
+        {ordered.length === 0 ? (
+          <p className="muted" data-testid="progress-empty">
+            Nenhuma rodada registrada ainda. Complete uma rodada em qualquer treino para acompanhar
+            sua evolução.
+          </p>
+        ) : (
+          <div className="progress-sections">
+            {ordered.map((drill) => (
+              <DrillSection
+                key={drill.id}
+                drill={drill}
+                goals={goals}
+                onSaveGoal={handleSaveGoal}
+                onRemoveGoal={handleRemoveGoal}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -89,13 +95,11 @@ export function ProgressScreen({ store, clock, focusItem }: ProgressScreenProps)
 function DrillSection({
   drill,
   goals,
-  now,
   onSaveGoal,
   onRemoveGoal,
 }: {
   readonly drill: DrillProgress;
   readonly goals: StoredGoals;
-  readonly now: number;
   readonly onSaveGoal: (key: string, goal: GoalLine) => void;
   readonly onRemoveGoal: (key: string) => void;
 }): ReactNode {
@@ -108,16 +112,15 @@ function DrillSection({
   const latest = active?.rounds.at(-1);
   const goalStatus = goal !== null && latest !== undefined ? evaluateGoal(goal, latest) : null;
 
-  const submitGoal = (e: React.FormEvent) => {
+  const submitGoal = (e: React.FormEvent, series: ConfigSeries) => {
     e.preventDefault();
-    if (active === undefined) return;
     const target = Number(targetText.replace(",", "."));
     if (!Number.isFinite(target) || target <= 0 || parseDay(deadline) === null) return;
-    onSaveGoal(active.key, {
+    onSaveGoal(series.key, {
       target,
       deadline,
-      setAt: active.rounds[0]?.at ?? now,
-      baseline: active.firstScore,
+      setAt: (series.rounds[0] as { readonly at: number }).at,
+      baseline: series.firstScore,
     });
   };
 
@@ -130,17 +133,18 @@ function DrillSection({
       <div className="progress-section-head">
         <h2>{drill.label}</h2>
         {active?.plateau !== null && active?.plateau !== undefined && (
-          <span
-            className="progress-plateau"
-            data-testid={`plateau-badge-${drill.id}`}
-          >
+          <span className="progress-plateau" data-testid={`plateau-badge-${drill.id}`}>
             {`platô desde ${fullDate(active.plateau.since)}`}
           </span>
         )}
       </div>
 
       {drill.configs.length > 1 && (
-        <div className="progress-configs" role="group" aria-label={`Configurações de ${drill.label}`}>
+        <div
+          className="progress-configs"
+          role="group"
+          aria-label={`Configurações de ${drill.label}`}
+        >
           {drill.configs.map((cfg, idx) => (
             <button
               key={cfg.key}
@@ -177,7 +181,12 @@ function DrillSection({
             goal={goal}
           />
 
-          <form className="progress-goal-form" onSubmit={submitGoal}>
+          <form
+            className="progress-goal-form"
+            onSubmit={(e) => {
+              submitGoal(e, active);
+            }}
+          >
             <label>
               Meta (valor)
               <input
@@ -276,8 +285,10 @@ function DrillSection({
               {drill.bigrams.map((b) => (
                 <tr key={b.bigram}>
                   <td data-label="Par">
-                    <code>{b.bigram}</code>
-                    {b.symbol && <span className="muted"> (símbolo)</span>}
+                    <span>
+                      <code>{b.bigram}</code>
+                      {b.symbol && <span className="muted"> (símbolo)</span>}
+                    </span>
                   </td>
                   <td data-label="Mediana">{`${String(Math.round(b.medianMs))} ms`}</td>
                   <td data-label="Ocorrências">{b.count}</td>
@@ -303,8 +314,10 @@ function DrillSection({
               {drill.charErrors.map((c) => (
                 <tr key={c.char}>
                   <td data-label="Caractere">
-                    <code>{c.char}</code>
-                    {c.symbol && <span className="muted"> (símbolo)</span>}
+                    <span>
+                      <code>{c.char}</code>
+                      {c.symbol && <span className="muted"> (símbolo)</span>}
+                    </span>
                   </td>
                   <td data-label="Taxa de erro">{`${String(Math.round(c.errorRate * 100))}%`}</td>
                   <td data-label="Erros">{`${String(c.errors)}/${String(c.total)}`}</td>

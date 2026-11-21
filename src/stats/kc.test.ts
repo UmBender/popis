@@ -57,7 +57,9 @@ describe("kcStats", () => {
       // 10 steady hits -> cv <= 0.35 -> estável
       ...Array.from({ length: 10 }, (_, i) => ev("steady", true, 1000 + (i % 2) * 50, 2000 + i, i)),
       // 10 erratic hits -> cv > 0.35 -> irregular
-      ...Array.from({ length: 10 }, (_, i) => ev("erratic", true, i % 2 === 0 ? 400 : 2600, 3000 + i, i)),
+      ...Array.from({ length: 10 }, (_, i) =>
+        ev("erratic", true, i % 2 === 0 ? 400 : 2600, 3000 + i, i),
+      ),
     ];
     const byKc = new Map(kcStats(events).map((s) => [s.kc, s]));
     expect(byKc.get("few")?.cv).toBeNull();
@@ -68,10 +70,15 @@ describe("kcStats", () => {
     expect(byKc.get("erratic")?.stability).toBe("irregular");
   });
 
-  it("kcStats handles a single KC without NaN", () => {
+  it("kcStats handles empty input, zero times, and a single KC without NaN", () => {
+    expect(kcStats([])).toEqual([]);
     const stats = kcStats([ev("only", true, 1200, 1000, 0)]);
     expect(stats).toHaveLength(1);
     expect(stats[0]?.bis).toBe(0);
     expect(stats[0]?.hitsPerMin).toBeCloseTo(50, 5);
+
+    const zeroTimes = kcStats(Array.from({ length: 10 }, (_, i) => ev("z", true, 0, 1000, i)));
+    expect(zeroTimes[0]?.hitsPerMin).toBe(0);
+    expect(zeroTimes[0]?.cv).toBeNull();
   });
 });

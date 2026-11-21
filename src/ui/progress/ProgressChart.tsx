@@ -32,17 +32,12 @@ export function fullDate(ms: number): string {
 }
 
 /** Hand-written SVG progress chart using theme CSS tokens (AC-3, AC-4, AC-6). */
-export function ProgressChart({
-  title,
-  unit,
-  rounds,
-  fit,
-  goal,
-}: ProgressChartProps): ReactNode {
+export function ProgressChart({ title, unit, rounds, fit, goal }: ProgressChartProps): ReactNode {
   if (rounds.length === 0) return null;
 
   const goalEnd = goal !== null ? parseDay(goal.deadline) : null;
-  const validGoal = goal !== null && goalEnd !== null && goalEnd > goal.setAt ? { ...goal, end: goalEnd } : null;
+  const validGoal =
+    goal !== null && goalEnd !== null && goalEnd > goal.setAt ? { ...goal, end: goalEnd } : null;
 
   const xs = rounds.map((r) => r.at);
   if (validGoal !== null) xs.push(validGoal.setAt, validGoal.end);
@@ -51,7 +46,9 @@ export function ProgressChart({
   const spanX = Math.max(maxX - minX, 1);
 
   const ys = rounds.map((r) => r.score);
-  if (fit !== null) ys.push(fit.a);
+  const roundMaxY = Math.max(...ys);
+  const showAsymptote = fit !== null && fit.a <= roundMaxY * 1.5;
+  if (showAsymptote) ys.push(fit.a);
   if (validGoal !== null) ys.push(validGoal.baseline, validGoal.target);
   const rawMinY = Math.min(...ys);
   const rawMaxY = Math.max(...ys);
@@ -68,14 +65,14 @@ export function ProgressChart({
   const curvePath =
     fit !== null && unassisted.length > 0
       ? unassisted
-          .map((r, i) => `${i === 0 ? "M" : "L"}${px(r.at).toFixed(1)},${py(fit.predict(i + 1)).toFixed(1)}`)
+          .map(
+            (r, i) =>
+              `${i === 0 ? "M" : "L"}${px(r.at).toFixed(1)},${py(fit.predict(i + 1)).toFixed(1)}`,
+          )
           .join(" ")
       : null;
 
-  const xTicks =
-    maxX === minX
-      ? [minX]
-      : [minX, minX + spanX * 0.33, minX + spanX * 0.67, maxX];
+  const xTicks = maxX === minX ? [minX] : [minX, minX + spanX * 0.33, minX + spanX * 0.67, maxX];
   const yTicks = [minY, Math.round((minY + maxY) / 2), maxY];
   const hasAssisted = rounds.some((r) => r.assisted === true);
 
@@ -99,13 +96,7 @@ export function ProgressChart({
                 stroke="var(--selection)"
                 strokeWidth={1}
               />
-              <text
-                x={PAD_L - 6}
-                y={y + 4}
-                textAnchor="end"
-                fontSize={10}
-                fill="var(--muted)"
-              >
+              <text x={PAD_L - 6} y={y + 4} textAnchor="end" fontSize={10} fill="var(--muted)">
                 {v}
               </text>
             </g>
@@ -125,7 +116,7 @@ export function ProgressChart({
           </text>
         ))}
 
-        {fit !== null && (
+        {showAsymptote && (
           <line
             data-series="asymptote"
             x1={PAD_L}
@@ -180,14 +171,7 @@ export function ProgressChart({
             );
           }
           return (
-            <circle
-              key={idx}
-              data-point="round"
-              cx={cx}
-              cy={cy}
-              r={3.5}
-              fill="var(--muted)"
-            />
+            <circle key={idx} data-point="round" cx={cx} cy={cy} r={3.5} fill="var(--muted)" />
           );
         })}
       </svg>

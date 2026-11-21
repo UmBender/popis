@@ -46,7 +46,7 @@ export function parseDay(day: string): number | null {
   const month = Number(m[2]);
   const d = Number(m[3]);
   const y = year - (month <= 2 ? 1 : 0);
-  const era = Math.floor((y >= 0 ? y : y - 399) / 400);
+  const era = Math.floor(y / 400);
   const yoe = y - era * 400;
   const doy = Math.floor((153 * (month + (month > 2 ? -3 : 9)) + 2) / 5) + d - 1;
   const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
@@ -68,10 +68,19 @@ export function theilSenSlope(points: readonly (readonly [number, number])[]): n
   return quartiles(slopes)[1];
 }
 
-type Candidate = { readonly a: number; readonly b: number; readonly c: number; readonly sse: number };
+type Candidate = {
+  readonly a: number;
+  readonly b: number;
+  readonly c: number;
+  readonly sse: number;
+};
 
 /** Fits `ln(a - y_i) = ln(b) - c * ln(i)` for fixed `a > max(y)` and returns SSE in y-space. */
-function fitForAsymptote(ys: readonly number[], lns: readonly number[], a: number): Candidate | null {
+function fitForAsymptote(
+  ys: readonly number[],
+  lns: readonly number[],
+  a: number,
+): Candidate | null {
   const n = ys.length;
   let sumU = 0;
   let sumV = 0;

@@ -2,14 +2,7 @@ import { isMode, type Mode } from "../../modes";
 
 /** One entry of the tree: a mode of MODES or another screen (ADR-T18-1). */
 export type ItemId =
-  | Mode
-  | "data"
-  | "progress"
-  | "typing"
-  | "text"
-  | "vim-learn"
-  | "vim-motion"
-  | "vim-edit";
+  Mode | "data" | "progress" | "typing" | "text" | "vim-learn" | "vim-motion" | "vim-edit";
 
 export type TreeItem = {
   readonly id: ItemId;

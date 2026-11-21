@@ -57,7 +57,7 @@ export function slowestBigrams(events: readonly TrainingEvent[], limit = 10): Bi
       const a = chars[k] as string;
       const b = chars[k + 1] as string;
       if (a.trim() === "" || b.trim() === "") continue;
-      const ms = iv[offset + k];
+      const ms: unknown = iv[offset + k];
       if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) continue;
       const pair = a + b;
       const list = intervals.get(pair);
@@ -108,6 +108,8 @@ export function errorChars(events: readonly TrainingEvent[], limit = 10): CharEr
         symbol: isCodeSymbol(char),
       };
     })
-    .sort((a, b) => b.errorRate - a.errorRate || b.errors - a.errors || a.char.localeCompare(b.char))
+    .sort(
+      (a, b) => b.errorRate - a.errorRate || b.errors - a.errors || a.char.localeCompare(b.char),
+    )
     .slice(0, limit);
 }

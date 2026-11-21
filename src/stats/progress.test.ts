@@ -42,7 +42,9 @@ describe("computeProgress", () => {
     const now = BASE + 6 * WEEK_MS;
     const sessions: SessionRecord[] = [
       // 3 rounds of 60s
-      ...Array.from({ length: 3 }, (_, i) => calcSession("arithmetic", 60_000, 30 + i, BASE + i * DAY_MS)),
+      ...Array.from({ length: 3 }, (_, i) =>
+        calcSession("arithmetic", 60_000, 30 + i, BASE + i * DAY_MS),
+      ),
       // 10 rounds of 120s (most played)
       ...Array.from({ length: 10 }, (_, i) =>
         calcSession("arithmetic", 120_000, 76 + i * 2, BASE + i * 4 * DAY_MS),
@@ -101,5 +103,100 @@ describe("computeProgress", () => {
     expect(motion?.configs[0]?.unassistedCount).toBe(7);
     expect(motion?.configs[0]?.fit).toBeNull();
     expect(motion?.configs[0]?.plateau).toBeNull();
+  });
+
+  it("computeProgress covers review, typing, text, vim-edit, assisted-only series and 1-round summaries", () => {
+    const now = BASE + 10 * DAY_MS;
+    const progress = computeProgress(
+      {
+        sessions: [
+          {
+            ...calcSession("arithmetic", 0, 5, BASE, { list: [1, 2], nested: { b: 2, a: 1 } }),
+            mode: "review",
+          },
+          calcSession("algebra", 60_000, 10, BASE, { list: [1, 2], z: 1, a: 2 }),
+          calcSession("algebra", 120_000, 20, BASE + DAY_MS, { list: [3, 4], a: 1, z: 2 }),
+        ],
+        typing: [
+          {
+            version: 1,
+            snippetId: "cpp-bfs",
+            language: "cpp",
+            seed: 1,
+            wpm: 55,
+            accuracy: 0.95,
+            errors: 1,
+            timeMs: 20_000,
+            finishedAt: BASE,
+          },
+        ],
+        text: [
+          {
+            version: 1,
+            config: "pt-60s",
+            seed: 1,
+            wpm: 60,
+            raw: 62,
+            accuracy: 0.97,
+            chars: { correct: 100, incorrect: 2, extra: 0, missed: 0 },
+            timeMs: 60_000,
+            finishedAt: BASE,
+          },
+        ],
+        vimMotion: [
+          {
+            version: 1,
+            kind: "motion",
+            level: 1,
+            durationS: 60,
+            seed: 1,
+            reached: 12,
+            skipped: 0,
+            efficiency: 0.9,
+            finishedAt: BASE,
+            assisted: true,
+          },
+        ],
+        vimEdit: [
+          {
+            version: 1,
+            kind: "edit",
+            durationS: 60,
+            seed: 1,
+            reached: 8,
+            skipped: 0,
+            efficiency: 0.9,
+            finishedAt: BASE,
+            assisted: false,
+          },
+          {
+            version: 1,
+            kind: "edit",
+            durationS: 60,
+            seed: 2,
+            reached: 6,
+            skipped: 0,
+            efficiency: 0.9,
+            finishedAt: BASE + 3 * DAY_MS,
+            assisted: false,
+          },
+        ],
+        events: [],
+      },
+      now,
+    );
+    expect(progress.map((d) => d.id)).toEqual([
+      "algebra",
+      "review",
+      "typing",
+      "text",
+      "vim-motion",
+      "vim-edit",
+    ]);
+    const reviewSeries = progress[1]!.configs[0]!;
+    expect(seriesSummaryLine("Revisar", reviewSeries)).toContain("1 rodada");
+    const editSeries = progress[5]!.configs[0]!;
+    expect(seriesSummaryLine("Vim: Edição", editSeries)).toContain("1 semana");
+    expect(seriesSummaryLine("Vim: Edição", editSeries)).toContain("-");
   });
 });

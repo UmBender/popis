@@ -43,4 +43,24 @@ describe("ProgressChart", () => {
     expect(screen.getByText("Ver como tabela")).toBeTruthy();
     expect(screen.getAllByRole("row").length).toBeGreaterThanOrEqual(11);
   });
+
+  it("returns null on empty rounds, handles single round, and omits distant asymptote from Y-axis", () => {
+    const empty = render(
+      <ProgressChart title="Vazio" unit="WPM" rounds={[]} fit={null} goal={null} />,
+    );
+    expect(empty.container.querySelector("svg")).toBeNull();
+
+    const single = render(
+      <ProgressChart
+        title="Código"
+        unit="WPM"
+        rounds={[{ at: BASE, score: 50 }]}
+        fit={{ a: 300, b: 250, c: 0.05, predict: () => 50 }}
+        goal={null}
+      />,
+    );
+    expect(single.container.querySelector("svg")).not.toBeNull();
+    // Distant asymptote (300 > 50 * 1.5) is omitted so the chart is not squished.
+    expect(single.container.querySelector("line[data-series='asymptote']")).toBeNull();
+  });
 });

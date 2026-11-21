@@ -23,7 +23,10 @@ describe("goals storage", () => {
   });
 
   it("loadGoals ignores corrupt entries safely", () => {
-    const store = memoryStore({ [GOALS_KEY]: JSON.stringify({ bad: { target: "no" } }) });
+    const store = memoryStore({
+      [GOALS_KEY]: JSON.stringify({ bad: { target: "no" }, nil: null }),
+    });
     expect(loadGoals(store)).toEqual({});
+    expect(loadGoals(memoryStore({ [GOALS_KEY]: JSON.stringify([1, 2, 3]) }))).toEqual({});
   });
 });
