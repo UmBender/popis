@@ -1,7 +1,7 @@
 ---
 id: ADR-T21-1
 title: Prévia do ótimo, retirada automática e pausa para lição
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-21
 task: T21

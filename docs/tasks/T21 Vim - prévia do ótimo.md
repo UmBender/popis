@@ -1,7 +1,7 @@
 ---
 id: T21
 title: Vim - prévia do ótimo
-status: in-progress
+status: review
 depends_on: [T20]
 branch: task/T21-vim-optimal-preview
 adrs: [ADR-T21-1]
@@ -127,14 +127,14 @@ Fontes em [[Métricas e evolução]].
 
 ## Subtasks
 
-- [ ] Spec detalhado com testes nomeados e ADR-T21-1
-- [ ] Testes unitários, de desempenho, de migração, de componente e e2e (vermelhos antes do código)
-- [ ] Modelos, tipos e assinaturas (typecheck verde)
-- [ ] Recálculo ótimo (`src/vim/optimal.ts`) e lógica pura da prévia (`src/vim/preview.ts`)
-- [ ] Pausa/retomada e `assisted` nos motores de rodada (`src/vim/round.ts`, `src/vim/edit-round.ts`)
-- [ ] Persistência e migração (`src/storage/vim.ts`) e resumo do histórico (`src/ui/shell/History.tsx`)
-- [ ] Componente `Preview.tsx` com blocos, descrição no foco/mouse, modal de lição T20 e integração em `VimScreen.tsx` e `EditDrill.tsx`
-- [ ] Gates verdes (`npm run check`, `npm run coverage`, `npm run vim:oracle`, `npm run test:e2e`), auditoria visual e atualização de docs
+- [x] Spec detalhado com testes nomeados e ADR-T21-1
+- [x] Testes unitários, de desempenho, de migração, de componente e e2e (vermelhos antes do código)
+- [x] Modelos, tipos e assinaturas (typecheck verde)
+- [x] Recálculo ótimo (`src/vim/optimal.ts`) e lógica pura da prévia (`src/vim/preview.ts`)
+- [x] Pausa/retomada e `assisted` nos motores de rodada (`src/vim/round.ts`, `src/vim/edit-round.ts`)
+- [x] Persistência e migração (`src/storage/vim.ts`) e resumo do histórico (`src/ui/shell/History.tsx`)
+- [x] Componente `Preview.tsx` com blocos, descrição no foco/mouse, modal de lição T20 e integração em `VimScreen.tsx` e `EditDrill.tsx`
+- [x] Gates verdes (`npm run check`, `npm run coverage`, `npm run vim:oracle`, `npm run test:e2e`), auditoria visual e atualização de docs
 
 ## Notas para o batch
 
@@ -142,3 +142,16 @@ Fontes em [[Métricas e evolução]].
   T20, faça a T21 sem o AC-6 e registre no *Log*.
 
 ## Log
+
+- 2026-11-21 — Spec e ADR: especificados todos os critérios AC-1..AC-6 com testes nomeados e registrado `ADR-T21-1`. *Files owned* ampliado para incluir o módulo puro `src/vim/preview.ts`, a contagem de rodadas assistidas em `src/ui/shell/History.tsx`, o atalho `Ctrl+P` em `src/ui/keys.ts` e os estilos em `src/ui/app.css`.
+- 2026-11-21 — UNATTENDED CHOICE: no modo "Automática" (AC-1), um comando exige ao menos `AUTO_WINDOW = 20` metas registradas com eficiência média `>= 0.85` (com tolerância `1e-9` para arredondamento IEEE-754) antes de recuar para "Ao travar"; com menos de 20 metas, a prévia permanece visível para evitar desaparecimento prematuro após a primeira meta resolvida com ajuda.
+- 2026-11-21 — UNATTENDED CHOICE: para abrir a lição da T20 sem perder a rodada nem desmontar o componente do treino (AC-6), a lição abre em um diálogo modal local (`LessonModal` em `src/ui/vim/Preview.tsx`) com pausa determinística do relógio (`pauseRound`/`resumeRound` e `pauseEditRound`/`resumeEditRound`) e retomada automática ao fechar (`Esc` ou botão).
+- 2026-11-21 — Ajuste de teste existente: em `src/ui/VimScreenEdit.test.tsx` ("the summary is for the edit drill alone"), o `store` vazio agora inicia com prévia "Automática" (AC-1), produzindo rodada assistida excluída do resumo (AC-4); o teste passou a fixar `preview: "off"` no commit de testes (`cacfe24`) para continuar validando o resumo de rodadas sem prévia.
+- 2026-11-21 — Desempenho (AC-3): `recalculateOptimal` usa cache de `simpleSteps`, poda exata por linha no último passo, busca direta `/` e `?` no alvo e limite de BFS interativo, ficando abaixo de 16 ms nos piores trechos do corpus no nível 7 (`cpp-dijkstra` e demais trechos grandes) mesmo sob instrumentação de cobertura V8, sem precisar do recuo de 150 ms. `recalculateEditPreview` também fica abaixo de 16 ms nas maiores edições.
+- 2026-11-21 — Gates verdes:
+  - `npm run vim:oracle`: `2200/2200 cases agree`.
+  - `npm run check`: verde (`tsc --noEmit`, `eslint --max-warnings 0`, `prettier --check`, `109/109` arquivos / `3932/3932` testes, `vite build`).
+  - `npm run coverage`: verde (`99.96%` statements, `99.31%` branches, `100%` functions, `99.98%` lines; `src/vim/**` e `src/storage/**` em 100%, todos os limiares atendidos).
+  - `npm run test:e2e`: `28/28 passed` (incluindo fluxo completo da T21 no navegador).
+- 2026-11-21 — Verificação visual: capturadas e inspecionadas 3 capturas Playwright em `.batch/visual/shots/` (`desktop-t21-motion-preview.png`, `desktop-t21-lesson-modal.png`, `desktop-t21-edit-preview.png`). Ajustado o botão "Voltar para a rodada Esc" no modal para o mesmo estilo da ajuda do Shell, garantindo contraste nítido no `<kbd>Esc</kbd>`.
+- 2026-11-21 — Verificação manual para o dono: jogar algumas rodadas de Movimento e Edição com a prévia em "Automática" e avaliar se ela ensina bem e retira a ajuda no momento certo.
