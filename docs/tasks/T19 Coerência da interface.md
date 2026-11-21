@@ -1,7 +1,7 @@
 ---
 id: T19
 title: Coerência da interface
-status: in-progress
+status: review
 depends_on: [T18]
 branch: task/T19-ui-coherence
 adrs: [ADR-T19-1]
@@ -181,13 +181,13 @@ nome, o mesmo lugar e a mesma tecla em todas as telas.
 
 ## Subtasks
 
-- [ ] Criar ADR-T19-1 e especificar os testes de AC-1 a AC-10
-- [ ] Escrever testes falhando em `src/ui/coherence.test.tsx` e `tests/e2e/coherence.spec.ts`
-- [ ] Adicionar modelos/assinaturas de `src/ui/keys.ts`, `RoundBar.tsx`, `Result.tsx`, `History.tsx`
-- [ ] Implementar AC-1 a AC-9 nas telas de `src/ui/` e em `src/ui/app.css`
-- [ ] Atualizar testes unitários/e2e antigos cujos rótulos/teclas mudaram pelo spec
-- [ ] Rodar `npm run check`, `npm run coverage`, `npm run test:e2e` e capturas visuais
-- [ ] Preencher o *Log* com todos os 17 itens da auditoria e mover para `review`
+- [x] Criar ADR-T19-1 e especificar os testes de AC-1 a AC-10
+- [x] Escrever testes falhando em `src/ui/coherence.test.tsx` e `tests/e2e/coherence.spec.ts`
+- [x] Adicionar modelos/assinaturas de `src/ui/keys.ts`, `RoundBar.tsx`, `Result.tsx`, `History.tsx`
+- [x] Implementar AC-1 a AC-9 nas telas de `src/ui/` e em `src/ui/app.css`
+- [x] Atualizar testes unitários/e2e antigos cujos rótulos/teclas mudaram pelo spec
+- [x] Rodar `npm run check`, `npm run coverage`, `npm run test:e2e` e registrar estado das capturas visuais
+- [x] Preencher o *Log* com todos os 17 itens da auditoria e mover para `review`
 
 ## Out of scope
 
@@ -208,3 +208,34 @@ nome, o mesmo lugar e a mesma tecla em todas as telas.
   ADR-T19-1 e mostre na ajuda `?`.
 
 ## Log
+
+- 2026-11-20 — **UNATTENDED CHOICE:** usado `Ctrl+Shift+Enter` (e `Cmd+Shift+Enter`)
+  para recomeçar a rodada com seed nova em todas as telas de treino em vez de `Ctrl+R`,
+  conforme alternativa prevista no spec e em [[ADR-T19-1 Teclas e componentes comuns de treino]],
+  porque `<C-r>` já é comando do Vim na Edição (refazer e `i_<C-r>` para registradores) e
+  pode ser interceptado pelo navegador.
+- 2026-11-21 — **Capturas visuais (AC-10 / política do batch):** passo pulado porque o
+  comando `npx playwright test --config .batch/visual/playwright.config.ts` foi negado pela
+  verificação de permissão do ambiente; verificação visual manual no desktop e celular
+  fica registrada para revisão do dono.
+- 2026-11-21 — **Gates:** `npm run check` verde (106 arquivos, 3870 testes, build OK),
+  `npm run coverage` verde (`src/ui/**`: 100% linhas/statements/funções, 98.5% branches),
+  `npm run test:e2e` verde (26 testes em chromium e mobile, incluindo `tests/e2e/coherence.spec.ts`).
+- 2026-11-21 — **Resolução da Auditoria (17 itens):**
+  1. Navegação e modos no menu lateral/drawer: resolvido em `d2e41a8` (T18) e conferido em `tests/e2e/coherence.spec.ts`.
+  2. Ordem fixa das opções acima da área de treino: resolvido em `d2e41a8` (T18) e conferido em `tests/e2e/coherence.spec.ts`.
+  3. Altura excessiva do Vim Edição (caixas empilhadas, 36 tipos e comandos abertos): resolvido em `477ce08` (buffers lado a lado em `.vim-buffers`, tipos agrupados por família e fechados por padrão em `<details>`, comandos já fechados por T18).
+  4. `Esc` com quatro comportamentos diferentes: resolvido em `477ce08` (`Esc` sai do treino em cálculo, Código e Texto; no Vim, `Esc` continua do Vim e `:q` + `Enter` sai nos três treinos).
+  5. Recomeçar com tecla diferente por tela: resolvido em `477ce08` (`Ctrl+Enter` pula e `Ctrl+Shift+Enter` recomeça com seed nova em todas as telas, via `src/ui/keys.ts`).
+  6. Título `<h1>` sem regra / repetido entre itens: resolvido em `477ce08` (`PanelTitle` usa `<h1>` único igual ao nome do item na árvore; `Brand` deixou de usar `<h1>`).
+  7. Tempo exibido de três jeitos / ausente em Código: resolvido em `477ce08` (`RoundBar` em `src/ui/shell/RoundBar.tsx` usado em todas as telas de treino, com tempo em segundos).
+  8. Placar sem padrão de rótulo/valor: resolvido em `477ce08` (`RoundBar` padroniza rótulo antes do valor em todas as telas).
+  9. Dicas soltas (`.hint`) com `·` em várias telas: resolvido em `477ce08` (removidas; atalhos vêm de `src/ui/keys.ts` na linha de status e na ajuda `?`).
+  10. Resumo do histórico com três formatos: resolvido em `477ce08` (`RoundHistory` em `src/ui/shell/History.tsx` usado em todos os itens de treino com mensagem única de vazio).
+  11. Resultado do cálculo pobre com 0 acertos: resolvido em `477ce08` (`Result` em `src/ui/shell/Result.tsx` mostra pares de erradas/puladas/recorde, seed e tabela de puladas mesmo com 0 acertos).
+  12. Botão de avançar chamado "Jogar de novo" ou "Próximo": resolvido em `477ce08` (`Result` usa sempre "Jogar de novo" com `<kbd>Enter</kbd>`).
+  13. `fieldset` com borda misturado com opções soltas e `select` esticado: resolvido em `477ce08` e `a0da8dd` (nenhum `fieldset` fora de painéis de referência; `select` com largura do conteúdo).
+  14. Intervalos da Aritmética quebrando no meio no celular: resolvido em `477ce08` (`.range-group` com `white-space: nowrap` e empilhamento por linha abaixo de `48rem`).
+  15. Partida no celular com pergunta espremida ao lado do campo: resolvido em `477ce08` e `a0da8dd` (`.problem` em coluna com pergunta em `--text-xxl` acima do campo, ajustando expressões longas com `.prompt.long` para manter pergunta e campo na metade superior).
+  16. Aviso "(libere em Aprender)" repetido em cada caixa bloqueada do Vim Edição: resolvido em `477ce08` (aviso único `vim-locked-notice` no topo do grupo de registradores, com botão para abrir `Aprender`).
+  17. "Comandos deste nível" sem distinguir níveis anteriores: resolvido em `477ce08` (comandos do nível atual listados diretamente e níveis anteriores em `<details>` fechado por padrão "já valem").

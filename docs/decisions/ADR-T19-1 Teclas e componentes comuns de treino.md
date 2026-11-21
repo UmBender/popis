@@ -1,7 +1,7 @@
 ---
 id: ADR-T19-1
 title: Teclas e componentes comuns de treino
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-20
 task: T19
