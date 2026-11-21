@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { manualClock } from "../../core/clock";
 import { parseDay, WEEK_MS } from "../../stats/learning";
@@ -74,7 +74,7 @@ describe("ProgressScreen", () => {
     const clock = manualClock(BASE + 12 * 3 * DAY_MS);
     render(<ProgressScreen store={store} clock={clock} />);
 
-    expect(screen.getByText(/Aritmética/i)).toBeTruthy();
+    expect(screen.getByTestId("progress-headline-arithmetic").textContent).toContain("Aritmética");
     expect(screen.getByTestId("plateau-badge-arithmetic")).toBeTruthy();
     // KC table: arithmetic.mul is slower & has errors, so it should come before arithmetic.add.
     const rows = screen.getAllByTestId(/^kc-row-arithmetic-/);
@@ -89,11 +89,12 @@ describe("ProgressScreen", () => {
     const clock = manualClock(BASE + 12 * 3 * DAY_MS);
     render(<ProgressScreen store={store} clock={clock} />);
 
-    const targetInput = screen.getByLabelText("Meta (valor)");
-    const dateInput = screen.getByLabelText("Data da meta");
+    const section = within(screen.getByTestId("progress-section-arithmetic"));
+    const targetInput = section.getByLabelText("Meta (valor)");
+    const dateInput = section.getByLabelText("Data da meta");
     fireEvent.change(targetInput, { target: { value: "60" } });
     fireEvent.change(dateInput, { target: { value: "2026-06-01" } });
-    fireEvent.click(screen.getByRole("button", { name: "Salvar meta" }));
+    fireEvent.click(section.getByRole("button", { name: "Salvar meta" }));
 
     expect(screen.getByTestId("goal-status-arithmetic").textContent).toMatch(/acima|abaixo/i);
   });
