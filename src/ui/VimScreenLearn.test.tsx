@@ -413,7 +413,7 @@ describe("VimScreen Learn curriculum (T20 AC-3..AC-6)", () => {
     expect(screen.getByTestId("learn-exercise-commands")).toBeTruthy();
 
     // Extra key on step 2 advances to step 3 (no help).
-    press("h" + lesson.exercises[1].reference);
+    press("j" + lesson.exercises[1].reference);
     expect(screen.queryByTestId("learn-reference")).toBeNull();
     expect(screen.queryByTestId("learn-exercise-commands")).toBeNull();
     expect(screen.getByTestId("learn-step").textContent).toContain("3");
@@ -442,7 +442,7 @@ describe("VimScreen Learn curriculum (T20 AC-3..AC-6)", () => {
     press(lesson.exercises[0].reference);
     press(lesson.exercises[2].reference);
     fireEvent.click(screen.getByRole("button", { name: "Treinar" }));
-    expect(screen.getByRole("heading", { name: "Edição" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Edição" })).toBeTruthy();
     expect(lesson.practice.drill).toBe("edit");
     if (lesson.practice.drill === "edit") {
       expect(loadVimEditSettings(store).kinds).toEqual(lesson.practice.kinds);
@@ -451,7 +451,7 @@ describe("VimScreen Learn curriculum (T20 AC-3..AC-6)", () => {
 
   it("aprender link in Motion and Edit commands panels opens the command lesson", () => {
     const store = openFromTree(memoryStore(), "Movimento");
-    const motionCmds = screen.getByTestId("ref-vim-motion-commands");
+    const motionCmds = screen.getByRole("group", { name: "Comandos deste nível" });
     const firstLink = within(motionCmds).getAllByRole("button", { name: "aprender" })[0]!;
     fireEvent.click(firstLink);
     expect(screen.getByRole("heading", { name: "Aprender" })).toBeTruthy();
@@ -461,7 +461,7 @@ describe("VimScreen Learn curriculum (T20 AC-3..AC-6)", () => {
 
     // Now test from Edição panel.
     fireEvent.click(screen.getByRole("radio", { name: "Edição" }));
-    const editCmds = screen.getByTestId("ref-vim-edit-commands");
+    const editCmds = screen.getByRole("group", { name: "Comandos" });
     const editLinks = within(editCmds).getAllByRole("button", { name: "aprender" });
     expect(editLinks.length).toBeGreaterThan(0);
     fireEvent.click(editLinks[0]!);
