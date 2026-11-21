@@ -1,10 +1,10 @@
 ---
 id: T19
 title: Coerência da interface
-status: todo
+status: in-progress
 depends_on: [T18]
 branch: task/T19-ui-coherence
-adrs: []
+adrs: [ADR-T19-1]
 tags: [task]
 ---
 
@@ -101,32 +101,34 @@ nome, o mesmo lugar e a mesma tecla em todas as telas.
     são cumulativos (o nível 4 aceita `w` e `h`). Isso dá a impressão de
     que os comandos anteriores não valem.
 
-## Spec (rascunho; o passo de spec nomeia os testes)
+## Spec
 
 - **AC-1**: **Teclas iguais em toda tela de treino**, numa tabela única
   em `src/ui/keys.ts` (a fonte da ajuda `?` da T18 e da linha de
-  status):
+  status), conforme [[ADR-T19-1 Teclas e componentes comuns de treino]]:
   - **Esc** sai do treino e volta ao painel do item. A exceção é o Vim,
     onde Esc é do Vim; lá, sair é `:q` (Enter), como no Neovim, nos três
     treinos (no Movimento, `:` passa a abrir só a linha de comando de
     `:q`). Decisão do dono (2026-11-20): Ctrl+Esc não, porque o KDE e o
     Windows o capturam;
   - **Ctrl+Enter** pula o item atual (questão, trecho, alvo, edição);
-  - **Ctrl+R** recomeça a rodada com uma seed nova. Se o navegador não
-    deixar capturar o Ctrl+R (`preventDefault` sem efeito no Chromium ou
-    no Firefox), use Ctrl+Shift+Enter e registre no *Log*.
-
-  Um teste percorre todas as telas de treino e confere as três ações.
-  As dicas soltas (item 9) somem: as teclas aparecem só na linha de
-  status da T18.
+  - **Ctrl+Shift+Enter** recomeça a rodada com uma seed nova (usado no
+    lugar de Ctrl+R porque `<C-r>` é comando do Vim na Edição e pode ser
+    capturado pelo navegador).
+  - As dicas soltas (item 9) somem: as teclas aparecem só na linha de
+    status da T18 e na ajuda `?`.
+  - **Testes:** `src/ui/coherence.test.tsx` (`training keys are uniform across screens`,
+    `vim drills exit with :q and keep Esc for vim`, `status line and help use the shared keys table without loose hints`),
+    `tests/e2e/coherence.spec.ts`.
 - **AC-2**: **Título:** o caminho da T18 é a única indicação de onde a
   pessoa está, e o `<h1>` de cada painel é o nome do item ("Movimento",
-  "Edição", "Aprender"), nunca repetido entre itens. Um teste confere
-  que não há dois itens com o mesmo `<h1>`.
+  "Edição", "Aprender", "Código", etc.), nunca repetido entre itens.
+  - **Testes:** `src/ui/coherence.test.tsx` (`every tree item renders a unique h1 matching its label`).
 - **AC-3**: **Partida:** todas as telas de treino mostram o tempo (ou o
   progresso, nos modos por quantidade) e o placar no mesmo componente,
   `src/ui/shell/RoundBar.tsx`. Cada um vem como par rótulo/valor ("tempo
   60 s", "acertos 12", "alvos 7"), na mesma posição.
+  - **Testes:** `src/ui/coherence.test.tsx` (`every training screen renders time or progress and score in RoundBar`).
 - **AC-4**: **Resultado:** um componente só, `src/ui/shell/Result.tsx`,
   usado por cálculo, Digitação, Texto e os dois treinos de Vim:
   - a linha principal;
@@ -134,18 +136,24 @@ nome, o mesmo lugar e a mesma tecla em todas as telas.
   - a lista dos piores itens (questões, palavras, alvos ou edições);
   - a seed;
   - o botão "Jogar de novo" (Enter).
-
   Com 0 acertos, a tela continua completa: mostra o que foi pulado e o
   recorde.
-- **AC-5**: **Histórico:** um componente só para "Últimas 10 rodadas"
-  (o da T18, AC-4), usado por todos os itens, cálculo inclusive. O vazio
-  é sempre "Nenhuma rodada nesta configuração. Enter começa a primeira."
+  - **Testes:** `src/ui/coherence.test.tsx` (`every training screen uses Result with Jogar de novo and seed`,
+    `calculation results with zero hits still show skipped items and record`).
+- **AC-5**: **Histórico:** um componente só (`src/ui/shell/History.tsx`)
+  para "Últimas 10 rodadas" (o da T18, AC-4), usado por todos os itens,
+  cálculo inclusive. O vazio é sempre "Nenhuma rodada nesta
+  configuração. Enter começa a primeira."
+  - **Testes:** `src/ui/coherence.test.tsx` (`every training item uses the shared History component and empty message`).
 - **AC-6**: **Controles:** um único estilo para as opções, a grade
   rótulo/valor da T18:
   - os `select` têm a largura do conteúdo;
   - os intervalos ("2 a 100") nunca quebram no meio: no celular, cada
     intervalo vai para uma linha inteira (item 14);
   - nenhum `fieldset` com borda fora dos painéis de referência.
+  - **Testes:** `src/ui/coherence.test.tsx` (`no bordered fieldset appears outside reference panels`,
+    `arithmetic ranges keep each parenthesized interval together`),
+    `tests/e2e/coherence.spec.ts`.
 - **AC-7**: **Vim Edição enxuta:**
   - a caixa do "depois" fica ao lado da atual quando há largura, e abaixo
     dela no celular;
@@ -153,19 +161,33 @@ nome, o mesmo lugar e a mesma tecla em todas as telas.
     registradores) e fechado por padrão;
   - os tipos bloqueados mostram um só aviso no topo do grupo, com um
     link para a lição.
-
-  O treino cabe em uma tela de 1280×800 sem rolar até "Começar".
+  O treino cabe em uma tela de 1280×800 sem rolar até a área de edição.
+  - **Testes:** `src/ui/coherence.test.tsx` (`vim edit groups kinds by family, collapsed by default, with one locked notice`),
+    `tests/e2e/coherence.spec.ts`.
 - **AC-8**: **"Comandos deste nível"** mostra também os níveis
   anteriores, num grupo "já valem" fechado por padrão (item 17).
+  - **Testes:** `src/ui/coherence.test.tsx` (`vim motion commands show current level and earlier levels collapsed under já valem`).
 - **AC-9**: **Partida no celular:** a pergunta fica acima do campo, em
   `--text-xxl`, e a fila de vereditos da T18 ocupa o espaço logo abaixo
   (item 15).
+  - **Testes:** `src/ui/coherence.test.tsx` (`mobile game CSS stacks prompt above answer in --text-xxl`),
+    `tests/e2e/coherence.spec.ts`.
 - **AC-10**: **Verificação:**
   - as capturas de todas as telas (desktop e Pixel 7) são refeitas;
   - cada item da *Auditoria* ganha, no *Log*, a linha "resolvido em
     <commit>" ou "mantido porque …";
   - um e2e `tests/e2e/coherence.spec.ts` confere as teclas do AC-1 e a
     ordem do painel em todas as telas.
+
+## Subtasks
+
+- [ ] Criar ADR-T19-1 e especificar os testes de AC-1 a AC-10
+- [ ] Escrever testes falhando em `src/ui/coherence.test.tsx` e `tests/e2e/coherence.spec.ts`
+- [ ] Adicionar modelos/assinaturas de `src/ui/keys.ts`, `RoundBar.tsx`, `Result.tsx`, `History.tsx`
+- [ ] Implementar AC-1 a AC-9 nas telas de `src/ui/` e em `src/ui/app.css`
+- [ ] Atualizar testes unitários/e2e antigos cujos rótulos/teclas mudaram pelo spec
+- [ ] Rodar `npm run check`, `npm run coverage`, `npm run test:e2e` e capturas visuais
+- [ ] Preencher o *Log* com todos os 17 itens da auditoria e mover para `review`
 
 ## Out of scope
 
