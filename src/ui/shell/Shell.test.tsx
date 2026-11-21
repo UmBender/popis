@@ -649,7 +649,11 @@ describe("shell edge cases", () => {
     });
     setup(store);
     key("k");
+    expect(checkedItem()).toBe("Treino do dia");
+    key("k");
     key("j", document.body, { ctrlKey: true });
+    expect(checkedItem()).toBe("Treino do dia");
+    key("j");
     expect(checkedItem()).toBe("Aritmética");
     key("Escape");
     key("a");

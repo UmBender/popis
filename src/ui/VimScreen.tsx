@@ -10,8 +10,23 @@ import {
 } from "react";
 import type { Clock } from "../core/clock";
 import { motionEvents } from "../stats/derive";
+import {
+  chooseNextLevel,
+  defaultLevelRatings,
+  INITIAL_ELO,
+  replayElo,
+  TARGET_ACCURACY_STEPS,
+} from "../stats/elo";
+import { kcStats } from "../stats/kc";
+import { recommendForDrill } from "../stats/recommend";
+import {
+  loadAdaptiveSettings,
+  saveAdaptiveSettings,
+  type AdaptiveSettings,
+} from "../storage/adaptive";
 import { loadEvents, recordEvents } from "../storage/events";
 import type { KeyValueStore } from "../storage/history";
+import { recordVimMotionReview } from "../storage/review";
 import {
   appendVimResult,
   assistedRoundCount,
@@ -62,6 +77,7 @@ import {
 } from "../vim/round";
 import { matchTrainingKey } from "./keys";
 import { detectPlateau, weeklyRate } from "../stats/learning";
+import { Recommendations } from "./Recommendations";
 import { RoundHistory } from "./shell/History";
 import { PanelTitle, Reference, useRunning } from "./shell/panel";
 import { Result } from "./shell/Result";
@@ -169,6 +185,13 @@ function MotionDrill({
   const [storedSamples, setStoredSamples] = useState<readonly CommandSample[]>(() =>
     eventsToSamples(loadEvents(store), "vim.motion"),
   );
+  const [adaptive, setAdaptive] = useState<AdaptiveSettings>(() => loadAdaptiveSettings(store));
+
+  const updateAdaptive = (patch: Partial<AdaptiveSettings>) => {
+    const next: AdaptiveSettings = { ...adaptive, ...patch };
+    saveAdaptiveSettings(store, next);
+    setAdaptive(next);
+  };
 
   const updateCmdline = (next: string | null) => {
     cmdlineRef.current = next;
@@ -232,8 +255,27 @@ function MotionDrill({
           assisted: split.anyAssisted,
         });
         recordEvents(store, motionEvents(round, at), at);
+        const allEvents = loadEvents(store);
+        recordVimMotionReview(store, round, allEvents, at);
+        const curAdaptive = loadAdaptiveSettings(store);
+        if (curAdaptive.autoLevel["vim-motion"]) {
+          const vimEv = allEvents.filter((e) => e.drill === "vim.motion");
+          const elo = replayElo(vimEv, at);
+          const vals = Object.values(elo.users).map((u) => u.rating);
+          const userRating =
+            vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : INITIAL_ELO;
+          const nextLevel = chooseNextLevel({
+            currentLevel: round.config.level,
+            userRating,
+            levelRatings: defaultLevelRatings(LEVELS.length),
+            targetAccuracy: curAdaptive.targetAccuracy,
+          }) as typeof round.config.level;
+          if (nextLevel !== run.settings.level) {
+            saveVimSettings(store, { ...run.settings, level: nextLevel });
+          }
+        }
         setResults(loadVimResults(store));
-        setStoredSamples(eventsToSamples(loadEvents(store), "vim.motion"));
+        setStoredSamples(eventsToSamples(allEvents, "vim.motion"));
       }
       show({ ...run, round });
     },
@@ -415,6 +457,23 @@ function MotionDrill({
   }));
   const historyRate = weeklyRate(historyPoints, clock.wallTime());
   const historyPlateau = detectPlateau(historyPoints);
+  const vimMotionEvents = useMemo(
+    () => (results.length >= 0 ? loadEvents(store).filter((e) => e.drill === "vim.motion") : []),
+    [store, results.length],
+  );
+  const motionRecs = useMemo(
+    () =>
+      recommendForDrill({
+        drillId: "vim-motion",
+        isVim: true,
+        plateau: historyPlateau,
+        events: vimMotionEvents,
+        kcs: kcStats(vimMotionEvents),
+        now: clock.wallTime(),
+        findLesson: (kc) => (lessonForHelpKey(kc) ?? lessonForHelpKey(`${kc}{c}`))?.id,
+      }),
+    [historyPlateau, vimMotionEvents, clock],
+  );
   const excludedAssisted = assistedRoundCount(results, settings.level, settings.durationS);
   const { target, vim } = round;
   const remainingS = Math.ceil(remainingMs(round, Math.max(now, round.startedAt ?? now)) / 1000);
@@ -499,6 +558,38 @@ function MotionDrill({
             </option>
           ))}
         </select>
+        <label className="op">
+          <input
+            type="checkbox"
+            checked={adaptive.autoLevel["vim-motion"]}
+            onChange={(e) => {
+              updateAdaptive({
+                autoLevel: { ...adaptive.autoLevel, "vim-motion": e.target.checked },
+              });
+            }}
+          />
+          Nível automático
+        </label>
+        {adaptive.autoLevel["vim-motion"] && (
+          <>
+            <label htmlFor="vim-auto-target">Meta de acerto</label>
+            <select
+              id="vim-auto-target"
+              aria-label="Meta de acerto"
+              value={String(adaptive.targetAccuracy)}
+              onChange={(e) => {
+                updateAdaptive({ targetAccuracy: Number(e.target.value) });
+              }}
+            >
+              {TARGET_ACCURACY_STEPS.map((step) => (
+                <option key={step} value={String(step)}>
+                  {`${String(Math.round(step * 100))}%`}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+        <Recommendations items={motionRecs} onLearn={onLearn} />
       </div>
 
       <div className="typing-area" data-panel="area">

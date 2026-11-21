@@ -3,18 +3,23 @@ import type { Clock } from "../../core/clock";
 import { evaluateGoal, parseDay, type GoalLine } from "../../stats/learning";
 import {
   computeProgress,
+  formatSignedRate,
   seriesSummaryLine,
   type ConfigSeries,
   type DrillProgress,
 } from "../../stats/progress";
-import { loadEvents } from "../../storage/events";
+import { compareDailyModes, recommendAll, type Recommendation } from "../../stats/recommend";
+import { loadAdaptiveSettings } from "../../storage/adaptive";
+import { loadAllEvents, loadEvents } from "../../storage/events";
 import { loadGoals, removeGoal, saveGoal, type StoredGoals } from "../../storage/goals";
 import { loadHistory } from "../../storage/history";
 import type { KeyValueStore } from "../../storage/kv";
 import { loadTextResults } from "../../storage/text-typing";
 import { loadTypingResults } from "../../storage/typing";
 import { loadVimEditResults, loadVimResults } from "../../storage/vim";
+import { lessonForHelpKey } from "../../vim/curriculum";
 import { seconds, skillLabel } from "../format";
+import { Recommendations } from "../Recommendations";
 import { PanelTitle } from "../shell/panel";
 import { fullDate, ProgressChart } from "./ProgressChart";
 
@@ -22,13 +27,23 @@ export type ProgressScreenProps = {
   readonly store: KeyValueStore;
   readonly clock: Clock;
   readonly focusItem?: string | null;
+  readonly onLearn?: (lessonId: string) => void;
 };
 
-/** Progress dashboard ("Evolução"): curves, plateaus, KCs, typing stats and goals (T23). */
-export function ProgressScreen({ store, clock, focusItem }: ProgressScreenProps): ReactNode {
+const findVimLesson = (kc: string): string | undefined =>
+  (lessonForHelpKey(kc) ?? lessonForHelpKey(`${kc}{c}`))?.id;
+
+/** Progress dashboard ("Evolução"): curves, plateaus, KCs, typing stats, recommendations and goals (T23, T24). */
+export function ProgressScreen({
+  store,
+  clock,
+  focusItem,
+  onLearn,
+}: ProgressScreenProps): ReactNode {
   const now = clock.wallTime();
   const [goals, setGoals] = useState<StoredGoals>(() => loadGoals(store));
 
+  const allEvents = useMemo(() => loadAllEvents(store), [store]);
   const drills = useMemo(
     () =>
       computeProgress(
@@ -44,6 +59,17 @@ export function ProgressScreen({ store, clock, focusItem }: ProgressScreenProps)
       ),
     [store, now],
   );
+
+  const recsByDrill = useMemo(
+    () => recommendAll(drills, allEvents, now, findVimLesson, skillLabel),
+    [drills, allEvents, now],
+  );
+
+  const experiment = useMemo(
+    () => compareDailyModes(loadAdaptiveSettings(store).dailySessions),
+    [store],
+  );
+  const hasExperiment = experiment.interleaved !== null || experiment.blocked !== null;
 
   const ordered = useMemo(() => {
     if (focusItem == null) return drills;
@@ -69,6 +95,51 @@ export function ProgressScreen({ store, clock, focusItem }: ProgressScreenProps)
       </PanelTitle>
 
       <div data-panel="options">
+        {hasExperiment && (
+          <section className="progress-section" data-testid="daily-experiment">
+            <h2>Experimento semanal: Intercalado vs. Em bloco</h2>
+            <p className="muted">
+              A evidência de intercalar em matemática é mista; compare o ganho real das suas
+              próprias semanas no Treino do dia.
+            </p>
+            <table className="progress-table">
+              <thead>
+                <tr>
+                  <th>Modo</th>
+                  <th>Semanas</th>
+                  <th>Sessões</th>
+                  <th>Média (acertos/min)</th>
+                  <th>Precisão média</th>
+                  <th>Ganho</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(
+                  [
+                    ["Intercalado", experiment.interleaved],
+                    ["Em bloco", experiment.blocked],
+                  ] as const
+                ).map(([label, stats]) => (
+                  <tr key={label}>
+                    <td data-label="Modo">{label}</td>
+                    <td data-label="Semanas">{stats !== null ? stats.weeks : "—"}</td>
+                    <td data-label="Sessões">{stats !== null ? stats.sessions : "—"}</td>
+                    <td data-label="Média (acertos/min)">
+                      {stats !== null ? stats.meanHitsPerMin.toFixed(1).replace(".", ",") : "—"}
+                    </td>
+                    <td data-label="Precisão média">
+                      {stats !== null ? `${String(Math.round(stats.meanAccuracy * 100))}%` : "—"}
+                    </td>
+                    <td data-label="Ganho">
+                      {stats !== null ? `${formatSignedRate(stats.gainHitsPerMin)}/min` : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
         {ordered.length === 0 ? (
           <p className="muted" data-testid="progress-empty">
             Nenhuma rodada registrada ainda. Complete uma rodada em qualquer treino para acompanhar
@@ -81,8 +152,10 @@ export function ProgressScreen({ store, clock, focusItem }: ProgressScreenProps)
                 key={drill.id}
                 drill={drill}
                 goals={goals}
+                recommendations={recsByDrill[drill.id] ?? []}
                 onSaveGoal={handleSaveGoal}
                 onRemoveGoal={handleRemoveGoal}
+                onLearn={onLearn}
               />
             ))}
           </div>
@@ -95,13 +168,17 @@ export function ProgressScreen({ store, clock, focusItem }: ProgressScreenProps)
 function DrillSection({
   drill,
   goals,
+  recommendations,
   onSaveGoal,
   onRemoveGoal,
+  onLearn,
 }: {
   readonly drill: DrillProgress;
   readonly goals: StoredGoals;
+  readonly recommendations: readonly Recommendation[];
   readonly onSaveGoal: (key: string, goal: GoalLine) => void;
   readonly onRemoveGoal: (key: string) => void;
+  readonly onLearn?: (lessonId: string) => void;
 }): ReactNode {
   const [configIdx, setConfigIdx] = useState(0);
   const active: ConfigSeries | undefined = drill.configs[configIdx] ?? drill.configs[0];
@@ -138,6 +215,12 @@ function DrillSection({
           </span>
         )}
       </div>
+
+      <Recommendations
+        items={recommendations}
+        testId={`progress-recommendations-${drill.id}`}
+        onLearn={onLearn}
+      />
 
       {drill.configs.length > 1 && (
         <div
