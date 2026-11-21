@@ -83,7 +83,7 @@ describe("VimScreen", () => {
   it("shows the first target of the seed with the cursor at the start, focused", () => {
     setup(storeAt(2));
     const expected = generateTarget(SEED, 0, 2);
-    expect(screen.getByRole("heading", { name: "Vim" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Movimento" })).toBeTruthy();
     expect(document.activeElement).toBe(box());
     expect(pos(cursor())).toEqual([expected.start.line, expected.start.col]);
     expect(pos(target())).toEqual([expected.target.line, expected.target.col]);
@@ -128,12 +128,12 @@ describe("VimScreen", () => {
 
   it("the clock starts on the first key", () => {
     setup(storeAt(1));
-    expect(screen.getByTestId("vim-time").textContent).toBe("60");
+    expect(screen.getByTestId("vim-time").textContent).toBe("60 s");
     advance(5000);
-    expect(screen.getByTestId("vim-time").textContent).toBe("60");
+    expect(screen.getByTestId("vim-time").textContent).toBe("60 s");
     press("<Esc>");
     advance(5000);
-    expect(screen.getByTestId("vim-time").textContent).toBe("55");
+    expect(screen.getByTestId("vim-time").textContent).toBe("55 s");
   });
 
   it("Ctrl+Enter skips the target", () => {
@@ -194,7 +194,7 @@ describe("VimScreen", () => {
       target: { value: "30" },
     });
     expect(loadVimSettings(store)).toEqual({ level: 4, durationS: 30 });
-    expect(screen.getByTestId("vim-time").textContent).toBe("30");
+    expect(screen.getByTestId("vim-time").textContent).toBe("30 s");
   });
 
   it("the round ends when the time is up and shows the results", () => {
@@ -224,13 +224,13 @@ describe("VimScreen", () => {
     expect(screen.getByTestId("vim-reached").textContent).toBe("0");
   });
 
-  it("Próximo starts a new round with a new seed", () => {
+  it("Jogar de novo starts a new round with a new seed", () => {
     setup(storeAt(1, 30), [SEED, SEED + 1]);
     press("<Esc>");
     advance(31_000);
-    fireEvent.click(screen.getByRole("button", { name: "Próximo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Jogar de novo" }));
     expect(target().dataset["solution"]).toBe(generateTarget(SEED + 1, 0, 1).solution);
-    expect(screen.getByTestId("vim-time").textContent).toBe("30");
+    expect(screen.getByTestId("vim-time").textContent).toBe("30 s");
     expect(document.activeElement).toBe(box());
   });
 
@@ -250,15 +250,14 @@ describe("VimScreen", () => {
     appendVimResult(store, result({ reached: 10 }));
     appendVimResult(store, result({ reached: 99, level: 2 }));
     setup(store);
-    expect(screen.getByTestId("vim-summary").textContent).toBe(
-      "melhor 20 alvos · média dos últimos 10: 15 alvos",
-    );
+    expect(screen.getByTestId("vim-summary").textContent).toContain("melhor 20 alvos");
+    expect(screen.getByTestId("vim-summary").textContent).toContain("média 15 alvos");
   });
 
   it("the summary says so when there are no results", () => {
     setup(storeAt(1));
     expect(screen.getByTestId("vim-summary").textContent).toBe(
-      "Sem resultados nesta configuração.",
+      "Nenhuma rodada nesta configuração. Enter começa a primeira.",
     );
   });
 

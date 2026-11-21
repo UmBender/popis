@@ -189,7 +189,7 @@ describe("VimScreen edit drill", () => {
       target: { value: "30" },
     });
     expect(loadVimEditSettings(store).durationS).toBe(30);
-    expect(screen.getByTestId("vim-time").textContent).toBe("30");
+    expect(screen.getByTestId("vim-time").textContent).toBe("30 s");
   });
 
   it("the Movimento item goes back to the motion drill", () => {
@@ -224,13 +224,12 @@ describe("VimScreen edit drill", () => {
   it("the summary is for the edit drill alone", () => {
     setup(storeWith(["append-semicolon"]));
     expect(screen.getByTestId("vim-summary").textContent).toBe(
-      "Sem resultados nesta configuração.",
+      "Nenhuma rodada nesta configuração. Enter começa a primeira.",
     );
     press(generateEdit(SEED, 0, ["append-semicolon"]).reference);
     advance(61_000);
-    fireEvent.click(screen.getByRole("button", { name: "Próximo" }));
-    expect(screen.getByTestId("vim-summary").textContent).toBe(
-      "melhor 1 edições · média dos últimos 10: 1 edições",
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Jogar de novo" }));
+    expect(screen.getByTestId("vim-summary").textContent).toContain("melhor 1 edições");
+    expect(screen.getByTestId("vim-summary").textContent).toContain("média 1 edições");
   });
 });

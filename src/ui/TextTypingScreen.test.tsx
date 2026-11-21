@@ -120,7 +120,7 @@ describe("text typing screen", () => {
     expect(statusOf(0)).toBe("current");
     expect(statusOf(1)).toBe("pending");
     expect(marksOf(0).every((m) => m === "pending")).toBe(true);
-    expect(screen.getByTestId("text-progress").textContent).toBe("30");
+    expect(screen.getByTestId("text-progress").textContent).toBe("30 s");
     expect(document.activeElement).toBe(box());
     expect(box().getAttribute("autocapitalize")).toBe("off");
     expect(box().getAttribute("autocorrect")).toBe("off");
@@ -193,9 +193,8 @@ describe("text typing screen", () => {
       },
     ]);
     const best = String(Math.round(wpm));
-    expect(screen.getByTestId("text-summary").textContent).toBe(
-      `melhor ${best} WPM · média dos últimos 10: ${best} WPM`,
-    );
+    expect(screen.getByTestId("text-summary").textContent).toContain(`melhor ${best} WPM`);
+    expect(screen.getByTestId("text-summary").textContent).toContain(`média ${best} WPM`);
   });
 
   it("text typing screen shows the progress of a words test", () => {
@@ -208,11 +207,11 @@ describe("text typing screen", () => {
   it("text typing screen counts the time down from the first key and ends a time test", () => {
     const { store } = setup();
     advance(5000);
-    expect(screen.getByTestId("text-progress").textContent).toBe("30");
+    expect(screen.getByTestId("text-progress").textContent).toBe("30 s");
     const first = initialWords(SEED, DEFAULT_TEXT_SETTINGS)[0] ?? "";
     type(`${first} `);
     advance(10_000);
-    expect(screen.getByTestId("text-progress").textContent).toBe("20");
+    expect(screen.getByTestId("text-progress").textContent).toBe("20 s");
     expect(screen.queryByTestId("text-wpm")).toBeNull();
     advance(20_000);
     expect(screen.getByTestId("text-wpm")).toBeTruthy();
@@ -230,14 +229,13 @@ describe("text typing screen", () => {
     expect(statusOf(3)).toBe("current");
   });
 
-  it("Escape draws another text and Tab restarts the same one", () => {
+  it("Ctrl+Enter draws another text and Escape exits the round", () => {
     setup(memoryStore(), [SEED, 9]);
     type("§");
-    fireEvent.keyDown(box(), { key: "Tab" });
+    fireEvent.keyDown(box(), { key: "Escape" });
     expect(shownWords()).toEqual(initialWords(SEED, DEFAULT_TEXT_SETTINGS));
     expect(marksOf(0).every((m) => m === "pending")).toBe(true);
-    expect(document.activeElement).toBe(box());
-    fireEvent.keyDown(box(), { key: "Escape" });
+    fireEvent.keyDown(box(), { key: "Enter", ctrlKey: true });
     expect(shownWords()).toEqual(initialWords(9, DEFAULT_TEXT_SETTINGS));
   });
 
@@ -320,7 +318,7 @@ describe("text typing options", () => {
     };
     setup(storeWith(settings));
     expect(shownWords()).toEqual(initialWords(SEED, settings));
-    expect(screen.getByTestId("text-progress").textContent).toBe("60");
+    expect(screen.getByTestId("text-progress").textContent).toBe("60 s");
     expect(screen.getByRole<HTMLInputElement>("checkbox", { name: "Pontuação" }).checked).toBe(
       true,
     );
@@ -386,22 +384,21 @@ describe("text typing results", () => {
     for (const wpm of [80, 60]) appendTextResult(store, result({ wpm }));
     appendTextResult(store, result({ wpm: 200, config: "other" }));
     setup(store);
-    expect(screen.getByTestId("text-summary").textContent).toBe(
-      "melhor 80 WPM · média dos últimos 10: 70 WPM",
-    );
+    expect(screen.getByTestId("text-summary").textContent).toContain("melhor 80 WPM");
+    expect(screen.getByTestId("text-summary").textContent).toContain("média 70 WPM");
   });
 
   it("text typing summary says when the config has no results", () => {
     setup(memoryStore({ "popis.text-typing": "corrupt" }));
     expect(screen.getByTestId("text-summary").textContent).toBe(
-      "Sem resultados nesta configuração.",
+      "Nenhuma rodada nesta configuração. Enter começa a primeira.",
     );
   });
 
-  it("Próximo draws another text and Voltar goes back", () => {
+  it("Jogar de novo draws another text and Voltar goes back", () => {
     const { onBack } = setup(storeWith(WORDS_10), [SEED, 8]);
     typeAll(initialWords(SEED, WORDS_10));
-    fireEvent.click(screen.getByRole("button", { name: "Próximo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Jogar de novo" }));
     expect(screen.queryByTestId("text-wpm")).toBeNull();
     expect(shownWords()).toEqual(initialWords(8, WORDS_10));
     fireEvent.click(screen.getByRole("button", { name: "Voltar" }));

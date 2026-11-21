@@ -89,7 +89,7 @@ function prompt() {
 describe("config screen", () => {
   it("config shows the POPIS acronym spelled out with bold initials", () => {
     setup();
-    expect(screen.getByRole("heading", { level: 1, name: "POPIS" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Aritmética" })).toBeTruthy();
     const full = screen.getByTestId("brand-acronym");
     expect(full.textContent).toBe("Practice Of Problem-solving In Sprints");
     expect(full.className).toContain("muted");
@@ -172,7 +172,7 @@ describe("game screen", () => {
     setup();
     start();
     expect(prompt()).toMatch(/^\d+ [+−×÷] \d+$/);
-    expect(screen.getByTestId("timer").textContent).toBe("120");
+    expect(screen.getByTestId("timer").textContent).toBe("120 s");
     expect(screen.getByTestId("score").textContent).toBe("0");
     expect(document.activeElement).toBe(answerBox());
   });
@@ -198,7 +198,7 @@ describe("game screen", () => {
     setup();
     start();
     advance(1500);
-    expect(screen.getByTestId("timer").textContent).toBe("119");
+    expect(screen.getByTestId("timer").textContent).toBe("119 s");
   });
 
   it.each(MODE_IDS.filter((m) => m !== "review"))(

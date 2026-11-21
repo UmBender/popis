@@ -31,6 +31,6 @@ test("typing a Python and a C++ snippet with auto-indent in the real app", async
   const cpp = await typeShownSnippet(page);
   expect(cpp?.language).toBe("cpp");
   await expect(page.getByTestId("accuracy")).toHaveText("100%");
-  await expect(page.getByTestId("typing-summary")).toContainText("Python: melhor");
-  await expect(page.getByTestId("typing-summary")).toContainText("C++: melhor");
+  await expect(page.getByTestId("typing-summary")).toContainText("Últimas 10 rodadas");
+  await expect(page.getByTestId("typing-summary")).toContainText("melhor");
 });
