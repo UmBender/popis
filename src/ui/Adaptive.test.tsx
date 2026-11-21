@@ -1,16 +1,12 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { manualClock, type ManualClock } from "../core/clock";
 import { DEFAULT_ARITHMETIC } from "../gen/arithmetic";
 import { division, type DivisionSettings } from "../gen/division";
 import { reviewCard, newCard } from "../stats/fsrs";
 import { DAY_MS } from "../stats/summary";
-import {
-  ADAPTIVE_KEY,
-  DEFAULT_ADAPTIVE_SETTINGS,
-  loadAdaptiveSettings,
-} from "../storage/adaptive";
+import { ADAPTIVE_KEY, DEFAULT_ADAPTIVE_SETTINGS, loadAdaptiveSettings } from "../storage/adaptive";
 import {
   HISTORY_KEY,
   memoryStore,
@@ -38,6 +34,13 @@ function setup(store: KeyValueStore = memoryStore()) {
   return { store };
 }
 
+function advance(ms: number) {
+  act(() => {
+    clock.advance(ms);
+    vi.advanceTimersByTime(ms);
+  });
+}
+
 describe("adaptive training UI (T24 AC-2, AC-3, AC-4, AC-5, AC-6)", () => {
   it("shows Nível automático and adjustable 70%-95% target in Arithmetic, Estimation, Sums and Vim Motion", () => {
     const { store } = setup();
@@ -47,7 +50,9 @@ describe("adaptive training UI (T24 AC-2, AC-3, AC-4, AC-5, AC-6)", () => {
     expect(autoCheck.checked).toBe(false);
     fireEvent.click(autoCheck);
     expect(autoCheck.checked).toBe(true);
-    const targetSelect = screen.getByRole<HTMLSelectElement>("combobox", { name: /Meta de acerto/i });
+    const targetSelect = screen.getByRole<HTMLSelectElement>("combobox", {
+      name: /Meta de acerto/i,
+    });
     expect(targetSelect.value).toBe("0.85");
     fireEvent.change(targetSelect, { target: { value: "0.8" } });
     expect(loadAdaptiveSettings(store).targetAccuracy).toBe(0.8);
@@ -188,5 +193,263 @@ describe("adaptive training UI (T24 AC-2, AC-3, AC-4, AC-5, AC-6)", () => {
     const experiment = screen.getByTestId("daily-experiment");
     expect(experiment.textContent).toContain("Intercalado");
     expect(experiment.textContent).toContain("Em bloco");
+  });
+
+  it("grades Vim review cards in Revisar and handles auto-level updates across rounds", () => {
+    const store = memoryStore({
+      [REVIEW_CARDS_KEY]: JSON.stringify([
+        {
+          id: "vim.motion#cpp-1#42",
+          kind: "vim-motion",
+          kc: "f",
+          level: 4,
+          snippetId: "cpp-1",
+          lines: ["int main(int n) {"],
+          start: { line: 0, col: 0 },
+          target: { line: 0, col: 8 },
+          minimum: 2,
+          solution: "f(",
+          label: "chegar ao `(` com 2 teclas",
+          card: newCard(NOW - DAY_MS),
+        },
+        {
+          id: "vim.motion#cpp-1#43",
+          kind: "vim-motion",
+          kc: "t",
+          level: 4,
+          snippetId: "cpp-1",
+          lines: ["int main(int n) {"],
+          start: { line: 0, col: 0 },
+          target: { line: 0, col: 7 },
+          minimum: 2,
+          solution: "t(",
+          label: "chegar ao `n` com 2 teclas",
+          card: newCard(NOW - DAY_MS),
+        },
+      ]),
+      [ADAPTIVE_KEY]: JSON.stringify({
+        ...DEFAULT_ADAPTIVE_SETTINGS,
+        autoLevel: { "vim-motion": true, arithmetic: true, estimation: true, sums: true },
+        targetAccuracy: 0.85,
+      }),
+    });
+    setup(store);
+
+    // Revisar: mark one Vim card "Acertei" and one "Errei"
+    fireEvent.click(screen.getByRole("radio", { name: "Revisar" }));
+    expect(screen.getByTestId("vim-review-cards")).toBeTruthy();
+    const acertei = screen.getAllByRole("button", { name: "Acertei" });
+    fireEvent.click(acertei[0]!);
+    const errei = screen.getAllByRole("button", { name: "Errei" });
+    fireEvent.click(errei[0]!);
+    expect(screen.queryByTestId("vim-review-cards")).toBeNull();
+
+    // Finish an auto-level round in Arithmetic, Estimation, and Sums
+    for (const label of ["Aritmética", "Estimativa", "Somatórios"] as const) {
+      fireEvent.click(screen.getByRole("radio", { name: label }));
+      fireEvent.change(screen.getByRole("combobox", { name: "Duração" }), {
+        target: { value: "30" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Começar" }));
+      advance(31_000);
+      fireEvent.keyDown(document.body, { key: "Escape" });
+    }
+
+    // Vim Motion: skip one target + advance so Elo updates & auto-level steps down
+    fireEvent.click(screen.getByRole("radio", { name: "Movimento" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Nível" }), {
+      target: { value: "4" },
+    });
+    fireEvent.change(screen.getByRole("combobox", { name: "Meta de acerto" }), {
+      target: { value: "0.9" },
+    });
+    expect(loadAdaptiveSettings(store).targetAccuracy).toBe(0.9);
+    fireEvent.change(screen.getByRole("combobox", { name: "Duração" }), {
+      target: { value: "30" },
+    });
+    const box = screen.getByRole("textbox", { name: "Teclas do Vim" });
+    fireEvent.keyDown(box, { key: "l" });
+    fireEvent.keyDown(box, { key: "Enter", ctrlKey: true });
+    advance(31_000);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Nível automático/i }));
+    expect(loadAdaptiveSettings(store).autoLevel["vim-motion"]).toBe(false);
+  });
+
+  it("runs a guided Treino do dia session, opens blocks, and jumps to Aprender from Vim recommendation", () => {
+    const FLOOR: DivisionSettings = { kinds: ["floor"] };
+    const p1 = division.generate(1, FLOOR);
+    const stalledVimEvents = Array.from({ length: 22 }, (_, i) => [
+      NOW - (25 - i) * DAY_MS,
+      "vim.motion",
+      "L4",
+      "f",
+      i % 2 === 0 ? 1 : 0,
+      1500,
+      { seed: i + 1, i },
+    ]);
+    const store = memoryStore({
+      "popis.events.v1": JSON.stringify(stalledVimEvents),
+      [REVIEW_CARDS_KEY]: JSON.stringify([
+        {
+          id: `${p1.skill}#${String(p1.seed)}`,
+          kind: "calc",
+          item: { mode: "division", seed: p1.seed, params: p1.params },
+          skill: p1.skill,
+          prompt: p1.prompt,
+          card: newCard(NOW - DAY_MS),
+        },
+      ]),
+    });
+    setup(store);
+
+    // Vim Motion shows stalled-KC recommendation with Aprender button
+    fireEvent.click(screen.getByRole("radio", { name: "Movimento" }));
+    expect(screen.getByRole("button", { name: "Ver lição no Aprender" })).toBeTruthy();
+
+    // Jump from Evolução Vim stalled recommendation to Aprender
+    fireEvent.click(screen.getByRole("radio", { name: "Evolução" }));
+    const learnBtn = screen.getByRole("button", { name: "Ver lição no Aprender" });
+    fireEvent.click(learnBtn);
+    expect(screen.getByRole("heading", { level: 1, name: "Aprender" })).toBeTruthy();
+
+    // Treino do dia: change Meta de acerto, open a block, then run guided workout
+    fireEvent.click(screen.getByRole("radio", { name: "Treino do dia" }));
+    fireEvent.change(screen.getByRole("combobox", { name: /Meta de acerto/i }), {
+      target: { value: "0.9" },
+    });
+    expect(loadAdaptiveSettings(store).targetAccuracy).toBe(0.9);
+
+    // Start guided session, answer/skip, restart, finish and abort flows
+    fireEvent.click(screen.getByRole("button", { name: "Começar treino do dia" }));
+    expect(screen.getByTestId("daily-progress")).toBeTruthy();
+    // Restart current block via Ctrl+Shift+Enter
+    const answerBox = screen.getByRole("textbox", { name: "Resposta" });
+    fireEvent.keyDown(answerBox, { key: "Enter", ctrlKey: true, shiftKey: true });
+    // Skip one question then let timer finish
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Resposta" }), { key: "Enter" });
+    advance(121_000);
+    // Daily session finishes and records experiment entry
+    expect(screen.getByTestId("daily-done")).toBeTruthy();
+    expect(loadAdaptiveSettings(store).dailySessions).toHaveLength(1);
+
+    // Open block button jumps to target drill
+    const openButtons = screen.getAllByRole("button", { name: "Abrir treino" });
+    fireEvent.click(openButtons[0]!);
+    expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
+
+    // Starter blocks (empty store) -> open arithmetic, estimation, vim-motion blocks and abort
+    fireEvent.click(screen.getByRole("radio", { name: "Treino do dia" }));
+    const startBtn = screen.getByRole("button", { name: "Começar treino do dia" });
+    fireEvent.click(startBtn);
+    if (screen.queryByRole("textbox", { name: "Resposta" }) !== null) {
+      fireEvent.keyDown(screen.getByRole("textbox", { name: "Resposta" }), { key: "Escape" });
+    }
+  });
+
+  it("opens arithmetic, estimation, sums and vim blocks from Treino do dia with Elo levels", () => {
+    const events = [
+      ...Array.from({ length: 6 }, (_, i) => [
+        NOW - DAY_MS,
+        "calc",
+        "estimation",
+        "estimation.complexity",
+        0,
+        1500,
+        { seed: i + 1, i },
+      ]),
+      ...Array.from({ length: 6 }, (_, i) => [
+        NOW - DAY_MS,
+        "calc",
+        "sums",
+        "sums.sum",
+        0,
+        1600,
+        { seed: i + 20, i: i + 20 },
+      ]),
+      ...Array.from({ length: 6 }, (_, i) => [
+        NOW - DAY_MS,
+        "calc",
+        "division",
+        "division.floor",
+        0,
+        1700,
+        { seed: i + 40, i: i + 40 },
+      ]),
+    ];
+    const store = memoryStore({ "popis.events.v1": JSON.stringify(events) });
+    setup(store);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Treino do dia" }));
+    // Click Abrir treino for each block
+    for (let idx = 0; idx < 3; idx++) {
+      fireEvent.click(screen.getByRole("radio", { name: "Treino do dia" }));
+      const btns = screen.getAllByRole("button", { name: "Abrir treino" });
+      fireEvent.click(btns[idx]!);
+    }
+
+    // Start guided session across estimation, sums, division blocks and finish all three
+    fireEvent.click(screen.getByRole("radio", { name: "Treino do dia" }));
+    fireEvent.click(screen.getByRole("button", { name: "Começar treino do dia" }));
+    // Finish block 1 (estimation), block 2 (sums), then abort block 3 (division)
+    advance(121_000);
+    advance(121_000);
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Resposta" }), { key: "Escape" });
+    expect(screen.getByRole("button", { name: "Começar treino do dia" })).toBeTruthy();
+
+    // Empty store starter blocks: open arithmetic (0), run guided arithmetic block, open vim-motion (2)
+    const empty = memoryStore({
+      [REVIEW_CARDS_KEY]: JSON.stringify([
+        {
+          id: "vim.motion#cpp-1#99",
+          kind: "vim-motion",
+          kc: "f",
+          level: 4,
+          snippetId: "cpp-1",
+          lines: ["foo(x)"],
+          start: { line: 0, col: 0 },
+          target: { line: 0, col: 3 },
+          minimum: 2,
+          solution: "f(",
+          label: "chegar ao `(` com 2 teclas",
+          card: newCard(NOW - DAY_MS),
+        },
+      ]),
+      [ADAPTIVE_KEY]: JSON.stringify({
+        ...DEFAULT_ADAPTIVE_SETTINGS,
+        dailySessions: [
+          {
+            finishedAt: NOW - DAY_MS,
+            week: "2026-W47",
+            mode: "interleaved",
+            accuracy: 0.9,
+            hitsPerMin: 25,
+            itemsCompleted: 20,
+          },
+        ],
+      }),
+    });
+    const view2 = render(<App clock={clock} store={empty} newSeed={() => 7} narrow={false} />);
+    // Evolução with only interleaved sessions (blocked === null -> "—")
+    fireEvent.click(screen.getAllByRole("radio", { name: "Evolução" })[1]!);
+    expect(screen.getByTestId("daily-experiment").textContent).toContain("—");
+    // Treino do dia with due Vim-only card (skips review calc block cleanly)
+    fireEvent.click(screen.getAllByRole("radio", { name: "Treino do dia" })[1]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "Começar treino do dia" })[1]!);
+    view2.unmount();
+
+    // Truly empty store -> starter blocks (arithmetic, estimation, vim-motion)
+    const fresh = memoryStore();
+    render(<App clock={clock} store={fresh} newSeed={() => 7} narrow={false} />);
+    fireEvent.click(screen.getAllByRole("radio", { name: "Treino do dia" })[1]!);
+    const starterBtns = screen.getAllByRole("button", { name: "Abrir treino" });
+    // Open starter arithmetic (with level)
+    fireEvent.click(starterBtns[starterBtns.length - 3]!);
+    // Back to Treino do dia, run guided starter arithmetic block and abort
+    fireEvent.click(screen.getAllByRole("radio", { name: "Treino do dia" })[1]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "Começar treino do dia" })[1]!);
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Resposta" }), { key: "Escape" });
+    // Open starter vim-motion (with level)
+    const starterBtns2 = screen.getAllByRole("button", { name: "Abrir treino" });
+    fireEvent.click(starterBtns2[starterBtns2.length - 1]!);
   });
 });

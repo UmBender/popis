@@ -52,6 +52,7 @@ import {
   type VimReviewCard,
 } from "../storage/review";
 import { loadVimSettings, saveVimSettings, type VimDrill } from "../storage/vim";
+import { skillLabel } from "./format";
 import { Brand } from "./Brand";
 import { ConfigScreen, configErrors } from "./ConfigScreen";
 import { DailyScreen } from "./DailyScreen";
@@ -268,6 +269,7 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
         events: modeEvents,
         kcs: kcStats(modeEvents),
         now: nowWall,
+        labelOfKc: skillLabel,
       }),
     [settings.mode, modePlateau, modeEvents, nowWall],
   );

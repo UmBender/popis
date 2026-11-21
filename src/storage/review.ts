@@ -148,11 +148,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isPos(value: unknown): value is Pos {
-  return (
-    isRecord(value) &&
-    typeof value["line"] === "number" &&
-    typeof value["col"] === "number"
-  );
+  return isRecord(value) && typeof value["line"] === "number" && typeof value["col"] === "number";
 }
 
 function isFsrsCard(value: unknown): value is FsrsCard {
@@ -224,9 +220,10 @@ export function syncReviewDeck(
   let changed = false;
 
   for (const item of reviewItems(history)) {
-    const mode = item.mode;
-    if (!isMode(mode) || mode === "review") continue;
-    const problem = MODES[mode].generator.generate(item.seed, item.params as never);
+    const problem = MODES[item.mode as Exclude<keyof typeof MODES, "review">].generator.generate(
+      item.seed,
+      item.params as never,
+    );
     const id = `${problem.skill}#${String(problem.seed)}`;
     if (seen.has(id)) continue;
     seen.add(id);
@@ -282,9 +279,7 @@ export function recordSessionReview(
     }
 
     const slow =
-      medianMs !== null
-        ? attempt.timeMs > medianMs * SLOW_FACTOR
-        : needsReview(attempt, means);
+      medianMs !== null ? attempt.timeMs > medianMs * SLOW_FACTOR : needsReview(attempt, means);
     const shouldAdd = attempt.outcome === "skipped" || attempt.corrections > 0 || slow;
     if (!shouldAdd) continue;
 

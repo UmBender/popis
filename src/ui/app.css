@@ -1612,6 +1612,20 @@ th {
   gap: var(--space-1);
 }
 
+.daily-block button {
+  align-self: flex-start;
+  padding-left: 0;
+}
+
+.progress-section > h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+[data-testid="daily-experiment"] {
+  margin-bottom: var(--space-3);
+}
+
 .daily-block-head {
   display: flex;
   flex-wrap: wrap;

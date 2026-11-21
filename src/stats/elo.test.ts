@@ -117,16 +117,7 @@ describe("elo rating system (AC-1)", () => {
         const itemRating = levels[lvlIdx] as number;
         const pWin = expectedWin(s.rating, itemRating);
         const ok = rng.next() < pWin;
-        events.push(
-          ev(
-            s.kc,
-            ok,
-            1000,
-            NOW - (200 - trial) * 1000,
-            `L${String(lvlIdx + 1)}`,
-            i++,
-          ),
-        );
+        events.push(ev(s.kc, ok, 1000, NOW - (200 - trial) * 1000, `L${String(lvlIdx + 1)}`, i++));
       }
     }
     const state = replayElo(events, NOW);
@@ -142,20 +133,12 @@ describe("automatic difficulty selection (AC-2)", () => {
     const ratings = defaultLevelRatings(7);
     expect(DEFAULT_TARGET_ACCURACY).toBe(0.85);
     // Very high user rating at level 1 can only step up to level 2.
-    expect(
-      chooseNextLevel({ currentLevel: 1, userRating: 2000, levelRatings: ratings }),
-    ).toBe(2);
+    expect(chooseNextLevel({ currentLevel: 1, userRating: 2000, levelRatings: ratings })).toBe(2);
     // Very low user rating at level 7 can only step down to level 6.
-    expect(
-      chooseNextLevel({ currentLevel: 7, userRating: 200, levelRatings: ratings }),
-    ).toBe(6);
+    expect(chooseNextLevel({ currentLevel: 7, userRating: 200, levelRatings: ratings })).toBe(6);
     // Stays within bounds at edges.
-    expect(
-      chooseNextLevel({ currentLevel: 1, userRating: 200, levelRatings: ratings }),
-    ).toBe(1);
-    expect(
-      chooseNextLevel({ currentLevel: 7, userRating: 2500, levelRatings: ratings }),
-    ).toBe(7);
+    expect(chooseNextLevel({ currentLevel: 1, userRating: 200, levelRatings: ratings })).toBe(1);
+    expect(chooseNextLevel({ currentLevel: 7, userRating: 2500, levelRatings: ratings })).toBe(7);
   });
 
   it.each([0.7, 0.85, 0.95])(
@@ -215,6 +198,7 @@ describe("automatic difficulty selection (AC-2)", () => {
     expect(levelOfArithmetic(a1)).toBe(1);
     expect(levelOfArithmetic(DEFAULT_ARITHMETIC)).toBe(4);
     expect(levelOfArithmetic(a5)).toBe(5);
+    expect(levelOfArithmetic({ ...DEFAULT_ARITHMETIC, addLeft: { min: 10, max: 1000 } })).toBe(5);
 
     expect(levelOfEstimation(estimationForLevel(1))).toBe(1);
     expect(levelOfEstimation(estimationForLevel(2))).toBe(2);

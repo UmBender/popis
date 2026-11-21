@@ -8,11 +8,7 @@ import {
   type ConfigSeries,
   type DrillProgress,
 } from "../../stats/progress";
-import {
-  compareDailyModes,
-  recommendAll,
-  type Recommendation,
-} from "../../stats/recommend";
+import { compareDailyModes, recommendAll, type Recommendation } from "../../stats/recommend";
 import { loadAdaptiveSettings } from "../../storage/adaptive";
 import { loadAllEvents, loadEvents } from "../../storage/events";
 import { loadGoals, removeGoal, saveGoal, type StoredGoals } from "../../storage/goals";
@@ -38,7 +34,12 @@ const findVimLesson = (kc: string): string | undefined =>
   (lessonForHelpKey(kc) ?? lessonForHelpKey(`${kc}{c}`))?.id;
 
 /** Progress dashboard ("Evolução"): curves, plateaus, KCs, typing stats, recommendations and goals (T23, T24). */
-export function ProgressScreen({ store, clock, focusItem, onLearn }: ProgressScreenProps): ReactNode {
+export function ProgressScreen({
+  store,
+  clock,
+  focusItem,
+  onLearn,
+}: ProgressScreenProps): ReactNode {
   const now = clock.wallTime();
   const [goals, setGoals] = useState<StoredGoals>(() => loadGoals(store));
 
@@ -60,7 +61,7 @@ export function ProgressScreen({ store, clock, focusItem, onLearn }: ProgressScr
   );
 
   const recsByDrill = useMemo(
-    () => recommendAll(drills, allEvents, now, findVimLesson),
+    () => recommendAll(drills, allEvents, now, findVimLesson, skillLabel),
     [drills, allEvents, now],
   );
 

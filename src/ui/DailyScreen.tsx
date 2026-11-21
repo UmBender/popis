@@ -176,14 +176,13 @@ export function DailyScreen({
     }
   };
 
-  const handleBlockFinish = (finished: FinishedSession<JsonValue>) => {
-    if (active === null) return;
+  const handleBlockFinish = (run: ActiveRun, finished: FinishedSession<JsonValue>) => {
     const at = clock.wallTime();
     recordSessionReview(
       store,
       {
         version: 1,
-        mode: active.mode,
+        mode: run.mode,
         finishedAt: at,
         durationMs: finished.config.durationMs,
         seed: finished.config.seed,
@@ -196,10 +195,10 @@ export function DailyScreen({
     const answered = finished.log.filter((a) => a.outcome !== "timeout");
     const correct = answered.filter((a) => a.outcome === "correct").length;
     startBlockAt(
-      active.blockIndex + 1,
-      active.completedCorrect + correct,
-      active.completedTotal + answered.length,
-      active.totalDurationMs + finished.config.durationMs,
+      run.blockIndex + 1,
+      run.completedCorrect + correct,
+      run.completedTotal + answered.length,
+      run.totalDurationMs + finished.config.durationMs,
     );
   };
 
@@ -254,10 +253,11 @@ export function DailyScreen({
             <li key={block.id} className="daily-block">
               <div className="daily-block-head">
                 <strong>{block.title}</strong>
-                {block.level !== null && (
-                  <span className="muted">{`Nível ${String(block.level)}`}</span>
-                )}
-                <span className="muted">{`${String(Math.round(block.durationS / 60))} min`}</span>
+                <span className="muted">
+                  {block.level !== null
+                    ? `Nível ${String(block.level)} · ${String(Math.round(block.durationS / 60))} min`
+                    : `${String(Math.round(block.durationS / 60))} min`}
+                </span>
               </div>
               <p className="daily-block-reason muted" data-testid="daily-block-reason">
                 {block.reason}
@@ -287,7 +287,9 @@ export function DailyScreen({
               initial={active.session}
               clock={clock}
               mode={active.mode}
-              onFinish={handleBlockFinish}
+              onFinish={(finished) => {
+                handleBlockFinish(active, finished);
+              }}
               onAbort={abortRun}
               onRestart={() => {
                 startBlockAt(

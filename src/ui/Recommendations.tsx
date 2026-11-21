@@ -8,11 +8,7 @@ type Props = {
 };
 
 /** Honest training recommendations shown in item panels and Evolução (AC-5). */
-export function Recommendations({
-  items,
-  testId = "recommendations",
-  onLearn,
-}: Props): ReactNode {
+export function Recommendations({ items, testId = "recommendations", onLearn }: Props): ReactNode {
   if (items.length === 0) return null;
   return (
     <ul className="recommendations" data-testid={testId} aria-label="Recomendações">

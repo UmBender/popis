@@ -172,12 +172,72 @@ describe("recommendations (AC-5)", () => {
           bigrams: [],
           charErrors: [],
         },
+        {
+          id: "vim-motion",
+          label: "Vim: Movimento",
+          configs: [],
+          kcs: [],
+          kcCurve: [],
+          bigrams: [],
+          charErrors: [],
+        },
+        {
+          id: "vim-edit",
+          label: "Vim: Edição",
+          configs: [],
+          kcs: [],
+          kcCurve: [],
+          bigrams: [],
+          charErrors: [],
+        },
+        {
+          id: "typing",
+          label: "Digitação: Código",
+          configs: [],
+          kcs: [],
+          kcCurve: [],
+          bigrams: [],
+          charErrors: [],
+        },
+        {
+          id: "text",
+          label: "Digitação: Texto",
+          configs: [],
+          kcs: [],
+          kcCurve: [],
+          bigrams: [],
+          charErrors: [],
+        },
       ],
-      events,
+      [
+        ...events,
+        makeEvent("vim.motion", "f", true, 0, 100),
+        makeEvent("vim.edit", "dd", true, 500, 101),
+        makeEvent("typing.code", "cpp", true, 400, 102),
+        makeEvent("typing.text", "pt", true, 400, 103),
+      ],
       NOW,
     );
     expect(map["arithmetic"]?.some((r) => r.kind === "plateau")).toBe(true);
     expect(map["arithmetic"]?.some((r) => r.kind === "low-accuracy")).toBe(true);
+    expect(map["vim-motion"]).toEqual([]);
+    expect(map["vim-edit"]).toEqual([]);
+    expect(map["typing"]).toEqual([]);
+    expect(map["text"]).toEqual([]);
+
+    // Zero-mean times do not trigger high-accuracy CV rule
+    const zeroTimes = Array.from({ length: 12 }, (_, i) =>
+      makeEvent("calc", "arithmetic.add", true, 0, i),
+    );
+    expect(
+      recommendForDrill({
+        drillId: "arithmetic",
+        plateau: null,
+        events: zeroTimes,
+        kcs: kcStats(zeroTimes),
+        now: NOW,
+      }),
+    ).toEqual([]);
   });
 });
 
@@ -246,10 +306,38 @@ describe("daily plan (AC-4) and weekly experiment comparison (AC-6)", () => {
 
   it("compareDailyModes compares interleaved and blocked gains across weeks", () => {
     const sessions: DailySessionRecord[] = [
-      { finishedAt: NOW - 14 * DAY_MS, week: "2026-W45", mode: "interleaved", accuracy: 0.8, hitsPerMin: 20, itemsCompleted: 30 },
-      { finishedAt: NOW - 12 * DAY_MS, week: "2026-W45", mode: "interleaved", accuracy: 0.86, hitsPerMin: 26, itemsCompleted: 35 },
-      { finishedAt: NOW - 7 * DAY_MS, week: "2026-W46", mode: "blocked", accuracy: 0.82, hitsPerMin: 24, itemsCompleted: 30 },
-      { finishedAt: NOW - 5 * DAY_MS, week: "2026-W46", mode: "blocked", accuracy: 0.84, hitsPerMin: 27, itemsCompleted: 32 },
+      {
+        finishedAt: NOW - 14 * DAY_MS,
+        week: "2026-W45",
+        mode: "interleaved",
+        accuracy: 0.8,
+        hitsPerMin: 20,
+        itemsCompleted: 30,
+      },
+      {
+        finishedAt: NOW - 12 * DAY_MS,
+        week: "2026-W45",
+        mode: "interleaved",
+        accuracy: 0.86,
+        hitsPerMin: 26,
+        itemsCompleted: 35,
+      },
+      {
+        finishedAt: NOW - 7 * DAY_MS,
+        week: "2026-W46",
+        mode: "blocked",
+        accuracy: 0.82,
+        hitsPerMin: 24,
+        itemsCompleted: 30,
+      },
+      {
+        finishedAt: NOW - 5 * DAY_MS,
+        week: "2026-W46",
+        mode: "blocked",
+        accuracy: 0.84,
+        hitsPerMin: 27,
+        itemsCompleted: 32,
+      },
     ];
     const summary = compareDailyModes(sessions);
     expect(summary.interleaved?.sessions).toBe(2);
@@ -260,5 +348,41 @@ describe("daily plan (AC-4) and weekly experiment comparison (AC-6)", () => {
 
     const empty = compareDailyModes([]);
     expect(empty).toEqual({ interleaved: null, blocked: null });
+  });
+
+  it("handles due-only plans, multiple due cards, vim-edit KCs and unknown calc prefixes", () => {
+    const p1 = division.generate(1, { kinds: ["floor"] });
+    const p2 = division.generate(2, { kinds: ["floor"] });
+    const dueCards: ReviewCard[] = [p1, p2].map((p) => ({
+      id: `${p.skill}#${String(p.seed)}`,
+      kind: "calc",
+      item: { mode: "division", seed: p.seed, params: p.params },
+      skill: p.skill,
+      prompt: p.prompt,
+      card: newCard(NOW),
+    }));
+
+    const dueOnly = buildDailyPlan({
+      dueCards,
+      events: [],
+      elo: { users: {}, items: {} },
+      mode: "interleaved",
+    });
+    expect(dueOnly.blocks).toHaveLength(1);
+    expect(dueOnly.blocks[0]?.reason).toBe("2 cartões vencidos no Revisar");
+
+    const mixedEvents: TrainingEvent[] = [
+      ...Array.from({ length: 5 }, (_, i) => makeEvent("vim.edit", "dd", true, 1200, i)),
+      ...Array.from({ length: 5 }, (_, i) => makeEvent("calc", "unknown.op", true, 1100, i + 10)),
+    ];
+    const mixed = buildDailyPlan({
+      dueCards: [],
+      events: mixedEvents,
+      elo: { users: {}, items: {} },
+      mode: "blocked",
+    });
+    expect(mixed.blocks.some((b) => b.drill === "vim-edit" && b.level === null)).toBe(true);
+    expect(mixed.blocks.some((b) => b.drill === "arithmetic")).toBe(true);
+    expect(mixed.blocks.some((b) => b.reason.includes("menores BIS"))).toBe(true);
   });
 });

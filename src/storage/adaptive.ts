@@ -98,8 +98,7 @@ export function parseAdaptiveSettings(value: unknown): AdaptiveSettings {
       : DEFAULT_TARGET_ACCURACY;
 
   const dailyMode = isDailyMode(value["dailyMode"]) ? value["dailyMode"] : "interleaved";
-  const dailyModeWeek =
-    typeof value["dailyModeWeek"] === "string" ? value["dailyModeWeek"] : null;
+  const dailyModeWeek = typeof value["dailyModeWeek"] === "string" ? value["dailyModeWeek"] : null;
   const rawSessions = Array.isArray(value["dailySessions"])
     ? value["dailySessions"].filter(isDailySessionRecord)
     : [];

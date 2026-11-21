@@ -37,10 +37,7 @@ export function retrievability(elapsedDays: number, stability: number): number {
 }
 
 /** Interval in days until retrievability falls to `desiredRetention`. */
-export function nextIntervalDays(
-  stability: number,
-  desiredRetention = DEFAULT_RETENTION,
-): number {
+export function nextIntervalDays(stability: number, desiredRetention = DEFAULT_RETENTION): number {
   return (stability / FSRS_FACTOR) * (desiredRetention ** (1 / FSRS_DECAY) - 1);
 }
 

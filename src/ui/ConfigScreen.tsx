@@ -136,9 +136,7 @@ export function ConfigScreen({
   const reviewing = settings.mode === "review";
   const errors = configErrors(settings, reviewCount);
   const supportsAutoLevel =
-    settings.mode === "arithmetic" ||
-    settings.mode === "estimation" ||
-    settings.mode === "sums";
+    settings.mode === "arithmetic" || settings.mode === "estimation" || settings.mode === "sums";
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -312,12 +310,17 @@ export function ConfigScreen({
           </select>
         </label>
 
-        {errors.length > 0 && (
+        {errors.length > 0 && !(reviewing && vimReviewCards.length > 0) && (
           <ul role="alert" className="errors">
             {errors.map((e) => (
               <li key={e}>{ERROR_MESSAGES[e]}</li>
             ))}
           </ul>
+        )}
+        {reviewing && reviewCount === 0 && vimReviewCards.length > 0 && (
+          <p className="muted">
+            Nenhuma questão de cálculo vencida — revise os comandos de Vim acima.
+          </p>
         )}
 
         <Recommendations items={recommendations} />

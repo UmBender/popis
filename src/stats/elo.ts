@@ -84,7 +84,10 @@ export const ESTIMATION_LEVELS: readonly EstimationSettings[] = [
   { kinds: ["complexity", "magnitude", "overflow"] },
 ];
 
-export const SUMS_LEVELS: readonly SumsSettings[] = [{ kinds: ["sum"] }, { kinds: ["sum", "loop"] }];
+export const SUMS_LEVELS: readonly SumsSettings[] = [
+  { kinds: ["sum"] },
+  { kinds: ["sum", "loop"] },
+];
 
 /** Decreasing K factor per Pelánek (2016): `K(n) = K_init / (1 + K_decay * n)`. */
 export function kFactor(responses: number): number {
@@ -179,10 +182,11 @@ export function replayElo(events: readonly TrainingEvent[], now: number): EloSta
   const items: Record<string, EloEntry> = {};
 
   for (const event of sorted) {
-    if (!targetByKc.has(event.kc)) {
-      targetByKc.set(event.kc, kcTargetTimeMs(sorted, event.kc, now));
+    let targetMs = targetByKc.get(event.kc);
+    if (targetMs === undefined) {
+      targetMs = kcTargetTimeMs(sorted, event.kc, now);
+      targetByKc.set(event.kc, targetMs);
     }
-    const targetMs = targetByKc.get(event.kc) ?? null;
     const itemKey = `${event.drill}:${event.config}`;
     const userEntry = users[event.kc] ?? { rating: INITIAL_ELO, count: 0 };
     const itemEntry = items[itemKey] ?? { rating: INITIAL_ELO, count: 0 };
@@ -211,10 +215,7 @@ function clampLevel(level: number, max: number): number {
   return Math.min(max, Math.max(1, Math.round(level)));
 }
 
-export function arithmeticForLevel(
-  level: number,
-  current: ArithmeticSettings,
-): ArithmeticSettings {
+export function arithmeticForLevel(level: number, current: ArithmeticSettings): ArithmeticSettings {
   const preset = ARITHMETIC_LEVELS[clampLevel(level, ARITHMETIC_LEVELS.length) - 1]!;
   return { ...current, ...preset };
 }

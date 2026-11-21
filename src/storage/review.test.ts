@@ -247,4 +247,123 @@ describe("FSRS review deck (AC-3)", () => {
     expect(dueReviewCards(after, NOW)).toHaveLength(0);
     expect(store.getItem(REVIEW_CARDS_KEY)).not.toBeNull();
   });
+
+  it("covers whitespace Vim labels, invalid stored cards, existing card updates and timeouts", () => {
+    expect(formatVimCardLabel(["   "], { line: 0, col: 0 }, "w", 1)).toBe("usar `w` com 1 tecla");
+    expect(formatVimCardLabel(["foo("], { line: 0, col: 3 }, "f(", 1)).toBe(
+      "chegar ao `(` com 1 tecla",
+    );
+    expect(formatVimCardLabel(["   "], { line: 0, col: 0 }, "2w", 2)).toBe(
+      "usar `2w` com 2 teclas",
+    );
+    expect(formatVimCardLabel([], { line: 5, col: 0 }, "gg", 2)).toBe("usar `gg` com 2 teclas");
+
+    const store = memoryStore({
+      [REVIEW_CARDS_KEY]: JSON.stringify([
+        null,
+        {
+          id: "x",
+          kind: "other",
+          card: { stability: 1, difficulty: 5, dueAt: 0, lastReviewAt: null, reps: 0, lapses: 0 },
+        },
+        { id: "y", kind: "calc", card: "bad" },
+        {
+          id: "z",
+          kind: "calc",
+          item: null,
+          skill: "a",
+          prompt: "b",
+          card: { stability: 1, difficulty: 5, dueAt: 0, lastReviewAt: null, reps: 0, lapses: 0 },
+        },
+      ]),
+    });
+    expect(loadReviewCards(store)).toEqual([]);
+    // Unknown card id leaves deck unchanged
+    expect(reviewVimCardAttempt(store, "missing", 3, NOW)).toEqual([]);
+
+    // Syncing twice does not duplicate existing cards
+    const p1 = floor(1);
+    const hist = [session([attempt(p1, "skipped")])];
+    expect(syncReviewDeck(store, hist, NOW)).toHaveLength(1);
+    expect(syncReviewDeck(store, hist, NOW)).toHaveLength(1);
+
+    // Normal session: timeout ignored, fast clean ignored, invalid item ignored, existing card updated, slow with median added
+    const p2 = floor(2);
+    const badProb = { ...floor(3), skill: "unknown.x" };
+    const normalEvents = [
+      {
+        at: NOW - DAY_MS,
+        drill: "calc" as const,
+        config: "division",
+        kc: p1.skill,
+        ok: true,
+        timeMs: 1000,
+        extra: { seed: 99, i: 0 },
+      },
+    ];
+    const normalSess = session([
+      attempt(p1, "timeout", 5000),
+      attempt(p1, "correct", 900, 0),
+      attempt(p1, "skipped", 2000), // updates existing card
+      attempt(p2, "correct", 2500, 0), // slow relative to 1000ms median -> added
+      attempt(badProb, "skipped", 1000), // itemOf returns null -> skipped
+    ]);
+    const afterNormal = recordSessionReview(store, normalSess, normalEvents, NOW);
+    expect(afterNormal).toHaveLength(2);
+
+    // Vim motion: fast optimal ignored, slow/inefficient added, repeat updates existing
+    const t0 = generateTarget(7, 0, 4);
+    const t1 = generateTarget(7, 1, 4);
+    const vimEvents = [
+      {
+        at: NOW - DAY_MS,
+        drill: "vim.motion" as const,
+        config: "L4",
+        kc: t1.solution[0]!,
+        ok: true,
+        timeMs: 800,
+        extra: { seed: 5, i: 0 },
+      },
+    ];
+    const round1 = {
+      config: { level: 4 as const, durationMs: 60_000, seed: 7 },
+      results: [
+        {
+          index: 0,
+          seed: t0.seed,
+          snippetId: t0.snippetId,
+          keys: t0.minimum,
+          minimum: t0.minimum,
+          solution: t0.solution,
+          timeMs: 500,
+          skipped: false,
+        },
+        {
+          index: 1,
+          seed: t1.seed,
+          snippetId: t1.snippetId,
+          keys: t1.minimum,
+          minimum: t1.minimum,
+          solution: t1.solution,
+          timeMs: 2500, // slow vs 800ms median
+          skipped: false,
+        },
+      ],
+    };
+    const afterVim1 = recordVimMotionReview(store, round1, vimEvents, NOW);
+    expect(afterVim1.filter((c) => c.kind === "vim-motion")).toHaveLength(1);
+    // Repeat inefficient hit updates existing vim card; slow optimal repeat also updates it
+    const round2 = {
+      config: round1.config,
+      results: [{ ...round1.results[1]!, keys: t1.minimum + 6, skipped: false }],
+    };
+    const afterVim2 = recordVimMotionReview(store, round2, vimEvents, NOW + DAY_MS);
+    expect(afterVim2.find((c) => c.kind === "vim-motion")?.card.reps).toBe(1);
+    const round3 = {
+      config: round1.config,
+      results: [{ ...round1.results[1]!, keys: t1.minimum, timeMs: 3000, skipped: false }],
+    };
+    const afterVim3 = recordVimMotionReview(store, round3, vimEvents, NOW + 2 * DAY_MS);
+    expect(afterVim3.find((c) => c.kind === "vim-motion")?.card.reps).toBe(2);
+  });
 });

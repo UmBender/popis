@@ -42,16 +42,12 @@ describe("FSRS properties (AC-3)", () => {
 
   it("a lapse (Again) never increases stability", () => {
     fc.assert(
-      fc.property(
-        passRatingArb,
-        fc.double({ min: 0.5, max: 60, noNaN: true }),
-        (r1, days) => {
-          const c1 = reviewCard(newCard(T0), r1, T0);
-          const c2 = reviewCard(c1, 1, T0 + Math.round(days * DAY_MS));
-          expect(c2.stability).toBeLessThanOrEqual(c1.stability);
-          expect(c2.lapses).toBe(c1.lapses + 1);
-        },
-      ),
+      fc.property(passRatingArb, fc.double({ min: 0.5, max: 60, noNaN: true }), (r1, days) => {
+        const c1 = reviewCard(newCard(T0), r1, T0);
+        const c2 = reviewCard(c1, 1, T0 + Math.round(days * DAY_MS));
+        expect(c2.stability).toBeLessThanOrEqual(c1.stability);
+        expect(c2.lapses).toBe(c1.lapses + 1);
+      }),
     );
   });
 

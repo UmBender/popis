@@ -35,9 +35,16 @@ describe("adaptive storage (AC-2, AC-6)", () => {
   });
 
   it("clamps invalid targetAccuracy values back to default", () => {
-    const parsed = parseAdaptiveSettings({ targetAccuracy: 0.5, dailyMode: "unknown" });
+    const parsed = parseAdaptiveSettings({
+      autoLevel: "bad",
+      targetAccuracy: 0.5,
+      dailyMode: "unknown",
+      dailySessions: [null, 42, { finishedAt: "nope" }],
+    });
     expect(parsed.targetAccuracy).toBe(0.85);
     expect(parsed.dailyMode).toBe("interleaved");
+    expect(parsed.dailySessions).toEqual([]);
+    expect(parseAdaptiveSettings({ dailySessions: "bad" }).dailySessions).toEqual([]);
   });
 
   it("appends daily session records for the weekly experiment", () => {

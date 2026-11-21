@@ -12,7 +12,7 @@ import {
   type EloState,
 } from "./elo";
 import type { TrainingEvent } from "./event";
-import { CV_STABLE_THRESHOLD, kcStats, MIN_CV_HITS, type KcStat } from "./kc";
+import { CV_STABLE_THRESHOLD, kcStats, type KcStat } from "./kc";
 import type { Plateau } from "./learning";
 import type { DrillProgress } from "./progress";
 import { DAY_MS } from "./summary";
@@ -42,6 +42,7 @@ export type RecommendationInput = {
   readonly kcs: readonly KcStat[];
   readonly now: number;
   readonly findLesson?: (kc: string) => string | undefined;
+  readonly labelOfKc?: (kc: string) => string;
 };
 
 export type DailyBlock = {
@@ -75,7 +76,6 @@ export type DailyExperimentSummary = {
 };
 
 function cvOf(values: readonly number[]): number | null {
-  if (values.length < MIN_CV_HITS) return null;
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
   if (mean <= 0) return null;
   const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
@@ -102,7 +102,16 @@ export function isKcStalled(events: readonly TrainingEvent[], kc: string): boole
  */
 export function recommendForDrill(input: RecommendationInput): Recommendation[] {
   const recs: Recommendation[] = [];
-  const { drillId, isVim = false, plateau, events, kcs, now, findLesson } = input;
+  const {
+    drillId,
+    isVim = false,
+    plateau,
+    events,
+    kcs,
+    now,
+    findLesson,
+    labelOfKc = (kc) => kc,
+  } = input;
 
   // Rule 1: plateau for >= 2 weeks
   if (plateau !== null && now - plateau.since >= PLATEAU_RECOMMEND_MS) {
@@ -143,6 +152,7 @@ export function recommendForDrill(input: RecommendationInput): Recommendation[] 
   for (const stat of kcs) {
     if (!isKcStalled(events, stat.kc)) continue;
     const lessonId = isVim ? findLesson?.(stat.kc) : undefined;
+    const label = labelOfKc(stat.kc);
     recs.push({
       kind: "stalled-kc",
       drillId,
@@ -150,8 +160,8 @@ export function recommendForDrill(input: RecommendationInput): Recommendation[] 
       ...(lessonId !== undefined ? { lessonId } : {}),
       message:
         lessonId !== undefined
-          ? `\`${stat.kc}\` sem melhora após 20 oportunidades: revisar a lição no Aprender deve ajudar.`
-          : `\`${stat.kc}\` sem melhora após 20 oportunidades: um treino focado só nessa habilidade deve ajudar.`,
+          ? `\`${label}\` sem melhora após 20 oportunidades: revisar a lição no Aprender deve ajudar.`
+          : `\`${label}\` sem melhora após 20 oportunidades: um treino focado só nessa habilidade deve ajudar.`,
     });
   }
 
@@ -174,6 +184,7 @@ export function recommendAll(
   allEvents: readonly TrainingEvent[],
   now: number,
   findLesson?: (kc: string) => string | undefined,
+  labelOfKc?: (kc: string) => string,
 ): Readonly<Record<string, readonly Recommendation[]>> {
   const result: Record<string, readonly Recommendation[]> = {};
   for (const drill of drills) {
@@ -187,6 +198,7 @@ export function recommendAll(
       kcs: drill.kcs,
       now,
       findLesson,
+      labelOfKc,
     });
   }
   return result;
@@ -205,10 +217,7 @@ function drillOfEvent(event: TrainingEvent): Mode | "vim-motion" | "vim-edit" {
 
 function isAutoLevelDrill(drill: string): drill is AutoLevelDrill {
   return (
-    drill === "vim-motion" ||
-    drill === "arithmetic" ||
-    drill === "estimation" ||
-    drill === "sums"
+    drill === "vim-motion" || drill === "arithmetic" || drill === "estimation" || drill === "sums"
   );
 }
 
@@ -360,9 +369,7 @@ function summarizeMode(sessions: readonly DailySessionRecord[]): ModeExperimentS
 }
 
 /** Compares personal gains between interleaved and blocked weeks (AC-6). */
-export function compareDailyModes(
-  sessions: readonly DailySessionRecord[],
-): DailyExperimentSummary {
+export function compareDailyModes(sessions: readonly DailySessionRecord[]): DailyExperimentSummary {
   return {
     interleaved: summarizeMode(sessions.filter((s) => s.mode === "interleaved")),
     blocked: summarizeMode(sessions.filter((s) => s.mode === "blocked")),
