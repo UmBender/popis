@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { parseKeys } from "./keys";
 import {
+  idleMs,
   isRoundFinished,
+  markAssisted,
+  pauseRound,
   pressRoundKey,
   remainingMs,
+  resumeRound,
   roundStats,
   ROUND_DURATIONS_S,
   skipTarget,
@@ -151,6 +155,39 @@ describe("round", () => {
     expect(a.target).toEqual(b.target);
     const next = (r: Round) => typeKeys(r, r.target.solution, 0).target;
     expect(next(a)).toEqual(next(b));
+  });
+
+  it("markAssisted records assisted on the current target and resets on the next (T21 AC-4)", () => {
+    let round = startRound(CONFIG);
+    expect(round.assisted).toBe(false);
+    round = markAssisted(round);
+    expect(round.assisted).toBe(true);
+    round = typeKeys(round, round.target.solution, 1000);
+    expect(round.results[0]?.assisted).toBe(true);
+    expect(round.assisted).toBe(false);
+    round = typeKeys(round, round.target.solution, 2000);
+    expect(round.results[1]?.assisted).toBe(false);
+  });
+
+  it("pauseRound and resumeRound stop the clock and ignore keys while paused (T21 AC-6)", () => {
+    let round = pressRoundKey(startRound(CONFIG), "<Esc>", 1000);
+    expect(remainingMs(round, 6000)).toBe(25_000);
+    round = pauseRound(round, 6000);
+    expect(round.pausedAt).toBe(6000);
+    expect(remainingMs(round, 20_000)).toBe(25_000);
+    expect(idleMs(round, 20_000)).toBe(5000);
+    expect(tickRound(round, 50_000)).toBe(round);
+    expect(pressRoundKey(round, "l", 15_000)).toBe(round);
+    expect(skipTarget(round, 15_000)).toBe(round);
+
+    round = resumeRound(round, 20_000);
+    expect(round.pausedAt).toBeNull();
+    expect(remainingMs(round, 20_000)).toBe(25_000);
+    expect(remainingMs(round, 25_000)).toBe(20_000);
+    expect(idleMs(round, 20_000)).toBe(5000);
+    // Finishing after resuming excludes the 14 s paused interval from target timeMs.
+    round = typeKeys(round, round.target.solution, 22_000);
+    expect(round.results[0]?.timeMs).toBe(7000);
   });
 });
 

@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 import { generateEdit, type EditKind } from "./drills/edit";
 import {
   editEfficiency,
+  editIdleMs,
   editRemainingMs,
   editRoundStats,
   isEditRoundFinished,
+  markEditAssisted,
+  pauseEditRound,
   pressEditRoundKey,
+  resumeEditRound,
   skipEdit,
   startEditRound,
   tickEditRound,
@@ -176,5 +180,34 @@ describe("edit round", () => {
     expect(keys(startEditRound(config(["delete-word", "change-word"])))).toEqual(
       keys(startEditRound(config(["delete-word", "change-word"]))),
     );
+  });
+
+  it("markEditAssisted flags the current edit and resets on the next (T21 AC-4)", () => {
+    let round = startEditRound(config(["delete-line"]));
+    expect(round.assisted).toBe(false);
+    round = markEditAssisted(round);
+    expect(round.assisted).toBe(true);
+    round = type(round, round.target.reference, 1000);
+    expect(round.results[0]?.assisted).toBe(true);
+    expect(round.assisted).toBe(false);
+    round = type(round, round.target.reference, 2000);
+    expect(round.results[1]?.assisted).toBe(false);
+  });
+
+  it("pauseEditRound and resumeEditRound freeze time and block input while paused (T21 AC-6)", () => {
+    let round = pressEditRoundKey(startEditRound(config(["delete-line"], 30_000)), "j", 1000);
+    expect(editRemainingMs(round, 6000)).toBe(25_000);
+    round = pauseEditRound(round, 6000);
+    expect(round.pausedAt).toBe(6000);
+    expect(editRemainingMs(round, 40_000)).toBe(25_000);
+    expect(editIdleMs(round, 40_000)).toBe(5000);
+    expect(tickEditRound(round, 50_000)).toBe(round);
+    expect(pressEditRoundKey(round, "d", 15_000)).toBe(round);
+    expect(skipEdit(round, 15_000)).toBe(round);
+
+    round = resumeEditRound(round, 20_000);
+    expect(round.pausedAt).toBeNull();
+    expect(editRemainingMs(round, 20_000)).toBe(25_000);
+    expect(editRemainingMs(round, 25_000)).toBe(20_000);
   });
 });

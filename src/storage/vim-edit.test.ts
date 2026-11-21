@@ -4,6 +4,7 @@ import { memoryStore } from "./history";
 import {
   appendVimEditResult,
   appendVimResult,
+  assistedEditRoundCount,
   DEFAULT_VIM_EDIT_SETTINGS,
   loadVimEditResults,
   loadVimEditSettings,
@@ -144,5 +145,37 @@ describe("vimEditSummary", () => {
     const summary = vimEditSummary(results, 60);
     expect(summary?.best).toBe(40);
     expect(summary?.recentMean).toBeCloseTo(4.5);
+  });
+
+  it("edit settings preview option round-trips and validates (T21 AC-1)", () => {
+    const store = memoryStore();
+    saveVimEditSettings(store, {
+      drill: "edit",
+      durationS: 60,
+      kinds: ["delete-line"],
+      preview: "always",
+    });
+    expect(loadVimEditSettings(store).preview).toBe("always");
+    expect(parseVimEditSettings({ drill: "edit", preview: "bogus" }).preview).toBeUndefined();
+  });
+
+  it("legacy edit results without assisted load as unassisted and assisted rounds are excluded (T21 AC-4)", () => {
+    const legacy = {
+      version: 1,
+      kind: "edit",
+      durationS: 60,
+      seed: 1,
+      reached: 6,
+      skipped: 0,
+      efficiency: 1,
+      finishedAt: 1,
+    };
+    const store = memoryStore({ [VIM_KEY]: JSON.stringify([legacy]) });
+    expect(loadVimEditResults(store)[0]?.assisted).toBe(false);
+    appendVimEditResult(store, edit({ seed: 2, reached: 99, assisted: true }));
+    appendVimEditResult(store, edit({ seed: 3, reached: 10, assisted: false }));
+    const all = loadVimEditResults(store);
+    expect(vimEditSummary(all, 60)).toEqual({ best: 10, recentMean: 8 });
+    expect(assistedEditRoundCount(all, 60)).toBe(1);
   });
 });

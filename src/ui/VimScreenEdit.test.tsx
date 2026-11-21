@@ -25,9 +25,18 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function storeWith(kinds: readonly EditKind[] = EDIT_KINDS, durationS = 60): KeyValueStore {
+function storeWith(
+  kinds: readonly EditKind[] = EDIT_KINDS,
+  durationS = 60,
+  preview?: "off" | "always" | "stuck" | "auto",
+): KeyValueStore {
   return memoryStore({
-    [VIM_EDIT_SETTINGS_KEY]: JSON.stringify({ drill: "edit", durationS, kinds }),
+    [VIM_EDIT_SETTINGS_KEY]: JSON.stringify({
+      drill: "edit",
+      durationS,
+      kinds,
+      ...(preview !== undefined ? { preview } : {}),
+    }),
   });
 }
 
@@ -222,7 +231,8 @@ describe("VimScreen edit drill", () => {
   });
 
   it("the summary is for the edit drill alone", () => {
-    setup(storeWith(["append-semicolon"]));
+    // T21 AC-1/AC-4: empty store defaults to "auto" (assisted), so set preview "off" to test unassisted summary.
+    setup(storeWith(["append-semicolon"], 60, "off"));
     expect(screen.getByTestId("vim-summary").textContent).toBe(
       "Nenhuma rodada nesta configuração. Enter começa a primeira.",
     );
