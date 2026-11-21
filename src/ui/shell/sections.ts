@@ -1,8 +1,16 @@
 import { isMode, type Mode } from "../../modes";
 
-/** One entry of the tree: a mode of MODES or another screen (ADR-T18-1). */
+/** One entry of the tree: a mode of MODES or another screen (ADR-T18-1, ADR-T24-1). */
 export type ItemId =
-  Mode | "data" | "progress" | "typing" | "text" | "vim-learn" | "vim-motion" | "vim-edit";
+  | Mode
+  | "daily"
+  | "data"
+  | "progress"
+  | "typing"
+  | "text"
+  | "vim-learn"
+  | "vim-motion"
+  | "vim-edit";
 
 export type TreeItem = {
   readonly id: ItemId;
@@ -23,6 +31,7 @@ export type Folder = {
 type Row = readonly [id: ItemId, label: string, touch?: false];
 
 const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]])[] = [
+  ["hoje", "Hoje", [["daily", "Treino do dia"]]],
   [
     "calculo",
     "Cálculo",
@@ -77,11 +86,11 @@ export const SECTIONS: readonly Folder[] = TABLE.map(([id, label, rows]) => ({
   id,
   label,
   items: rows.map(([itemId, itemLabel, touch]) => {
-    position += 1;
+    const shortcut = itemId === "daily" ? null : position < 9 ? (position += 1) : null;
     return {
       id: itemId,
       label: itemLabel,
-      shortcut: position <= 9 ? position : null,
+      shortcut,
       touch: touch ?? true,
     };
   }),

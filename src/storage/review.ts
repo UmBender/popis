@@ -2,7 +2,40 @@ import type { Problem } from "../core/problem";
 import { modeOfSkill, type ReviewItem } from "../gen/review";
 import { isMode, MODES } from "../modes";
 import type { Attempt } from "../session/engine";
-import type { SessionRecord } from "./history";
+import type { TrainingEvent } from "../stats/event";
+import type { FsrsCard, Rating } from "../stats/fsrs";
+import type { Level } from "../vim/levels";
+import type { Round } from "../vim/round";
+import type { Pos } from "../vim/state";
+import type { KeyValueStore, SessionRecord } from "./history";
+
+export const REVIEW_CARDS_KEY = "popis.review-cards.v1";
+
+export type CalcReviewCard = {
+  readonly id: string;
+  readonly kind: "calc";
+  readonly item: ReviewItem;
+  readonly skill: string;
+  readonly prompt: string;
+  readonly card: FsrsCard;
+};
+
+export type VimReviewCard = {
+  readonly id: string;
+  readonly kind: "vim-motion";
+  readonly kc: string;
+  readonly level: Level;
+  readonly snippetId: string;
+  readonly lines: readonly string[];
+  readonly start: Pos;
+  readonly target: Pos;
+  readonly minimum: number;
+  readonly solution: string;
+  readonly label: string;
+  readonly card: FsrsCard;
+};
+
+export type ReviewCard = CalcReviewCard | VimReviewCard;
 
 /** At most this many items, the most recent first. */
 export const MAX_REVIEW_ITEMS = 50;
@@ -83,4 +116,60 @@ export function reviewItems(history: readonly SessionRecord[]): ReviewItem[] {
     }
   }
   return items;
+}
+
+export function formatVimCardLabel(
+  _lines: readonly string[],
+  _target: Pos,
+  _solution: string,
+  _minimum: number,
+): string {
+  throw new Error("todo");
+}
+
+export function loadReviewCards(_store: KeyValueStore): ReviewCard[] {
+  throw new Error("todo");
+}
+
+export function saveReviewCards(_store: KeyValueStore, _cards: readonly ReviewCard[]): void {
+  throw new Error("todo");
+}
+
+export function dueReviewCards(_cards: readonly ReviewCard[], _now: number): ReviewCard[] {
+  throw new Error("todo");
+}
+
+export function syncReviewDeck(
+  _store: KeyValueStore,
+  _history: readonly SessionRecord[],
+  _now: number,
+): ReviewCard[] {
+  throw new Error("todo");
+}
+
+export function recordSessionReview(
+  _store: KeyValueStore,
+  _session: SessionRecord,
+  _allEvents: readonly TrainingEvent[],
+  _now: number,
+): ReviewCard[] {
+  throw new Error("todo");
+}
+
+export function recordVimMotionReview(
+  _store: KeyValueStore,
+  _round: Pick<Round, "config" | "results">,
+  _allEvents: readonly TrainingEvent[],
+  _now: number,
+): ReviewCard[] {
+  throw new Error("todo");
+}
+
+export function reviewVimCardAttempt(
+  _store: KeyValueStore,
+  _cardId: string,
+  _rating: Rating,
+  _now: number,
+): ReviewCard[] {
+  throw new Error("todo");
 }
