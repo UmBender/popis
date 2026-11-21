@@ -1,7 +1,7 @@
 ---
 id: T19
 title: Coerência da interface
-status: review
+status: done
 depends_on: [T18]
 branch: task/T19-ui-coherence
 adrs: [ADR-T19-1]
