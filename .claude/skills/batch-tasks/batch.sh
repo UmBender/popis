@@ -383,7 +383,10 @@ verify_review() { # the session says review: the branch must exist and be green
 
 run_task() { # run_task ID BASE → 0 done (any final status), 1 stop the batch
     local id=$1 base=$2 mode=start reason="" result out err rc status note attempts
-    [[ $(get "$id" status) == running && -n $(get "$id" session) ]] && { mode=resume; reason="runner restarted"; }
+    # A crash during a task's first agy session leaves the conversation id
+    # only in the gate's file: resume it as well.
+    [[ $(get "$id" status) == running && ( -n $(get "$id" session) || -s $B/logs/$id.conversation ) ]] &&
+        { mode=resume; reason="runner restarted"; }
     while :; do
         past_stop && { log "stop time reached; $id stays $(get "$id" status)"; return 1; }
         wait_network || return 1
