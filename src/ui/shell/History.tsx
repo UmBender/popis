@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Plateau } from "../../stats/learning";
+import { formatSignedRate } from "../../stats/progress";
 import { sparkline } from "../verdicts";
 
 /** How many past rounds the panel shows. */
@@ -25,11 +26,14 @@ export type HistoryProps = {
   readonly sparkTestId?: string;
 };
 
-/** Shared "Últimas 10 rodadas" summary with sparkline, best and mean (ADR-T19-1). */
+/** Shared "Últimas 10 rodadas" summary with sparkline, best, mean, weekly rate and plateau (ADR-T19-1, T23 AC-5). */
 export function RoundHistory({
   scores,
   unit,
   excluded = 0,
+  weeklyRate = null,
+  plateau = null,
+  onProgress,
   testId,
   sparkTestId,
 }: HistoryProps): ReactNode {
@@ -68,6 +72,28 @@ export function RoundHistory({
         média <strong>{mean}</strong>
         {suffix}
       </span>
+      {weeklyRate !== null && (
+        <>
+          {" "}
+          <span data-testid="history-rate">{`${formatSignedRate(weeklyRate)}/sem`}</span>
+        </>
+      )}
+      {plateau !== null && (
+        <>
+          {" "}
+          <span className="progress-plateau" data-testid="history-plateau">
+            platô
+          </span>
+        </>
+      )}
+      {onProgress !== undefined && (
+        <>
+          {" "}
+          <button type="button" className="history-link" onClick={onProgress}>
+            Evolução
+          </button>
+        </>
+      )}
       {excludedNote !== null && (
         <>
           {" "}

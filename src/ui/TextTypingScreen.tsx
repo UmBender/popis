@@ -47,6 +47,7 @@ import {
 import { LIST_SIZES, TEXT_LANGUAGE_LABELS, TEXT_LANGUAGES } from "../typing/words";
 import { seconds } from "./format";
 import { matchTrainingKey } from "./keys";
+import { detectPlateau, weeklyRate } from "../stats/learning";
 import { RoundHistory } from "./shell/History";
 import { PanelTitle, useRunning } from "./shell/panel";
 import { Result } from "./shell/Result";
@@ -60,6 +61,8 @@ type Props = {
   readonly onBack: () => void;
   /** Told when a text starts and ends, so the window hides the tree (T18). */
   readonly onRunning?: (running: boolean) => void;
+  /** Jump to this item's section in Evolução (T23 AC-5). */
+  readonly onProgress?: () => void;
 };
 
 const TICK_MS = 100;
@@ -83,7 +86,14 @@ function startRun(settings: TextSettings, seed: number, run: number): Run {
 }
 
 /** Text typing test, judged word by word (ADR-T12-1). */
-export function TextTypingScreen({ clock, store, newSeed, onBack, onRunning }: Props): ReactNode {
+export function TextTypingScreen({
+  clock,
+  store,
+  newSeed,
+  onBack,
+  onRunning,
+  onProgress,
+}: Props): ReactNode {
   const [current, setCurrent] = useState<Run>(() =>
     startRun(loadTextSettings(store), newSeed(), 0),
   );
@@ -212,7 +222,11 @@ export function TextTypingScreen({ clock, store, newSeed, onBack, onRunning }: P
   const view = wordView(state);
   const typedInCurrent = [...(state.inputs[state.current] ?? "")].length;
   const configKey = textConfigKey(settings);
-  const historyScores = results.filter((r) => r.config === configKey).map((r) => r.wpm);
+  const historyMatched = results.filter((r) => r.config === configKey);
+  const historyScores = historyMatched.map((r) => r.wpm);
+  const historyPoints = historyMatched.map((r) => ({ at: r.finishedAt, score: r.wpm }));
+  const historyRate = weeklyRate(historyPoints, clock.wallTime());
+  const historyPlateau = detectPlateau(historyPoints);
   const quote = settings.source === "quote";
   const remainingS = Math.ceil(
     state.startedAt === null || state.timeLimitMs === null
@@ -442,7 +456,14 @@ export function TextTypingScreen({ clock, store, newSeed, onBack, onRunning }: P
         )}
       </div>
 
-      <RoundHistory scores={historyScores} unit="WPM" testId="text-summary" />
+      <RoundHistory
+        scores={historyScores}
+        unit="WPM"
+        weeklyRate={historyRate}
+        plateau={historyPlateau}
+        onProgress={onProgress}
+        testId="text-summary"
+      />
 
       <div className="actions">
         <button type="button" onClick={onBack}>

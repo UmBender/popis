@@ -9,6 +9,7 @@ import { PRIMES_LIMITS, type PrimesLimit } from "../gen/primes";
 import type { SumsKind } from "../gen/sums";
 import { MODES, type Mode } from "../modes";
 import { DURATIONS_S } from "../session/engine";
+import type { Plateau } from "../stats/learning";
 import type { StoredSettings } from "../storage/history";
 import { RoundHistory } from "./shell/History";
 import { PanelTitle } from "./shell/panel";
@@ -94,6 +95,9 @@ type Props = {
   readonly onStart: () => void;
   /** Scores of the last rounds in this configuration, oldest first (T18). */
   readonly history: readonly number[];
+  readonly weeklyRate?: number | null;
+  readonly plateau?: Plateau | null;
+  readonly onProgress?: () => void;
 };
 
 export function ConfigScreen({
@@ -102,6 +106,9 @@ export function ConfigScreen({
   onChange,
   onStart,
   history,
+  weeklyRate,
+  plateau,
+  onProgress,
 }: Props): ReactNode {
   const reviewing = settings.mode === "review";
   const errors = configErrors(settings, reviewCount);
@@ -219,7 +226,14 @@ export function ConfigScreen({
         )}
       </div>
 
-      <RoundHistory scores={history} testId="mode-history" sparkTestId="mode-spark" />
+      <RoundHistory
+        scores={history}
+        weeklyRate={weeklyRate}
+        plateau={plateau}
+        onProgress={onProgress}
+        testId="mode-history"
+        sparkTestId="mode-spark"
+      />
 
       <div className="actions">
         <button

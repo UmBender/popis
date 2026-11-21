@@ -61,6 +61,7 @@ import {
   type TargetResult,
 } from "../vim/round";
 import { matchTrainingKey } from "./keys";
+import { detectPlateau, weeklyRate } from "../stats/learning";
 import { RoundHistory } from "./shell/History";
 import { PanelTitle, Reference, useRunning } from "./shell/panel";
 import { Result } from "./shell/Result";
@@ -81,6 +82,8 @@ type Props = {
   readonly onLearn?: (lessonId?: string) => void;
   /** Switches to Motion or Edit from a completed Learn lesson (T20 AC-5). */
   readonly onPractice?: (drill: "motion" | "edit") => void;
+  /** Jump to this item's section in Evolução (T23 AC-5). */
+  readonly onProgress?: (sectionId: "vim-motion" | "vim-edit") => void;
   /** Lesson to open immediately when entering Learn (T20 AC-5). */
   readonly initialLesson?: string | null;
   /** Read-only Learn mode on touch screens (T20 AC-6). */
@@ -141,7 +144,15 @@ function newRun(settings: VimSettings, seed: number, run: number): Run {
 const percent = (fraction: number): string => `${String(Math.round(fraction * 100))}%`;
 
 /** The Vim motion drill (ADR-T13-1). */
-function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Props): ReactNode {
+function MotionDrill({
+  clock,
+  store,
+  newSeed,
+  onBack,
+  onRunning,
+  onLearn,
+  onProgress,
+}: Props): ReactNode {
   const [current, setCurrent] = useState<Run>(() => newRun(loadVimSettings(store), newSeed(), 0));
   const [results, setResults] = useState<readonly VimResult[]>(() => loadVimResults(store));
   const [defaultPreview] = useState<PreviewMode>(() => defaultPreviewMode(store));
@@ -394,9 +405,16 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
     box.current?.focus();
   }, [apply, clock]);
 
-  const historyScores = results
-    .filter((r) => r.level === settings.level && r.durationS === settings.durationS && !r.assisted)
-    .map((r) => r.reached);
+  const historyMatched = results.filter(
+    (r) => r.level === settings.level && r.durationS === settings.durationS && !r.assisted,
+  );
+  const historyScores = historyMatched.map((r) => r.reached);
+  const historyPoints = historyMatched.map((r) => ({
+    at: r.finishedAt,
+    score: (r.reached / r.durationS) * 60,
+  }));
+  const historyRate = weeklyRate(historyPoints, clock.wallTime());
+  const historyPlateau = detectPlateau(historyPoints);
   const excludedAssisted = assistedRoundCount(results, settings.level, settings.durationS);
   const { target, vim } = round;
   const remainingS = Math.ceil(remainingMs(round, Math.max(now, round.startedAt ?? now)) / 1000);
@@ -614,6 +632,15 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
       <RoundHistory
         scores={historyScores}
         excluded={excludedAssisted}
+        weeklyRate={historyRate}
+        plateau={historyPlateau}
+        onProgress={
+          onProgress !== undefined
+            ? () => {
+                onProgress("vim-motion");
+              }
+            : undefined
+        }
         unit="alvos"
         testId="vim-summary"
       />

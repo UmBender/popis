@@ -30,6 +30,7 @@ import {
 } from "../typing/engine";
 import { seconds } from "./format";
 import { matchTrainingKey } from "./keys";
+import { detectPlateau, weeklyRate } from "../stats/learning";
 import { RoundHistory } from "./shell/History";
 import { PanelTitle, useRunning } from "./shell/panel";
 import { Result } from "./shell/Result";
@@ -45,6 +46,8 @@ type Props = {
   readonly onBack: () => void;
   /** Told when a snippet starts and ends, so the window hides the tree (T18). */
   readonly onRunning?: (running: boolean) => void;
+  /** Jump to this item's section in Evolução (T23 AC-5). */
+  readonly onProgress?: () => void;
 };
 
 /** One snippet being typed. `run` changes on every restart, to refocus the box. */
@@ -64,7 +67,14 @@ function newRun(languages: readonly Language[], seed: number, run: number): Run 
 }
 
 /** Code typing test, apart from the game engine (ADR-T10-1). */
-export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props): ReactNode {
+export function TypingScreen({
+  clock,
+  store,
+  newSeed,
+  onBack,
+  onRunning,
+  onProgress,
+}: Props): ReactNode {
   const [current, setCurrent] = useState<Run>(() =>
     newRun(loadTypingLanguages(store), newSeed(), 0),
   );
@@ -157,7 +167,11 @@ export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props
     typing.startedAt === null
       ? 0
       : Math.floor(Math.max(0, (typing.finishedAt ?? now) - typing.startedAt) / 1000);
-  const historyScores = results.filter((r) => languages.includes(r.language)).map((r) => r.wpm);
+  const historyMatched = results.filter((r) => languages.includes(r.language));
+  const historyScores = historyMatched.map((r) => r.wpm);
+  const historyPoints = historyMatched.map((r) => ({ at: r.finishedAt, score: r.wpm }));
+  const historyRate = weeklyRate(historyPoints, clock.wallTime());
+  const historyPlateau = detectPlateau(historyPoints);
 
   return (
     <div className="screen typing">
@@ -257,7 +271,14 @@ export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props
         {finished && <TypingResults typing={typing} snippet={snippet} seed={seed} onNext={next} />}
       </div>
 
-      <RoundHistory scores={historyScores} unit="WPM" testId="typing-summary" />
+      <RoundHistory
+        scores={historyScores}
+        unit="WPM"
+        weeklyRate={historyRate}
+        plateau={historyPlateau}
+        onProgress={onProgress}
+        testId="typing-summary"
+      />
 
       <div className="actions">
         <button type="button" onClick={onBack}>

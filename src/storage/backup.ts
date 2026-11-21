@@ -1,6 +1,7 @@
 import { dayOf, unionDaily, type DailyRow } from "../stats/summary";
 import { DAILY_KEY, loadDaily, parseDaily, saveDaily } from "./daily";
 import { decodeEvents, EVENTS_KEY, loadEvents, recordEvents } from "./events";
+import { GOALS_KEY } from "./goals";
 import { eventKey } from "../stats/event";
 import {
   HISTORY_KEY,
@@ -43,6 +44,7 @@ const PREFERENCE_KEYS = [
   VIM_EDIT_SETTINGS_KEY,
   TYPING_SETTINGS_KEY,
   TEXT_TYPING_SETTINGS_KEY,
+  GOALS_KEY,
 ];
 
 /** Every key that goes in a backup. */

@@ -9,6 +9,7 @@ import {
   type RunningSession,
   type SessionConfig,
 } from "../session/engine";
+import { detectPlateau, weeklyRate, type RoundPoint } from "../stats/learning";
 import {
   appendSession,
   loadHistory,
@@ -26,6 +27,7 @@ import { ConfigScreen, configErrors } from "./ConfigScreen";
 import { DataPanel } from "./DataPanel";
 import { GameScreen } from "./GameScreen";
 import { MENU_HINTS, RESULT_HINTS, ROUND_HINTS, VIM_ROUND_HINTS, type Hint } from "./keys";
+import { ProgressScreen } from "./progress/ProgressScreen";
 import { ResultsScreen } from "./ResultsScreen";
 import { PanelTitle, ReferencesContext, type References } from "./shell/panel";
 import { loadPrefs, savePrefs, type ShellPrefs } from "./shell/prefs";
@@ -94,6 +96,21 @@ function sameJson(a: unknown, b: unknown): boolean {
   );
 }
 
+/** Matching sessions in this configuration, oldest first. */
+function matchingSessions(
+  history: readonly SessionRecord[],
+  mode: Mode,
+  params: JsonValue,
+  durationMs: number,
+): SessionRecord[] {
+  return history.filter(
+    (r) =>
+      r.mode === mode &&
+      // Review items change every round, so only the mode counts.
+      (mode === "review" || (r.durationMs === durationMs && sameJson(r.params, params))),
+  );
+}
+
 /** Scores of the rounds played in this configuration, oldest first. */
 function scoresOf(
   history: readonly SessionRecord[],
@@ -101,14 +118,9 @@ function scoresOf(
   params: JsonValue,
   durationMs: number,
 ): number[] {
-  return history
-    .filter(
-      (r) =>
-        r.mode === mode &&
-        // Review items change every round, so only the mode counts.
-        (mode === "review" || (r.durationMs === durationMs && sameJson(r.params, params))),
-    )
-    .map((r) => r.log.filter((a) => a.outcome === "correct").length);
+  return matchingSessions(history, mode, params, durationMs).map(
+    (r) => r.log.filter((a) => a.outcome === "correct").length,
+  );
 }
 
 /** Whether a media query matches, followed as the window changes. */
@@ -145,6 +157,8 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
   const [running, setRunning] = useState(false);
   // Lesson to open when jumping to Aprender from a "Comandos" panel (T20 AC-5).
   const [learnLesson, setLearnLesson] = useState<string | null>(null);
+  // Section to focus when jumping to Evolução from an item's history (T23 AC-5).
+  const [progressFocus, setProgressFocus] = useState<string | null>(null);
   const isNarrow = useMedia("(max-width: 48rem)", narrow);
   const touch = useMedia("(hover: none) and (pointer: coarse)");
 
@@ -170,12 +184,20 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
     [screen.name, store],
   );
   const reviewCount = useMemo(() => reviewItems(history).length, [history]);
-  const scores = scoresOf(
+  const matched = matchingSessions(
     history,
     settings.mode,
     settings[settings.mode],
     settings.durationS * 1000,
   );
+  const scores = matched.map((r) => r.log.filter((a) => a.outcome === "correct").length);
+  const modePoints: RoundPoint[] = matched.map((r) => {
+    const correct = r.log.filter((a) => a.outcome === "correct").length;
+    const minutes = r.durationMs / 60_000;
+    return { at: r.finishedAt, score: minutes > 0 ? correct / minutes : correct };
+  });
+  const modeRate = weeklyRate(modePoints, clock.wallTime());
+  const modePlateau = detectPlateau(modePoints);
 
   const references = useMemo<References>(
     () => ({
@@ -193,6 +215,7 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
     const drill = VIM_DRILLS[id];
     if (drill !== undefined) chooseVimDrill(store, drill);
     if (id !== "vim-learn") setLearnLesson(null);
+    if (id !== "progress") setProgressFocus(null);
     setItem(id);
     updatePrefs({ item: id });
     setRunning(false);
@@ -360,6 +383,10 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
           onPractice={(targetDrill) => {
             choose(targetDrill === "motion" ? "vim-motion" : "vim-edit");
           }}
+          onProgress={(sectionId) => {
+            setProgressFocus(sectionId);
+            choose("progress");
+          }}
           initialLesson={learnLesson}
           readOnly={touch}
         />
@@ -374,6 +401,10 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
             newSeed={newSeed}
             onBack={backToMode}
             onRunning={setRunning}
+            onProgress={() => {
+              setProgressFocus("typing");
+              choose("progress");
+            }}
           />
         );
       case "text":
@@ -384,6 +415,10 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
             newSeed={newSeed}
             onBack={backToMode}
             onRunning={setRunning}
+            onProgress={() => {
+              setProgressFocus("text");
+              choose("progress");
+            }}
           />
         );
       case "data":
@@ -395,6 +430,8 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
             </div>
           </div>
         );
+      case "progress":
+        return <ProgressScreen store={store} clock={clock} focusItem={progressFocus} />;
       default:
         return (
           <ConfigScreen
@@ -403,6 +440,12 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
             onChange={setSettings}
             onStart={start}
             history={scores}
+            weeklyRate={modeRate}
+            plateau={modePlateau}
+            onProgress={() => {
+              setProgressFocus(settings.mode);
+              choose("progress");
+            }}
           />
         );
     }
