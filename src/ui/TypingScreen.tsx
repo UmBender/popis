@@ -8,7 +8,6 @@ import {
   loadTypingLanguages,
   loadTypingResults,
   saveTypingLanguages,
-  typingSummary,
   type TypingResult,
 } from "../storage/typing";
 import {
@@ -30,7 +29,13 @@ import {
   type TypingState,
 } from "../typing/engine";
 import { seconds } from "./format";
+import { matchTrainingKey } from "./keys";
+import { RoundHistory } from "./shell/History";
 import { PanelTitle, useRunning } from "./shell/panel";
+import { Result } from "./shell/Result";
+import { RoundBar } from "./shell/RoundBar";
+
+const TICK_MS = 100;
 
 type Props = {
   readonly clock: Clock;
@@ -64,6 +69,7 @@ export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props
     newRun(loadTypingLanguages(store), newSeed(), 0),
   );
   const [results, setResults] = useState<readonly TypingResult[]>(() => loadTypingResults(store));
+  const [now, setNow] = useState(() => clock.now());
   // The latest run, read by the event handlers between renders.
   const latest = useRef(current);
   const box = useRef<HTMLTextAreaElement>(null);
@@ -80,7 +86,9 @@ export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props
   const apply = (typing: TypingState) => {
     const run = latest.current;
     if (typing === run.typing) return;
-    const trace = traceCode(run.trace, run.typing, typing, clock.now());
+    const t = clock.now();
+    setNow(t);
+    const trace = traceCode(run.trace, run.typing, typing, t);
     if (!isFinished(run.typing) && isFinished(typing)) {
       const stats = typingStats(typing);
       const at = clock.wallTime();
@@ -108,9 +116,10 @@ export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props
     show(newRun(languages, newSeed(), latest.current.run + 1));
   };
 
-  const restart = () => {
+  const exit = () => {
     const run = latest.current;
-    show({ ...run, typing: startTyping(run.snippet.text), trace: [], run: run.run + 1 });
+    show({ ...run, typing: startTyping(run.snippet.text), trace: [] });
+    box.current?.blur();
   };
 
   const toggle = (language: Language) => {
@@ -128,20 +137,35 @@ export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props
 
   const { snippet, typing, languages, seed } = current;
   const finished = isFinished(typing);
-  const summary = typingSummary(results);
+  const running = typing.typed.length > 0 && !finished;
   const markCodes = marks(typing)
     .map((m) => MARK_CODES[m])
     .join("");
-  useRunning(onRunning, typing.typed.length > 0 && !finished);
+  useRunning(onRunning, running);
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => {
+      setNow(clock.now());
+    }, TICK_MS);
+    return () => {
+      clearInterval(id);
+    };
+  }, [clock, running]);
+
+  const elapsedS =
+    typing.startedAt === null
+      ? 0
+      : Math.floor(Math.max(0, (typing.finishedAt ?? now) - typing.startedAt) / 1000);
+  const historyScores = results.filter((r) => languages.includes(r.language)).map((r) => r.wpm);
 
   return (
     <div className="screen typing">
-      <PanelTitle title="Digitação">
+      <PanelTitle title="Código">
         Digite o trecho de código; o tempo começa na primeira tecla.
       </PanelTitle>
 
-      <fieldset className="modes" data-panel="options">
-        <legend>Linguagens</legend>
+      <div className="options-row" data-panel="options" role="group" aria-label="Linguagens">
         {LANGUAGES.map((language) => (
           <label key={language} className="op">
             <input
@@ -155,9 +179,15 @@ export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props
             {LANGUAGE_LABELS[language]}
           </label>
         ))}
-      </fieldset>
+      </div>
 
       <div className="typing-area" data-panel="area">
+        <RoundBar
+          metrics={[
+            { label: "tempo", value: `${String(elapsedS)} s`, tone: "accent" },
+            { label: "erros", value: typing.errors },
+          ]}
+        />
         <textarea
           ref={box}
           className="typing-input"
@@ -180,11 +210,21 @@ export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props
             typed(text);
           }}
           onKeyDown={(e) => {
+            const action = matchTrainingKey(e);
+            if (action === "exit") {
+              e.preventDefault();
+              exit();
+              return;
+            }
+            if (action === "skip" || action === "restart") {
+              e.preventDefault();
+              next();
+              return;
+            }
             switch (e.key) {
               case "Enter":
                 e.preventDefault();
-                if (e.ctrlKey || e.metaKey) restart();
-                else apply(pressEnter(latest.current.typing, clock.now()));
+                apply(pressEnter(latest.current.typing, clock.now()));
                 break;
               case "Backspace":
                 e.preventDefault();
@@ -192,10 +232,6 @@ export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props
                 break;
               case "Tab":
                 e.preventDefault();
-                break;
-              case "Escape":
-                e.preventDefault();
-                next();
                 break;
             }
           }}
@@ -218,28 +254,10 @@ export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props
           ))}
         </pre>
 
-        {finished ? (
-          <TypingResults typing={typing} snippet={snippet} seed={seed} onNext={next} />
-        ) : (
-          <p className="muted hint">
-            Enter quebra a linha e indenta · Esc troca o trecho · Ctrl+Enter recomeça.
-          </p>
-        )}
+        {finished && <TypingResults typing={typing} snippet={snippet} seed={seed} onNext={next} />}
       </div>
 
-      <div data-testid="typing-summary" className="typing-summary" data-panel="history">
-        {LANGUAGES.map((language) => {
-          const s = summary[language];
-          return (
-            <p key={language} data-testid={`summary-${language}`} className="muted">
-              {s === null
-                ? `${LANGUAGE_LABELS[language]}: sem resultados`
-                : `${LANGUAGE_LABELS[language]}: melhor ${String(Math.round(s.best))} WPM · ` +
-                  `média dos últimos 10: ${String(Math.round(s.recentMean))} WPM`}
-            </p>
-          );
-        })}
-      </div>
+      <RoundHistory scores={historyScores} unit="WPM" testId="typing-summary" />
 
       <div className="actions">
         <button type="button" onClick={onBack}>
@@ -305,27 +323,30 @@ function TypingResults({
 }): ReactNode {
   const stats = typingStats(typing);
   return (
-    <div className="typing-results">
-      <p className="score">
-        <strong data-testid="wpm">{Math.round(stats.wpm)}</strong> WPM · precisão{" "}
-        <span data-testid="accuracy">{`${String(Math.round(stats.accuracy * 100))}%`}</span> · erros{" "}
-        <span data-testid="errors">{stats.errors}</span> · tempo{" "}
-        <span data-testid="time">{seconds(stats.timeMs)}</span>
-      </p>
-      <p className="seed">
-        trecho <span data-testid="snippet-id">{snippet.id}</span> · seed{" "}
-        <span data-testid="typing-seed">{seed}</span>
-      </p>
-      <button
-        type="button"
-        className="primary"
-        autoFocus
-        onClick={() => {
-          onNext();
-        }}
-      >
-        Próximo
-      </button>
-    </div>
+    <Result
+      headline={
+        <>
+          <strong data-testid="wpm">{Math.round(stats.wpm)}</strong> WPM
+        </>
+      }
+      pairs={[
+        {
+          label: "precisão",
+          value: `${String(Math.round(stats.accuracy * 100))}%`,
+          testId: "accuracy",
+        },
+        { label: "erros", value: stats.errors, testId: "errors" },
+        { label: "tempo", value: seconds(stats.timeMs), testId: "time" },
+      ]}
+      seed={
+        <>
+          trecho <span data-testid="snippet-id">{snippet.id}</span> · seed{" "}
+          <span data-testid="typing-seed">{seed}</span>
+        </>
+      }
+      onPlayAgain={() => {
+        onNext();
+      }}
+    />
   );
 }

@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { HELP_HINTS, type Hint } from "../keys";
 import { folderOf, ITEMS, itemByShortcut, SECTIONS, type ItemId } from "./sections";
 
 /** The mode block of the status line, as in Neovim. */
 export type StatusMode = "NORMAL" | "JOGANDO" | "RESULTADO";
 
-/** A key and what it does, shown side by side. */
-export type Hint = readonly [keys: string, text: string];
+export type { Hint };
 
 /** The tree and what its keys do; null while a round is played. */
 export type TreeState = {
@@ -39,19 +39,7 @@ type Props = {
   readonly children: ReactNode;
 };
 
-const HELP: readonly Hint[] = [
-  ["j/k ↓/↑", "mover na árvore"],
-  ["h/l ←/→", "fechar e abrir a pasta"],
-  ["1–9", "ir para o item"],
-  ["Enter", "começar"],
-  ["Tab", "ir para as opções"],
-  ["Shift+Tab", "voltar"],
-  ["m", "recolher ou abrir o menu"],
-  ["?", "esta ajuda"],
-  ["Esc", "fechar ou voltar ao menu"],
-  ["Enter", "no resultado, jogar de novo"],
-  ["r", "no resultado, revisar erros"],
-];
+const HELP = HELP_HINTS;
 
 const TEXT_INPUTS = new Set(["checkbox", "radio", "button", "submit", "reset", "file"]);
 

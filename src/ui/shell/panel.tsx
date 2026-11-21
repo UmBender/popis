@@ -23,7 +23,7 @@ export function PanelTitle({
 }): ReactNode {
   return (
     <header className="panel-title" data-panel="title">
-      <h2>{title}</h2>
+      <h1>{title}</h1>
       <p className="muted">{children}</p>
     </header>
   );

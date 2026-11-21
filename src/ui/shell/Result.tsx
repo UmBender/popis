@@ -21,7 +21,48 @@ export type ResultProps = {
 };
 
 /** Shared result view for every training screen (ADR-T19-1). */
-export function Result(props: ResultProps): ReactNode {
-  void props;
-  throw new Error("todo");
+export function Result({
+  headline,
+  headlineTestId,
+  pairs,
+  pairsTestId,
+  extra,
+  worst,
+  seed,
+  seedTestId,
+  onPlayAgain,
+  actions,
+}: ResultProps): ReactNode {
+  return (
+    <div className="result typing-results" data-testid="result">
+      <p className="solved" data-testid={headlineTestId}>
+        {headline}
+      </p>
+      <dl className="pairs" data-testid={pairsTestId}>
+        {pairs.map((pair) => (
+          <div key={pair.label}>
+            <dt>{pair.label}</dt>
+            <dd data-testid={pair.testId}>{pair.value}</dd>
+          </div>
+        ))}
+      </dl>
+      {extra}
+      {worst}
+      <p className="seed" data-testid={seedTestId}>
+        {seed}
+      </p>
+      <div className="actions">
+        <button
+          type="button"
+          className="primary start"
+          aria-label="Jogar de novo"
+          autoFocus
+          onClick={onPlayAgain}
+        >
+          Jogar de novo <kbd>Enter</kbd>
+        </button>
+        {actions}
+      </div>
+    </div>
+  );
 }

@@ -51,8 +51,7 @@ export function DataPanel({ store, clock, save = saveFile }: DataPanelProps): Re
   };
 
   return (
-    <fieldset className="modes data-panel">
-      <legend>Dados</legend>
+    <div className="fields data-panel">
       {notice && (
         <p role="alert" className="errors">
           O armazenamento do navegador encheu, e os registros mais antigos foram resumidos. Exporte
@@ -89,6 +88,6 @@ export function DataPanel({ store, clock, save = saveFile }: DataPanelProps): Re
           {outcome.error}
         </p>
       )}
-    </fieldset>
+    </div>
   );
 }

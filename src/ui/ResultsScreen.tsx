@@ -3,6 +3,7 @@ import type { Attempt } from "../session/engine";
 import { summarize } from "../session/stats";
 import { MODES, type Mode } from "../modes";
 import { answerText, seconds, skillLabel } from "./format";
+import { Result } from "./shell/Result";
 import { scoreboard } from "./verdicts";
 
 /** How many of the slowest answers the results list. */
@@ -38,77 +39,65 @@ export function ResultsScreen({
 
   return (
     <div className="screen results">
-      <p className="solved" data-testid="results-solved">
-        <strong data-testid="final-score">{summary.score}</strong>
-        {` resolvidas em ${String(Math.round(durationMs / 1000))} s`}
-      </p>
-      <dl className="pairs" data-testid="results-pairs">
-        <div>
-          <dt>tentativas erradas</dt>
-          <dd>{wrong}</dd>
-        </div>
-        <div>
-          <dt>puladas</dt>
-          <dd>{summary.skipped}</dd>
-        </div>
-        <div>
-          <dt>seu recorde</dt>
-          <dd>{best}</dd>
-        </div>
-      </dl>
-
-      {board.length > 0 && (
-        <div className="standings-wrap">
-          <table className="standings" aria-label="Placar da rodada">
-            <thead>
-              <tr>
-                <th scope="col">{group.column}</th>
-                {Array.from({ length: columns }, (_, i) => (
-                  <th key={i} scope="col">
-                    {i + 1}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {board.map((row) => (
-                <tr key={row.skill}>
-                  <td>{row.skill}</td>
-                  {Array.from({ length: columns }, (_, i) => {
-                    const cell = row.cells[i];
-                    return cell === undefined ? (
-                      <td key={i} />
-                    ) : (
-                      <td key={i} className={cell.tone}>
-                        {cell.mark}
-                        <small>{cell.note}</small>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <p className="seed" data-testid="results-seed">
-        seed {seed}
-      </p>
-      <div className="actions">
-        <button
-          type="button"
-          className="primary start"
-          aria-label="Jogar de novo"
-          autoFocus
-          onClick={onPlayAgain}
-        >
-          Jogar de novo <kbd>Enter</kbd>
-        </button>
-        <button type="button" onClick={onConfigure}>
-          Configurar
-        </button>
-      </div>
+      <Result
+        headline={
+          <>
+            <strong data-testid="final-score">{summary.score}</strong>
+            {` resolvidas em ${String(Math.round(durationMs / 1000))} s`}
+          </>
+        }
+        headlineTestId="results-solved"
+        pairs={[
+          { label: "tentativas erradas", value: wrong },
+          { label: "puladas", value: summary.skipped },
+          { label: "seu recorde", value: best },
+        ]}
+        pairsTestId="results-pairs"
+        extra={
+          board.length > 0 ? (
+            <div className="standings-wrap">
+              <table className="standings" aria-label="Placar da rodada">
+                <thead>
+                  <tr>
+                    <th scope="col">{group.column}</th>
+                    {Array.from({ length: columns }, (_, i) => (
+                      <th key={i} scope="col">
+                        {i + 1}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {board.map((row) => (
+                    <tr key={row.skill}>
+                      <td>{row.skill}</td>
+                      {Array.from({ length: columns }, (_, i) => {
+                        const cell = row.cells[i];
+                        return cell === undefined ? (
+                          <td key={i} />
+                        ) : (
+                          <td key={i} className={cell.tone}>
+                            {cell.mark}
+                            <small>{cell.note}</small>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : undefined
+        }
+        seed={`seed ${String(seed)}`}
+        seedTestId="results-seed"
+        onPlayAgain={onPlayAgain}
+        actions={
+          <button type="button" onClick={onConfigure}>
+            Configurar
+          </button>
+        }
+      />
 
       {summary.meanMs !== null && (
         <p className="muted">Tempo médio por acerto: {seconds(summary.meanMs)}</p>

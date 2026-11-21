@@ -53,7 +53,12 @@ export function matchTrainingKey(
   event: Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "shiftKey">,
   options?: { readonly vim?: boolean },
 ): TrainingAction | null {
-  void event;
-  void options;
-  throw new Error("todo");
+  const mod = event.ctrlKey || event.metaKey;
+  if (event.key === "Enter" && mod) {
+    return event.shiftKey ? "restart" : "skip";
+  }
+  if (event.key === "Escape" && !mod && !(options?.vim ?? false)) {
+    return "exit";
+  }
+  return null;
 }

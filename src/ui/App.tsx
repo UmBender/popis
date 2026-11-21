@@ -25,11 +25,12 @@ import { Brand } from "./Brand";
 import { ConfigScreen, configErrors } from "./ConfigScreen";
 import { DataPanel } from "./DataPanel";
 import { GameScreen } from "./GameScreen";
+import { MENU_HINTS, RESULT_HINTS, ROUND_HINTS, VIM_ROUND_HINTS, type Hint } from "./keys";
 import { ResultsScreen } from "./ResultsScreen";
 import { PanelTitle, ReferencesContext, type References } from "./shell/panel";
 import { loadPrefs, savePrefs, type ShellPrefs } from "./shell/prefs";
 import { folderOf, itemById, modeOf, type ItemId } from "./shell/sections";
-import { isControl, Shell, type Hint, type TreeState } from "./shell/Shell";
+import { isControl, Shell, type TreeState } from "./shell/Shell";
 import { TextTypingScreen } from "./TextTypingScreen";
 import { TypingScreen } from "./TypingScreen";
 import { chooseVimDrill, VimScreen } from "./VimScreen";
@@ -45,7 +46,12 @@ export type AppProps = {
 
 type Screen =
   | { readonly name: "menu" }
-  | { readonly name: "game"; readonly mode: Mode; readonly session: RunningSession<JsonValue> }
+  | {
+      readonly name: "game";
+      readonly mode: Mode;
+      readonly session: RunningSession<JsonValue>;
+      readonly run: number;
+    }
   | {
       readonly name: "results";
       readonly mode: Mode;
@@ -60,21 +66,6 @@ const VIM_DRILLS: Partial<Readonly<Record<ItemId, VimDrill>>> = {
   "vim-motion": "motion",
   "vim-edit": "edit",
 };
-
-const MENU_HINTS: readonly Hint[] = [
-  ["j/k", "mover"],
-  ["1–9", "ir para"],
-  ["Enter", "começar"],
-  ["Tab", "opções"],
-  ["m", "menu"],
-  ["?", "atalhos"],
-];
-
-const RESULT_HINTS: readonly Hint[] = [
-  ["Enter", "jogar de novo"],
-  ["Esc", "menu"],
-  ["r", "revisar erros"],
-];
 
 function sessionConfig<M extends Mode>(
   mode: M,
@@ -226,7 +217,12 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
       clock.now(),
     );
     setItem(settings.mode);
-    setScreen({ name: "game", mode: settings.mode, session });
+    setScreen((prev) => ({
+      name: "game",
+      mode: settings.mode,
+      session,
+      run: prev.name === "game" ? prev.run + 1 : 1,
+    }));
   };
 
   // Stable for the whole game, so the game screen's timer is not reset.
@@ -298,23 +294,19 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
   let right: ReactNode = "rodada em andamento";
   switch (screen.name) {
     case "game": {
-      const skip = MODES[screen.mode].allowSkip;
       status = {
         mode: "JOGANDO",
-        hints: skip
-          ? [
-              ["Enter", "pular"],
-              ["Esc", "sair"],
-            ]
-          : [["Esc", "sair"]],
+        hints: ROUND_HINTS,
       };
       panel = (
         <GameScreen
+          key={screen.run}
           initial={screen.session}
           clock={clock}
           mode={screen.mode}
           onFinish={finish}
           onAbort={abort}
+          onRestart={start}
         />
       );
       break;
@@ -336,7 +328,12 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
       );
       break;
     case "menu":
-      status = running ? { mode: "JOGANDO", hints: [] } : { mode: "NORMAL", hints: MENU_HINTS };
+      status = running
+        ? {
+            mode: "JOGANDO",
+            hints: VIM_DRILLS[item] !== undefined ? VIM_ROUND_HINTS : ROUND_HINTS,
+          }
+        : { mode: "NORMAL", hints: MENU_HINTS };
       if (!running) right = <Brand />;
       panel = menuPanel();
       break;
@@ -353,6 +350,9 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
           newSeed={newSeed}
           onBack={backToMode}
           onRunning={setRunning}
+          onLearn={() => {
+            choose("vim-learn");
+          }}
         />
       );
     }

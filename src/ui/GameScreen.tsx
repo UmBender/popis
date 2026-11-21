@@ -11,6 +11,8 @@ import {
   type SessionState,
 } from "../session/engine";
 import { answerText } from "./format";
+import { matchTrainingKey } from "./keys";
+import { RoundBar } from "./shell/RoundBar";
 import { verdicts, type Verdict } from "./verdicts";
 
 /** The judge's verdicts, newest last with a fading outline (docs/architecture/Shell.md). */
@@ -42,9 +44,17 @@ type Props<P> = {
   readonly mode: Mode;
   readonly onFinish: (session: FinishedSession<P>) => void;
   readonly onAbort: () => void;
+  readonly onRestart?: () => void;
 };
 
-export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props<P>): ReactNode {
+export function GameScreen<P>({
+  initial,
+  clock,
+  mode,
+  onFinish,
+  onAbort,
+  onRestart,
+}: Props<P>): ReactNode {
   const [session, setSession] = useState<RunningSession<P>>(initial);
   const [now, setNow] = useState(() => clock.now());
   // The latest state, read by the interval and event handlers. It changes only
@@ -79,21 +89,22 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
 
   return (
     <div className="screen game">
-      <div className="status">
-        <span
-          data-testid="timer"
-          aria-label="Tempo"
-          className={secondsLeft <= WARNING_S ? "timer warning" : "timer"}
-        >
-          {secondsLeft}
-        </span>
-        <span>
-          acertos{" "}
-          <span data-testid="score" className="score">
-            {session.score}
-          </span>
-        </span>
-      </div>
+      <RoundBar
+        metrics={[
+          {
+            label: "tempo",
+            value: `${String(secondsLeft)} s`,
+            testId: "timer",
+            ariaLabel: "Tempo",
+            tone: secondsLeft <= WARNING_S ? "warning" : "accent",
+          },
+          {
+            label: "acertos",
+            value: session.score,
+            testId: "score",
+          },
+        ]}
+      />
       <div className="problem">
         <span
           data-testid="prompt"
@@ -116,7 +127,22 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
             apply(typeAnswer(latest.current, e.target.value, clock.now()));
           }}
           onKeyDown={(e) => {
-            if (e.key === "Escape") onAbort();
+            const action = matchTrainingKey(e);
+            if (action === "exit") {
+              e.preventDefault();
+              onAbort();
+              return;
+            }
+            if (action === "skip") {
+              e.preventDefault();
+              apply(skipProblem(latest.current, clock.now()));
+              return;
+            }
+            if (action === "restart") {
+              e.preventDefault();
+              onRestart?.();
+              return;
+            }
             if (e.key === "Enter" && spec.allowSkip) {
               e.preventDefault();
               apply(skipProblem(latest.current, clock.now()));
