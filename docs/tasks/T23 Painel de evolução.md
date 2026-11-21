@@ -1,7 +1,7 @@
 ---
 id: T23
 title: Painel de evolução
-status: review
+status: done
 depends_on: [T19, T22]
 branch: task/T23-progress-panel
 adrs: ["[[ADR-T23-1 Painel de evolução com estatística pura e SVG próprio]]"]
