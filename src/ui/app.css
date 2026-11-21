@@ -1567,3 +1567,103 @@ th {
     color: var(--muted);
   }
 }
+
+/* Adaptive training: recommendations, auto-level, daily workout, FSRS Vim cards (T24). */
+.recommendations {
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-3);
+  list-style: none;
+  border-left: 2px solid var(--accent);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.recommendation-item {
+  font-size: var(--text-sm);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.auto-level-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.daily-blocks {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.daily-block {
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--selection);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.daily-block-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.daily-block-reason {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.vim-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.vim-review-list h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.vim-review-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.vim-review-card {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface);
+}
+
+.vim-review-actions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+@media (max-width: 48rem) {
+  .recommendations button,
+  .daily-block button,
+  .vim-review-list button {
+    min-height: 44px;
+  }
+}

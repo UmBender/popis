@@ -9,7 +9,30 @@ import {
   type RunningSession,
   type SessionConfig,
 } from "../session/engine";
+import { sessionEvents } from "../stats/derive";
+import {
+  arithmeticForLevel,
+  chooseNextLevel,
+  defaultLevelRatings,
+  drillLevelCount,
+  estimationForLevel,
+  INITIAL_ELO,
+  levelOfArithmetic,
+  levelOfEstimation,
+  levelOfSums,
+  replayElo,
+  sumsForLevel,
+  type AutoLevelDrill,
+} from "../stats/elo";
+import { kcStats } from "../stats/kc";
 import { detectPlateau, weeklyRate, type RoundPoint } from "../stats/learning";
+import { recommendForDrill } from "../stats/recommend";
+import {
+  loadAdaptiveSettings,
+  saveAdaptiveSettings,
+  type AdaptiveSettings,
+} from "../storage/adaptive";
+import { loadAllEvents } from "../storage/events";
 import {
   appendSession,
   loadHistory,
@@ -20,10 +43,18 @@ import {
   type StoredSettings,
 } from "../storage/history";
 import { migrate } from "../storage/migrate";
-import { reviewItems } from "../storage/review";
-import type { VimDrill } from "../storage/vim";
+import {
+  dueReviewCards,
+  recordSessionReview,
+  reviewVimCardAttempt,
+  syncReviewDeck,
+  type CalcReviewCard,
+  type VimReviewCard,
+} from "../storage/review";
+import { loadVimSettings, saveVimSettings, type VimDrill } from "../storage/vim";
 import { Brand } from "./Brand";
 import { ConfigScreen, configErrors } from "./ConfigScreen";
+import { DailyScreen } from "./DailyScreen";
 import { DataPanel } from "./DataPanel";
 import { GameScreen } from "./GameScreen";
 import { MENU_HINTS, RESULT_HINTS, ROUND_HINTS, VIM_ROUND_HINTS, type Hint } from "./keys";
@@ -150,6 +181,8 @@ const lower = (text: string) => text.toLocaleLowerCase("pt-BR");
 
 export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
   const [settings, setSettings] = useState<StoredSettings>(() => loadSettings(store));
+  const [adaptive, setAdaptive] = useState<AdaptiveSettings>(() => loadAdaptiveSettings(store));
+  const [deckRev, setDeckRev] = useState(0);
   const [prefs, setPrefs] = useState<ShellPrefs>(() => loadPrefs(store));
   const [item, setItem] = useState<ItemId>(() => firstItem(loadPrefs(store), settings.mode));
   const [screen, setScreen] = useState<Screen>({ name: "menu" });
@@ -178,12 +211,37 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
     [store],
   );
 
-  // Read again each time the menu shows, so the last session counts.
-  const history = useMemo(
-    () => (screen.name === "menu" ? loadHistory(store) : []),
-    [screen.name, store],
+  const updateAdaptive = useCallback(
+    (patch: Partial<AdaptiveSettings>) => {
+      setAdaptive((prev) => {
+        const next = { ...prev, ...patch };
+        saveAdaptiveSettings(store, next);
+        return next;
+      });
+    },
+    [store],
   );
-  const reviewCount = useMemo(() => reviewItems(history).length, [history]);
+
+  const nowWall = clock.wallTime();
+  // Read again each time the menu shows or the deck changes, so the last session counts.
+  const history = useMemo(
+    () => (screen.name === "menu" && deckRev >= 0 ? loadHistory(store) : []),
+    [screen.name, store, deckRev],
+  );
+  const reviewDeck = useMemo(
+    () => syncReviewDeck(store, history, nowWall),
+    [store, history, nowWall],
+  );
+  const dueCards = useMemo(() => dueReviewCards(reviewDeck, nowWall), [reviewDeck, nowWall]);
+  const dueCalcCards = useMemo(
+    () => dueCards.filter((c): c is CalcReviewCard => c.kind === "calc"),
+    [dueCards],
+  );
+  const dueVimCards = useMemo(
+    () => dueCards.filter((c): c is VimReviewCard => c.kind === "vim-motion"),
+    [dueCards],
+  );
+  const reviewCount = dueCards.length;
   const matched = matchingSessions(
     history,
     settings.mode,
@@ -196,8 +254,23 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
     const minutes = r.durationMs / 60_000;
     return { at: r.finishedAt, score: minutes > 0 ? correct / minutes : correct };
   });
-  const modeRate = weeklyRate(modePoints, clock.wallTime());
+  const modeRate = weeklyRate(modePoints, nowWall);
   const modePlateau = detectPlateau(modePoints);
+  const modeEvents = useMemo(
+    () => history.filter((s) => s.mode === settings.mode).flatMap(sessionEvents),
+    [history, settings.mode],
+  );
+  const modeRecommendations = useMemo(
+    () =>
+      recommendForDrill({
+        drillId: settings.mode,
+        plateau: modePlateau,
+        events: modeEvents,
+        kcs: kcStats(modeEvents),
+        now: nowWall,
+      }),
+    [settings.mode, modePlateau, modeEvents, nowWall],
+  );
 
   const references = useMemo<References>(
     () => ({
@@ -230,8 +303,11 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
     saveSettings(store, settings);
     let params: JsonValue = settings[settings.mode];
     if (settings.mode === "review") {
-      // Review items come from history at start, never from the settings.
-      const items = reviewItems(loadHistory(store));
+      // Due FSRS calculation cards come from the deck at start, never from settings.
+      const deck = syncReviewDeck(store, loadHistory(store), clock.wallTime());
+      const items = dueReviewCards(deck, clock.wallTime())
+        .filter((c): c is CalcReviewCard => c.kind === "calc")
+        .map((c) => c.item);
       if (items.length === 0) {
         choose("review");
         return;
@@ -257,15 +333,58 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
     (session: FinishedSession<JsonValue>) => {
       const mode = gameMode;
       const { durationMs, seed, params } = session.config;
-      appendSession(store, {
+      const finishedAt = clock.wallTime();
+      const record: SessionRecord = {
         version: 1,
         mode,
-        finishedAt: clock.wallTime(),
+        finishedAt,
         durationMs,
         seed,
         params,
         log: session.log,
-      });
+      };
+      appendSession(store, record);
+      const allEvents = loadAllEvents(store);
+      recordSessionReview(store, record, allEvents, finishedAt);
+      const currentAdaptive = loadAdaptiveSettings(store);
+      if (
+        (mode === "arithmetic" || mode === "estimation" || mode === "sums") &&
+        currentAdaptive.autoLevel[mode]
+      ) {
+        const elo = replayElo(allEvents, finishedAt);
+        const modeRatings = Object.entries(elo.users)
+          .filter(([kc]) => kc.startsWith(`${mode}.`))
+          .map(([, entry]) => entry.rating);
+        const userRating =
+          modeRatings.length > 0
+            ? modeRatings.reduce((a, b) => a + b, 0) / modeRatings.length
+            : INITIAL_ELO;
+        const count = drillLevelCount(mode);
+        const ratings = defaultLevelRatings(count);
+        setSettings((prev) => {
+          const curLevel =
+            mode === "arithmetic"
+              ? levelOfArithmetic(prev.arithmetic)
+              : mode === "estimation"
+                ? levelOfEstimation(prev.estimation)
+                : levelOfSums(prev.sums);
+          const nextLevel = chooseNextLevel({
+            currentLevel: curLevel,
+            userRating,
+            levelRatings: ratings,
+            targetAccuracy: currentAdaptive.targetAccuracy,
+          });
+          const nextSettings: StoredSettings =
+            mode === "arithmetic"
+              ? { ...prev, arithmetic: arithmeticForLevel(nextLevel, prev.arithmetic) }
+              : mode === "estimation"
+                ? { ...prev, estimation: estimationForLevel(nextLevel) }
+                : { ...prev, sums: sumsForLevel(nextLevel) };
+          saveSettings(store, nextSettings);
+          return nextSettings;
+        });
+      }
+      setDeckRev((n) => n + 1);
       const best = Math.max(0, ...scoresOf(loadHistory(store), mode, params, durationMs));
       setScreen({ name: "results", mode, log: session.log, seed, durationMs, best });
     },
@@ -430,13 +549,64 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
             </div>
           </div>
         );
+      case "daily":
+        return (
+          <DailyScreen
+            store={store}
+            clock={clock}
+            newSeed={newSeed}
+            onRunning={setRunning}
+            onChooseItem={(targetId, level) => {
+              if (level !== undefined) {
+                if (targetId === "vim-motion") {
+                  const cur = loadVimSettings(store);
+                  saveVimSettings(store, { ...cur, level: level as typeof cur.level });
+                } else if (targetId === "arithmetic") {
+                  setSettings((prev) => ({
+                    ...prev,
+                    arithmetic: arithmeticForLevel(level, prev.arithmetic),
+                  }));
+                } else if (targetId === "estimation") {
+                  setSettings((prev) => ({ ...prev, estimation: estimationForLevel(level) }));
+                } else if (targetId === "sums") {
+                  setSettings((prev) => ({ ...prev, sums: sumsForLevel(level) }));
+                }
+              }
+              choose(targetId);
+            }}
+          />
+        );
       case "progress":
-        return <ProgressScreen store={store} clock={clock} focusItem={progressFocus} />;
-      default:
+        return (
+          <ProgressScreen
+            store={store}
+            clock={clock}
+            focusItem={progressFocus}
+            onLearn={(lessonId) => {
+              setLearnLesson(lessonId);
+              choose("vim-learn");
+            }}
+          />
+        );
+      default: {
+        const autoDrill: AutoLevelDrill | null =
+          settings.mode === "arithmetic" ||
+          settings.mode === "estimation" ||
+          settings.mode === "sums"
+            ? settings.mode
+            : null;
+        const autoLevelCurrent =
+          autoDrill === "arithmetic"
+            ? levelOfArithmetic(settings.arithmetic)
+            : autoDrill === "estimation"
+              ? levelOfEstimation(settings.estimation)
+              : autoDrill === "sums"
+                ? levelOfSums(settings.sums)
+                : undefined;
         return (
           <ConfigScreen
             settings={settings}
-            reviewCount={reviewCount}
+            reviewCount={settings.mode === "review" ? dueCalcCards.length : reviewCount}
             onChange={setSettings}
             onStart={start}
             history={scores}
@@ -446,8 +616,30 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
               setProgressFocus(settings.mode);
               choose("progress");
             }}
+            autoLevel={autoDrill !== null ? adaptive.autoLevel[autoDrill] : false}
+            autoLevelCurrent={autoLevelCurrent}
+            targetAccuracy={adaptive.targetAccuracy}
+            onAutoLevelChange={
+              autoDrill !== null
+                ? (enabled) => {
+                    updateAdaptive({
+                      autoLevel: { ...adaptive.autoLevel, [autoDrill]: enabled },
+                    });
+                  }
+                : undefined
+            }
+            onTargetAccuracyChange={(targetAccuracy) => {
+              updateAdaptive({ targetAccuracy });
+            }}
+            recommendations={modeRecommendations}
+            vimReviewCards={settings.mode === "review" ? dueVimCards : []}
+            onMarkVimCard={(cardId, rating) => {
+              reviewVimCardAttempt(store, cardId, rating, clock.wallTime());
+              setDeckRev((n) => n + 1);
+            }}
           />
         );
+      }
     }
   }
 

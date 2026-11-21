@@ -9,8 +9,12 @@ import { PRIMES_LIMITS, type PrimesLimit } from "../gen/primes";
 import type { SumsKind } from "../gen/sums";
 import { MODES, type Mode } from "../modes";
 import { DURATIONS_S } from "../session/engine";
+import { TARGET_ACCURACY_STEPS } from "../stats/elo";
 import type { Plateau } from "../stats/learning";
+import type { Recommendation } from "../stats/recommend";
 import type { StoredSettings } from "../storage/history";
+import type { VimReviewCard } from "../storage/review";
+import { Recommendations } from "./Recommendations";
 import { RoundHistory } from "./shell/History";
 import { PanelTitle } from "./shell/panel";
 
@@ -98,6 +102,17 @@ type Props = {
   readonly weeklyRate?: number | null;
   readonly plateau?: Plateau | null;
   readonly onProgress?: () => void;
+  /** Auto-level options for drills with levels/tiers (T24 AC-2). */
+  readonly autoLevel?: boolean;
+  readonly autoLevelCurrent?: number;
+  readonly targetAccuracy?: number;
+  readonly onAutoLevelChange?: (enabled: boolean) => void;
+  readonly onTargetAccuracyChange?: (target: number) => void;
+  /** Honest recommendations for this drill (T24 AC-5). */
+  readonly recommendations?: readonly Recommendation[];
+  /** Due Vim command cards shown in Revisar (T24 AC-3). */
+  readonly vimReviewCards?: readonly VimReviewCard[];
+  readonly onMarkVimCard?: (cardId: string, rating: 1 | 2 | 3 | 4) => void;
 };
 
 export function ConfigScreen({
@@ -109,9 +124,21 @@ export function ConfigScreen({
   weeklyRate,
   plateau,
   onProgress,
+  autoLevel = false,
+  autoLevelCurrent,
+  targetAccuracy = 0.85,
+  onAutoLevelChange,
+  onTargetAccuracyChange,
+  recommendations = [],
+  vimReviewCards = [],
+  onMarkVimCard,
 }: Props): ReactNode {
   const reviewing = settings.mode === "review";
   const errors = configErrors(settings, reviewCount);
+  const supportsAutoLevel =
+    settings.mode === "arithmetic" ||
+    settings.mode === "estimation" ||
+    settings.mode === "sums";
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -129,6 +156,39 @@ export function ConfigScreen({
               ? "1 questão para revisar"
               : `${String(reviewCount)} questões para revisar`}
           </p>
+        )}
+
+        {reviewing && vimReviewCards.length > 0 && (
+          <div className="vim-review-list" data-testid="vim-review-cards">
+            <h3>Comandos de Vim vencidos</h3>
+            <ul>
+              {vimReviewCards.map((card) => (
+                <li key={card.id} className="vim-review-card">
+                  <span>{card.label}</span>
+                  {onMarkVimCard !== undefined && (
+                    <span className="vim-review-actions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onMarkVimCard(card.id, 3);
+                        }}
+                      >
+                        Acertei
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onMarkVimCard(card.id, 1);
+                        }}
+                      >
+                        Errei
+                      </button>
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {settings.mode === "arithmetic" && (
@@ -201,6 +261,41 @@ export function ConfigScreen({
           />
         )}
 
+        {supportsAutoLevel && onAutoLevelChange !== undefined && (
+          <div className="auto-level-controls">
+            <label className="op">
+              <input
+                type="checkbox"
+                checked={autoLevel}
+                onChange={(e) => {
+                  onAutoLevelChange(e.target.checked);
+                }}
+              />
+              {autoLevel && autoLevelCurrent !== undefined
+                ? `Nível automático (nível ${String(autoLevelCurrent)})`
+                : "Nível automático"}
+            </label>
+            {autoLevel && onTargetAccuracyChange !== undefined && (
+              <label className="row">
+                Meta de acerto
+                <select
+                  aria-label="Meta de acerto"
+                  value={String(targetAccuracy)}
+                  onChange={(e) => {
+                    onTargetAccuracyChange(Number(e.target.value));
+                  }}
+                >
+                  {TARGET_ACCURACY_STEPS.map((step) => (
+                    <option key={step} value={String(step)}>
+                      {`${String(Math.round(step * 100))}%`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+        )}
+
         <label className="row">
           Duração
           <select
@@ -224,6 +319,8 @@ export function ConfigScreen({
             ))}
           </ul>
         )}
+
+        <Recommendations items={recommendations} />
       </div>
 
       <RoundHistory

@@ -2,7 +2,7 @@ import type { ArithmeticSettings } from "../gen/arithmetic";
 import type { EstimationSettings } from "../gen/estimation";
 import type { SumsSettings } from "../gen/sums";
 import type { TrainingEvent } from "./event";
-import { DAY_MS } from "./summary";
+import { DAY_MS, quartiles } from "./summary";
 
 export const INITIAL_ELO = 1000;
 export const ELO_SCALE = 400;
@@ -86,77 +86,156 @@ export const ESTIMATION_LEVELS: readonly EstimationSettings[] = [
 
 export const SUMS_LEVELS: readonly SumsSettings[] = [{ kinds: ["sum"] }, { kinds: ["sum", "loop"] }];
 
-export function kFactor(_responses: number): number {
-  throw new Error("todo");
+/** Decreasing K factor per Pelánek (2016): `K(n) = K_init / (1 + K_decay * n)`. */
+export function kFactor(responses: number): number {
+  return ELO_K_INIT / (1 + ELO_K_DECAY * Math.max(0, responses));
 }
 
-export function expectedWin(_userRating: number, _itemRating: number): number {
-  throw new Error("todo");
+/** Expected win probability for a learner vs. an item/level rating. */
+export function expectedWin(userRating: number, itemRating: number): number {
+  return 1 / (1 + 10 ** ((itemRating - userRating) / ELO_SCALE));
 }
 
-export function updateElo(_user: EloEntry, _item: EloEntry, _win: boolean): EloUpdateResult {
-  throw new Error("todo");
+/** Zero-sum Elo update between learner KC rating and item/level rating. */
+export function updateElo(user: EloEntry, item: EloEntry, win: boolean): EloUpdateResult {
+  const expected = expectedWin(user.rating, item.rating);
+  const k = kFactor(user.count);
+  const delta = k * ((win ? 1 : 0) - expected);
+  return {
+    user: { rating: user.rating + delta, count: user.count + 1 },
+    item: { rating: item.rating - delta, count: item.count + 1 },
+    deltaUser: delta,
+    deltaItem: -delta,
+    expected,
+    k,
+  };
 }
 
+/** Median correct response time for `kc` within the last 2 weeks, or null when absent. */
 export function kcTargetTimeMs(
-  _events: readonly TrainingEvent[],
-  _kc: string,
-  _now: number,
+  events: readonly TrainingEvent[],
+  kc: string,
+  now: number,
 ): number | null {
-  throw new Error("todo");
+  const cutoff = now - TARGET_TIME_WINDOW_MS;
+  const times = events
+    .filter((e) => e.kc === kc && e.ok && e.at >= cutoff && e.at <= now)
+    .map((e) => e.timeMs);
+  if (times.length === 0) return null;
+  return quartiles(times)[1];
 }
 
+/** An attempt counts as an Elo win when correct and within the KC target time. */
 export function isEloWin(
-  _event: Pick<TrainingEvent, "ok" | "timeMs">,
-  _targetTimeMs: number | null,
+  event: Pick<TrainingEvent, "ok" | "timeMs">,
+  targetTimeMs: number | null,
 ): boolean {
-  throw new Error("todo");
+  return event.ok && (targetTimeMs === null || event.timeMs <= targetTimeMs);
 }
 
-export function defaultLevelRatings(_levelCount: number, _base?: number, _step?: number): number[] {
-  throw new Error("todo");
+/** Monotonic initial ratings for levels 1..N. */
+export function defaultLevelRatings(levelCount: number, base = 700, step = 100): number[] {
+  return Array.from({ length: levelCount }, (_, idx) => base + idx * step);
 }
 
-export function chooseNextLevel(_params: {
+/**
+ * Picks the next level within `[current - 1, current + 1]` whose expected win
+ * probability is closest to `targetAccuracy` (default 85%, clamped 70%–95%).
+ */
+export function chooseNextLevel({
+  currentLevel,
+  userRating,
+  levelRatings,
+  targetAccuracy = DEFAULT_TARGET_ACCURACY,
+}: {
   readonly currentLevel: number;
   readonly userRating: number;
   readonly levelRatings: readonly number[];
   readonly targetAccuracy?: number;
 }): number {
-  throw new Error("todo");
+  const maxLevel = levelRatings.length;
+  const target = Math.min(MAX_TARGET_ACCURACY, Math.max(MIN_TARGET_ACCURACY, targetAccuracy));
+  const cur = Math.min(maxLevel, Math.max(1, Math.round(currentLevel)));
+  const lo = Math.max(1, cur - 1);
+  const hi = Math.min(maxLevel, cur + 1);
+  let bestLevel = cur;
+  let bestErr = Infinity;
+  for (let level = lo; level <= hi; level++) {
+    const p = expectedWin(userRating, levelRatings[level - 1] as number);
+    const err = Math.abs(p - target);
+    if (err < bestErr) {
+      bestErr = err;
+      bestLevel = level;
+    }
+  }
+  return bestLevel;
 }
 
-export function replayElo(_events: readonly TrainingEvent[], _now: number): EloState {
-  throw new Error("todo");
+/** Replays chronological events into per-KC user ratings and per-config item ratings. */
+export function replayElo(events: readonly TrainingEvent[], now: number): EloState {
+  const sorted = [...events].sort((a, b) => a.at - b.at || a.extra.i - b.extra.i);
+  const targetByKc = new Map<string, number | null>();
+  const users: Record<string, EloEntry> = {};
+  const items: Record<string, EloEntry> = {};
+
+  for (const event of sorted) {
+    if (!targetByKc.has(event.kc)) {
+      targetByKc.set(event.kc, kcTargetTimeMs(sorted, event.kc, now));
+    }
+    const targetMs = targetByKc.get(event.kc) ?? null;
+    const itemKey = `${event.drill}:${event.config}`;
+    const userEntry = users[event.kc] ?? { rating: INITIAL_ELO, count: 0 };
+    const itemEntry = items[itemKey] ?? { rating: INITIAL_ELO, count: 0 };
+    const next = updateElo(userEntry, itemEntry, isEloWin(event, targetMs));
+    users[event.kc] = next.user;
+    items[itemKey] = next.item;
+  }
+
+  return { users, items };
 }
 
-export function drillLevelCount(_drill: AutoLevelDrill): number {
-  throw new Error("todo");
+export function drillLevelCount(drill: AutoLevelDrill): number {
+  switch (drill) {
+    case "vim-motion":
+      return 7;
+    case "arithmetic":
+      return ARITHMETIC_LEVELS.length;
+    case "estimation":
+      return ESTIMATION_LEVELS.length;
+    case "sums":
+      return SUMS_LEVELS.length;
+  }
+}
+
+function clampLevel(level: number, max: number): number {
+  return Math.min(max, Math.max(1, Math.round(level)));
 }
 
 export function arithmeticForLevel(
-  _level: number,
-  _current: ArithmeticSettings,
+  level: number,
+  current: ArithmeticSettings,
 ): ArithmeticSettings {
-  throw new Error("todo");
+  const preset = ARITHMETIC_LEVELS[clampLevel(level, ARITHMETIC_LEVELS.length) - 1]!;
+  return { ...current, ...preset };
 }
 
-export function estimationForLevel(_level: number): EstimationSettings {
-  throw new Error("todo");
+export function estimationForLevel(level: number): EstimationSettings {
+  return ESTIMATION_LEVELS[clampLevel(level, ESTIMATION_LEVELS.length) - 1]!;
 }
 
-export function sumsForLevel(_level: number): SumsSettings {
-  throw new Error("todo");
+export function sumsForLevel(level: number): SumsSettings {
+  return SUMS_LEVELS[clampLevel(level, SUMS_LEVELS.length) - 1]!;
 }
 
-export function levelOfArithmetic(_settings: ArithmeticSettings): number {
-  throw new Error("todo");
+export function levelOfArithmetic(settings: ArithmeticSettings): number {
+  const idx = ARITHMETIC_LEVELS.findIndex((p) => p.addLeft.max >= settings.addLeft.max);
+  return idx >= 0 ? idx + 1 : ARITHMETIC_LEVELS.length;
 }
 
-export function levelOfEstimation(_settings: EstimationSettings): number {
-  throw new Error("todo");
+export function levelOfEstimation(settings: EstimationSettings): number {
+  return clampLevel(settings.kinds.length, ESTIMATION_LEVELS.length);
 }
 
-export function levelOfSums(_settings: SumsSettings): number {
-  throw new Error("todo");
+export function levelOfSums(settings: SumsSettings): number {
+  return clampLevel(settings.kinds.length, SUMS_LEVELS.length);
 }

@@ -2,6 +2,8 @@ import { dayOf, unionDaily, type DailyRow } from "../stats/summary";
 import { DAILY_KEY, loadDaily, parseDaily, saveDaily } from "./daily";
 import { decodeEvents, EVENTS_KEY, loadEvents, recordEvents } from "./events";
 import { GOALS_KEY } from "./goals";
+import { ADAPTIVE_KEY } from "./adaptive";
+import { REVIEW_CARDS_KEY } from "./review";
 import { eventKey } from "../stats/event";
 import {
   HISTORY_KEY,
@@ -45,6 +47,8 @@ const PREFERENCE_KEYS = [
   TYPING_SETTINGS_KEY,
   TEXT_TYPING_SETTINGS_KEY,
   GOALS_KEY,
+  ADAPTIVE_KEY,
+  REVIEW_CARDS_KEY,
 ];
 
 /** Every key that goes in a backup. */
