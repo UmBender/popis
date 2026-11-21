@@ -525,7 +525,8 @@ describe("Dados and tokens", () => {
   });
 
   it("app.css defines the text, space and rail tokens of Shell", () => {
-    const css = readFileSync(new URL("../app.css", import.meta.url), "utf8");
+    // From the project root: under jsdom, import.meta.url is not a file URL.
+    const css = readFileSync("src/ui/app.css", "utf8");
     for (const token of [
       "--text-sm: 0.8125rem",
       "--text-md: 1rem",
