@@ -1,18 +1,19 @@
 import type { JsonValue } from "../core/problem";
 import { isMode, MODE_IDS, MODES, type Mode, type ModeSettings } from "../modes";
 import { DEFAULT_DURATION_S, DURATIONS_S, type Attempt } from "../session/engine";
+import { sessionEvents } from "../stats/derive";
+import { summarize } from "../stats/summary";
+import { addDaily, noteQuota } from "./daily";
+import { readJson, tryWriteJson, type KeyValueStore } from "./kv";
 
 export type { Mode } from "../modes";
-
-/** The part of `Storage` the app uses; injected so tests use memory. */
-export interface KeyValueStore {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-}
+export type { KeyValueStore } from "./kv";
 
 export const HISTORY_KEY = "popis.history.v1";
 export const SETTINGS_KEY = "popis.settings.v1";
 export const MAX_SESSIONS = 200;
+/** Most characters the stored sessions may take (ADR-T22-1). */
+export const HISTORY_BUDGET = 1_200_000;
 
 export type SessionRecord = {
   readonly version: 1;
@@ -66,26 +67,12 @@ export function browserStore(): KeyValueStore {
   }
 }
 
-/** Parsed JSON at `key`, or undefined when missing, unreadable or corrupt. */
-function readJson(store: KeyValueStore, key: string): unknown {
-  try {
-    const raw = store.getItem(key);
-    return raw === null ? undefined : (JSON.parse(raw) as unknown);
-  } catch {
-    return undefined;
-  }
-}
-
 /** Best effort: a full or blocked store must not break a game. */
 function writeJson(store: KeyValueStore, key: string, value: unknown): void {
-  try {
-    store.setItem(key, JSON.stringify(value));
-  } catch {
-    // Nothing to do; the session still shows its results.
-  }
+  tryWriteJson(store, key, value);
 }
 
-function isSessionRecord(value: unknown): value is SessionRecord {
+export function isSessionRecord(value: unknown): value is SessionRecord {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -99,9 +86,56 @@ export function loadHistory(store: KeyValueStore): SessionRecord[] {
   return Array.isArray(value) ? value.filter(isSessionRecord) : [];
 }
 
+export type TrimmedHistory = {
+  readonly keep: SessionRecord[];
+  readonly dropped: SessionRecord[];
+};
+
+/**
+ * The newest sessions that fit the limit of sessions and the size budget
+ * (at least the newest one); the older ones are `dropped`.
+ */
+export function trimHistory(sessions: readonly SessionRecord[]): TrimmedHistory {
+  const sizes = sessions.map((s) => JSON.stringify(s).length);
+  let total = sizes.reduce((sum, size) => sum + size + 1, 1);
+  let from = Math.max(0, sessions.length - MAX_SESSIONS);
+  for (let i = 0; i < from; i++) total -= (sizes[i] as number) + 1;
+  while (from < sessions.length - 1 && total > HISTORY_BUDGET) {
+    total -= (sizes[from] as number) + 1;
+    from++;
+  }
+  return { keep: sessions.slice(from), dropped: sessions.slice(0, from) };
+}
+
+/**
+ * Stores `kept`. When the store refuses it, the oldest sessions are dropped
+ * until it fits. Dropped sessions become daily rows, and a refusal leaves a
+ * notice for the player.
+ */
+export function saveHistory(
+  store: KeyValueStore,
+  kept: readonly SessionRecord[],
+  dropped: readonly SessionRecord[],
+): void {
+  let keep = kept;
+  let spill = dropped;
+  let refused = false;
+  while (!tryWriteJson(store, HISTORY_KEY, keep)) {
+    refused = true;
+    if (keep.length <= 1) {
+      noteQuota(store);
+      return;
+    }
+    spill = [...spill, keep[0] as SessionRecord];
+    keep = keep.slice(1);
+  }
+  if (spill.length > 0) addDaily(store, summarize(spill.flatMap(sessionEvents)));
+  if (refused) noteQuota(store);
+}
+
 export function appendSession(store: KeyValueStore, record: SessionRecord): void {
-  const history = [...loadHistory(store), record];
-  writeJson(store, HISTORY_KEY, history.slice(-MAX_SESSIONS));
+  const { keep, dropped } = trimHistory([...loadHistory(store), record]);
+  saveHistory(store, keep, dropped);
 }
 
 /**

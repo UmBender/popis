@@ -1,5 +1,7 @@
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
+import { codeEvents, traceCode, type KeyTrace } from "../stats/keytrace";
+import { recordEvents } from "../storage/events";
 import type { KeyValueStore } from "../storage/history";
 import {
   appendTypingResult,
@@ -43,12 +45,14 @@ type Run = {
   readonly seed: number;
   readonly snippet: Snippet;
   readonly typing: TypingState;
+  /** The keys typed so far, for the events of the run (T22). */
+  readonly trace: KeyTrace;
   readonly run: number;
 };
 
 function newRun(languages: readonly Language[], seed: number, run: number): Run {
   const snippet = pickSnippet(seed, languages);
-  return { languages, seed, snippet, typing: startTyping(snippet.text), run };
+  return { languages, seed, snippet, typing: startTyping(snippet.text), trace: [], run };
 }
 
 /** Code typing test, apart from the game engine (ADR-T10-1). */
@@ -73,19 +77,28 @@ export function TypingScreen({ clock, store, newSeed, onBack }: Props): ReactNod
   const apply = (typing: TypingState) => {
     const run = latest.current;
     if (typing === run.typing) return;
+    const trace = traceCode(run.trace, run.typing, typing, clock.now());
     if (!isFinished(run.typing) && isFinished(typing)) {
       const stats = typingStats(typing);
+      const at = clock.wallTime();
       appendTypingResult(store, {
         version: 1,
         snippetId: run.snippet.id,
         language: run.snippet.language,
         seed: run.seed,
         ...stats,
-        finishedAt: clock.wallTime(),
+        finishedAt: at,
       });
+      const meta = {
+        at,
+        config: run.snippet.language,
+        seed: run.seed,
+        snippetId: run.snippet.id,
+      };
+      recordEvents(store, codeEvents(trace, meta), at);
       setResults(loadTypingResults(store));
     }
-    show({ ...run, typing });
+    show({ ...run, typing, trace });
   };
 
   const next = (languages = latest.current.languages) => {
@@ -94,7 +107,7 @@ export function TypingScreen({ clock, store, newSeed, onBack }: Props): ReactNod
 
   const restart = () => {
     const run = latest.current;
-    show({ ...run, typing: startTyping(run.snippet.text), run: run.run + 1 });
+    show({ ...run, typing: startTyping(run.snippet.text), trace: [], run: run.run + 1 });
   };
 
   const toggle = (language: Language) => {

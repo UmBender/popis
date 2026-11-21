@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import type { Clock } from "../core/clock";
+import { textEvents, traceText, type KeyTrace } from "../stats/keytrace";
+import { recordEvents } from "../storage/events";
 import type { KeyValueStore } from "../storage/history";
 import {
   appendTextResult,
@@ -61,6 +63,8 @@ type Run = {
   readonly settings: TextSettings;
   readonly seed: number;
   readonly state: WordsState;
+  /** The keys typed so far, for the events of the run (T22). */
+  readonly trace: KeyTrace;
   readonly run: number;
 };
 
@@ -69,7 +73,7 @@ function startRun(settings: TextSettings, seed: number, run: number): Run {
     lenient: settings.lenientAccents,
     timeLimitMs: timeLimitMs(settings),
   });
-  return { settings, seed, state, run };
+  return { settings, seed, state, trace: [], run };
 }
 
 /** Text typing test, judged word by word (ADR-T12-1). */
@@ -98,22 +102,30 @@ export function TextTypingScreen({ clock, store, newSeed, onBack }: Props): Reac
         const more = wordsFrom(run.seed, run.settings, next.words.length, TIME_LOOKAHEAD);
         next = appendWords(next, more);
       }
+      const trace = traceText(run.trace, run.state, next, clock.now());
       if (!isWordsFinished(run.state) && isWordsFinished(next)) {
         const { correct, incorrect, extra, missed, ...stats } = wordsStats(next);
+        const at = clock.wallTime();
+        const config = textConfigKey(run.settings);
         appendTextResult(store, {
           version: 1,
-          config: textConfigKey(run.settings),
+          config,
           seed: run.seed,
           wpm: stats.wpm,
           raw: stats.raw,
           accuracy: stats.accuracy,
           chars: { correct, incorrect, extra, missed },
           timeMs: stats.timeMs,
-          finishedAt: clock.wallTime(),
+          finishedAt: at,
         });
+        recordEvents(
+          store,
+          textEvents(trace, { at, config, seed: run.seed, words: next.words }),
+          at,
+        );
         setResults(loadTextResults(store));
       }
-      show({ ...run, state: next });
+      show({ ...run, state: next, trace });
     },
     [clock, show, store],
   );
@@ -182,8 +194,11 @@ export function TextTypingScreen({ clock, store, newSeed, onBack }: Props): Reac
     next(updated);
   };
 
+  // One key at a time, so the trace sees every key of a burst.
   const typed = (text: string) => {
-    apply(typeWordsText(latest.current.state, text.replace(/[\r\n]/g, ""), clock.now()));
+    for (const ch of text.replace(/[\r\n]/g, "").normalize("NFC")) {
+      apply(typeWordsText(latest.current.state, ch, clock.now()));
+    }
   };
 
   const view = wordView(state);

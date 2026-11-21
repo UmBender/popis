@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
 import type { JsonValue } from "../core/problem";
 import { MODES, type Mode } from "../modes";
@@ -17,8 +17,10 @@ import {
   type KeyValueStore,
   type StoredSettings,
 } from "../storage/history";
+import { migrate } from "../storage/migrate";
 import { reviewItems } from "../storage/review";
 import { ConfigScreen } from "./ConfigScreen";
+import { DataPanel } from "./DataPanel";
 import { GameScreen } from "./GameScreen";
 import { ResultsScreen } from "./ResultsScreen";
 import { TextTypingScreen } from "./TextTypingScreen";
@@ -56,6 +58,11 @@ function sessionConfig<M extends Mode>(
 
 export function App({ clock, store, newSeed }: AppProps): ReactNode {
   const [settings, setSettings] = useState<StoredSettings>(() => loadSettings(store));
+
+  // The old per-round results become events, once (T22).
+  useEffect(() => {
+    migrate(store, clock.wallTime());
+  }, [store, clock]);
   const [screen, setScreen] = useState<Screen>({ name: "config" });
   // Read again each time the config shows, so the last session counts.
   const reviewCount = useMemo(
@@ -122,6 +129,7 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
           onVim={() => {
             setScreen({ name: "vim" });
           }}
+          data={<DataPanel store={store} clock={clock} />}
         />
       );
     case "game":

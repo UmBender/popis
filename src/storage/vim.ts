@@ -127,7 +127,7 @@ function isVimEditResult(value: unknown): value is VimEditResult {
 }
 
 /** Every valid result of both drills, in the order they were saved. */
-function loadAllResults(store: KeyValueStore): (VimResult | VimEditResult)[] {
+export function loadAllResults(store: KeyValueStore): (VimResult | VimEditResult)[] {
   const value = readJson(store, VIM_KEY);
   if (!Array.isArray(value)) return [];
   return value.filter((r): r is VimResult | VimEditResult => isVimResult(r) || isVimEditResult(r));

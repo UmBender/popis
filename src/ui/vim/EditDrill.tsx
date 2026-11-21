@@ -1,5 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../../core/clock";
+import { editEvents } from "../../stats/derive";
+import { recordEvents } from "../../storage/events";
 import type { KeyValueStore } from "../../storage/history";
 import {
   appendVimEditResult,
@@ -116,6 +118,7 @@ export function EditDrill({
       if (round === run.round) return;
       if (!isEditRoundFinished(run.round) && isEditRoundFinished(round)) {
         const stats = editRoundStats(round);
+        const at = clock.wallTime();
         appendVimEditResult(store, {
           version: 1,
           kind: "edit",
@@ -124,8 +127,9 @@ export function EditDrill({
           reached: stats.reached,
           skipped: stats.skipped,
           efficiency: stats.efficiency,
-          finishedAt: clock.wallTime(),
+          finishedAt: at,
         });
+        recordEvents(store, editEvents(round, at), at);
         setResults(loadVimEditResults(store));
       }
       show({ ...run, round });
