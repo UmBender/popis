@@ -1,7 +1,7 @@
 ---
 id: T20
 title: Vim - Aprender do básico ao avançado
-status: review
+status: done
 depends_on: [T19]
 branch: task/T20-vim-curriculum
 adrs: [ADR-T20-1]
