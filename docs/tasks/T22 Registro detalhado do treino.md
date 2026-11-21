@@ -1,7 +1,7 @@
 ---
 id: T22
 title: Registro detalhado do treino
-status: review
+status: done
 depends_on: []
 branch: task/T22-training-log
 adrs: [ADR-T22-1]
