@@ -1,7 +1,7 @@
 ---
 id: ADR-T23-1
 title: Painel de evolução com estatística pura e SVG próprio
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-21
 task: T23

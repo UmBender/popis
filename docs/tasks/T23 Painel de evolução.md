@@ -1,7 +1,7 @@
 ---
 id: T23
 title: Painel de evolução
-status: in-progress
+status: review
 depends_on: [T19, T22]
 branch: task/T23-progress-panel
 adrs: ["[[ADR-T23-1 Painel de evolução com estatística pura e SVG próprio]]"]
@@ -91,12 +91,12 @@ junto com precisão, regularidade e pares de letras lentos.
 
 ## Subtasks
 
-- [ ] Spec e `ADR-T23-1`
-- [ ] Testes vermelhos para estatística pura (`learning`, `kc`, `typing-stats`, `progress`), armazenamento de metas e UI/E2E
-- [ ] Modelos e assinaturas em `src/stats/`, `src/storage/goals.ts` e `src/ui/progress/`
-- [ ] Implementação da estatística pura, persistência de metas, SVG próprio, painel Evolução e histórico dos itens
-- [ ] Qualidade (`npm run check`, `npm run coverage`, `npm run test:e2e`, `npm run test:fuzz`) e inspeção visual (desktop + phone)
-- [ ] Documentação e log final
+- [x] Spec e `ADR-T23-1`
+- [x] Testes vermelhos para estatística pura (`learning`, `kc`, `typing-stats`, `progress`), armazenamento de metas e UI/E2E
+- [x] Modelos e assinaturas em `src/stats/`, `src/storage/goals.ts` e `src/ui/progress/`
+- [x] Implementação da estatística pura, persistência de metas, SVG próprio, painel Evolução e histórico dos itens
+- [x] Qualidade (`npm run check`, `npm run coverage`, `npm run test:e2e`, `npm run test:fuzz`) e inspeção visual (desktop + phone)
+- [x] Documentação e log final
 
 ## Notas para o batch
 
@@ -108,3 +108,6 @@ junto com precisão, regularidade e pares de letras lentos.
 - 2026-11-21 — Spec e `ADR-T23-1` escritos. Arquivos adicionados a *Files owned* além dos listados no rascunho: `src/storage/goals.ts` e `src/storage/backup.ts` (persistência e backup de metas da AC-6), `src/ui/shell/sections.ts`, `src/ui/shell/History.tsx`, `src/ui/App.tsx`, `src/ui/ConfigScreen.tsx`, `src/ui/TypingScreen.tsx`, `src/ui/TextTypingScreen.tsx`, `src/ui/VimScreen.tsx`, `src/ui/vim/EditDrill.tsx` e `src/ui/app.css` (item da árvore, AC-5 e AC-7).
 - 2026-11-21 — UNATTENDED CHOICE: `BIS = z(taxa de acerto) − z(mediana do tempo)` conforme Liesefeld & Janczyk (2019), de modo que menor BIS = KC mais fraco e a ordenação crescente coloca os mais fracos primeiro.
 - 2026-11-21 — UNATTENDED CHOICE: item `"Evolução"` posicionado na pasta `Treino` após `"Dados"`, preservando os atalhos `1`–`9` existentes.
+- 2026-11-21 — Inspeção visual (`.batch/visual/t23-progress.spec.ts`, 1 ano de dados simulados com PRNG com seed, desktop e celular): detectados e corrigidos (1) assíntota distante (`fit.a > 1,5 × max`) achatando o eixo Y em curvas quase lineares, agora omitida do eixo Y; (2) agrupamento de `<code>` + `(símbolo)` em tabelas no celular (`justify-content: space-between`). Capturas revalidadas em desktop e celular sem overflow horizontal.
+- 2026-11-21 — Gates finais verdes: `npm run check` (`tsc`, `eslint`, `prettier`, `vitest run` 118 suites / 3972 testes, `vite build`), `npm run coverage` (100% em `src/stats/**`, `src/storage/**` e `src/ui/progress/**`; total 99,97% statements / 99,33% branches / 100% functions / 99,98% lines) e `npm run test:e2e` (29/29 passando em desktop e mobile).
+- 2026-11-21 — Verificação manual restante para o dono: conferir os gráficos e metas com dados reais após alguns dias de uso.
