@@ -112,7 +112,9 @@ export function Shell(props: Props): ReactNode {
 
   // The latest values, read by the window's key listener.
   const latest = useRef({ props, drawer, help, toggleMenu, closeDrawer });
-  latest.current = { props, drawer, help, toggleMenu, closeDrawer };
+  useEffect(() => {
+    latest.current = { props, drawer, help, toggleMenu, closeDrawer };
+  });
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -130,7 +132,7 @@ export function Shell(props: Props): ReactNode {
         now.closeDrawer();
         return;
       }
-      if (now.drawer && e.key === "Tab") {
+      if (now.drawer && e.key === "Tab" && dialog.current !== null) {
         trapTab(e, dialog.current);
         return;
       }
@@ -278,19 +280,19 @@ export function Shell(props: Props): ReactNode {
 }
 
 /** Keeps Tab and Shift+Tab inside an open dialog. */
-function trapTab(e: KeyboardEvent, container: HTMLElement | null): void {
-  if (container === null) return;
+function trapTab(e: KeyboardEvent, container: HTMLElement): void {
   const stops = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE));
   const first = stops[0];
   const last = stops.at(-1);
-  if (first === undefined || last === undefined) return;
-  const active = document.activeElement;
-  if (e.shiftKey && (active === first || !container.contains(active))) {
-    e.preventDefault();
-    last.focus();
-  } else if (!e.shiftKey && (active === last || !container.contains(active))) {
-    e.preventDefault();
-    first.focus();
+  if (first !== undefined && last !== undefined) {
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || !container.contains(active))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && (active === last || !container.contains(active))) {
+      e.preventDefault();
+      first.focus();
+    }
   }
 }
 

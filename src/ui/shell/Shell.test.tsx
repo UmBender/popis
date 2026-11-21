@@ -13,7 +13,10 @@ import {
   type SessionRecord,
 } from "../../storage/history";
 import { App } from "../App";
+import { Reference } from "./panel";
+import { DEFAULT_PREFS, loadPrefs, SHELL_KEY } from "./prefs";
 import { ITEMS } from "./sections";
+import { isField } from "./Shell";
 
 // T18: the editor window around every screen.
 
@@ -410,7 +413,7 @@ describe("panel order", () => {
     });
   }
 
-  it("a reference panel opened stays open after a reload", () => {
+  it("a reference panel opened stays open after a reload and can be closed", () => {
     const { store, view } = setup();
     fireEvent.click(radio("Movimento"));
     const ref = document.querySelector<HTMLDetailsElement>("[data-panel=reference]");
@@ -420,7 +423,12 @@ describe("panel order", () => {
     view.unmount();
     setup(store);
     fireEvent.click(radio("Movimento"));
-    expect(document.querySelector<HTMLDetailsElement>("[data-panel=reference]")?.open).toBe(true);
+    const reopened = document.querySelector<HTMLDetailsElement>("[data-panel=reference]");
+    expect(reopened?.open).toBe(true);
+    if (reopened === null) throw new Error("no reference panel");
+    reopened.open = false;
+    fireEvent(reopened, new Event("toggle"));
+    expect(reopened.open).toBe(false);
   });
 
   it("the mode panel shows the title, the one-line description and Começar with Enter", () => {
@@ -543,5 +551,123 @@ describe("Dados and tokens", () => {
       expect(css).toContain(token);
     }
     expect(css).not.toMatch(/box-shadow|gradient\(|border-radius:\s*[1-9]/);
+  });
+});
+
+describe("shell edge cases", () => {
+  it("j and k move focus along with the selection when a tree radio has focus", () => {
+    setup();
+    const first = radio("Aritmética");
+    first.focus();
+    key("j", first);
+    expect(checkedItem()).toBe("Álgebra");
+    expect(document.activeElement).toBe(radio("Álgebra"));
+  });
+
+  it("the shortcuts help closes with its button and ignores other keys", () => {
+    setup();
+    key("?");
+    const dialog = screen.getByRole("dialog", { name: "Atalhos" });
+    key("a", dialog);
+    expect(screen.getByRole("dialog", { name: "Atalhos" })).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: /Fechar/ }));
+    expect(screen.queryByRole("dialog", { name: "Atalhos" })).toBeNull();
+  });
+
+  it("Enter on a non-mode item focuses its area instead of starting a mode", () => {
+    setup();
+    fireEvent.click(radio("Texto"));
+    key("Enter");
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Texto digitado" }));
+  });
+
+  it("unrelated keys on the results screen keep the results visible", () => {
+    setup(onePlusOne(30));
+    start();
+    advance(31_000);
+    key("a");
+    expect(screen.getByTestId("results-solved")).toBeTruthy();
+  });
+
+  it("useMedia listens to matchMedia changes when narrow is not forced", () => {
+    const original = Object.getOwnPropertyDescriptor(window, "matchMedia");
+    let matches = false;
+    const listeners = new Set<() => void>();
+    const removed = vi.fn();
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: () => ({
+        get matches() {
+          return matches;
+        },
+        addEventListener: (_: string, fn: () => void) => listeners.add(fn),
+        removeEventListener: (_: string, fn: () => void) => {
+          removed();
+          listeners.delete(fn);
+        },
+      }),
+    });
+    try {
+      const view = render(<App clock={clock} store={memoryStore()} newSeed={() => SEED} />);
+      matches = true;
+      act(() => {
+        for (const fn of listeners) fn();
+      });
+      fireEvent.click(menuButton());
+      expect(screen.getByRole("dialog", { name: "Treinos" })).toBeTruthy();
+      view.unmount();
+      expect(removed).toHaveBeenCalled();
+    } finally {
+      if (original !== undefined) Object.defineProperty(window, "matchMedia", original);
+      else Reflect.deleteProperty(window, "matchMedia");
+    }
+  });
+
+  it("loadPrefs and standalone Reference handle fallback values", () => {
+    const store = memoryStore({
+      [SHELL_KEY]: JSON.stringify({ item: "unknown", closed: "bad", open: 42 }),
+    });
+    expect(loadPrefs(store)).toEqual(DEFAULT_PREFS);
+    expect(isField(null)).toBe(false);
+    render(
+      <Reference id="orphan" title="Orphan">
+        body
+      </Reference>,
+    );
+    const group = screen.getByRole<HTMLDetailsElement>("group", { name: "Orphan" });
+    group.open = true;
+    fireEvent(group, new Event("toggle"));
+    expect(group.open).toBe(true);
+  });
+
+  it("shell ignores unmapped keys, Escape on modes, Enter on empty Revisar and keys in selects", () => {
+    const store = memoryStore({
+      [HISTORY_KEY]: JSON.stringify([
+        { ...round(1, 0), params: null, durationMs: 120_000 },
+        { ...round(2, 1), params: [], durationMs: 120_000 },
+      ]),
+    });
+    setup(store);
+    key("k");
+    key("j", document.body, { ctrlKey: true });
+    expect(checkedItem()).toBe("Aritmética");
+    key("Escape");
+    key("a");
+    menuButton().focus();
+    key("Enter", menuButton());
+    expect(screen.queryByRole("textbox", { name: "Resposta" })).toBeNull();
+    const duration = screen.getByRole("combobox", { name: "Duração" });
+    duration.focus();
+    key("j", duration);
+    expect(checkedItem()).toBe("Aritmética");
+    const editable = document.createElement("div");
+    Object.defineProperty(editable, "isContentEditable", { value: true });
+    document.body.appendChild(editable);
+    key("j", editable);
+    editable.remove();
+    expect(checkedItem()).toBe("Aritmética");
+    fireEvent.click(radio("Revisar"));
+    key("Enter");
+    expect(screen.queryByRole("textbox", { name: "Resposta" })).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MODE_IDS } from "../../modes";
-import { folderOf, ITEMS, itemByShortcut, SECTIONS, type ItemId } from "./sections";
+import { folderOf, ITEMS, itemById, itemByShortcut, SECTIONS, type ItemId } from "./sections";
 
 // T18 AC-2: one table holds the tree: folders, items, order and shortcuts.
 
@@ -51,5 +51,10 @@ describe("sections", () => {
   it("folderOf finds the folder of an item", () => {
     expect(folderOf("primes").label).toBe("CP");
     expect(folderOf("data").label).toBe("Treino");
+  });
+
+  it("itemById and folderOf throw on an unknown item", () => {
+    expect(() => itemById("missing" as ItemId)).toThrow();
+    expect(() => folderOf("missing" as ItemId)).toThrow();
   });
 });
