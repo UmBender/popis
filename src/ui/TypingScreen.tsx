@@ -185,7 +185,7 @@ export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props
         <RoundBar
           metrics={[
             { label: "tempo", value: `${String(elapsedS)} s`, tone: "accent" },
-            { label: "erros", value: typing.errors },
+            { label: "erros", value: typing.keystrokes - typing.correct },
           ]}
         />
         <textarea

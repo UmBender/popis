@@ -384,12 +384,7 @@ export function EditDrill({
                 />
               </pre>
               <pre className="vim-after" data-testid="vim-after" data-reference={target.reference}>
-                <Buffer
-                  lines={target.after}
-                  mask={masks.bMask}
-                  mark="vim-diff-add"
-                  cursor={null}
-                />
+                <Buffer lines={target.after} mask={masks.bMask} mark="vim-diff-add" cursor={null} />
               </pre>
             </div>
             <p className="vim-status" data-testid="vim-status">

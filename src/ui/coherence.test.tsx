@@ -396,3 +396,45 @@ describe("T19 AC-9: mobile game layout", () => {
     expect(mobile).toContain("var(--text-xxl)");
   });
 });
+
+describe("T19 edge cases", () => {
+  it("covers Tab in text typing, elapsed timer in code typing, warning tone in RoundBar and Vim motion cmdline edits", () => {
+    setup();
+
+    // RoundBar warning tone when <= 10s remain in GameScreen
+    fireEvent.click(screen.getByRole("button", { name: "Começar" }));
+    advance(115_000);
+    expect(screen.getByTestId("timer").className).toContain("warning");
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Resposta" }), { key: "Escape" });
+
+    // Code typing elapsed timer ticks while running
+    fireEvent.click(radio("Código"));
+    const codeBox = screen.getByRole("textbox", { name: "Código digitado" });
+    typeInto(codeBox, "a");
+    advance(1100);
+    expect(screen.getByTestId("round-bar").textContent).toContain("1 s");
+    fireEvent.keyDown(codeBox, { key: "Escape" });
+
+    // Text typing ignores Tab
+    fireEvent.click(radio("Texto"));
+    const textBox = screen.getByRole("textbox", { name: "Texto digitado" });
+    expect(fireEvent.keyDown(textBox, { key: "Tab" })).toBe(false);
+
+    // Vim Motion cmdline: Backspace, Escape, and unknown command + Enter
+    fireEvent.click(radio("Movimento"));
+    const motionBox = screen.getByRole("textbox", { name: "Teclas do Vim" });
+    typeInto(motionBox, ":w");
+    fireEvent.keyDown(motionBox, { key: "Backspace" });
+    expect(screen.getByTestId("vim-status").textContent).toContain(":");
+    fireEvent.keyDown(motionBox, { key: "Backspace" });
+    expect(screen.getByTestId("vim-status").textContent).toContain("NORMAL");
+
+    typeInto(motionBox, ":q");
+    fireEvent.keyDown(motionBox, { key: "Escape" });
+    expect(screen.getByTestId("vim-status").textContent).toContain("NORMAL");
+
+    typeInto(motionBox, ":x");
+    fireEvent.keyDown(motionBox, { key: "Enter" });
+    expect(screen.getByTestId("vim-status").textContent).toContain("NORMAL");
+  });
+});

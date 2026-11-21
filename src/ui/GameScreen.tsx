@@ -108,7 +108,13 @@ export function GameScreen<P>({
       <div className="problem">
         <span
           data-testid="prompt"
-          className={session.problem.prompt.includes("\n") ? "prompt code" : "prompt"}
+          className={
+            session.problem.prompt.includes("\n")
+              ? "prompt code"
+              : session.problem.prompt.length > 12
+                ? "prompt long"
+                : "prompt"
+          }
         >
           {session.problem.prompt}
         </span>
