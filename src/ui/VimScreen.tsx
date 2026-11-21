@@ -48,8 +48,14 @@ type Props = {
   readonly onBack: () => void;
   /** Told when a round starts and ends, so the window hides the tree (T18). */
   readonly onRunning?: (running: boolean) => void;
-  /** Switches to the Vim Learn screen (T19 AC-7). */
-  readonly onLearn?: () => void;
+  /** Switches to the Vim Learn screen (T19 AC-7, T20 AC-5). */
+  readonly onLearn?: (lessonId?: string) => void;
+  /** Switches to Motion or Edit from a completed Learn lesson (T20 AC-5). */
+  readonly onPractice?: (drill: "motion" | "edit") => void;
+  /** Lesson to open immediately when entering Learn (T20 AC-5). */
+  readonly initialLesson?: string | null;
+  /** Read-only Learn mode on touch screens (T20 AC-6). */
+  readonly readOnly?: boolean;
 };
 
 /**

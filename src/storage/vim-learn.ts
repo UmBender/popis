@@ -32,3 +32,19 @@ export function saveUnlocked(store: KeyValueStore, kinds: readonly RegisterKind[
 export function unlockKind(store: KeyValueStore, kind: RegisterKind): void {
   saveUnlocked(store, parseUnlocked({ unlocked: [...loadUnlocked(store), kind] }));
 }
+
+export function parseCompleted(_value: unknown): string[] {
+  throw new Error("todo");
+}
+
+export function loadCompleted(_store: KeyValueStore): string[] {
+  throw new Error("todo");
+}
+
+export function saveCompleted(_store: KeyValueStore, _completed: readonly string[]): void {
+  throw new Error("todo");
+}
+
+export function completeLesson(_store: KeyValueStore, _lessonId: string): string[] {
+  throw new Error("todo");
+}

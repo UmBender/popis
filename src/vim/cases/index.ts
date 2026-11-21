@@ -1,5 +1,7 @@
 import { BASIC } from "./basic";
 import type { EditCase, RegisterCase, VimCase } from "./case";
+import { CURRICULUM_EDIT_CASES } from "./curriculum-edit";
+import { CURRICULUM_MOTION_CASES } from "./curriculum-motion";
 import { REG_INSERT } from "./reg-insert";
 import { REG_MACROS } from "./reg-macros";
 import { REG_NAMED } from "./reg-named";
@@ -59,6 +61,8 @@ export const REGISTER_CASES: readonly RegisterCase[] = [
   ...REG_INSERT,
   ...REG_PROBE,
 ];
+
+export { CURRICULUM_EDIT_CASES, CURRICULUM_MOTION_CASES };
 
 /** The motion or command a case is about: its name up to the first ": ". */
 export function motionOf(vimCase: VimCase | EditCase | RegisterCase): string {
