@@ -38,9 +38,9 @@ export const LESSONS: readonly Lesson[] = [
     kind: "number-lines",
     title: "Gerar linhas com uma macro",
     explanation:
-      "Uma macro grava teclas e as repete. qa começa a gravar no registrador a, " +
+      "Uma macro grava teclas e as repete: qa começa a gravar no registrador a, " +
       "yyp copia a linha, <C-a> soma 1 ao número e q para. Depois, 2@a repete " +
-      "a gravação duas vezes. Serve para gerar entradas de teste numeradas.",
+      "a gravação duas vezes para gerar entradas de teste numeradas.",
     commands: ["qa … q", "@a", "9@a", "<C-a>"],
     example: {
       lines: ["1"],
@@ -150,8 +150,8 @@ export const LESSONS: readonly Lesson[] = [
     kind: "increment-indexes",
     title: "Incrementar índices com ponto",
     explanation:
-      "<C-a> soma 1 ao próximo número da linha e <C-x> subtrai. Com j. você " +
-      "repete a soma na linha de baixo: o ponto repete a última mudança. " +
+      "<C-a> soma 1 ao próximo número da linha e <C-x> subtrai; com j. você " +
+      "repete a soma na linha de baixo, pois o ponto repete a última mudança. " +
       "Serve para passar um bloco de índices de 0-base para 1-base.",
     commands: ["<C-a>", "<C-x>", "j."],
     example: {

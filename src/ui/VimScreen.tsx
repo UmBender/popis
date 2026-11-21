@@ -17,6 +17,7 @@ import {
   type VimResult,
   type VimSettings,
 } from "../storage/vim";
+import { lessonForHelpKey } from "../vim/curriculum";
 import { formatKeys, keyFromEvent, type Key } from "../vim/keys";
 import { LEVEL_LABELS, LEVELS, levelHelp } from "../vim/levels";
 import {
@@ -100,7 +101,7 @@ function newRun(settings: VimSettings, seed: number, run: number): Run {
 const percent = (fraction: number): string => `${String(Math.round(fraction * 100))}%`;
 
 /** The Vim motion drill (ADR-T13-1). */
-function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): ReactNode {
+function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Props): ReactNode {
   const [current, setCurrent] = useState<Run>(() => newRun(loadVimSettings(store), newSeed(), 0));
   const [results, setResults] = useState<readonly VimResult[]>(() => loadVimResults(store));
   const [now, setNow] = useState(() => clock.now());
@@ -366,21 +367,55 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
 
       <Reference id="vim-motion-commands" title="Comandos deste nível" className="vim-commands">
         <ul>
-          {currentHelp.map((help) => (
-            <li key={help.keys}>
-              <code>{help.keys}</code> — {help.text}
-            </li>
-          ))}
+          {currentHelp.map((help) => {
+            const lesson = lessonForHelpKey(help.keys);
+            return (
+              <li key={help.keys}>
+                <code>{help.keys}</code> — {help.text}
+                {lesson !== undefined && onLearn !== undefined && (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      className="link vim-cmd-learn"
+                      onClick={() => {
+                        onLearn(lesson.id);
+                      }}
+                    >
+                      aprender
+                    </button>
+                  </>
+                )}
+              </li>
+            );
+          })}
         </ul>
         {earlierHelp.length > 0 && (
           <details className="vim-earlier" data-testid="vim-earlier-commands">
             <summary>{`já valem (níveis 1–${String(settings.level - 1)})`}</summary>
             <ul>
-              {earlierHelp.map((help) => (
-                <li key={help.keys}>
-                  <code>{help.keys}</code> — {help.text}
-                </li>
-              ))}
+              {earlierHelp.map((help) => {
+                const lesson = lessonForHelpKey(help.keys);
+                return (
+                  <li key={help.keys}>
+                    <code>{help.keys}</code> — {help.text}
+                    {lesson !== undefined && onLearn !== undefined && (
+                      <>
+                        {" "}
+                        <button
+                          type="button"
+                          className="link vim-cmd-learn"
+                          onClick={() => {
+                            onLearn(lesson.id);
+                          }}
+                        >
+                          aprender
+                        </button>
+                      </>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </details>
         )}

@@ -1,3 +1,60 @@
 import type { VimCase } from "./case";
 
-export const CURRICULUM_MOTION_CASES: readonly VimCase[] = [];
+export const CURRICULUM_MOTION_CASES: readonly VimCase[] = [
+  ["learn: motion-hjkl", "int n, m;\ncin >> n >> m;\ncout << n + m;", [0, 4], "jllk", [0, 6]],
+  ["learn: motion-wbe", "int mid = (lo + hi) / 2;", [0, 0], "wwe", [0, 10]],
+  ["learn: motion-WBE", "if (a[mid] >= x) hi = mid - 1;", [0, 4], "WWE", [0, 15]],
+  ["learn: motion-ge", "int ans = max(a, b);", [0, 10], "gege", [0, 6]],
+  ["learn: motion-line", "    ans = max(ans, x);", [0, 10], "^$0", [0, 0]],
+  ["learn: motion-find", "if (a[mid] >= x) hi = mid - 1;", [0, 0], "f[t]", [0, 8]],
+  ["learn: motion-repeat-find", "int a = 1, b = 2, c = 3;", [0, 0], "f,;,", [0, 9]],
+  [
+    "learn: motion-counts",
+    "int lo = 0, hi = n - 1;\nwhile (lo <= hi) {\n    int mid = (lo + hi) / 2;\n    if (a[mid] >= x) hi = mid - 1;\n}",
+    [0, 0],
+    "3j2w",
+    [3, 7],
+  ],
+  [
+    "learn: motion-file-lines",
+    "vector<int> dist(n, -1);\nqueue<int> q;\ndist[s] = 0;\nq.push(s);",
+    [0, 0],
+    "G2Ggg",
+    [0, 0],
+  ],
+  [
+    "learn: motion-paragraphs",
+    "int gcd(int a, int b) {\n    return b ? gcd(b, a % b) : a;\n}\n\nint main() {\n    cout << gcd(12, 8);\n}",
+    [0, 0],
+    "}{",
+    [0, 0],
+  ],
+  [
+    "learn: motion-match",
+    "int lo = 0, hi = n - 1;\nwhile (lo <= hi) {\n    int mid = (lo + hi) / 2;\n    if (a[mid] >= x) hi = mid - 1;\n}",
+    [1, 17],
+    "%",
+    [4, 0],
+  ],
+  [
+    "learn: motion-search",
+    "int lo = 0, hi = n - 1;\nwhile (lo <= hi) {\n    int mid = (lo + hi) / 2;\n    if (a[mid] >= x) hi = mid - 1;\n}",
+    [0, 0],
+    "/mid<CR>",
+    [2, 8],
+  ],
+  [
+    "learn: motion-search-next",
+    "int lo = 0, hi = n - 1;\nwhile (lo <= hi) {\n    int mid = (lo + hi) / 2;\n    if (a[mid] >= x) hi = mid - 1;\n}",
+    [0, 0],
+    "/mid<CR>n",
+    [3, 10],
+  ],
+  [
+    "learn: motion-search-word",
+    "int lo = 0, hi = n - 1;\nwhile (lo <= hi) {\n    int mid = (lo + hi) / 2;\n    if (a[mid] >= x) hi = mid - 1;\n}",
+    [0, 12],
+    "*",
+    [1, 13],
+  ],
+];

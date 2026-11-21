@@ -10,6 +10,7 @@ import {
   saveVimEditSettings,
   type VimEditSettings,
 } from "../../storage/vim";
+import { lessonForHelpKey } from "../../vim/curriculum";
 import { diffText } from "../../vim/diff";
 import { loadUnlocked } from "../../storage/vim-learn";
 import { ALL_EDIT_KINDS, EDIT_KIND_LABELS, EDIT_KINDS, type EditKind } from "../../vim/drills/edit";
@@ -49,8 +50,8 @@ type Props = {
   readonly onSettings: (settings: VimEditSettings) => void;
   /** Told when a round starts and ends, so the window hides the tree (T18). */
   readonly onRunning?: (running: boolean) => void;
-  /** Switches to the Vim Learn screen (T19 AC-7). */
-  readonly onLearn?: () => void;
+  /** Switches to the Vim Learn screen (T19 AC-7, T20 AC-5). */
+  readonly onLearn?: (lessonId?: string) => void;
 };
 
 const EDIT_FAMILIES: readonly {
@@ -410,17 +411,34 @@ export function EditDrill({
 
       <Reference id="vim-edit-commands" title="Comandos" className="vim-commands">
         <ul>
-          {EDIT_HELP.map((help) => (
-            <li key={help.keys}>
-              <code>{help.keys}</code> — {help.text}
-              {help.example !== undefined && (
-                <>
-                  <br />
-                  <span className="muted">ex.: {help.example}</span>
-                </>
-              )}
-            </li>
-          ))}
+          {EDIT_HELP.map((help) => {
+            const lesson = lessonForHelpKey(help.keys);
+            return (
+              <li key={help.keys}>
+                <code>{help.keys}</code> — {help.text}
+                {lesson !== undefined && onLearn !== undefined && (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      className="link vim-cmd-learn"
+                      onClick={() => {
+                        onLearn(lesson.id);
+                      }}
+                    >
+                      aprender
+                    </button>
+                  </>
+                )}
+                {help.example !== undefined && (
+                  <>
+                    <br />
+                    <span className="muted">ex.: {help.example}</span>
+                  </>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </Reference>
 

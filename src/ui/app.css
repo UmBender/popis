@@ -1296,3 +1296,48 @@ th {
   font-weight: bold;
   text-decoration: underline;
 }
+
+/* Vim curriculum units (T20, ADR-T20-1). */
+.vim-units {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vim-unit {
+  padding: var(--space-2);
+  border: 1px solid var(--surface);
+  background: var(--bg);
+}
+
+.vim-unit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.vim-unit-title {
+  font-weight: 700;
+}
+
+.vim-unit-status {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.vim-unit-status[data-status="in-progress"] {
+  color: var(--warning);
+}
+
+.vim-unit-status[data-status="done"] {
+  color: var(--correct);
+}
+
+.vim-cmd-learn {
+  font-size: var(--text-sm);
+}
