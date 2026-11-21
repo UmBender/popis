@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { JsonValue } from "../core/problem";
 import type { SessionRecord } from "../storage/history";
 import type { VimResult } from "../storage/vim";
 import { DAY_MS } from "./summary";
@@ -12,7 +13,7 @@ function calcSession(
   durationMs: number,
   correct: number,
   at: number,
-  params: Record<string, unknown> = { k: 1 },
+  params: JsonValue = { k: 1 },
 ): SessionRecord {
   return {
     version: 1,

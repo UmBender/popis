@@ -33,7 +33,7 @@ function seedStore() {
           seed: j,
           params: {},
         },
-        outcome: j % 2 === 0 || j < 30 ? "correct" : "wrong",
+        outcome: j % 2 === 0 || j < 30 ? "correct" : "skipped",
         timeMs: j % 2 === 0 ? 900 : 2100,
         corrections: 0,
       })),
