@@ -1,7 +1,20 @@
+/* Tokens that are not colours (docs/architecture/Shell.md, ADR-T18-1). */
 :root {
+  --text-sm: 0.8125rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 2rem;
+  --text-xxl: 4.5rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 3rem;
+  --rail: 26ch;
+
   color-scheme: dark;
   font-family: "JetBrainsMono Nerd Font", "JetBrains Mono", ui-monospace, monospace;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.5;
 }
 
@@ -20,39 +33,313 @@ body {
   color: var(--selection-text);
 }
 
-#root {
-  display: flex;
-  justify-content: center;
-  padding: 3rem 1rem;
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-.screen {
-  width: 100%;
-  max-width: 44rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+kbd {
+  font: inherit;
+  color: var(--text);
 }
 
-h1 {
-  margin: 0;
-  font-size: 1.6rem;
+/* The editor window (T18): path bar, tree, panel and status line. */
+
+.shell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
-.brand {
+.shell-bar {
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  color: var(--muted);
+  border-bottom: 1px solid var(--selection);
+}
+
+.where {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.path {
+  overflow-wrap: anywhere;
+}
+
+button.burger {
+  min-width: 44px;
+  min-height: 44px;
+  margin: calc(-1 * var(--space-2)) 0;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: var(--text-lg);
+}
+
+.shell-right {
+  text-align: right;
 }
 
 .brand-acronym {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 
 .brand-acronym strong {
   color: var(--text);
   font-weight: 700;
+}
+
+.shell-body {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  min-height: 0;
+}
+
+.shell-closed .shell-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tree {
+  padding: var(--space-3) 0;
+  background: var(--surface);
+  border-right: 1px solid var(--selection);
+}
+
+.tree[hidden] {
+  display: none;
+}
+
+.tree-folder {
+  display: flex;
+  flex-direction: column;
+}
+
+.tree button.folder {
+  padding: var(--space-1) var(--space-3);
+  background: none;
+  border: none;
+  color: var(--muted);
+  text-align: left;
+}
+
+.tree-item {
+  position: relative;
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3) var(--space-1) calc(var(--space-3) + 2ch);
+  cursor: pointer;
+}
+
+/* The radio covers the whole row: invisible, but clicked and focused. */
+.tree-item input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.tree-name {
+  flex: 1;
+}
+
+.tree-item kbd {
+  color: var(--muted);
+}
+
+.tree-item:has(input:checked) {
+  background: var(--selection);
+  color: var(--selection-text);
+}
+
+.tree-item:has(input:checked) kbd {
+  color: var(--selection-text);
+}
+
+.tree-item:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.count {
+  color: var(--warning);
+}
+
+.shell-main {
+  min-width: 0;
+  padding: var(--space-4) var(--space-5);
+}
+
+.shell-main > .screen {
+  max-width: 80ch;
+}
+
+.shell-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-4);
+  padding-right: var(--space-3);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.status-mode {
+  padding: 0 var(--space-3);
+  background: var(--accent);
+  color: var(--surface);
+  font-weight: 700;
+}
+
+.status-mode.jogando {
+  background: var(--correct);
+}
+
+/* Below 48rem the tree is a drawer over the panel. */
+.shell-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  background: var(--bg);
+  opacity: 0.7;
+}
+
+.tree.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  width: min(var(--rail), 85vw);
+  overflow-y: auto;
+  animation: drawer-in 150ms ease-out;
+}
+
+.drawer button.folder,
+.drawer .tree-item {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+.shell-help {
+  position: fixed;
+  top: 10vh;
+  left: 50%;
+  z-index: 4;
+  width: min(40rem, 90vw);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: var(--space-4);
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+}
+
+.shell-help h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+}
+
+.shell-help dl {
+  margin: 0 0 var(--space-3);
+}
+
+.shell-help dl div {
+  display: grid;
+  grid-template-columns: 12ch 1fr;
+  gap: var(--space-3);
+}
+
+.shell-help dd {
+  margin: 0;
+}
+
+/* The panel of an item: title, options, area, history, references. */
+
+.screen {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.panel-title h2 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-xl);
+  line-height: 1.2;
+}
+
+.panel-title p {
+  margin: 0;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+}
+
+.spark {
+  color: var(--accent);
+  letter-spacing: 0.1em;
+}
+
+.history strong {
+  color: var(--text);
+}
+
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--selection);
+}
+
+legend {
+  color: var(--muted);
+}
+
+.reference {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--selection);
+}
+
+.reference summary {
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.reference[open] summary {
+  margin-bottom: var(--space-2);
 }
 
 .muted {
@@ -66,15 +353,48 @@ button {
   color: var(--text);
   background: var(--surface);
   border: 1px solid var(--muted);
-  border-radius: 4px;
-  padding: 0.3rem 0.6rem;
+  padding: var(--space-1) var(--space-2);
 }
 
 input:focus-visible,
 select:focus-visible,
-button:focus-visible {
+button:focus-visible,
+summary:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+/* Checkboxes read [x] and [ ] but stay checkboxes. */
+label:has(> input[type="checkbox"]) {
+  position: relative;
+}
+
+label > input[type="checkbox"] {
+  appearance: none;
+  width: 3ch;
+  height: 1.5em;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+label:has(> input[type="checkbox"])::before {
+  /* Empty alternative text: the mark stays out of the accessible name. */
+  content: "[ ]" / "";
+  position: absolute;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+label:has(> input[type="checkbox"]:checked)::before {
+  content: "[x]" / "";
+  color: var(--accent);
+}
+
+label:has(> input[type="checkbox"]:disabled) {
+  opacity: 0.6;
 }
 
 /* Config */
@@ -119,35 +439,113 @@ button.primary {
   font-weight: bold;
 }
 
+button.start {
+  padding: var(--space-2) var(--space-3);
+}
+
+button.start kbd {
+  margin-left: var(--space-2);
+  color: inherit;
+  font-weight: 400;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.4;
 }
 
-/* Game */
+/* Game: the prompt is the moment. */
 
-.status {
+.game {
+  min-height: calc(100vh - 9rem);
+}
+
+.game .status {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   color: var(--muted);
 }
 
 .timer {
   color: var(--accent);
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
 }
 
 .timer.warning {
   color: var(--warning);
 }
 
+.game .score {
+  color: var(--text);
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+}
+
 .problem {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 3rem 0;
-  font-size: 2.4rem;
+  gap: var(--space-3);
+  padding: var(--space-5) 0 var(--space-3);
+  font-size: var(--text-xxl);
+  font-weight: 700;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+/* The judge's verdicts: at the foot on a desktop. */
+.verdicts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: auto 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.verdict {
+  min-width: 4ch;
+  padding: 0 var(--space-1);
+  color: var(--surface);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: center;
+}
+
+.verdict.ac {
+  background: var(--correct);
+}
+
+.verdict.wa {
+  background: var(--wrong);
+}
+
+.verdict.sk {
+  background: var(--warning);
+}
+
+.verdict.now {
+  outline-offset: 2px;
+  animation: verdict-new 300ms ease-out forwards;
+}
+
+@keyframes verdict-new {
+  from {
+    outline: 1px solid var(--text);
+  }
+
+  to {
+    outline: 1px solid var(--bg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict.now,
+  .tree.drawer {
+    animation: none;
+  }
 }
 
 /* Loop code: keep its lines and indentation, small enough for a phone. */
@@ -161,10 +559,11 @@ button:disabled {
 }
 
 .answer {
-  width: 9ch;
-  font-size: inherit;
-  text-align: center;
-  border-color: var(--accent);
+  width: 12ch;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xl);
+  font-weight: 400;
+  border: 2px solid var(--accent);
 }
 
 .hint {
@@ -172,15 +571,92 @@ button:disabled {
   font-size: 0.8rem;
 }
 
-/* Results */
+/* Results: an ICPC standings row. */
 
 .score {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: var(--text-lg);
 }
 
-.score strong {
+.score strong,
+.solved strong {
   color: var(--correct);
+}
+
+.solved {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+.pairs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  margin: 0;
+}
+
+.pairs div {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.pairs dt {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.pairs dd {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.standings-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.standings {
+  width: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.standings th,
+.standings td {
+  text-align: center;
+}
+
+.standings th:first-child,
+.standings td:first-child {
+  padding-right: var(--space-3);
+  text-align: left;
+}
+
+.standings td {
+  border: 2px solid var(--bg);
+}
+
+.standings td.ac,
+.standings td.wa,
+.standings td.sk {
+  color: var(--surface);
+}
+
+.standings td.ac {
+  background: var(--correct);
+}
+
+.standings td.wa {
+  background: var(--wrong);
+}
+
+.standings td.sk {
+  background: var(--warning);
+}
+
+.standings small {
+  display: block;
+  font-size: var(--text-sm);
 }
 
 table {
@@ -268,8 +744,6 @@ th {
 
 .answer.wide {
   width: 18ch;
-  font-size: 1.8rem;
-  text-align: left;
 }
 
 .skipped {
@@ -283,9 +757,8 @@ th {
 .choices {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 0.5rem 1.5rem;
-  margin: -1.5rem 0 1rem;
+  margin: 0 0 var(--space-3);
   padding: 0;
   list-style: none;
   font-size: 1.4rem;
@@ -294,7 +767,6 @@ th {
 .choices li {
   padding: 0.2rem 0.6rem;
   border: 1px solid var(--muted);
-  border-radius: 4px;
 }
 
 /* Touch screens: targets of at least 44 px (T11). */
@@ -308,25 +780,58 @@ th {
   }
 }
 
-/* Phones: the question and the answer stay above the on-screen keyboard. */
+/* Phones: the tree is a drawer, and the question, the answer and the
+   verdicts stay above the on-screen keyboard. */
 
-@media (max-width: 40rem) {
-  #root {
-    padding: 1rem;
+@media (max-width: 48rem) {
+  .shell-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shell-main {
+    padding: var(--space-3);
+  }
+
+  .shell-right {
+    display: none;
+  }
+
+  .panel-title h2 {
+    font-size: var(--text-lg);
+  }
+
+  .game {
+    min-height: 0;
   }
 
   .problem {
-    gap: 0.5rem 1rem;
-    padding: 1rem 0;
-    font-size: 1.8rem;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-3) 0 var(--space-2);
+    font-size: var(--text-xl);
   }
 
+  .answer,
   .answer.wide {
-    font-size: 1.4rem;
+    width: 100%;
+    max-width: 18ch;
+    font-size: var(--text-lg);
+  }
+
+  .verdicts {
+    margin-top: 0;
+  }
+
+  /* The keyboard covers the lower half: the words come before the options. */
+  .text-typing > .panel-title {
+    order: -2;
+  }
+
+  .text-typing > .text-area {
+    order: -1;
   }
 
   .choices {
-    margin: -0.5rem 0 0.5rem;
+    margin: 0 0 var(--space-2);
     font-size: 1.1rem;
   }
 }
@@ -355,7 +860,6 @@ th {
   padding: 1rem;
   overflow-x: auto;
   background: var(--surface);
-  border-radius: 4px;
   font-size: 1rem;
   line-height: 1.6;
   white-space: pre;
@@ -384,8 +888,10 @@ th {
   background: var(--wrong);
 }
 
+/* A bar before the letter; the negative margin keeps the layout. */
 .cursor {
-  box-shadow: inset 2px 0 0 var(--accent);
+  margin-left: -2px;
+  border-left: 2px solid var(--accent);
 }
 
 .typing-results {
@@ -397,13 +903,6 @@ th {
 .typing-summary p {
   margin: 0;
   font-size: 0.85rem;
-}
-
-/* Touch screens have no keyboard for code (T10 AC-8). */
-@media (hover: none) and (pointer: coarse) {
-  .typing-entry {
-    display: none;
-  }
 }
 
 /* Text typing (T12, ADR-T12-1) */
@@ -442,7 +941,6 @@ th {
   padding: 0 0.75rem;
   border-block: 0.5rem solid var(--surface);
   background: var(--surface);
-  border-radius: 4px;
   font-size: 1.4rem;
   line-height: 1.6;
   overflow-wrap: anywhere;
@@ -478,17 +976,11 @@ th {
 }
 
 .cursor-after {
-  box-shadow: 2px 0 0 var(--accent);
+  margin-right: -2px;
+  border-right: 2px solid var(--accent);
 }
 
 /* Vim motion drill (T13, ADR-T13-1) */
-
-/* Touch screens have no keyboard for Vim (T13 AC-8). */
-@media (hover: none) and (pointer: coarse) {
-  .vim-entry {
-    display: none;
-  }
-}
 
 .vim-time {
   margin: 0;
@@ -502,7 +994,6 @@ th {
   padding: 1rem;
   overflow-x: auto;
   background: var(--surface);
-  border-radius: 4px;
   font-size: 1rem;
   line-height: 1.6;
   white-space: pre;
@@ -568,7 +1059,8 @@ th {
 .vim-cursor.vim-insert {
   background: none;
   color: inherit;
-  box-shadow: inset 2px 0 0 var(--text);
+  margin-left: -2px;
+  border-left: 2px solid var(--text);
 }
 
 /* The visual selection (T15). */
@@ -587,7 +1079,6 @@ th {
   padding: 0.75rem 1rem;
   overflow-x: auto;
   border: 1px dashed var(--muted);
-  border-radius: 4px;
   font-size: 1rem;
   line-height: 1.6;
   white-space: pre;

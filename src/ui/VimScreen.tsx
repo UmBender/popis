@@ -33,7 +33,7 @@ import {
   type Round,
   type TargetResult,
 } from "../vim/round";
-import { DrillSelect } from "./vim/DrillSelect";
+import { PanelTitle, Reference, useRunning } from "./shell/panel";
 import { EditDrill } from "./vim/EditDrill";
 import { LearnDrill } from "./vim/LearnDrill";
 
@@ -43,9 +43,14 @@ type Props = {
   /** Seed of each new round. */
   readonly newSeed: () => number;
   readonly onBack: () => void;
+  /** Told when a round starts and ends, so the window hides the tree (T18). */
+  readonly onRunning?: (running: boolean) => void;
 };
 
-/** The Vim screen: the motion drill (T13) or the edit drill (T14), as chosen. */
+/**
+ * The Vim screen: the motion drill (T13), the edit drill (T14) or Learn, as
+ * saved; the window's tree saves the choice (T18).
+ */
 export function VimScreen(props: Props): ReactNode {
   const { store } = props;
   const [edit, setEdit] = useState<VimEditSettings>(() => loadVimEditSettings(store));
@@ -55,16 +60,12 @@ export function VimScreen(props: Props): ReactNode {
   if (edit.drill === "learn") {
     return <LearnDrill {...props} settings={edit} onSettings={setEdit} />;
   }
-  return (
-    <MotionDrill
-      {...props}
-      onDrill={(drill) => {
-        const updated = parseVimEditSettings({ ...edit, drill });
-        saveVimEditSettings(store, updated);
-        setEdit(updated);
-      }}
-    />
-  );
+  return <MotionDrill {...props} />;
+}
+
+/** Saves the drill chosen in the tree, for the next VimScreen. */
+export function chooseVimDrill(store: KeyValueStore, drill: VimDrill): void {
+  saveVimEditSettings(store, parseVimEditSettings({ ...loadVimEditSettings(store), drill }));
 }
 
 const TICK_MS = 100;
@@ -88,13 +89,7 @@ function newRun(settings: VimSettings, seed: number, run: number): Run {
 const percent = (fraction: number): string => `${String(Math.round(fraction * 100))}%`;
 
 /** The Vim motion drill (ADR-T13-1). */
-function MotionDrill({
-  clock,
-  store,
-  newSeed,
-  onBack,
-  onDrill,
-}: Props & { readonly onDrill: (drill: VimDrill) => void }): ReactNode {
+function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): ReactNode {
   const [current, setCurrent] = useState<Run>(() => newRun(loadVimSettings(store), newSeed(), 0));
   const [results, setResults] = useState<readonly VimResult[]>(() => loadVimResults(store));
   const [now, setNow] = useState(() => clock.now());
@@ -135,6 +130,7 @@ function MotionDrill({
   const { settings, round } = current;
   const finished = isRoundFinished(round);
   const running = round.startedAt !== null && !finished;
+  useRunning(onRunning, running);
 
   useEffect(() => {
     box.current?.focus();
@@ -177,9 +173,41 @@ function MotionDrill({
 
   return (
     <div className="screen vim">
-      <h1>Vim</h1>
+      <PanelTitle title="Vim">Leve o cursor até o alvo com o mínimo de teclas.</PanelTitle>
 
-      <div className="typing-area">
+      <fieldset className="vim-options" data-panel="options">
+        <legend>Opções</legend>
+        <label htmlFor="vim-level">Nível</label>
+        <select
+          id="vim-level"
+          value={settings.level}
+          onChange={(e) => {
+            change({ level: Number(e.target.value) });
+          }}
+        >
+          {LEVELS.map((level) => (
+            <option key={level} value={level}>
+              {`${String(level)}: ${LEVEL_LABELS[level]}`}
+            </option>
+          ))}
+        </select>
+        <label htmlFor="vim-duration">Duração</label>
+        <select
+          id="vim-duration"
+          value={settings.durationS}
+          onChange={(e) => {
+            change({ durationS: Number(e.target.value) });
+          }}
+        >
+          {ROUND_DURATIONS_S.map((s) => (
+            <option key={s} value={s}>
+              {`${String(s)} s`}
+            </option>
+          ))}
+        </select>
+      </fieldset>
+
+      <div className="typing-area" data-panel="area">
         <textarea
           ref={box}
           className="typing-input"
@@ -265,41 +293,14 @@ function MotionDrill({
         )}
       </div>
 
-      <fieldset className="vim-options">
-        <legend>Opções</legend>
-        <DrillSelect value="motion" onChange={onDrill} />
-        <label htmlFor="vim-level">Nível</label>
-        <select
-          id="vim-level"
-          value={settings.level}
-          onChange={(e) => {
-            change({ level: Number(e.target.value) });
-          }}
-        >
-          {LEVELS.map((level) => (
-            <option key={level} value={level}>
-              {`${String(level)}: ${LEVEL_LABELS[level]}`}
-            </option>
-          ))}
-        </select>
-        <label htmlFor="vim-duration">Duração</label>
-        <select
-          id="vim-duration"
-          value={settings.durationS}
-          onChange={(e) => {
-            change({ durationS: Number(e.target.value) });
-          }}
-        >
-          {ROUND_DURATIONS_S.map((s) => (
-            <option key={s} value={s}>
-              {`${String(s)} s`}
-            </option>
-          ))}
-        </select>
-      </fieldset>
+      <p data-testid="vim-summary" className="muted typing-summary" data-panel="history">
+        {summary === null
+          ? "Sem resultados nesta configuração."
+          : `melhor ${String(Math.round(summary.best))} alvos · ` +
+            `média dos últimos 10: ${String(Math.round(summary.recentMean))} alvos`}
+      </p>
 
-      <fieldset className="vim-commands">
-        <legend>Comandos deste nível</legend>
+      <Reference id="vim-motion-commands" title="Comandos deste nível" className="vim-commands">
         <ul>
           {levelHelp(settings.level).map((help) => (
             <li key={help.keys}>
@@ -307,14 +308,7 @@ function MotionDrill({
             </li>
           ))}
         </ul>
-      </fieldset>
-
-      <p data-testid="vim-summary" className="muted typing-summary">
-        {summary === null
-          ? "Sem resultados nesta configuração."
-          : `melhor ${String(Math.round(summary.best))} alvos · ` +
-            `média dos últimos 10: ${String(Math.round(summary.recentMean))} alvos`}
-      </p>
+      </Reference>
 
       <div className="actions">
         <button type="button" onClick={onBack}>

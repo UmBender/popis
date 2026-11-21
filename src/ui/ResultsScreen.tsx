@@ -3,6 +3,7 @@ import type { Attempt } from "../session/engine";
 import { summarize } from "../session/stats";
 import { MODES, type Mode } from "../modes";
 import { answerText, seconds, skillLabel } from "./format";
+import { scoreboard } from "./verdicts";
 
 /** How many of the slowest answers the results list. */
 const SLOWEST = 10;
@@ -10,21 +11,105 @@ const SLOWEST = 10;
 type Props = {
   readonly log: readonly Attempt[];
   readonly mode: Mode;
+  /** Seed and length of the round (T18). */
+  readonly seed: number;
+  readonly durationMs: number;
+  /** The best score in this configuration, this round included. */
+  readonly best: number;
   readonly onPlayAgain: () => void;
   readonly onConfigure: () => void;
 };
 
-export function ResultsScreen({ log, mode, onPlayAgain, onConfigure }: Props): ReactNode {
+export function ResultsScreen({
+  log,
+  mode,
+  seed,
+  durationMs,
+  best,
+  onPlayAgain,
+  onConfigure,
+}: Props): ReactNode {
   const summary = summarize(log, SLOWEST);
   const skipped = log.filter((a) => a.outcome === "skipped");
   const group = MODES[mode].group;
+  const wrong = log.reduce((n, a) => n + a.corrections, 0);
+  const board = scoreboard(log);
+  const columns = Math.max(0, ...board.map((row) => row.cells.length));
 
   return (
     <div className="screen results">
-      <h1>Resultado</h1>
-      <p className="score">
-        Pontos: <strong data-testid="final-score">{summary.score}</strong>
+      <p className="solved" data-testid="results-solved">
+        <strong data-testid="final-score">{summary.score}</strong>
+        {` resolvidas em ${String(Math.round(durationMs / 1000))} s`}
       </p>
+      <dl className="pairs" data-testid="results-pairs">
+        <div>
+          <dt>tentativas erradas</dt>
+          <dd>{wrong}</dd>
+        </div>
+        <div>
+          <dt>puladas</dt>
+          <dd>{summary.skipped}</dd>
+        </div>
+        <div>
+          <dt>seu recorde</dt>
+          <dd>{best}</dd>
+        </div>
+      </dl>
+
+      {board.length > 0 && (
+        <div className="standings-wrap">
+          <table className="standings" aria-label="Placar da rodada">
+            <thead>
+              <tr>
+                <th scope="col">{group.column}</th>
+                {Array.from({ length: columns }, (_, i) => (
+                  <th key={i} scope="col">
+                    {i + 1}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {board.map((row) => (
+                <tr key={row.skill}>
+                  <td>{row.skill}</td>
+                  {Array.from({ length: columns }, (_, i) => {
+                    const cell = row.cells[i];
+                    return cell === undefined ? (
+                      <td key={i} />
+                    ) : (
+                      <td key={i} className={cell.tone}>
+                        {cell.mark}
+                        <small>{cell.note}</small>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <p className="seed" data-testid="results-seed">
+        seed {seed}
+      </p>
+      <div className="actions">
+        <button
+          type="button"
+          className="primary start"
+          aria-label="Jogar de novo"
+          autoFocus
+          onClick={onPlayAgain}
+        >
+          Jogar de novo <kbd>Enter</kbd>
+        </button>
+        <button type="button" onClick={onConfigure}>
+          Configurar
+        </button>
+      </div>
+
       {summary.meanMs !== null && (
         <p className="muted">Tempo médio por acerto: {seconds(summary.meanMs)}</p>
       )}
@@ -99,15 +184,6 @@ export function ResultsScreen({ log, mode, onPlayAgain, onConfigure }: Props): R
           </tbody>
         </table>
       )}
-
-      <div className="actions">
-        <button type="button" className="primary" autoFocus onClick={onPlayAgain}>
-          Jogar de novo
-        </button>
-        <button type="button" onClick={onConfigure}>
-          Configurar
-        </button>
-      </div>
     </div>
   );
 }

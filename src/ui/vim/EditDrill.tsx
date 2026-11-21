@@ -33,7 +33,7 @@ import { formatKeys, keyFromEvent, type Key } from "../../vim/keys";
 import { ROUND_DURATIONS_S } from "../../vim/round";
 import type { VimState } from "../../vim/state";
 import { selectionRange } from "../../vim/visual";
-import { DrillSelect } from "./DrillSelect";
+import { PanelTitle, Reference, useRunning } from "../shell/panel";
 
 type Props = {
   readonly clock: Clock;
@@ -44,6 +44,8 @@ type Props = {
   readonly settings: VimEditSettings;
   /** Called with the settings the screen saved. */
   readonly onSettings: (settings: VimEditSettings) => void;
+  /** Told when a round starts and ends, so the window hides the tree (T18). */
+  readonly onRunning?: (running: boolean) => void;
 };
 
 const TICK_MS = 100;
@@ -98,6 +100,7 @@ export function EditDrill({
   onBack,
   settings,
   onSettings,
+  onRunning,
 }: Props): ReactNode {
   const [unlocked] = useState(() => loadUnlocked(store));
   const [current, setCurrent] = useState<Run>(() => newRun(settings, unlocked, newSeed(), 0));
@@ -140,6 +143,7 @@ export function EditDrill({
   const { round } = current;
   const finished = isEditRoundFinished(round);
   const running = round.startedAt !== null && !finished;
+  useRunning(onRunning, running);
 
   useEffect(() => {
     box.current?.focus();
@@ -199,9 +203,56 @@ export function EditDrill({
 
   return (
     <div className="screen vim">
-      <h1>Vim</h1>
+      <PanelTitle title="Vim">Deixe o texto igual ao depois com o mínimo de teclas.</PanelTitle>
 
-      <div className="typing-area">
+      <div className="vim-options-block" data-panel="options">
+        <fieldset className="vim-options">
+          <legend>Opções</legend>
+          <label htmlFor="vim-duration">Duração</label>
+          <select
+            id="vim-duration"
+            value={current.settings.durationS}
+            onChange={(e) => {
+              change({ durationS: Number(e.target.value) });
+            }}
+          >
+            {ROUND_DURATIONS_S.map((s) => (
+              <option key={s} value={s}>
+                {`${String(s)} s`}
+              </option>
+            ))}
+          </select>
+        </fieldset>
+
+        <fieldset>
+          <legend>Tipos de edição</legend>
+          <div className="vim-kinds">
+            {ALL_EDIT_KINDS.map((kind) => {
+              const locked = isRegisterKind(kind) && !unlocked.includes(kind);
+              const on = !locked && current.settings.kinds.includes(kind);
+              const only = on && playable(current.settings.kinds, unlocked).length === 1;
+              return (
+                <span key={kind} className="vim-kind">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      disabled={locked || only}
+                      onChange={(e) => {
+                        toggleKind(kind, e.target.checked);
+                      }}
+                    />
+                    {EDIT_KIND_LABELS[kind]}
+                  </label>
+                  {locked && <span className="muted"> (libere em Aprender)</span>}
+                </span>
+              );
+            })}
+          </div>
+        </fieldset>
+      </div>
+
+      <div className="typing-area" data-panel="area">
         <textarea
           ref={box}
           className="typing-input"
@@ -291,61 +342,14 @@ export function EditDrill({
         )}
       </div>
 
-      <fieldset className="vim-options">
-        <legend>Opções</legend>
-        <DrillSelect
-          value="edit"
-          onChange={(drill) => {
-            const updated = parseVimEditSettings({ ...latest.current.settings, drill });
-            saveVimEditSettings(store, updated);
-            onSettings(updated);
-          }}
-        />
-        <label htmlFor="vim-duration">Duração</label>
-        <select
-          id="vim-duration"
-          value={current.settings.durationS}
-          onChange={(e) => {
-            change({ durationS: Number(e.target.value) });
-          }}
-        >
-          {ROUND_DURATIONS_S.map((s) => (
-            <option key={s} value={s}>
-              {`${String(s)} s`}
-            </option>
-          ))}
-        </select>
-      </fieldset>
+      <p data-testid="vim-summary" className="muted typing-summary" data-panel="history">
+        {summary === null
+          ? "Sem resultados nesta configuração."
+          : `melhor ${String(Math.round(summary.best))} edições · ` +
+            `média dos últimos 10: ${String(Math.round(summary.recentMean))} edições`}
+      </p>
 
-      <fieldset>
-        <legend>Tipos de edição</legend>
-        <div className="vim-kinds">
-          {ALL_EDIT_KINDS.map((kind) => {
-            const locked = isRegisterKind(kind) && !unlocked.includes(kind);
-            const on = !locked && current.settings.kinds.includes(kind);
-            const only = on && playable(current.settings.kinds, unlocked).length === 1;
-            return (
-              <span key={kind} className="vim-kind">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={on}
-                    disabled={locked || only}
-                    onChange={(e) => {
-                      toggleKind(kind, e.target.checked);
-                    }}
-                  />
-                  {EDIT_KIND_LABELS[kind]}
-                </label>
-                {locked && <span className="muted"> (libere em Aprender)</span>}
-              </span>
-            );
-          })}
-        </div>
-      </fieldset>
-
-      <fieldset className="vim-commands">
-        <legend>Comandos</legend>
+      <Reference id="vim-edit-commands" title="Comandos" className="vim-commands">
         <ul>
           {EDIT_HELP.map((help) => (
             <li key={help.keys}>
@@ -359,14 +363,7 @@ export function EditDrill({
             </li>
           ))}
         </ul>
-      </fieldset>
-
-      <p data-testid="vim-summary" className="muted typing-summary">
-        {summary === null
-          ? "Sem resultados nesta configuração."
-          : `melhor ${String(Math.round(summary.best))} edições · ` +
-            `média dos últimos 10: ${String(Math.round(summary.recentMean))} edições`}
-      </p>
+      </Reference>
 
       <div className="actions">
         <button type="button" onClick={onBack}>

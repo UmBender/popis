@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 async function openText(page: Page) {
   await page.goto("/");
-  await page.getByRole("button", { name: "Texto", exact: true }).click();
+  await page.getByRole("radio", { name: "Texto", exact: true }).check();
   await expect(page.getByRole("textbox", { name: "Texto digitado" })).toBeFocused();
 }
 

@@ -16,7 +16,7 @@ async function typeShownSnippet(page: Page) {
 
 test("typing a Python and a C++ snippet with auto-indent in the real app", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Digitação" }).click();
+  await page.getByRole("radio", { name: "Código" }).check();
   await expect(page.getByRole("textbox", { name: "Código digitado" })).toBeFocused();
 
   await page.getByRole("checkbox", { name: "C++" }).uncheck();

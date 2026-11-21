@@ -47,6 +47,7 @@ import {
 } from "../typing/words-engine";
 import { LIST_SIZES, TEXT_LANGUAGE_LABELS, TEXT_LANGUAGES } from "../typing/words";
 import { seconds } from "./format";
+import { PanelTitle, useRunning } from "./shell/panel";
 
 type Props = {
   readonly clock: Clock;
@@ -54,6 +55,8 @@ type Props = {
   /** Seed of each new text. */
   readonly newSeed: () => number;
   readonly onBack: () => void;
+  /** Told when a text starts and ends, so the window hides the tree (T18). */
+  readonly onRunning?: (running: boolean) => void;
 };
 
 const TICK_MS = 100;
@@ -77,7 +80,7 @@ function startRun(settings: TextSettings, seed: number, run: number): Run {
 }
 
 /** Text typing test, judged word by word (ADR-T12-1). */
-export function TextTypingScreen({ clock, store, newSeed, onBack }: Props): ReactNode {
+export function TextTypingScreen({ clock, store, newSeed, onBack, onRunning }: Props): ReactNode {
   const [current, setCurrent] = useState<Run>(() =>
     startRun(loadTextSettings(store), newSeed(), 0),
   );
@@ -134,6 +137,7 @@ export function TextTypingScreen({ clock, store, newSeed, onBack }: Props): Reac
   const finished = isWordsFinished(state);
   const timed = state.timeLimitMs !== null;
   const running = state.startedAt !== null && !finished;
+  useRunning(onRunning, running);
 
   useEffect(() => {
     box.current?.focus();
@@ -216,93 +220,9 @@ export function TextTypingScreen({ clock, store, newSeed, onBack }: Props): Reac
 
   return (
     <div className="screen text-typing">
-      <h1>Texto</h1>
+      <PanelTitle title="Texto">Digite as palavras; o tempo começa na primeira tecla.</PanelTitle>
 
-      <p className="text-progress" data-testid="text-progress">
-        {progress}
-      </p>
-
-      <div className="typing-area">
-        <textarea
-          ref={box}
-          className="typing-input"
-          aria-label="Texto digitado"
-          autoFocus
-          autoComplete="off"
-          autoCapitalize="off"
-          autoCorrect="off"
-          spellCheck={false}
-          onChange={(e) => {
-            // Dead keys compose first; their text arrives at compositionend.
-            if ((e.nativeEvent as InputEvent).isComposing) return;
-            const text = e.target.value;
-            e.target.value = "";
-            typed(text);
-          }}
-          onCompositionEnd={(e) => {
-            const text = e.currentTarget.value;
-            e.currentTarget.value = "";
-            typed(text);
-          }}
-          onKeyDown={(e) => {
-            switch (e.key) {
-              case "Backspace":
-                e.preventDefault();
-                apply(
-                  e.ctrlKey || e.altKey || e.metaKey
-                    ? clearWord(latest.current.state)
-                    : backspaceWord(latest.current.state),
-                );
-                break;
-              case "Tab":
-                e.preventDefault();
-                restart();
-                break;
-              case "Escape":
-                e.preventDefault();
-                next();
-                break;
-              case "Enter":
-                e.preventDefault();
-                break;
-            }
-          }}
-        />
-        <div
-          ref={area}
-          className="text-words"
-          data-testid="text-words"
-          onClick={() => {
-            box.current?.focus();
-          }}
-        >
-          {view.map((word, i) => (
-            <Word
-              key={i}
-              index={i}
-              status={word.status}
-              chars={word.letters.map((l) => l.char).join("")}
-              marks={word.letters.map((l) => MARK_CODES[l.mark]).join("")}
-              cursor={!finished && i === state.current ? typedInCurrent : -1}
-            />
-          ))}
-        </div>
-      </div>
-
-      {finished ? (
-        <TextResults
-          state={state}
-          settings={settings}
-          seed={seed}
-          onNext={() => {
-            next();
-          }}
-        />
-      ) : (
-        <p className="muted hint">Esc troca o texto · Tab recomeça.</p>
-      )}
-
-      <fieldset className="text-options">
+      <fieldset className="text-options" data-panel="options">
         <legend>Opções</legend>
         <label htmlFor="text-source">Tipo</label>
         <select
@@ -416,7 +336,93 @@ export function TextTypingScreen({ clock, store, newSeed, onBack }: Props): Reac
         </div>
       </fieldset>
 
-      <p data-testid="text-summary" className="muted typing-summary">
+      <div className="text-area" data-panel="area">
+        <p className="text-progress" data-testid="text-progress">
+          {progress}
+        </p>
+
+        <div className="typing-area">
+          <textarea
+            ref={box}
+            className="typing-input"
+            aria-label="Texto digitado"
+            autoFocus
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            onChange={(e) => {
+              // Dead keys compose first; their text arrives at compositionend.
+              if ((e.nativeEvent as InputEvent).isComposing) return;
+              const text = e.target.value;
+              e.target.value = "";
+              typed(text);
+            }}
+            onCompositionEnd={(e) => {
+              const text = e.currentTarget.value;
+              e.currentTarget.value = "";
+              typed(text);
+            }}
+            onKeyDown={(e) => {
+              switch (e.key) {
+                case "Backspace":
+                  e.preventDefault();
+                  apply(
+                    e.ctrlKey || e.altKey || e.metaKey
+                      ? clearWord(latest.current.state)
+                      : backspaceWord(latest.current.state),
+                  );
+                  break;
+                case "Tab":
+                  e.preventDefault();
+                  restart();
+                  break;
+                case "Escape":
+                  e.preventDefault();
+                  next();
+                  break;
+                case "Enter":
+                  e.preventDefault();
+                  break;
+              }
+            }}
+          />
+          <div
+            ref={area}
+            className="text-words"
+            data-testid="text-words"
+            onClick={() => {
+              box.current?.focus();
+            }}
+          >
+            {view.map((word, i) => (
+              <Word
+                key={i}
+                index={i}
+                status={word.status}
+                chars={word.letters.map((l) => l.char).join("")}
+                marks={word.letters.map((l) => MARK_CODES[l.mark]).join("")}
+                cursor={!finished && i === state.current ? typedInCurrent : -1}
+              />
+            ))}
+          </div>
+        </div>
+
+        {finished ? (
+          <TextResults
+            state={state}
+            settings={settings}
+            seed={seed}
+            onNext={() => {
+              next();
+            }}
+          />
+        ) : (
+          <p className="muted hint">Esc troca o texto · Tab recomeça.</p>
+        )}
+      </div>
+
+      <p data-testid="text-summary" className="muted typing-summary" data-panel="history">
         {summary === null
           ? "Sem resultados nesta configuração."
           : `melhor ${String(Math.round(summary.best))} WPM · ` +

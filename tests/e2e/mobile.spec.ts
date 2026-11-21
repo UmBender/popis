@@ -34,6 +34,36 @@ async function expectInTopHalf(page: Page, target: Locator, where: string) {
   );
 }
 
+/** T18 AC-9: on a phone the tree is a drawer opened by ☰. */
+async function openMenu(page: Page) {
+  await page.getByRole("button", { name: "Menu" }).click();
+}
+
+test("the drawer opens and closes on a phone", async ({ page }) => {
+  // T18 AC-9 and AC-10.
+  await page.goto("./");
+  const button = page.getByRole("button", { name: "Menu" });
+  await expect(button).toHaveAttribute("aria-expanded", "false");
+  expect((await button.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
+  await expect(page.getByTestId("shell-path")).toContainText("aritmética");
+
+  await button.click();
+  const drawer = page.getByRole("dialog", { name: "Treinos" });
+  await expect(drawer).toBeVisible();
+  await expect(drawer).toHaveAttribute("aria-modal", "true");
+  await expectNoHorizontalScroll(page, "open drawer");
+  await expectTouchTargets(drawer.locator("label, button"), "drawer");
+
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+  await expect(button).toBeFocused();
+
+  await button.click();
+  await page.getByRole("radio", { name: "Primos", exact: true }).click();
+  await expect(drawer).toBeHidden();
+  await expect(page.getByTestId("shell-path")).toHaveText("popis/cp/primos");
+});
+
 test("the app served under /popis/ loads its script and favicon", async ({ page, request }) => {
   await page.goto("./");
   await expect(page.getByRole("button", { name: "Começar" })).toBeVisible();
@@ -49,20 +79,23 @@ test("typing is hidden on touch screens", async ({ page }) => {
   // T10 AC-8: code typing needs a physical keyboard.
   await page.goto("./");
   await expect(page.getByRole("button", { name: "Começar" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Digitação" })).toBeHidden();
+  await openMenu(page);
+  await expect(page.getByRole("radio", { name: "Código" })).toBeHidden();
 });
 
 test("vim is hidden on touch screens", async ({ page }) => {
   // T13 AC-10: the Vim drill needs a physical keyboard.
   await page.goto("./");
   await expect(page.getByRole("button", { name: "Começar" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Vim", exact: true })).toBeHidden();
+  await openMenu(page);
+  await expect(page.getByRole("radio", { name: "Movimento", exact: true })).toBeHidden();
 });
 
 test("text typing fits a phone", async ({ page }) => {
   // T12 AC-10: text typing stays visible on touch screens.
   await page.goto("./");
-  await page.getByRole("button", { name: "Texto", exact: true }).click();
+  await openMenu(page);
+  await page.getByRole("radio", { name: "Texto", exact: true }).click();
   const box = page.getByRole("textbox", { name: "Texto digitado" });
   await expect(box).toBeFocused();
   await expect(box).toHaveAttribute("autocapitalize", "off");
@@ -89,7 +122,10 @@ test("every mode fits a phone in config, game and results", async ({ page }) => 
   // Review comes last in MODE_IDS: the skips of the modes before it give it items.
   for (const mode of MODE_IDS) {
     const spec = MODES[mode];
-    await page.getByRole("radio", { name: spec.label }).check();
+    // A click, not check(): the chosen item may already be checked, and
+    // choosing it still closes the drawer.
+    await openMenu(page);
+    await page.getByRole("radio", { name: spec.label, exact: true }).click();
     await expectNoHorizontalScroll(page, `${mode} config`);
     await expectTouchTargets(
       page.locator("label.op, input.bound, select, button"),

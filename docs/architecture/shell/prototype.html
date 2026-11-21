@@ -453,13 +453,62 @@
         grid-template-columns: 1fr;
         gap: var(--space-1);
       }
+
+      /* Revision of 2026-11-20: the collapsible menu. */
+      .burger {
+        min-width: 44px;
+        min-height: 44px;
+        margin: calc(-1 * var(--space-2)) var(--space-2) calc(-1 * var(--space-2)) 0;
+        background: none;
+        color: var(--text);
+        border: none;
+        font: inherit;
+      }
+
+      .path .where {
+        display: flex;
+        align-items: center;
+      }
+
+      .collapsed .body {
+        grid-template-columns: 1fr;
+      }
+
+      .phone.drawer {
+        position: relative;
+      }
+
+      .drawer .scrim {
+        position: absolute;
+        inset: 0;
+        background: var(--bg);
+        opacity: 0.7;
+      }
+
+      .drawer .rail {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: min(var(--rail), 85%);
+      }
+
+      .drawer .rail .item,
+      .drawer .rail .folder {
+        min-height: 44px;
+        align-items: center;
+        display: flex;
+      }
     </style>
   </head>
   <body>
     <!-- Menu -->
     <section class="frame" id="menu">
       <header class="path">
-        <span>popis/<b>cálculo</b>/<b>aritmética</b></span>
+        <span class="where"
+          ><button class="burger" type="button" aria-expanded="true">☰</button
+          >popis/<b>cálculo</b>/<b>aritmética</b></span
+        >
         <span class="brand"
           ><span class="initial">P</span>ractice <span class="initial">O</span>f
           <span class="initial">P</span>roblem-solving <span class="initial">I</span>n
@@ -482,6 +531,7 @@
             <li class="item" role="radio" aria-checked="false">
               Revisar <span class="count">12</span>
             </li>
+            <li class="item" role="radio" aria-checked="false">Dados</li>
             <li class="folder">▸ Digitação</li>
             <li class="folder">▸ Vim</li>
           </ul>
@@ -636,9 +686,11 @@
     <div style="display: flex; gap: 2rem; padding: 1rem; width: max-content">
       <section class="phone" id="phone-menu">
         <header class="path">
-          <span>popis/<b>cálculo</b>/<b>aritmética</b></span>
+          <span class="where"
+            ><button class="burger" type="button" aria-expanded="false">☰</button
+            >popis/<b>cálculo</b>/<b>aritmética</b></span
+          >
         </header>
-        <div class="picker"><span>▾ Aritmética</span><span>trocar</span></div>
         <main class="panel">
           <h1>Aritmética</h1>
           <p class="lede">Responda o máximo de contas antes do tempo acabar.</p>
@@ -675,6 +727,84 @@
         </main>
         <footer class="status"><span class="mode play">JOGANDO</span></footer>
       </section>
+      <!-- Phone: the tree as a drawer over the panel. -->
+      <section class="phone drawer" id="phone-drawer">
+        <header class="path">
+          <span class="where"
+            ><button class="burger" type="button" aria-expanded="true">☰</button
+            >popis/<b>cálculo</b>/<b>aritmética</b></span
+          >
+        </header>
+        <main class="panel">
+          <h1>Aritmética</h1>
+          <p class="lede">Responda o máximo de contas antes do tempo acabar.</p>
+        </main>
+        <footer class="status"><span class="mode">NORMAL</span></footer>
+        <div class="scrim"></div>
+        <nav class="rail" role="dialog" aria-modal="true" aria-label="Treinos">
+          <ul role="radiogroup">
+            <li class="folder">▾ Cálculo</li>
+            <li class="item" role="radio" aria-checked="true">Aritmética <kbd>1</kbd></li>
+            <li class="item" role="radio" aria-checked="false">Álgebra <kbd>2</kbd></li>
+            <li class="item" role="radio" aria-checked="false">Fatoração <kbd>3</kbd></li>
+            <li class="item" role="radio" aria-checked="false">Somatórios <kbd>4</kbd></li>
+            <li class="folder">▾ CP</li>
+            <li class="item" role="radio" aria-checked="false">Divisão inteira <kbd>5</kbd></li>
+            <li class="item" role="radio" aria-checked="false">Estimativa <kbd>6</kbd></li>
+            <li class="item" role="radio" aria-checked="false">Primos <kbd>7</kbd></li>
+            <li class="folder">▾ Treino</li>
+            <li class="item" role="radio" aria-checked="false">
+              Revisar <span class="count">12</span>
+            </li>
+            <li class="item" role="radio" aria-checked="false">Dados</li>
+            <li class="folder">▾ Digitação</li>
+            <li class="item" role="radio" aria-checked="false">Texto</li>
+          </ul>
+        </nav>
+      </section>
     </div>
+
+    <!-- Desktop with the tree collapsed (☰ or m). -->
+    <section class="frame collapsed" id="collapsed">
+      <header class="path">
+        <span class="where"
+          ><button class="burger" type="button" aria-expanded="false">☰</button
+          >popis/<b>cálculo</b>/<b>aritmética</b></span
+        >
+        <span class="brand"
+          ><span class="initial">P</span>ractice <span class="initial">O</span>f
+          <span class="initial">P</span>roblem-solving <span class="initial">I</span>n
+          <span class="initial">S</span>prints</span
+        >
+      </header>
+      <div class="body">
+        <main class="panel">
+          <h1>Aritmética</h1>
+          <p class="lede">Responda o máximo de contas antes do tempo acabar.</p>
+          <div class="fields">
+            <span class="check">Adição</span>
+            <span class="range"
+              >(<input value="2" /> a <input value="100" />) + (<input value="2" /> a
+              <input value="100" />)</span
+            >
+            <label>Duração</label>
+            <span class="range"><input value="120" /> s</span>
+          </div>
+          <p class="history">
+            <span>Últimas 10 rodadas</span>
+            <span class="spark">▁▃▄▃▆▅▅▇▆█</span>
+            <span>melhor <strong>52</strong></span>
+            <span>média <strong>46</strong></span>
+          </p>
+          <button class="start" type="button">Começar <kbd>Enter</kbd></button>
+        </main>
+      </div>
+      <footer class="status">
+        <span class="mode">NORMAL</span>
+        <span><kbd>m</kbd> menu</span>
+        <span><kbd>Enter</kbd> começar</span>
+        <span><kbd>?</kbd> atalhos</span>
+      </footer>
+    </section>
   </body>
 </html>

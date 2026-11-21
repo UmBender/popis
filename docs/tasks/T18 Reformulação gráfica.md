@@ -1,10 +1,10 @@
 ---
 id: T18
 title: Reformulação gráfica
-status: todo
+status: review
 depends_on: [T16, T17, T22]
 branch: task/T18-redesign
-adrs: []
+adrs: [ADR-0001, ADR-T22-1, ADR-T18-1]
 tags: [task]
 ---
 
@@ -192,6 +192,36 @@ muda.
   detalhado do treino]], que fica na configuração, vira o item "Dados" da
   árvore (pasta Treino). Os testes da T22 continuam passando.
 
+## Testes de cada critério
+
+| AC | Teste(s) |
+|----|----------|
+| AC-1 | `src/ui/shell/Shell.test.tsx` → `describe("shell window")`: barra de caminho, árvore, linha de status e árvore escondida na partida e na digitação |
+| AC-2 | `src/ui/shell/sections.test.ts` (ordem da tabela, todo modo e toda tela uma vez, atalhos 1–9); `Shell.test.tsx` → `"closed folders are saved"`; `App.test.tsx` e `VimScreen*.test.tsx` escolhem o item da árvore |
+| AC-3 | `Shell.test.tsx` → `describe("shell keyboard")`; `tests/e2e/shell.spec.ts` |
+| AC-4 | `Shell.test.tsx` → `describe("panel order")` (um caso por item da árvore); `"the mode panel shows the last 10 rounds"` e `"an empty history invites the first round"` |
+| AC-5 | `src/ui/verdicts.test.ts` → `describe("verdicts")`; `Shell.test.tsx` → `"the game shows a submissions queue"` |
+| AC-6 | `verdicts.test.ts` → `describe("scoreboard")` (tabela de logs); `Shell.test.tsx` → `describe("results scoreboard")` |
+| AC-7 | `tests/colors.test.ts` (já existe); `Shell.test.tsx` → `"app.css defines the text, space and rail tokens"` |
+| AC-8 | os testes existentes, com os seletores trocados num commit `test(T18)` próprio |
+| AC-9 | `Shell.test.tsx` → `describe("collapsible menu")`; `tests/e2e/mobile.spec.ts` → `"the drawer opens and closes on a phone"` |
+| AC-10 | `tests/e2e/mobile.spec.ts` (já existe, com a gaveta aberta antes de escolher o modo) |
+| AC-11 | `tests/e2e/shell.spec.ts`; capturas em `.batch/visual/` (Log) |
+| AC-12 | ADR-T18-1; [[Shell]] em `accepted` |
+| AC-13 | `Shell.test.tsx` → `"the Dados item holds the export and import"`; `src/ui/DataPanel.test.tsx` e `src/ui/TrainingLog.test.tsx` continuam passando |
+
+Detalhes decididos no spec (ADR-T18-1):
+- os itens da árvore são `input type="radio"` com `aria-label`, e o
+  atalho e a contagem do Revisar ficam fora do nome acessível;
+- os atalhos `1`–`9` vão para os nove primeiros itens da tabela
+  (Aritmética … Revisar);
+- `WA` é uma correção (a resposta encurtada), o mesmo `n` do placar;
+- o painel do item vem em blocos com `data-panel` = `title`, `options`,
+  `area`, `history` e `reference`; o teste de ordem usa esses blocos;
+- preferências da janela na chave `popis.shell.v1`;
+- a largura de gaveta vem de `matchMedia("(max-width: 48rem)")`, e o
+  `App` aceita `narrow` para os testes.
+
 ## Out of scope
 
 - Cores ou fontes novas (exigiriam um ADR que substitui o ADR-0001).
@@ -210,6 +240,20 @@ muda.
 - `tests/e2e/shell.spec.ts`, `tests/e2e/mobile.spec.ts` e os outros e2e
   (só seletores, em commit `test(T18)` próprio, conforme o AC-5)
 - `vite.config.ts` (só limiares de cobertura)
+- `docs/architecture/shell/prototype.html` (estados recolhido e gaveta,
+  conforme o AC-11)
+
+## Subtasks
+
+- [x] Spec: testes por AC, ADR-T18-1, protótipo com árvore recolhida e
+      gaveta
+- [x] Testes vermelhos (Shell, sections, verdicts, shell.spec) e troca de
+      seletores dos testes existentes
+- [x] Modelos: `sections.ts`, `verdicts.ts`, preferências e props novas
+- [x] Comportamento: janela, árvore, teclado, gaveta, painéis, vereditos
+      e placar
+- [x] Qualidade: check, coverage, e2e e capturas
+- [x] Docs: Log, [[Shell]] e ADR aceitos
 
 ## Notas para o batch
 
@@ -221,3 +265,8 @@ muda.
   examinar, corrigir e listar o restante como verificação manual).
 
 ## Log
+
+- 2026-11-20 — Qualidade: corrigido `latest.current` em `useEffect` e guarda morta em `trapTab` (`src/ui/shell/Shell.tsx`); adicionados testes de cobertura em `src/ui/shell/Shell.test.tsx` e `src/ui/shell/sections.test.ts`. `npm run check` (typecheck, lint, format, 105 arquivos / 3856 testes, build) e `npm run coverage` (`src/ui`: 100% linhas/funções/declarações, 98,29% branches; `src/ui/shell`: 100% linhas/funções/declarações, 95,86% branches; `src/ui/vim`: 100% linhas/funções/declarações, 99,34% branches) verdes.
+- 2026-11-20 — Visual e E2E: capturas em `.batch/visual/shots/` geradas e inspecionadas no desktop (`1280×800`, menu, recolhido, partida com `WA`/`AC`, resultado com placar ICPC, Dados, Código, Texto e os três treinos de Vim) e no Pixel 7 (menu, gaveta aberta após aguardar os 150 ms da animação em `.batch/visual/audit.spec.ts`, partida e resultado). Layout fiel ao protótipo em `docs/architecture/shell/`, sem rolagem horizontal nem sobreposição; diferença menor no celular onde `0 resolvidas em 120 s` quebra `s` para a linha seguinte por causa do `--text-xl`. `npm run test:e2e` verde após a última edição de código (22/22).
+- 2026-11-20 — Verificações manuais pendentes para o dono: percorrer o menu, a gaveta e todas as telas no desktop e no celular.
+- 2026-11-20 — Docs: `ADR-T18-1` e `[[Shell]]` aceitos; task movida para `review`.

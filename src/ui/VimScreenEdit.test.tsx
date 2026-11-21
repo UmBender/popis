@@ -6,6 +6,7 @@ import { memoryStore, type KeyValueStore } from "../storage/history";
 import { loadVimEditResults, VIM_EDIT_SETTINGS_KEY, loadVimEditSettings } from "../storage/vim";
 import { generateEdit, EDIT_KIND_LABELS, EDIT_KINDS, type EditKind } from "../vim/drills/edit";
 import { parseKeys } from "../vim/keys";
+import { App } from "./App";
 import { VimScreen } from "./VimScreen";
 
 // AC-8: the edit drill on the Vim screen. Keys arrive through the same
@@ -35,6 +36,13 @@ function setup(store: KeyValueStore = storeWith()) {
   return store;
 }
 
+/** The whole app, with a Vim item chosen in the tree (T18). */
+function openFromTree(store: KeyValueStore, item: string) {
+  render(<App clock={clock} store={store} newSeed={() => SEED} />);
+  fireEvent.click(screen.getByRole("radio", { name: item }));
+  return store;
+}
+
 const box = () => screen.getByRole<HTMLTextAreaElement>("textbox", { name: "Teclas do Vim" });
 const code = () => screen.getByTestId("vim-code");
 const after = () => screen.getByTestId("vim-after");
@@ -60,13 +68,12 @@ function advance(ms: number) {
 }
 
 describe("VimScreen edit drill", () => {
-  it("the Treino choice switches to the edit drill and is saved", () => {
+  it("the Edição item switches to the edit drill and is saved", () => {
+    // T18: the drill is a tree item, not a Treino choice.
     const store = memoryStore();
-    setup(store);
+    openFromTree(store, "Movimento");
     expect(screen.queryByTestId("vim-after")).toBeNull();
-    fireEvent.change(screen.getByRole("combobox", { name: "Treino" }), {
-      target: { value: "edit" },
-    });
+    fireEvent.click(screen.getByRole("radio", { name: "Edição" }));
     expect(after()).toBeTruthy();
     expect(screen.queryByRole("combobox", { name: "Nível" })).toBeNull();
     expect(loadVimEditSettings(store).drill).toBe("edit");
@@ -185,11 +192,9 @@ describe("VimScreen edit drill", () => {
     expect(screen.getByTestId("vim-time").textContent).toBe("30");
   });
 
-  it("the Treino choice goes back to the motion drill", () => {
-    const store = setup();
-    fireEvent.change(screen.getByRole("combobox", { name: "Treino" }), {
-      target: { value: "motion" },
-    });
+  it("the Movimento item goes back to the motion drill", () => {
+    const store = openFromTree(storeWith(), "Edição");
+    fireEvent.click(screen.getByRole("radio", { name: "Movimento" }));
     expect(screen.getByRole("combobox", { name: "Nível" })).toBeTruthy();
     expect(screen.queryByTestId("vim-after")).toBeNull();
     expect(loadVimEditSettings(store).drill).toBe("motion");

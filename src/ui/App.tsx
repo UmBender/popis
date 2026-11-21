@@ -15,32 +15,66 @@ import {
   loadSettings,
   saveSettings,
   type KeyValueStore,
+  type SessionRecord,
   type StoredSettings,
 } from "../storage/history";
 import { migrate } from "../storage/migrate";
 import { reviewItems } from "../storage/review";
-import { ConfigScreen } from "./ConfigScreen";
+import type { VimDrill } from "../storage/vim";
+import { Brand } from "./Brand";
+import { ConfigScreen, configErrors } from "./ConfigScreen";
 import { DataPanel } from "./DataPanel";
 import { GameScreen } from "./GameScreen";
 import { ResultsScreen } from "./ResultsScreen";
+import { PanelTitle, ReferencesContext, type References } from "./shell/panel";
+import { loadPrefs, savePrefs, type ShellPrefs } from "./shell/prefs";
+import { folderOf, itemById, modeOf, type ItemId } from "./shell/sections";
+import { isControl, Shell, type Hint, type TreeState } from "./shell/Shell";
 import { TextTypingScreen } from "./TextTypingScreen";
 import { TypingScreen } from "./TypingScreen";
-import { VimScreen } from "./VimScreen";
+import { chooseVimDrill, VimScreen } from "./VimScreen";
 
 export type AppProps = {
   readonly clock: Clock;
   readonly store: KeyValueStore;
   /** Seed of each new session. */
   readonly newSeed: () => number;
+  /** Below 48rem the tree is a drawer; measured with matchMedia when absent. */
+  readonly narrow?: boolean;
 };
 
 type Screen =
-  | { readonly name: "config" }
+  | { readonly name: "menu" }
   | { readonly name: "game"; readonly mode: Mode; readonly session: RunningSession<JsonValue> }
-  | { readonly name: "results"; readonly mode: Mode; readonly log: readonly Attempt[] }
-  | { readonly name: "typing" }
-  | { readonly name: "text" }
-  | { readonly name: "vim" };
+  | {
+      readonly name: "results";
+      readonly mode: Mode;
+      readonly log: readonly Attempt[];
+      readonly seed: number;
+      readonly durationMs: number;
+      readonly best: number;
+    };
+
+const VIM_DRILLS: Partial<Readonly<Record<ItemId, VimDrill>>> = {
+  "vim-learn": "learn",
+  "vim-motion": "motion",
+  "vim-edit": "edit",
+};
+
+const MENU_HINTS: readonly Hint[] = [
+  ["j/k", "mover"],
+  ["1–9", "ir para"],
+  ["Enter", "começar"],
+  ["Tab", "opções"],
+  ["m", "menu"],
+  ["?", "atalhos"],
+];
+
+const RESULT_HINTS: readonly Hint[] = [
+  ["Enter", "jogar de novo"],
+  ["Esc", "menu"],
+  ["r", "revisar erros"],
+];
 
 function sessionConfig<M extends Mode>(
   mode: M,
@@ -56,19 +90,124 @@ function sessionConfig<M extends Mode>(
   };
 }
 
-export function App({ clock, store, newSeed }: AppProps): ReactNode {
+/** Deep equality of JSON values, whatever the key order. */
+function sameJson(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  return (
+    ka.length === kb.length &&
+    ka.every((k) => sameJson((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]))
+  );
+}
+
+/** Scores of the rounds played in this configuration, oldest first. */
+function scoresOf(
+  history: readonly SessionRecord[],
+  mode: Mode,
+  params: JsonValue,
+  durationMs: number,
+): number[] {
+  return history
+    .filter(
+      (r) =>
+        r.mode === mode &&
+        // Review items change every round, so only the mode counts.
+        (mode === "review" || (r.durationMs === durationMs && sameJson(r.params, params))),
+    )
+    .map((r) => r.log.filter((a) => a.outcome === "correct").length);
+}
+
+/** Whether a media query matches, followed as the window changes. */
+function useMedia(query: string, override?: boolean): boolean {
+  const supported = typeof window.matchMedia === "function";
+  const [matches, setMatches] = useState(() => supported && window.matchMedia(query).matches);
+  useEffect(() => {
+    if (override !== undefined || !supported) return;
+    const list = window.matchMedia(query);
+    const update = () => {
+      setMatches(list.matches);
+    };
+    list.addEventListener("change", update);
+    return () => {
+      list.removeEventListener("change", update);
+    };
+  }, [query, override, supported]);
+  return override ?? matches;
+}
+
+function firstItem(prefs: ShellPrefs, mode: Mode): ItemId {
+  // A mode item defers to the stored settings, which say which mode was last.
+  return prefs.item !== null && modeOf(prefs.item) === null ? prefs.item : mode;
+}
+
+const lower = (text: string) => text.toLocaleLowerCase("pt-BR");
+
+export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
   const [settings, setSettings] = useState<StoredSettings>(() => loadSettings(store));
+  const [prefs, setPrefs] = useState<ShellPrefs>(() => loadPrefs(store));
+  const [item, setItem] = useState<ItemId>(() => firstItem(loadPrefs(store), settings.mode));
+  const [screen, setScreen] = useState<Screen>({ name: "menu" });
+  // A typing or Vim round is being played: the tree hides.
+  const [running, setRunning] = useState(false);
+  const isNarrow = useMedia("(max-width: 48rem)", narrow);
+  const touch = useMedia("(hover: none) and (pointer: coarse)");
 
   // The old per-round results become events, once (T22).
   useEffect(() => {
     migrate(store, clock.wallTime());
   }, [store, clock]);
-  const [screen, setScreen] = useState<Screen>({ name: "config" });
-  // Read again each time the config shows, so the last session counts.
-  const reviewCount = useMemo(
-    () => (screen.name === "config" ? reviewItems(loadHistory(store)).length : 0),
+
+  const updatePrefs = useCallback(
+    (patch: Partial<ShellPrefs>) => {
+      setPrefs((prev) => {
+        const next = { ...prev, ...patch };
+        savePrefs(store, next);
+        return next;
+      });
+    },
+    [store],
+  );
+
+  // Read again each time the menu shows, so the last session counts.
+  const history = useMemo(
+    () => (screen.name === "menu" ? loadHistory(store) : []),
     [screen.name, store],
   );
+  const reviewCount = useMemo(() => reviewItems(history).length, [history]);
+  const scores = scoresOf(
+    history,
+    settings.mode,
+    settings[settings.mode],
+    settings.durationS * 1000,
+  );
+
+  const references = useMemo<References>(
+    () => ({
+      isOpen: (id) => prefs.open.includes(id),
+      setOpen: (id, open) => {
+        updatePrefs({ open: open ? [...prefs.open, id] : prefs.open.filter((x) => x !== id) });
+      },
+    }),
+    [prefs.open, updatePrefs],
+  );
+
+  const choose = (id: ItemId) => {
+    const mode = modeOf(id);
+    if (mode !== null) setSettings((s) => ({ ...s, mode }));
+    const drill = VIM_DRILLS[id];
+    if (drill !== undefined) chooseVimDrill(store, drill);
+    setItem(id);
+    updatePrefs({ item: id });
+    setRunning(false);
+    setScreen({ name: "menu" });
+  };
+
+  const backToMode = () => {
+    choose(settings.mode);
+  };
 
   const start = () => {
     saveSettings(store, settings);
@@ -77,7 +216,7 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
       // Review items come from history at start, never from the settings.
       const items = reviewItems(loadHistory(store));
       if (items.length === 0) {
-        setScreen({ name: "config" });
+        choose("review");
         return;
       }
       params = { items };
@@ -86,6 +225,7 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
       sessionConfig(settings.mode, params, settings, newSeed()),
       clock.now(),
     );
+    setItem(settings.mode);
     setScreen({ name: "game", mode: settings.mode, session });
   };
 
@@ -94,46 +234,81 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
   const finish = useCallback(
     (session: FinishedSession<JsonValue>) => {
       const mode = gameMode;
+      const { durationMs, seed, params } = session.config;
       appendSession(store, {
         version: 1,
         mode,
         finishedAt: clock.wallTime(),
-        durationMs: session.config.durationMs,
-        seed: session.config.seed,
-        params: session.config.params,
+        durationMs,
+        seed,
+        params,
         log: session.log,
       });
-      setScreen({ name: "results", mode, log: session.log });
+      const best = Math.max(0, ...scoresOf(loadHistory(store), mode, params, durationMs));
+      setScreen({ name: "results", mode, log: session.log, seed, durationMs, best });
     },
     [clock, store, gameMode],
   );
 
   const abort = useCallback(() => {
-    setScreen({ name: "config" });
+    setScreen({ name: "menu" });
   }, []);
 
+  const onResultKey = (e: KeyboardEvent) => {
+    if (screen.name !== "results") return;
+    if (e.key === "Escape") setScreen({ name: "menu" });
+    else if (e.key === "r") choose("review");
+    else if (e.key === "Enter" && !isControl(e.target)) start();
+    else return;
+    e.preventDefault();
+  };
+
+  const tree: TreeState | null =
+    screen.name === "menu" && !running
+      ? {
+          item,
+          closed: prefs.closed,
+          reviewCount,
+          touch,
+          onChoose: choose,
+          onFolder: (folder, open) => {
+            const others = prefs.closed.filter((f) => f !== folder);
+            updatePrefs({ closed: open ? others : [...others, folder] });
+          },
+          onStart: () => {
+            if (modeOf(item) === null) {
+              document
+                .querySelector<HTMLElement>("[data-panel=area] textarea, [data-panel=area] input")
+                ?.focus();
+            } else if (configErrors(settings, reviewCount).length === 0) {
+              start();
+            }
+          },
+          onBack: () => {
+            if (modeOf(item) === null) backToMode();
+          },
+        }
+      : null;
+
+  const shown = screen.name === "menu" ? item : screen.mode;
+  const path = [lower(folderOf(shown).label), lower(itemById(shown).label)];
+
+  let panel: ReactNode;
+  let status: { mode: "NORMAL" | "JOGANDO" | "RESULTADO"; hints: readonly Hint[] };
+  let right: ReactNode = "rodada em andamento";
   switch (screen.name) {
-    case "config":
-      return (
-        <ConfigScreen
-          settings={settings}
-          reviewCount={reviewCount}
-          onChange={setSettings}
-          onStart={start}
-          onTyping={() => {
-            setScreen({ name: "typing" });
-          }}
-          onText={() => {
-            setScreen({ name: "text" });
-          }}
-          onVim={() => {
-            setScreen({ name: "vim" });
-          }}
-          data={<DataPanel store={store} clock={clock} />}
-        />
-      );
-    case "game":
-      return (
+    case "game": {
+      const skip = MODES[screen.mode].allowSkip;
+      status = {
+        mode: "JOGANDO",
+        hints: skip
+          ? [
+              ["Enter", "pular"],
+              ["Esc", "sair"],
+            ]
+          : [["Esc", "sair"]],
+      };
+      panel = (
         <GameScreen
           initial={screen.session}
           clock={clock}
@@ -142,22 +317,105 @@ export function App({ clock, store, newSeed }: AppProps): ReactNode {
           onAbort={abort}
         />
       );
-    case "typing":
-      return <TypingScreen clock={clock} store={store} newSeed={newSeed} onBack={abort} />;
-    case "text":
-      return <TextTypingScreen clock={clock} store={store} newSeed={newSeed} onBack={abort} />;
-    case "vim":
-      return <VimScreen clock={clock} store={store} newSeed={newSeed} onBack={abort} />;
+      break;
+    }
     case "results":
-      return (
+      path.push("resultado");
+      right = `${String(Math.round(screen.durationMs / 1000))} s`;
+      status = { mode: "RESULTADO", hints: RESULT_HINTS };
+      panel = (
         <ResultsScreen
           log={screen.log}
           mode={screen.mode}
+          seed={screen.seed}
+          durationMs={screen.durationMs}
+          best={screen.best}
           onPlayAgain={start}
-          onConfigure={() => {
-            setScreen({ name: "config" });
-          }}
+          onConfigure={abort}
         />
       );
+      break;
+    case "menu":
+      status = running ? { mode: "JOGANDO", hints: [] } : { mode: "NORMAL", hints: MENU_HINTS };
+      if (!running) right = <Brand />;
+      panel = menuPanel();
+      break;
   }
+
+  function menuPanel(): ReactNode {
+    const drill = VIM_DRILLS[item];
+    if (drill !== undefined) {
+      return (
+        <VimScreen
+          key={item}
+          clock={clock}
+          store={store}
+          newSeed={newSeed}
+          onBack={backToMode}
+          onRunning={setRunning}
+        />
+      );
+    }
+    switch (item) {
+      case "typing":
+        return (
+          <TypingScreen
+            clock={clock}
+            store={store}
+            newSeed={newSeed}
+            onBack={backToMode}
+            onRunning={setRunning}
+          />
+        );
+      case "text":
+        return (
+          <TextTypingScreen
+            clock={clock}
+            store={store}
+            newSeed={newSeed}
+            onBack={backToMode}
+            onRunning={setRunning}
+          />
+        );
+      case "data":
+        return (
+          <div className="screen data">
+            <PanelTitle title="Dados">Exporte ou importe tudo o que o app guarda.</PanelTitle>
+            <div data-panel="options">
+              <DataPanel store={store} clock={clock} />
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <ConfigScreen
+            settings={settings}
+            reviewCount={reviewCount}
+            onChange={setSettings}
+            onStart={start}
+            history={scores}
+          />
+        );
+    }
+  }
+
+  return (
+    <ReferencesContext.Provider value={references}>
+      <Shell
+        path={path}
+        right={right}
+        mode={status.mode}
+        hints={status.hints}
+        tree={tree}
+        narrow={isNarrow}
+        collapsed={prefs.collapsed}
+        onCollapsed={(collapsed) => {
+          updatePrefs({ collapsed });
+        }}
+        onKey={onResultKey}
+      >
+        {panel}
+      </Shell>
+    </ReferencesContext.Provider>
+  );
 }

@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 test.describe("regression T12 word-box-clip", () => {
   test("word box shows only whole words", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "Texto", exact: true }).click();
+    await page.getByRole("radio", { name: "Texto", exact: true }).check();
     const partial = await page.getByTestId("text-words").evaluate((area) => {
       const box = area.getBoundingClientRect();
       // Overflow clips at the padding edge, inside the borders. The
