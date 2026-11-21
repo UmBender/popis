@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Plateau } from "../../stats/learning";
 import { sparkline } from "../verdicts";
 
 /** How many past rounds the panel shows. */
@@ -14,6 +15,12 @@ export type HistoryProps = {
   readonly unit?: string;
   /** Assisted rounds excluded from best/mean (T21 AC-4). */
   readonly excluded?: number;
+  /** Weekly improvement slope over the last 4 weeks (T23 AC-5). */
+  readonly weeklyRate?: number | null;
+  /** Plateau info when the last 10 rounds are non-improving (T23 AC-5). */
+  readonly plateau?: Plateau | null;
+  /** Jump to this item's section in Evolução (T23 AC-5). */
+  readonly onProgress?: () => void;
   readonly testId?: string;
   readonly sparkTestId?: string;
 };
