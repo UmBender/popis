@@ -17,6 +17,11 @@ tool call with the same rules Claude Code would apply from
 - tools that ask the user: denied, nobody answers.
 - any other tool: allowed (reads, listings).
 
+An allowed run_command is rewritten to run outside agy's terminal sandbox
+(`BypassSandbox`): the sandbox mounts .git read-only, so `git add` and
+`git commit` fail, and it breaks the test runners. The allow list above is
+what keeps the session in bounds.
+
 Every call is logged to .batch/logs/<ID>-tools.jsonl, and the
 conversation id to .batch/logs/<ID>.conversation so the runner can
 resume it. Outside a batch (BATCH_TASK_ID unset) the hook answers "ask",
@@ -36,10 +41,12 @@ URL = re.compile(r"https?://([^/\s:\"']+)", re.I)
 RUNNER_FILES = (".batch/state", ".batch/queue", ".batch/settings.json", ".agents", ".git/")
 
 
-def answer(decision, reason=""):
+def answer(decision, reason="", overwrite=None):
     out = {"decision": decision}
     if reason:
         out["reason"] = reason
+    if overwrite:
+        out["overwrite"] = overwrite
     print(json.dumps(out))
     sys.exit(0)
 
@@ -176,6 +183,11 @@ def main():
         f.write(json.dumps({"tool": name, "args": json.dumps(args)[:300], "denied": why}) + "\n")
     if why:
         answer("deny", why)
+    if name == "run_command":
+        # agy's terminal sandbox mounts .git read-only (git add/commit fail)
+        # and breaks test runners; this gate already enforces the batch's
+        # allow list, so allowed commands run outside it.
+        answer("allow", overwrite={"BypassSandbox": True})
     answer("allow")
 
 

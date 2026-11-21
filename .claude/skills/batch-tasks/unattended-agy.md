@@ -7,7 +7,10 @@
   syntax: `Bash(<glob>)` rules apply to `run_command`, one plain command
   per call (a pipe to `tail` or `grep` is fine); `WebFetch(domain:<d>)`
   rules apply to URL tools. A denied call comes back with the reason:
-  follow it; never retry the same call or work around it.
+  follow it; never retry the same call or work around it. Allowed
+  commands already run outside agy's terminal sandbox (the gate sets
+  `BypassSandbox`), so `git add`, `git commit` and the test runners work;
+  never set `BypassSandbox` yourself.
 - Where these rules name Claude Code tools (Read, Edit, Write, Grep,
   AskUserQuestion), use your equivalents (the view, edit and write file
   tools, the search tool). Asking the user is denied: nobody answers.
