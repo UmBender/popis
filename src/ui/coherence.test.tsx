@@ -172,7 +172,7 @@ describe("T19 AC-1: uniform training keys", () => {
 
     // Vim Learn
     fireEvent.click(radio("Aprender"));
-    const firstLesson = within(screen.getByRole("list", { name: "Lições" })).getAllByRole(
+    const firstLesson = within(screen.getByRole("list", { name: "Unidades" })).getAllByRole(
       "button",
     )[0] as HTMLElement;
     fireEvent.click(firstLesson);

@@ -143,6 +143,8 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
   const [screen, setScreen] = useState<Screen>({ name: "menu" });
   // A typing or Vim round is being played: the tree hides.
   const [running, setRunning] = useState(false);
+  // Lesson to open when jumping to Aprender from a "Comandos" panel (T20 AC-5).
+  const [learnLesson, setLearnLesson] = useState<string | null>(null);
   const isNarrow = useMedia("(max-width: 48rem)", narrow);
   const touch = useMedia("(hover: none) and (pointer: coarse)");
 
@@ -190,6 +192,7 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
     if (mode !== null) setSettings((s) => ({ ...s, mode }));
     const drill = VIM_DRILLS[id];
     if (drill !== undefined) chooseVimDrill(store, drill);
+    if (id !== "vim-learn") setLearnLesson(null);
     setItem(id);
     updatePrefs({ item: id });
     setRunning(false);
@@ -350,9 +353,15 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
           newSeed={newSeed}
           onBack={backToMode}
           onRunning={setRunning}
-          onLearn={() => {
+          onLearn={(lessonId) => {
+            setLearnLesson(lessonId ?? null);
             choose("vim-learn");
           }}
+          onPractice={(targetDrill) => {
+            choose(targetDrill === "motion" ? "vim-motion" : "vim-edit");
+          }}
+          initialLesson={learnLesson}
+          readOnly={touch}
         />
       );
     }

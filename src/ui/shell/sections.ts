@@ -61,7 +61,7 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
     "vim",
     "Vim",
     [
-      ["vim-learn", "Aprender", false],
+      ["vim-learn", "Aprender"],
       ["vim-motion", "Movimento", false],
       ["vim-edit", "Edição", false],
     ],

@@ -3,8 +3,15 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { manualClock, type ManualClock } from "../core/clock";
 import { memoryStore, type KeyValueStore } from "../storage/history";
-import { VIM_EDIT_SETTINGS_KEY, loadVimEditSettings } from "../storage/vim";
-import { VIM_LEARN_KEY, loadUnlocked, unlockKind } from "../storage/vim-learn";
+import { VIM_EDIT_SETTINGS_KEY, loadVimEditSettings, loadVimSettings } from "../storage/vim";
+import {
+  VIM_LEARN_KEY,
+  completeLesson,
+  loadCompleted,
+  loadUnlocked,
+  unlockKind,
+} from "../storage/vim-learn";
+import { UNITS, curriculumLessonById, type CurriculumLesson } from "../vim/curriculum";
 import { EDIT_KIND_LABELS } from "../vim/drills/edit";
 import { REGISTER_KINDS } from "../vim/drills/register-edit";
 import { formatKeys, parseKeys } from "../vim/keys";
@@ -158,8 +165,12 @@ describe("VimScreen Learn mode", () => {
   it("typing the reference finishes the exercise, unlocks the kind and enables its practice", () => {
     const store = setup();
     open("number-lines");
-    const edit = exerciseFor(lessonFor("number-lines"));
-    press(edit.reference);
+    const lesson = curriculumLessonById("number-lines") as CurriculumLesson;
+    // Step 1 with minimum keys skips step 2 -> step 3.
+    press(lesson.exercises[0].reference);
+    expect(screen.getByTestId("learn-step").textContent).toContain("3");
+    // Step 3 finishes the lesson and unlocks the kind.
+    press(lesson.exercises[2].reference);
     expect(screen.getByTestId("learn-done")).toBeTruthy();
     expect(loadUnlocked(store)).toEqual(["number-lines"]);
     expect(loadVimEditSettings(store).kinds).toContain("number-lines");
@@ -171,7 +182,9 @@ describe("VimScreen Learn mode", () => {
   it("the exercise can be done again with another approach and still ends the same", () => {
     const store = setup();
     open("array-initializer");
-    press(exerciseFor(lessonFor("array-initializer")).reference);
+    const lesson = curriculumLessonById("array-initializer") as CurriculumLesson;
+    press(lesson.exercises[0].reference);
+    press(lesson.exercises[2].reference);
     expect(loadUnlocked(store)).toEqual(["array-initializer"]);
   });
 
@@ -203,9 +216,12 @@ describe("VimScreen Learn mode", () => {
   it("the unlocked kinds are still there after the screen is opened again", () => {
     const store = setup();
     open("number-lines");
-    press(exerciseFor(lessonFor("number-lines")).reference);
+    const lesson = curriculumLessonById("number-lines") as CurriculumLesson;
+    press(lesson.exercises[0].reference);
+    press(lesson.exercises[2].reference);
     expect(JSON.parse(store.getItem(VIM_LEARN_KEY) as string)).toEqual({
-      unlocked: ["number-lines"],
+      version: 2,
+      completed: ["number-lines"],
     });
   });
 
@@ -264,7 +280,9 @@ describe("VimScreen Learn mode controls", () => {
     );
     render(<VimScreen clock={clock} store={store} newSeed={() => 21} onBack={vi.fn()} />);
     open("number-lines");
-    press(exerciseFor(lessonFor("number-lines")).reference);
+    const lesson = curriculumLessonById("number-lines") as CurriculumLesson;
+    press(lesson.exercises[0].reference);
+    press(lesson.exercises[2].reference);
     expect(loadVimEditSettings(store).kinds).toEqual(["delete-line", "number-lines"]);
   });
 
@@ -300,10 +318,14 @@ describe("VimScreen Learn mode controls", () => {
   it("keys after the exercise is done change nothing", () => {
     setup();
     open("number-lines");
-    const edit = exerciseFor(lessonFor("number-lines"));
-    press(edit.reference);
+    const lesson = curriculumLessonById("number-lines") as CurriculumLesson;
+    press(lesson.exercises[0].reference);
+    press(lesson.exercises[2].reference);
     press("dd");
-    expect(screen.getByTestId("vim-code").textContent).toBe(edit.after.join("\n"));
+    const ex3 = lesson.exercises[2];
+    expect(screen.getByTestId("vim-code").textContent).toBe(
+      (ex3.kind === "edit" ? ex3.after : ex3.lines).join("\n"),
+    );
   });
 
   it("a lesson already done says so", () => {
@@ -341,5 +363,145 @@ describe("VimScreen Learn mode controls", () => {
         name: EDIT_KIND_LABELS["number-lines"],
       }).checked,
     ).toBe(false);
+  });
+});
+
+describe("VimScreen Learn curriculum (T20 AC-3..AC-6)", () => {
+  it("lists all 15 units with nova, em andamento and concluída statuses and lets any lesson open", () => {
+    const store = memoryStore();
+    const u1 = UNITS[0]!;
+    const u2 = UNITS[1]!;
+    for (const lesson of u1.lessons) completeLesson(store, lesson.id);
+    completeLesson(store, u2.lessons[0]!.id);
+    setup(store);
+
+    const unitsList = screen.getByRole("list", { name: "Unidades" });
+    expect(within(unitsList).getByTestId(`unit-status-${u1.id}`).textContent).toBe("concluída");
+    expect(within(unitsList).getByTestId(`unit-status-${u2.id}`).textContent).toBe("em andamento");
+    expect(within(unitsList).getByTestId(`unit-status-${UNITS[2]!.id}`).textContent).toBe("nova");
+
+    // Any lesson is unlocked and can be opened directly.
+    const lastLesson = UNITS[14]!.lessons[3]!;
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(lastLesson.title) }));
+    expect(screen.getByTestId("learn-explanation").textContent).toBe(lastLesson.explanation);
+  });
+
+  it("Enter opens the next uncompleted lesson", () => {
+    const store = memoryStore();
+    completeLesson(store, UNITS[0]!.lessons[0]!.id);
+    setup(store);
+    // Enter on a button control does not intercept it.
+    fireEvent.keyDown(screen.getByRole("button", { name: "Voltar" }), { key: "Enter" });
+    expect(screen.queryByTestId("learn-explanation")).toBeNull();
+    fireEvent.keyDown(window, { key: "Enter" });
+    expect(screen.getByTestId("learn-explanation").textContent).toBe(
+      UNITS[0]!.lessons[1]!.explanation,
+    );
+  });
+
+  it("extra keys on step 1 advance to step 2 with commands only, then step 3 without help", () => {
+    const store = setup();
+    const lesson = curriculumLessonById("motion-hjkl") as CurriculumLesson;
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(lesson.title) }));
+
+    // Step 1: reference visible. Type an extra no-op key before the reference.
+    expect(screen.getByTestId("learn-reference")).toBeTruthy();
+    press("h" + lesson.exercises[0].reference);
+
+    // Step 2: no reference, lesson commands hint visible.
+    expect(screen.queryByTestId("learn-reference")).toBeNull();
+    expect(screen.getByTestId("learn-step").textContent).toContain("2");
+    expect(screen.getByTestId("learn-exercise-commands")).toBeTruthy();
+
+    // Extra key on step 2 advances to step 3 (no help).
+    press("j" + lesson.exercises[1].reference);
+    expect(screen.queryByTestId("learn-reference")).toBeNull();
+    expect(screen.queryByTestId("learn-exercise-commands")).toBeNull();
+    expect(screen.getByTestId("learn-step").textContent).toContain("3");
+
+    // Finish step 3 -> completed.
+    press(lesson.exercises[2].reference);
+    expect(screen.getByTestId("learn-done")).toBeTruthy();
+    expect(loadCompleted(store)).toContain("motion-hjkl");
+  });
+
+  it("Treinar opens Motion at the lesson level after completing a motion lesson", () => {
+    const store = openFromTree(memoryStore(), "Aprender");
+    const lesson = curriculumLessonById("motion-wbe") as CurriculumLesson;
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(lesson.title) }));
+    press(lesson.exercises[0].reference);
+    press(lesson.exercises[2].reference);
+    fireEvent.click(screen.getByRole("button", { name: "Treinar" }));
+    expect(screen.getByRole("heading", { name: "Movimento" })).toBeTruthy();
+    expect(loadVimSettings(store).level).toBe(2);
+  });
+
+  it("Treinar opens Edit with the lesson kinds selected after completing an edit lesson", () => {
+    const store = openFromTree(memoryStore(), "Aprender");
+    const lesson = curriculumLessonById("edit-line-ops") as CurriculumLesson;
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(lesson.title) }));
+    press(lesson.exercises[0].reference);
+    press(lesson.exercises[2].reference);
+    fireEvent.click(screen.getByRole("button", { name: "Treinar" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Edição" })).toBeTruthy();
+    expect(lesson.practice.drill).toBe("edit");
+    if (lesson.practice.drill === "edit") {
+      expect(loadVimEditSettings(store).kinds).toEqual(lesson.practice.kinds);
+    }
+  });
+
+  it("aprender link in Motion and Edit commands panels opens the command lesson", () => {
+    const store = openFromTree(memoryStore(), "Movimento");
+    const motionCmds = screen.getByRole("group", { name: "Comandos deste nível" });
+    const firstLink = within(motionCmds).getAllByRole("button", { name: "aprender" })[0]!;
+    fireEvent.click(firstLink);
+    expect(screen.getByRole("heading", { name: "Aprender" })).toBeTruthy();
+    expect(screen.getByTestId("learn-explanation").textContent).toBe(
+      curriculumLessonById("motion-hjkl")?.explanation,
+    );
+
+    // Now test from Edição panel.
+    fireEvent.click(screen.getByRole("radio", { name: "Edição" }));
+    const editCmds = screen.getByRole("group", { name: "Comandos" });
+    const editLinks = within(editCmds).getAllByRole("button", { name: "aprender" });
+    expect(editLinks.length).toBeGreaterThan(0);
+    fireEvent.click(editLinks[0]!);
+    expect(screen.getByRole("heading", { name: "Aprender" })).toBeTruthy();
+    expect(screen.getByTestId("learn-explanation")).toBeTruthy();
+    expect(loadVimEditSettings(store).drill).toBe("learn");
+  });
+
+  it("read-only mode on touch screens shows explanation and example without exercise", () => {
+    const store = memoryStore({
+      [VIM_EDIT_SETTINGS_KEY]: JSON.stringify({ drill: "learn", durationS: 60 }),
+    });
+    render(<VimScreen clock={clock} store={store} newSeed={() => 21} onBack={vi.fn()} readOnly />);
+    const lesson = UNITS[0]!.lessons[0]!;
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(lesson.title) }));
+    expect(screen.getByTestId("learn-explanation").textContent).toBe(lesson.explanation);
+    expect(screen.getByTestId("learn-buffer")).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "Teclas do Vim" })).toBeNull();
+    expect(screen.getByTestId("learn-readonly-notice")).toBeTruthy();
+  });
+
+  it("cmdline handles Escape, Backspace, unknown commands and :q in motion and edit exercises", () => {
+    setup();
+    // Motion exercise cmdline branches
+    fireEvent.click(screen.getByRole("button", { name: /Mover com h j k l/ }));
+    press(":a<BS><BS>");
+    expect(screen.getByTestId("vim-status").textContent).toContain("NORMAL");
+    press(":w<Esc>");
+    expect(screen.getByTestId("vim-status").textContent).toContain("NORMAL");
+    press(":w<CR>");
+    expect(screen.getByTestId("vim-status").textContent).toContain("NORMAL");
+    press(":q<CR>");
+    expect(screen.queryByTestId("learn-explanation")).toBeNull();
+
+    // Edit exercise :q exit
+    open("number-lines");
+    press(":q");
+    expect(screen.getByTestId("vim-status").textContent).toBe(":q");
+    press("<CR>");
+    expect(screen.queryByTestId("learn-explanation")).toBeNull();
   });
 });

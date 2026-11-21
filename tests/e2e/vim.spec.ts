@@ -132,3 +132,26 @@ test("a blocked key shows which one and does not move the cursor", async ({ page
     before,
   );
 });
+
+test("T20: curriculum lesson with adaptive fading opens Motion at its level via Treinar", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("radio", { name: "Aprender", exact: true }).check();
+  await expect(page.getByRole("list", { name: "Unidades" })).toBeVisible();
+  await expect(page.getByTestId("unit-status-u1-modes-hjkl")).toHaveText("nova");
+
+  await page.getByRole("button", { name: /Mover com h j k l/ }).click();
+  await expect(page.getByTestId("learn-step")).toContainText("1");
+  await expect(page.getByRole("textbox", { name: "Teclas do Vim" })).toBeFocused();
+  await typeSolution(page, "jll");
+  // Optimal on step 1 skips step 2 -> step 3.
+  await expect(page.getByTestId("learn-step")).toContainText("3");
+  await typeSolution(page, "jhh");
+  await expect(page.getByTestId("learn-done")).toBeVisible();
+  await expect(page.getByTestId("unit-status-u1-modes-hjkl")).toHaveText("em andamento");
+
+  await page.getByRole("button", { name: "Treinar" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Movimento" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Nível" })).toHaveValue("1");
+});

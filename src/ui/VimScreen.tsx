@@ -17,6 +17,7 @@ import {
   type VimResult,
   type VimSettings,
 } from "../storage/vim";
+import { lessonForHelpKey } from "../vim/curriculum";
 import { formatKeys, keyFromEvent, type Key } from "../vim/keys";
 import { LEVEL_LABELS, LEVELS, levelHelp } from "../vim/levels";
 import {
@@ -48,8 +49,14 @@ type Props = {
   readonly onBack: () => void;
   /** Told when a round starts and ends, so the window hides the tree (T18). */
   readonly onRunning?: (running: boolean) => void;
-  /** Switches to the Vim Learn screen (T19 AC-7). */
-  readonly onLearn?: () => void;
+  /** Switches to the Vim Learn screen (T19 AC-7, T20 AC-5). */
+  readonly onLearn?: (lessonId?: string) => void;
+  /** Switches to Motion or Edit from a completed Learn lesson (T20 AC-5). */
+  readonly onPractice?: (drill: "motion" | "edit") => void;
+  /** Lesson to open immediately when entering Learn (T20 AC-5). */
+  readonly initialLesson?: string | null;
+  /** Read-only Learn mode on touch screens (T20 AC-6). */
+  readonly readOnly?: boolean;
 };
 
 /**
@@ -94,7 +101,7 @@ function newRun(settings: VimSettings, seed: number, run: number): Run {
 const percent = (fraction: number): string => `${String(Math.round(fraction * 100))}%`;
 
 /** The Vim motion drill (ADR-T13-1). */
-function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): ReactNode {
+function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Props): ReactNode {
   const [current, setCurrent] = useState<Run>(() => newRun(loadVimSettings(store), newSeed(), 0));
   const [results, setResults] = useState<readonly VimResult[]>(() => loadVimResults(store));
   const [now, setNow] = useState(() => clock.now());
@@ -361,9 +368,7 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
       <Reference id="vim-motion-commands" title="Comandos deste nível" className="vim-commands">
         <ul>
           {currentHelp.map((help) => (
-            <li key={help.keys}>
-              <code>{help.keys}</code> — {help.text}
-            </li>
+            <MotionHelpItem key={help.keys} help={help} onLearn={onLearn} />
           ))}
         </ul>
         {earlierHelp.length > 0 && (
@@ -371,9 +376,7 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
             <summary>{`já valem (níveis 1–${String(settings.level - 1)})`}</summary>
             <ul>
               {earlierHelp.map((help) => (
-                <li key={help.keys}>
-                  <code>{help.keys}</code> — {help.text}
-                </li>
+                <MotionHelpItem key={help.keys} help={help} onLearn={onLearn} />
               ))}
             </ul>
           </details>
@@ -386,6 +389,35 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
         </button>
       </div>
     </div>
+  );
+}
+
+function MotionHelpItem({
+  help,
+  onLearn,
+}: {
+  readonly help: { readonly keys: string; readonly text: string };
+  readonly onLearn?: (lessonId?: string) => void;
+}): ReactNode {
+  const lesson = lessonForHelpKey(help.keys);
+  return (
+    <li>
+      <code>{help.keys}</code> — {help.text}
+      {lesson !== undefined && onLearn !== undefined && (
+        <>
+          {" "}
+          <button
+            type="button"
+            className="link vim-cmd-learn"
+            onClick={() => {
+              onLearn(lesson.id);
+            }}
+          >
+            aprender
+          </button>
+        </>
+      )}
+    </li>
   );
 }
 

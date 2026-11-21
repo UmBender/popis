@@ -295,7 +295,6 @@ function Tree({
     <div role="radiogroup" aria-label="Treinos" className="tree-list">
       {SECTIONS.map((folder) => {
         const items = folder.items.filter((i) => !tree.touch || i.touch);
-        if (items.length === 0) return null;
         const open = !tree.closed.includes(folder.id);
         return (
           <div key={folder.id} className="tree-folder">
