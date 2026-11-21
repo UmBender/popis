@@ -329,7 +329,11 @@ agy_rules() { # the unattended rules, sent in the first prompt (agy has no syste
 
 session_agy() { # session_agy ID BASE MODE REASON N OUT ERR
     local id=$1 base=$2 mode=$3 reason=$4 n=$5 out=$6 err=$7 sid prompt e rc
-    local -a cmd=("$AGY_BIN" --output-format json --model "$(task_model "$id")")
+    # --dangerously-skip-permissions: agy's own approval prompts (file
+    # writes, commands leaving its sandbox) have nobody to answer them, and
+    # one waited 30 s and was denied. The gate hook (agy-gate.py) is the
+    # authority: its deny still blocks with this flag on.
+    local -a cmd=("$AGY_BIN" --dangerously-skip-permissions --output-format json --model "$(task_model "$id")")
     e=$(task_opt "$id" effort)
     [[ -n $e ]] && cmd+=(--effort "$e")
     sid=""

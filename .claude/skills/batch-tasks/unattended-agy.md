@@ -19,3 +19,9 @@
   exactly, including commits with no `Co-Authored-By` or agent trailer.
 - Commit with `git commit -m "<message>"` (one `-m` per paragraph); the
   message ends with the `Refs:` line, nothing after it.
+- Your turn ends the session. Never end it while a command still runs in
+  the background (a long `npm run test:e2e` or `coverage` that came back
+  as a background task): wait for it to finish, read its result, and
+  keep going until every step is committed and the status file is
+  written. Ending early counts as a failed attempt, and two of them fail
+  the task.
