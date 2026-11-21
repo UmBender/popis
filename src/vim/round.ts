@@ -24,6 +24,8 @@ export type TargetResult = {
   readonly solution: string;
   readonly timeMs: number;
   readonly skipped: boolean;
+  /** Whether the optimal preview was visible at any point during this target (T21 AC-4). */
+  readonly assisted?: boolean;
 };
 
 export type Round = {
@@ -36,6 +38,12 @@ export type Round = {
   readonly startedAt: number | null;
   /** When the current target appeared (or the first key came). */
   readonly targetStartedAt: number | null;
+  /** When the current target started or the last key was typed. */
+  readonly lastActivityAt: number | null;
+  /** When the round was paused (e.g. reading a lesson), or null. */
+  readonly pausedAt: number | null;
+  /** Whether the optimal preview was shown on the current target. */
+  readonly assisted: boolean;
   readonly results: readonly TargetResult[];
   /** The blocked command of the last key, or null. */
   readonly blocked: string | null;
@@ -67,6 +75,9 @@ export function startRound(config: RoundConfig): Round {
     keys: 0,
     startedAt: null,
     targetStartedAt: null,
+    lastActivityAt: null,
+    pausedAt: null,
+    assisted: false,
     results: [],
     blocked: null,
     last: null,
@@ -75,7 +86,7 @@ export function startRound(config: RoundConfig): Round {
 }
 
 const timeIsUp = (round: Round, now: number): boolean =>
-  round.startedAt !== null && now >= round.startedAt + round.config.durationMs;
+  round.startedAt !== null && (round.pausedAt ?? now) >= round.startedAt + round.config.durationMs;
 
 /** Records the current target as done and shows the next one. */
 function finishTarget(round: Round, now: number, keys: number, skipped: boolean): Round {
@@ -89,6 +100,7 @@ function finishTarget(round: Round, now: number, keys: number, skipped: boolean)
     solution: target.solution,
     timeMs: now - (round.targetStartedAt ?? now),
     skipped,
+    assisted: round.assisted,
   };
   return {
     ...round,
@@ -96,6 +108,8 @@ function finishTarget(round: Round, now: number, keys: number, skipped: boolean)
     keys: 0,
     startedAt: round.startedAt ?? now,
     targetStartedAt: now,
+    lastActivityAt: now,
+    assisted: false,
     results: [...round.results, result],
     blocked: null,
     last: result,
@@ -103,7 +117,7 @@ function finishTarget(round: Round, now: number, keys: number, skipped: boolean)
 }
 
 export function pressRoundKey(round: Round, key: Key, now: number): Round {
-  if (round.finished) return round;
+  if (round.finished || round.pausedAt !== null) return round;
   if (timeIsUp(round, now)) return { ...round, finished: true };
   const typed = pressKey(round.vim, key, round.config.level);
   const keys = round.keys + 1;
@@ -111,6 +125,7 @@ export function pressRoundKey(round: Round, key: Key, now: number): Round {
   const started = {
     startedAt: round.startedAt ?? now,
     targetStartedAt: round.targetStartedAt ?? now,
+    lastActivityAt: now,
   };
   if (cursor.line === round.target.target.line && cursor.col === round.target.target.col) {
     return finishTarget({ ...round, ...started }, now, keys, false);
@@ -119,14 +134,15 @@ export function pressRoundKey(round: Round, key: Key, now: number): Round {
 }
 
 export function skipTarget(round: Round, now: number): Round {
-  if (round.finished) return round;
+  if (round.finished || round.pausedAt !== null) return round;
   if (timeIsUp(round, now)) return { ...round, finished: true };
   return finishTarget(round, now, round.keys, true);
 }
 
 /** Ends the round when the time is up. */
 export function tickRound(round: Round, now: number): Round {
-  return !round.finished && timeIsUp(round, now) ? { ...round, finished: true } : round;
+  if (round.finished || round.pausedAt !== null) return round;
+  return timeIsUp(round, now) ? { ...round, finished: true } : round;
 }
 
 export function isRoundFinished(round: Round): boolean {
@@ -136,7 +152,8 @@ export function isRoundFinished(round: Round): boolean {
 export function remainingMs(round: Round, now: number): number {
   if (round.finished) return 0;
   if (round.startedAt === null) return round.config.durationMs;
-  return Math.max(0, round.startedAt + round.config.durationMs - now);
+  const effectiveNow = round.pausedAt ?? now;
+  return Math.max(0, round.startedAt + round.config.durationMs - effectiveNow);
 }
 
 /** Minimum over keys used, at most 1; 0 for a skipped target. */
@@ -156,4 +173,30 @@ export function roundStats(round: Pick<Round, "results">): RoundStats {
       .sort((a, b) => targetEfficiency(a) - targetEfficiency(b))
       .slice(0, WORST_COUNT),
   };
+}
+
+export function markAssisted(round: Round): Round {
+  return round.finished || round.assisted ? round : { ...round, assisted: true };
+}
+
+export function pauseRound(round: Round, now: number): Round {
+  return round.finished || round.pausedAt !== null ? round : { ...round, pausedAt: now };
+}
+
+export function resumeRound(round: Round, now: number): Round {
+  if (round.pausedAt === null) return round;
+  const pausedFor = Math.max(0, now - round.pausedAt);
+  return {
+    ...round,
+    pausedAt: null,
+    startedAt: round.startedAt !== null ? round.startedAt + pausedFor : null,
+    targetStartedAt: round.targetStartedAt !== null ? round.targetStartedAt + pausedFor : null,
+    lastActivityAt: round.lastActivityAt !== null ? round.lastActivityAt + pausedFor : null,
+  };
+}
+
+export function idleMs(round: Round, now: number): number {
+  if (round.finished || round.startedAt === null) return 0;
+  const effectiveNow = round.pausedAt ?? now;
+  return Math.max(0, effectiveNow - (round.lastActivityAt as number));
 }

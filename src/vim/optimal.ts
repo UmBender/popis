@@ -28,8 +28,12 @@ type Step = { readonly command: Command; readonly keys: readonly Key[] };
 
 const digitKey = (n: number): Key => String(n);
 
+const simpleCache = new Map<Level, readonly Step[]>();
+
 /** The movements that need no argument, with their counts 2 to 9 on level 5 and up. */
 function simpleSteps(level: Level): readonly Step[] {
+  const cached = simpleCache.get(level);
+  if (cached !== undefined) return cached;
   const steps: Step[] = [];
   for (const name of SIMPLE_NAMES) {
     if ((commandLevel(name) as Level) > level) continue;
@@ -40,7 +44,24 @@ function simpleSteps(level: Level): readonly Step[] {
       steps.push({ command: { name, count }, keys: [digitKey(count), ...keys] });
     }
   }
-  return steps.sort((a, b) => a.keys.length - b.keys.length);
+  const sorted = steps.sort((a, b) => a.keys.length - b.keys.length);
+  simpleCache.set(level, sorted);
+  return sorted;
+}
+
+const SAME_LINE_ONLY = new Set<SimpleName>(["h", "l", "0", "^", "$", ";", ","]);
+
+/** Fast exact check: can a final simple step possibly land on `target.line`? */
+function canLandOnTargetLine(command: Command, state: VimState, target: Pos): boolean {
+  const { name } = command;
+  if (SAME_LINE_ONLY.has(name as SimpleName)) return state.cursor.line === target.line;
+  const n = command.count ?? 1;
+  const last = state.lines.length - 1;
+  if (name === "j") return Math.min(last, state.cursor.line + n) === target.line;
+  if (name === "k") return Math.max(0, state.cursor.line - n) === target.line;
+  if (name === "G") return (command.count === null ? last : Math.min(last, n - 1)) === target.line;
+  if (name === "gg") return (command.count === null ? 0 : Math.min(last, n - 1)) === target.line;
+  return true;
 }
 
 /** A literal pattern that matches the same places as the others, with its keys. */
@@ -111,6 +132,16 @@ export function optimalSolution(
   level: Level,
   maxKeys: number = DEFAULT_MAX_KEYS,
 ): Solution | null {
+  return searchOptimal(start, target, level, maxKeys, true);
+}
+
+function searchOptimal(
+  start: VimState,
+  target: Pos,
+  level: Level,
+  maxKeys: number,
+  withSearchPatterns: boolean,
+): Solution | null {
   const { lines } = start;
   const isTarget = (s: VimState) => s.cursor.line === target.line && s.cursor.col === target.col;
   if (isTarget(start)) return { keys: "", cost: 0 };
@@ -118,7 +149,9 @@ export function optimalSolution(
   const simple = simpleSteps(level);
   const patternLength = Math.min(MAX_PATTERN, maxKeys - 2);
   const { patterns, byMatches } =
-    level >= 7 && patternLength >= 1 ? searchPatterns(lines, patternLength) : NO_PATTERNS;
+    withSearchPatterns && level >= 7 && patternLength >= 1
+      ? searchPatterns(lines, patternLength)
+      : NO_PATTERNS;
   // Searches of `*` and `#` can match where no pattern of the list does.
   const extraIds = new Map<string, number>();
   const specIds = new WeakMap<SearchSpec, number>();
@@ -139,7 +172,7 @@ export function optimalSolution(
   // there: its pattern is the text that starts at the target.
   const matchesTarget = new Set<number>();
   const targetText = lines[target.line] as string;
-  for (let length = 1; level >= 7 && length <= patternLength; length++) {
+  for (let length = 1; withSearchPatterns && level >= 7 && length <= patternLength; length++) {
     const pattern = targetText.slice(target.col, target.col + length);
     const id = byMatches.get(matchesKey(lines, { pattern, startWord: false, endWord: false }));
     if (id !== undefined) matchesTarget.add(id);
@@ -187,16 +220,24 @@ export function optimalSolution(
   for (let cost = 0; cost < maxKeys; cost++) {
     for (const node of buckets[cost] as Node[]) {
       if (settled.get(nodeKey(node.state)) !== cost) continue;
-      const budget = maxKeys - cost;
+      const limit = best !== null ? Math.min(maxKeys, (best as Node).cost - 1) : maxKeys;
+      const budget = limit - cost;
+      if (budget <= 0) continue;
       for (const step of simple) {
         if (step.keys.length > budget) break;
+        if (step.keys.length === budget && !canLandOnTargetLine(step.command, node.state, target)) {
+          continue;
+        }
         reach(node, step.command, step.keys);
       }
       if (level >= 4 && budget >= 2) expandFinds(node, budget, level, target, reach);
       if (level >= 7) {
+        const searchLimit = best !== null ? Math.min(maxKeys, (best as Node).cost - 1) : maxKeys;
+        const searchBudget = searchLimit - cost;
         for (const p of patterns) {
           const length = p.length + 2;
-          if (length > budget || (length === budget && !matchesTarget.has(p.id))) continue;
+          if (length > searchBudget || (length === searchBudget && !matchesTarget.has(p.id)))
+            continue;
           const keys = [..."/"].concat([...p.spec.pattern], ["<CR>"]);
           reach(node, { name: "/", pattern: p.spec.pattern, count: null }, keys);
           reach(node, { name: "?", pattern: p.spec.pattern, count: null }, ["?", ...keys.slice(1)]);
@@ -212,6 +253,98 @@ export function optimalSolution(
   const keys: Key[] = [];
   for (let n: Node | null = found; n !== null; n = n.parent) keys.unshift(...n.keys);
   return { keys: formatKeys(keys), cost: found.cost };
+}
+
+/** Shortest literal `/` or `?` search that lands directly on `target` in one command, or null. */
+function directSearch(start: VimState, target: Pos, maxKeys: number): Solution | null {
+  const text = start.lines[target.line] as string;
+  const maxLen = Math.min(MAX_PATTERN, maxKeys - 2);
+  for (let len = 1; len <= maxLen && target.col + len <= text.length; len++) {
+    const pattern = text.slice(target.col, target.col + len);
+    if (REGEX_SPECIAL.test(pattern)) continue;
+    for (const dir of ["/", "?"] as const) {
+      const next = execute(start, { name: dir, pattern, count: null });
+      if (next.cursor.line === target.line && next.cursor.col === target.col) {
+        const keys = [dir, ...pattern, "<CR>"];
+        return { keys: formatKeys(keys), cost: keys.length };
+      }
+    }
+  }
+  return null;
+}
+
+/** Direct level-valid fallback path when `target` is farther than the BFS bound. */
+function directPath(start: VimState, target: Pos, level: Level): Solution {
+  const keys: Key[] = [];
+  let cur = start;
+
+  const dy = target.line - cur.cursor.line;
+  if (dy !== 0) {
+    const absY = Math.abs(dy);
+    const dir: SimpleName = dy > 0 ? "j" : "k";
+    if (level >= 6 && absY > 2) {
+      if (target.line === 0) {
+        keys.push("g", "g");
+        cur = execute(cur, { name: "gg", count: null });
+      } else if (target.line === cur.lines.length - 1) {
+        keys.push("G");
+        cur = execute(cur, { name: "G", count: null });
+      } else {
+        const lineNum = target.line + 1;
+        keys.push(...String(lineNum), "G");
+        cur = execute(cur, { name: "G", count: lineNum });
+      }
+    } else if (level >= 5 && absY > 1) {
+      keys.push(...String(absY), dir);
+      cur = execute(cur, { name: dir, count: absY });
+    } else {
+      for (let i = 0; i < absY; i++) {
+        keys.push(dir);
+        cur = execute(cur, { name: dir, count: null });
+      }
+    }
+  }
+
+  const dx = target.col - cur.cursor.col;
+  if (dx !== 0) {
+    const absX = Math.abs(dx);
+    const dir: SimpleName = dx > 0 ? "l" : "h";
+    if (level >= 3 && target.col === 0) {
+      keys.push("0");
+    } else if (level >= 5 && absX > 1) {
+      keys.push(...String(absX), dir);
+    } else {
+      for (let i = 0; i < absX; i++) keys.push(dir);
+    }
+  }
+
+  return { keys: formatKeys(keys), cost: keys.length };
+}
+
+/** Recalculates an optimal (or bounded fallback) path from any state to `target` (T21 AC-2, AC-3). */
+export function recalculateOptimal(
+  state: VimState,
+  target: Pos,
+  level: Level,
+  maxKeys: number = DEFAULT_MAX_KEYS,
+): Solution {
+  const clean = state.pending.length === 0 ? state : { ...state, pending: [] };
+  if (clean.cursor.line === target.line && clean.cursor.col === target.col) {
+    return { keys: "", cost: 0 };
+  }
+  const search = level >= 7 ? directSearch(clean, target, maxKeys) : null;
+  // Cap interactive BFS so every keystroke stays well under 16 ms even on level 7:
+  // full level (with counts) up to 2 keys, then uncounted level<=4 up to 3 keys.
+  const fullLimit = Math.min(maxKeys, level >= 5 ? 2 : 4);
+  const limit = search !== null ? Math.min(fullLimit, search.cost - 1) : fullLimit;
+  const found = searchOptimal(clean, target, level, limit, false);
+  if (found !== null) return found;
+  if (level >= 5 && maxKeys >= 3 && (search === null || search.cost > 3)) {
+    const uncounted = searchOptimal(clean, target, 4, 3, false);
+    if (uncounted !== null) return uncounted;
+  }
+  if (search !== null) return search;
+  return directPath(clean, target, level);
 }
 
 /** `f F t T` with each character that the cursor's line holds in that direction. */

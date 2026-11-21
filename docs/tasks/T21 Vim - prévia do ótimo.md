@@ -1,10 +1,10 @@
 ---
 id: T21
 title: Vim - prévia do ótimo
-status: todo
+status: review
 depends_on: [T20]
 branch: task/T21-vim-optimal-preview
-adrs: []
+adrs: [ADR-T21-1]
 tags: [task]
 ---
 
@@ -31,11 +31,10 @@ separadas no histórico.
 
 Fontes em [[Métricas e evolução]].
 
-## Spec (rascunho; o passo de spec nomeia os testes)
+## Spec
 
 - **AC-1**: **Opção "Prévia do ótimo"** nas opções do Movimento e da
-  Edição, salva com as configurações de cada treino, com quatro
-  valores:
+  Edição, salva com as configurações de cada treino, com quatro valores:
   - **Desligada** (padrão para quem já tem rodadas): como hoje;
   - **Sempre:** a solução aparece desde o começo de cada alvo;
   - **Ao travar:** a solução aparece depois de 2 teclas a mais que o
@@ -44,6 +43,13 @@ Fontes em [[Métricas e evolução]].
     sempre enquanto a eficiência das últimas 20 metas, contando cada
     comando separadamente, está abaixo de 85%. Acima disso, ela vira
     "Ao travar" para aquele comando.
+
+  Testes:
+  - `src/storage/vim.test.ts` (`preview option round-trips and validates`, `defaultPreviewMode is auto without vim results and off with results`)
+  - `src/storage/vim-edit.test.ts` (`edit settings preview option round-trips and validates`)
+  - `src/vim/preview.test.ts` (`shouldShowPreview` para os 4 modos, `commandEfficiencies` com janela de 20 metas e limiar de 85%, gatilho "Ao travar" por 2 teclas extras ou 5 s)
+  - `src/ui/VimScreenPreview.test.tsx` (seletor "Prévia do ótimo" no Movimento e na Edição, padrão Automática/Desligada conforme histórico, persistência e comportamento dos 4 valores)
+
 - **AC-2**: **Como a prévia aparece:**
   - a sequência ótima fica acima do código, cada comando num bloco (`2w`
     `f(` `ci(`), com a descrição de uma linha do comando (de `levelHelp`
@@ -56,26 +62,53 @@ Fontes em [[Métricas e evolução]].
   - no Movimento, o caminho também aparece no código como pontos de
     passagem discretos (sublinhado em `--muted`), sem cobrir o alvo.
 
-  Testes de componente cobrem os quatro valores e o recálculo.
+  Testes:
+  - `src/vim/optimal.test.ts` (`recalculateOptimal` recalcula a partir de posição fora do caminho em todos os níveis e tem fallback quando distante)
+  - `src/vim/preview.test.ts` (`parseSolutionBlocks` cobre todos os níveis de movimento e os 36 tipos de edição; `motionWaypoints` exclui cursor e alvo; `recalculateEditPreview` recalcula fora do caminho com buffer intacto e com buffer alterado)
+  - `src/ui/VimScreenPreview.test.tsx` (blocos acima do código, estados `next`/`done`, descrição no foco e no mouse, recálculo no Movimento e na Edição, marcadores `.vim-waypoint` sem cobrir `.vim-target`)
+  - `tests/e2e/vim.spec.ts` (`T21: optimal preview guides, recalculates off-path, pauses on lesson and separates assisted history`)
+
 - **AC-3**: **Desempenho:** recalcular depois de cada tecla leva menos de
   16 ms no nível 7 e nas edições maiores, no pior caso do corpus (mesma
   medição da T13, AC de desempenho). Se não couber, recalcule só quando
   a pessoa para por 150 ms e registre no *Log*.
+
+  Testes:
+  - `src/vim/optimal.test.ts` (`recalculateOptimal answers in under 16 ms on level 7 worst-case corpus snippets`)
+  - `src/vim/preview.test.ts` (`recalculateEditPreview answers in under 16 ms on the largest corpus edits`)
+
 - **AC-4**: **Histórico separado:**
   - cada alvo guarda se a prévia estava visível (`assisted: true`);
   - o resultado da rodada mostra "com prévia" e "sem prévia" em pares
     separados;
-  - recordes e médias do histórico contam só rodadas sem prévia
-    nenhuma, e o resumo diz quantas rodadas assistidas ficaram de fora.
+  - recordes e médias do histórico contam só rodadas sem prévia nenhuma,
+    e o resumo diz quantas rodadas assistidas ficaram de fora.
 
-  Os resultados antigos carregam como não assistidos. Um teste de
-  migração cobre isso.
+  Os resultados antigos carregam como não assistidos.
+
+  Testes:
+  - `src/vim/round.test.ts` (`assisted flag` por alvo e `assistedSplit`)
+  - `src/vim/edit-round.test.ts` (`assisted flag` por edição e `assistedSplit`)
+  - `src/storage/vim.test.ts` (`legacy results without assisted load as unassisted`, `vimSummary excludes assisted rounds`)
+  - `src/storage/vim-edit.test.ts` (`legacy edit results without assisted load as unassisted`, `vimEditSummary excludes assisted rounds`)
+  - `src/ui/VimScreenPreview.test.tsx` (pares `sem prévia` e `com prévia` no resultado, exclusão de rodadas assistidas do `vim-summary` e contagem de rodadas assistidas fora)
+
 - **AC-5**: **Atalho:** dentro do treino, `Ctrl+P` mostra a prévia do
   alvo atual uma vez, mesmo com a opção desligada. O alvo conta como
   assistido.
+
+  Testes:
+  - `src/ui/VimScreenPreview.test.tsx` (`Ctrl+P` no Movimento e na Edição mostra a prévia uma vez com opção desligada, marca alvo como assistido e não vaza para o alvo seguinte)
+
 - **AC-6**: **Ligação com o Aprender:** cada bloco de comando da prévia
   tem um link para a lição do comando (T20), que abre sem perder a
   rodada: a rodada pausa e o tempo para.
+
+  Testes:
+  - `src/vim/round.test.ts` (`pauseRound` / `resumeRound` congelam o tempo e ignoram teclas enquanto pausada)
+  - `src/vim/edit-round.test.ts` (`pauseEditRound` / `resumeEditRound` congelam o tempo e ignoram teclas enquanto pausada)
+  - `src/ui/VimScreenPreview.test.tsx` (clicar num bloco abre o modal da lição T20, pausa o relógio e fecha retomando a mesma rodada e alvo no Movimento e na Edição)
+  - `tests/e2e/vim.spec.ts` (fluxo de abertura de lição com pausa e retomada no navegador)
 
 ## Out of scope
 
@@ -84,11 +117,24 @@ Fontes em [[Métricas e evolução]].
 
 ## Files owned
 
-- `src/vim/optimal.ts` (só o recálculo a partir de um estado),
-  `src/vim/round.ts`, `src/vim/edit-round.ts`
-- `src/storage/vim.ts`
-- `src/ui/VimScreen.tsx`, `src/ui/vim/EditDrill.tsx`, `src/ui/vim/Preview.tsx`
-  (novo)
+- `src/vim/optimal.ts` (recálculo a partir de um estado)
+- `src/vim/preview.ts` (novo — blocos da prévia, regra automática 85%/20 metas, gatilho ao travar, pontos de passagem e recálculo da edição)
+- `src/vim/round.ts`, `src/vim/edit-round.ts` (pausa/retomada e marcação `assisted`)
+- `src/storage/vim.ts` (opção `preview` e campo `assisted` com migração de legados)
+- `src/ui/shell/History.tsx` (contagem de rodadas assistidas excluídas no resumo)
+- `src/ui/keys.ts` (atalho `Ctrl+P` nas dicas do Vim e na ajuda)
+- `src/ui/VimScreen.tsx`, `src/ui/vim/EditDrill.tsx`, `src/ui/vim/Preview.tsx` (novo), `src/ui/app.css`
+
+## Subtasks
+
+- [x] Spec detalhado com testes nomeados e ADR-T21-1
+- [x] Testes unitários, de desempenho, de migração, de componente e e2e (vermelhos antes do código)
+- [x] Modelos, tipos e assinaturas (typecheck verde)
+- [x] Recálculo ótimo (`src/vim/optimal.ts`) e lógica pura da prévia (`src/vim/preview.ts`)
+- [x] Pausa/retomada e `assisted` nos motores de rodada (`src/vim/round.ts`, `src/vim/edit-round.ts`)
+- [x] Persistência e migração (`src/storage/vim.ts`) e resumo do histórico (`src/ui/shell/History.tsx`)
+- [x] Componente `Preview.tsx` com blocos, descrição no foco/mouse, modal de lição T20 e integração em `VimScreen.tsx` e `EditDrill.tsx`
+- [x] Gates verdes (`npm run check`, `npm run coverage`, `npm run vim:oracle`, `npm run test:e2e`), auditoria visual e atualização de docs
 
 ## Notas para o batch
 
@@ -96,3 +142,16 @@ Fontes em [[Métricas e evolução]].
   T20, faça a T21 sem o AC-6 e registre no *Log*.
 
 ## Log
+
+- 2026-11-21 — Spec e ADR: especificados todos os critérios AC-1..AC-6 com testes nomeados e registrado `ADR-T21-1`. *Files owned* ampliado para incluir o módulo puro `src/vim/preview.ts`, a contagem de rodadas assistidas em `src/ui/shell/History.tsx`, o atalho `Ctrl+P` em `src/ui/keys.ts` e os estilos em `src/ui/app.css`.
+- 2026-11-21 — UNATTENDED CHOICE: no modo "Automática" (AC-1), um comando exige ao menos `AUTO_WINDOW = 20` metas registradas com eficiência média `>= 0.85` (com tolerância `1e-9` para arredondamento IEEE-754) antes de recuar para "Ao travar"; com menos de 20 metas, a prévia permanece visível para evitar desaparecimento prematuro após a primeira meta resolvida com ajuda.
+- 2026-11-21 — UNATTENDED CHOICE: para abrir a lição da T20 sem perder a rodada nem desmontar o componente do treino (AC-6), a lição abre em um diálogo modal local (`LessonModal` em `src/ui/vim/Preview.tsx`) com pausa determinística do relógio (`pauseRound`/`resumeRound` e `pauseEditRound`/`resumeEditRound`) e retomada automática ao fechar (`Esc` ou botão).
+- 2026-11-21 — Ajuste de teste existente: em `src/ui/VimScreenEdit.test.tsx` ("the summary is for the edit drill alone"), o `store` vazio agora inicia com prévia "Automática" (AC-1), produzindo rodada assistida excluída do resumo (AC-4); o teste passou a fixar `preview: "off"` no commit de testes (`cacfe24`) para continuar validando o resumo de rodadas sem prévia.
+- 2026-11-21 — Desempenho (AC-3): `recalculateOptimal` usa cache de `simpleSteps`, poda exata por linha no último passo, busca direta `/` e `?` no alvo e limite de BFS interativo, ficando abaixo de 16 ms nos piores trechos do corpus no nível 7 (`cpp-dijkstra` e demais trechos grandes) mesmo sob instrumentação de cobertura V8, sem precisar do recuo de 150 ms. `recalculateEditPreview` também fica abaixo de 16 ms nas maiores edições.
+- 2026-11-21 — Gates verdes:
+  - `npm run vim:oracle`: `2200/2200 cases agree`.
+  - `npm run check`: verde (`tsc --noEmit`, `eslint --max-warnings 0`, `prettier --check`, `109/109` arquivos / `3932/3932` testes, `vite build`).
+  - `npm run coverage`: verde (`99.96%` statements, `99.31%` branches, `100%` functions, `99.98%` lines; `src/vim/**` e `src/storage/**` em 100%, todos os limiares atendidos).
+  - `npm run test:e2e`: `28/28 passed` (incluindo fluxo completo da T21 no navegador).
+- 2026-11-21 — Verificação visual: capturadas e inspecionadas 3 capturas Playwright em `.batch/visual/shots/` (`desktop-t21-motion-preview.png`, `desktop-t21-lesson-modal.png`, `desktop-t21-edit-preview.png`). Ajustado o botão "Voltar para a rodada Esc" no modal para o mesmo estilo da ajuda do Shell, garantindo contraste nítido no `<kbd>Esc</kbd>`.
+- 2026-11-21 — Verificação manual para o dono: jogar algumas rodadas de Movimento e Edição com a prévia em "Automática" e avaliar se ela ensina bem e retira a ajuda no momento certo.

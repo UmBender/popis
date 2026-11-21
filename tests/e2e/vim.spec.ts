@@ -155,3 +155,46 @@ test("T20: curriculum lesson with adaptive fading opens Motion at its level via 
   await expect(page.getByRole("heading", { level: 1, name: "Movimento" })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Nível" })).toHaveValue("1");
 });
+
+test("T21: optimal preview guides, recalculates off-path, pauses on lesson and separates assisted history", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.goto("/");
+  await page.getByRole("radio", { name: "Movimento", exact: true }).check();
+  await page.getByRole("combobox", { name: "Nível" }).selectOption("4");
+
+  // Fresh user defaults to "auto" and sees the preview blocks above the code.
+  await expect(page.getByRole("combobox", { name: "Prévia do ótimo" })).toHaveValue("auto");
+  const preview = page.getByTestId("vim-preview");
+  await expect(preview).toBeVisible();
+
+  // Start clock and open a lesson from a preview block: time pauses while modal is open.
+  await page.keyboard.press("Escape");
+  await page.clock.runFor(5_000);
+  await expect(page.getByTestId("vim-time")).toHaveText("55 s");
+  await preview.getByTestId("vim-preview-block").first().click();
+  await expect(page.getByTestId("vim-lesson-modal")).toBeVisible();
+  await page.clock.runFor(10_000);
+  await expect(page.getByTestId("vim-time")).toHaveText("55 s");
+  await page.getByRole("button", { name: /Voltar para a rodada/i }).click();
+  await expect(page.getByTestId("vim-lesson-modal")).toHaveCount(0);
+
+  // Switch to off, trigger Ctrl+P once on target 0, finish target 0 assisted and target 1 unassisted.
+  await page.getByRole("combobox", { name: "Prévia do ótimo" }).selectOption("off");
+  await expect(preview).toHaveCount(0);
+  await page.keyboard.press("Control+p");
+  await expect(preview).toBeVisible();
+  const sol0 = (await page.getByTestId("vim-target").getAttribute("data-solution")) ?? "";
+  await typeSolution(page, sol0);
+  await expect(page.getByTestId("vim-code")).toHaveAttribute("data-target-index", "1");
+  await expect(preview).toHaveCount(0);
+
+  const sol1 = (await page.getByTestId("vim-target").getAttribute("data-solution")) ?? "";
+  await typeSolution(page, sol1);
+  await expect(page.getByTestId("vim-code")).toHaveAttribute("data-target-index", "2");
+
+  await page.clock.runFor(61_000);
+  await expect(page.getByTestId("vim-with-preview")).toHaveText("1");
+  await expect(page.getByTestId("vim-without-preview")).toHaveText("1");
+});

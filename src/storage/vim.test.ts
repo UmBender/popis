@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { memoryStore, type KeyValueStore } from "./history";
 import {
+  appendVimEditResult,
   appendVimResult,
+  assistedRoundCount,
+  defaultPreviewMode,
   DEFAULT_VIM_SETTINGS,
   loadVimResults,
   loadVimSettings,
@@ -131,5 +134,58 @@ describe("vimSummary", () => {
       result({ reached: 77, durationS: 120 }),
     ];
     expect(vimSummary(results, 4, 60)).toEqual({ best: 5, recentMean: 5 });
+  });
+
+  it("preview option round-trips and validates (T21 AC-1)", () => {
+    const store = memoryStore();
+    saveVimSettings(store, { level: 3, durationS: 60, preview: "stuck" });
+    expect(loadVimSettings(store)).toEqual({ level: 3, durationS: 60, preview: "stuck" });
+    expect(parseVimSettings({ level: 3, durationS: 60, preview: "invalid" })).toEqual({
+      level: 3,
+      durationS: 60,
+    });
+    expect(parseVimSettings({ level: 3, durationS: 60, preview: "auto" }).preview).toBe("auto");
+  });
+
+  it("defaultPreviewMode is auto without vim results and off with results (T21 AC-1)", () => {
+    const store = memoryStore();
+    expect(defaultPreviewMode(store)).toBe("auto");
+    appendVimResult(store, result());
+    expect(defaultPreviewMode(store)).toBe("off");
+
+    const editStore = memoryStore();
+    appendVimEditResult(editStore, {
+      version: 1,
+      kind: "edit",
+      durationS: 60,
+      seed: 1,
+      reached: 5,
+      skipped: 0,
+      efficiency: 1,
+      finishedAt: 1,
+    });
+    expect(defaultPreviewMode(editStore)).toBe("off");
+  });
+
+  it("legacy results without assisted load as unassisted and assisted rounds are excluded from summary (T21 AC-4)", () => {
+    const legacy = {
+      version: 1,
+      level: 4,
+      durationS: 60,
+      seed: 1,
+      reached: 12,
+      skipped: 0,
+      efficiency: 0.9,
+      finishedAt: 10,
+    };
+    const store = memoryStore({ [VIM_KEY]: JSON.stringify([legacy]) });
+    const loaded = loadVimResults(store);
+    expect(loaded[0]?.assisted).toBe(false);
+
+    appendVimResult(store, result({ seed: 2, reached: 50, assisted: true }));
+    appendVimResult(store, result({ seed: 3, reached: 8, assisted: false }));
+    const all = loadVimResults(store);
+    expect(vimSummary(all, 4, 60)).toEqual({ best: 12, recentMean: 10 });
+    expect(assistedRoundCount(all, 4, 60)).toBe(1);
   });
 });
