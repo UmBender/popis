@@ -11,6 +11,24 @@ import {
   type SessionState,
 } from "../session/engine";
 import { answerText } from "./format";
+import { verdicts, type Verdict } from "./verdicts";
+
+/** The judge's verdicts, newest last with a fading outline (docs/architecture/Shell.md). */
+function Queue({ marks }: { readonly marks: readonly Verdict[] }): ReactNode {
+  return (
+    <ol className="verdicts" aria-label="Submissões">
+      {marks.map((mark, i) => (
+        <li
+          // The newest mark is remounted each time, so its outline animates again.
+          key={i === marks.length - 1 ? `now-${String(i)}` : i}
+          className={`verdict ${mark.toLowerCase()}${i === marks.length - 1 ? " now" : ""}`}
+        >
+          {mark}
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 /** How often the timer is redrawn and the end of the session checked. */
 const TICK_MS = 100;
@@ -62,17 +80,18 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
   return (
     <div className="screen game">
       <div className="status">
-        <span>
-          Tempo:{" "}
-          <span
-            data-testid="timer"
-            className={secondsLeft <= WARNING_S ? "timer warning" : "timer"}
-          >
-            {secondsLeft}
-          </span>
+        <span
+          data-testid="timer"
+          aria-label="Tempo"
+          className={secondsLeft <= WARNING_S ? "timer warning" : "timer"}
+        >
+          {secondsLeft}
         </span>
         <span>
-          Pontos: <span data-testid="score">{session.score}</span>
+          acertos{" "}
+          <span data-testid="score" className="score">
+            {session.score}
+          </span>
         </span>
       </div>
       <div className="problem">
@@ -112,16 +131,12 @@ export function GameScreen<P>({ initial, clock, mode, onFinish, onAbort }: Props
           ))}
         </ol>
       )}
+      <Queue marks={verdicts(session.log, session.corrections)} />
       {last?.outcome === "skipped" && (
         <p data-testid="skipped" className="skipped">
           Pulada: {last.problem.prompt} = {answerText(last.problem)}
         </p>
       )}
-      <p className="muted hint">
-        {spec.allowSkip
-          ? "Enter pula · Esc volta para a configuração."
-          : "Esc volta para a configuração."}
-      </p>
     </div>
   );
 }

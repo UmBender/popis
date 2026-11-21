@@ -1,5 +1,5 @@
-import type { KeyValueStore } from "../../storage/kv";
-import type { ItemId } from "./sections";
+import { readJson, tryWriteJson, type KeyValueStore } from "../../storage/kv";
+import { isItemId, type ItemId } from "./sections";
 
 export const SHELL_KEY = "popis.shell.v1";
 
@@ -17,13 +17,21 @@ export type ShellPrefs = {
 
 export const DEFAULT_PREFS: ShellPrefs = { item: null, collapsed: false, closed: [], open: [] };
 
+const strings = (value: unknown): readonly string[] =>
+  Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+
 export function loadPrefs(store: KeyValueStore): ShellPrefs {
-  void store;
-  throw new Error("todo");
+  const raw = readJson(store, SHELL_KEY);
+  if (typeof raw !== "object" || raw === null) return DEFAULT_PREFS;
+  const value = raw as Readonly<Record<string, unknown>>;
+  return {
+    item: isItemId(value["item"]) ? value["item"] : null,
+    collapsed: value["collapsed"] === true,
+    closed: strings(value["closed"]),
+    open: strings(value["open"]),
+  };
 }
 
 export function savePrefs(store: KeyValueStore, prefs: ShellPrefs): void {
-  void store;
-  void prefs;
-  throw new Error("todo");
+  tryWriteJson(store, SHELL_KEY, prefs);
 }

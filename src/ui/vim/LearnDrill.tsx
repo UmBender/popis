@@ -17,7 +17,7 @@ import {
 } from "../../vim/lessons";
 import { createState, type VimState } from "../../vim/state";
 import { selectionRange } from "../../vim/visual";
-import { DrillSelect } from "./DrillSelect";
+import { PanelTitle } from "../shell/panel";
 import { Buffer, modeLabel } from "./EditDrill";
 
 /** One key of the animated example every 600 ms (ADR-T16-1). */
@@ -50,13 +50,12 @@ export function LearnDrill({ store, onBack, settings, onSettings }: Props): Reac
 
   return (
     <div className="screen vim">
-      <h1>Aprender</h1>
-      <p className="muted">
+      <PanelTitle title="Aprender">
         Cada tipo tem uma explicação, um exemplo animado e um exercício com a referência à vista. Ao
         fazer o exercício uma vez, o tipo entra no treino de edição.
-      </p>
+      </PanelTitle>
 
-      <ul className="vim-lessons">
+      <ul className="vim-lessons" data-panel="options" aria-label="Lições">
         {LESSONS.map((lesson) => (
           <li key={lesson.kind}>
             <button
@@ -86,18 +85,6 @@ export function LearnDrill({ store, onBack, settings, onSettings }: Props): Reac
         />
       )}
 
-      <fieldset className="vim-options">
-        <legend>Opções</legend>
-        <DrillSelect
-          value="learn"
-          onChange={(drill) => {
-            const updated = parseVimEditSettings({ ...settings, drill });
-            saveVimEditSettings(store, updated);
-            onSettings(updated);
-          }}
-        />
-      </fieldset>
-
       <div className="actions">
         <button type="button" onClick={onBack}>
           Voltar
@@ -119,7 +106,7 @@ function LessonView({
   readonly onList: () => void;
 }): ReactNode {
   return (
-    <section className="vim-lesson">
+    <section className="vim-lesson" data-panel="area">
       <h2>{lesson.title}</h2>
       <p data-testid="learn-explanation">{lesson.explanation}</p>
       <ul className="vim-lesson-commands" data-testid="learn-commands">

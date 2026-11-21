@@ -7,10 +7,11 @@ import { LEVELS, type FactoringSettings, type Level } from "../gen/factoring";
 import type { KindSettings } from "../gen/kinds";
 import { PRIMES_LIMITS, type PrimesLimit } from "../gen/primes";
 import type { SumsKind } from "../gen/sums";
-import { MODE_IDS, MODES, type Mode } from "../modes";
+import { MODES, type Mode } from "../modes";
 import { DURATIONS_S } from "../session/engine";
 import type { StoredSettings } from "../storage/history";
-import { Brand } from "./Brand";
+import { PanelTitle } from "./shell/panel";
+import { sparkline } from "./verdicts";
 
 const ERROR_MESSAGES: Readonly<Record<string, string>> = {
   "no-operation": "Escolha pelo menos uma operação.",
@@ -66,6 +67,14 @@ function errorsOf<M extends Mode>(mode: M, settings: StoredSettings): readonly s
   return MODES[mode].validate(settings[mode]);
 }
 
+/** Why the chosen mode cannot start now; empty when it can. */
+export function configErrors(settings: StoredSettings, reviewCount: number): readonly string[] {
+  return [
+    ...errorsOf(settings.mode, settings),
+    ...(settings.mode === "review" && reviewCount === 0 ? ["nothing-to-review"] : []),
+  ];
+}
+
 const LEVEL_LABELS: Readonly<Record<Level, { name: string; example: string }>> = {
   1: { name: "quadrática mônica", example: "x² − 2x − 15" },
   2: { name: "quadrática não mônica", example: "6x² + x − 2" },
@@ -83,14 +92,8 @@ type Props = {
   readonly reviewCount: number;
   readonly onChange: (settings: StoredSettings) => void;
   readonly onStart: () => void;
-  /** Opens the code typing screen (T10). */
-  readonly onTyping: () => void;
-  /** Opens the text typing screen (T12). */
-  readonly onText: () => void;
-  /** Opens the Vim motion drill (T13). */
-  readonly onVim: () => void;
-  /** Export and import of the stored data (T22). */
-  readonly data: ReactNode;
+  /** Scores of the last rounds in this configuration, oldest first (T18). */
+  readonly history: readonly number[];
 };
 
 export function ConfigScreen({
@@ -98,16 +101,10 @@ export function ConfigScreen({
   reviewCount,
   onChange,
   onStart,
-  onTyping,
-  onText,
-  onVim,
-  data,
+  history,
 }: Props): ReactNode {
   const reviewing = settings.mode === "review";
-  const errors = [
-    ...errorsOf(settings.mode, settings),
-    ...(reviewing && reviewCount === 0 ? ["nothing-to-review"] : []),
-  ];
+  const errors = configErrors(settings, reviewCount);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -116,145 +113,155 @@ export function ConfigScreen({
 
   return (
     <form className="screen config" onSubmit={submit}>
-      <Brand />
+      <PanelTitle title={MODES[settings.mode].label}>{MODES[settings.mode].hint}</PanelTitle>
 
-      <fieldset className="modes">
-        <legend>Modo</legend>
-        {MODE_IDS.map((mode) => (
-          <label key={mode} className="op">
-            <input
-              type="radio"
-              name="mode"
-              checked={settings.mode === mode}
-              onChange={() => {
-                onChange({ ...settings, mode });
+      <div className="fields" data-panel="options">
+        {reviewing && reviewCount > 0 && (
+          <p data-testid="review-count">
+            {reviewCount === 1
+              ? "1 questão para revisar"
+              : `${String(reviewCount)} questões para revisar`}
+          </p>
+        )}
+
+        {settings.mode === "arithmetic" && (
+          <ArithmeticFields
+            arithmetic={settings.arithmetic}
+            onChange={(arithmetic) => {
+              onChange({ ...settings, arithmetic });
+            }}
+          />
+        )}
+        {settings.mode === "factoring" && (
+          <FactoringFields
+            factoring={settings.factoring}
+            onChange={(factoring) => {
+              onChange({ ...settings, factoring });
+            }}
+          />
+        )}
+        {settings.mode === "algebra" && (
+          <KindFields
+            options={ALGEBRA_OPTIONS}
+            settings={settings.algebra}
+            onChange={(algebra) => {
+              onChange({ ...settings, algebra });
+            }}
+          />
+        )}
+        {settings.mode === "sums" && (
+          <KindFields
+            options={SUMS_OPTIONS}
+            settings={settings.sums}
+            onChange={(sums) => {
+              onChange({ ...settings, sums });
+            }}
+          />
+        )}
+        {settings.mode === "primes" && (
+          <label className="row">
+            Limite
+            <select
+              value={settings.primes.limit}
+              onChange={(e) => {
+                onChange({ ...settings, primes: { limit: Number(e.target.value) as PrimesLimit } });
               }}
-            />
-            {MODES[mode].label}
+            >
+              {PRIMES_LIMITS.map((limit) => (
+                <option key={limit} value={limit}>
+                  {limit.toLocaleString("pt-BR")}
+                </option>
+              ))}
+            </select>
           </label>
-        ))}
-      </fieldset>
-      <p className="muted">{MODES[settings.mode].hint}</p>
+        )}
+        {settings.mode === "division" && (
+          <KindFields
+            options={DIVISION_OPTIONS}
+            settings={settings.division}
+            onChange={(division) => {
+              onChange({ ...settings, division });
+            }}
+          />
+        )}
+        {settings.mode === "estimation" && (
+          <KindFields
+            options={ESTIMATION_OPTIONS}
+            settings={settings.estimation}
+            onChange={(estimation) => {
+              onChange({ ...settings, estimation });
+            }}
+          />
+        )}
 
-      {reviewing && reviewCount > 0 && (
-        <p data-testid="review-count">
-          {reviewCount === 1
-            ? "1 questão para revisar"
-            : `${String(reviewCount)} questões para revisar`}
-        </p>
-      )}
-
-      {settings.mode === "arithmetic" && (
-        <ArithmeticFields
-          arithmetic={settings.arithmetic}
-          onChange={(arithmetic) => {
-            onChange({ ...settings, arithmetic });
-          }}
-        />
-      )}
-      {settings.mode === "factoring" && (
-        <FactoringFields
-          factoring={settings.factoring}
-          onChange={(factoring) => {
-            onChange({ ...settings, factoring });
-          }}
-        />
-      )}
-      {settings.mode === "algebra" && (
-        <KindFields
-          options={ALGEBRA_OPTIONS}
-          settings={settings.algebra}
-          onChange={(algebra) => {
-            onChange({ ...settings, algebra });
-          }}
-        />
-      )}
-      {settings.mode === "sums" && (
-        <KindFields
-          options={SUMS_OPTIONS}
-          settings={settings.sums}
-          onChange={(sums) => {
-            onChange({ ...settings, sums });
-          }}
-        />
-      )}
-      {settings.mode === "primes" && (
         <label className="row">
-          Limite
+          Duração
           <select
-            value={settings.primes.limit}
+            value={settings.durationS}
             onChange={(e) => {
-              onChange({ ...settings, primes: { limit: Number(e.target.value) as PrimesLimit } });
+              onChange({ ...settings, durationS: Number(e.target.value) });
             }}
           >
-            {PRIMES_LIMITS.map((limit) => (
-              <option key={limit} value={limit}>
-                {limit.toLocaleString("pt-BR")}
+            {DURATIONS_S.map((s) => (
+              <option key={s} value={s}>
+                {s} s
               </option>
             ))}
           </select>
         </label>
-      )}
-      {settings.mode === "division" && (
-        <KindFields
-          options={DIVISION_OPTIONS}
-          settings={settings.division}
-          onChange={(division) => {
-            onChange({ ...settings, division });
-          }}
-        />
-      )}
-      {settings.mode === "estimation" && (
-        <KindFields
-          options={ESTIMATION_OPTIONS}
-          settings={settings.estimation}
-          onChange={(estimation) => {
-            onChange({ ...settings, estimation });
-          }}
-        />
-      )}
 
-      <label className="row">
-        Duração
-        <select
-          value={settings.durationS}
-          onChange={(e) => {
-            onChange({ ...settings, durationS: Number(e.target.value) });
-          }}
-        >
-          {DURATIONS_S.map((s) => (
-            <option key={s} value={s}>
-              {s} s
-            </option>
-          ))}
-        </select>
-      </label>
-
-      {errors.length > 0 && (
-        <ul role="alert" className="errors">
-          {errors.map((e) => (
-            <li key={e}>{ERROR_MESSAGES[e]}</li>
-          ))}
-        </ul>
-      )}
-
-      <div className="actions">
-        <button type="submit" className="primary" disabled={errors.length > 0}>
-          Começar
-        </button>
-        <button type="button" className="typing-entry" onClick={onTyping}>
-          Digitação
-        </button>
-        <button type="button" className="text-entry" onClick={onText}>
-          Texto
-        </button>
-        <button type="button" className="vim-entry" onClick={onVim}>
-          Vim
-        </button>
+        {errors.length > 0 && (
+          <ul role="alert" className="errors">
+            {errors.map((e) => (
+              <li key={e}>{ERROR_MESSAGES[e]}</li>
+            ))}
+          </ul>
+        )}
       </div>
 
-      {data}
+      <History scores={history} />
+
+      <div className="actions">
+        <button
+          type="submit"
+          className="primary start"
+          aria-label="Começar"
+          disabled={errors.length > 0}
+        >
+          Começar <kbd>Enter</kbd>
+        </button>
+      </div>
     </form>
+  );
+}
+
+/** How many past rounds the mode panel shows. */
+const HISTORY_ROUNDS = 10;
+
+/** "Últimas 10 rodadas ▁▃▄ melhor 52 média 46", or an invitation. */
+function History({ scores }: { readonly scores: readonly number[] }): ReactNode {
+  const last = scores.slice(-HISTORY_ROUNDS);
+  if (last.length === 0) {
+    return (
+      <p className="history muted" data-panel="history" data-testid="mode-history">
+        Nenhuma rodada nesta configuração. Enter começa a primeira.
+      </p>
+    );
+  }
+  const mean = last.reduce((a, b) => a + b, 0) / last.length;
+  return (
+    <p className="history muted" data-panel="history" data-testid="mode-history">
+      <span>{`Últimas ${String(HISTORY_ROUNDS)} rodadas`}</span>{" "}
+      <span className="spark" data-testid="mode-spark">
+        {sparkline(last)}
+      </span>{" "}
+      <span>
+        melhor <strong>{Math.max(...last)}</strong>
+      </span>{" "}
+      <span>
+        média <strong>{Math.round(mean)}</strong>
+      </span>
+    </p>
   );
 }
 

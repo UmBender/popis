@@ -30,6 +30,7 @@ import {
   type TypingState,
 } from "../typing/engine";
 import { seconds } from "./format";
+import { PanelTitle, useRunning } from "./shell/panel";
 
 type Props = {
   readonly clock: Clock;
@@ -37,6 +38,8 @@ type Props = {
   /** Seed of each new snippet. */
   readonly newSeed: () => number;
   readonly onBack: () => void;
+  /** Told when a snippet starts and ends, so the window hides the tree (T18). */
+  readonly onRunning?: (running: boolean) => void;
 };
 
 /** One snippet being typed. `run` changes on every restart, to refocus the box. */
@@ -56,7 +59,7 @@ function newRun(languages: readonly Language[], seed: number, run: number): Run 
 }
 
 /** Code typing test, apart from the game engine (ADR-T10-1). */
-export function TypingScreen({ clock, store, newSeed, onBack }: Props): ReactNode {
+export function TypingScreen({ clock, store, newSeed, onBack, onRunning }: Props): ReactNode {
   const [current, setCurrent] = useState<Run>(() =>
     newRun(loadTypingLanguages(store), newSeed(), 0),
   );
@@ -129,12 +132,15 @@ export function TypingScreen({ clock, store, newSeed, onBack }: Props): ReactNod
   const markCodes = marks(typing)
     .map((m) => MARK_CODES[m])
     .join("");
+  useRunning(onRunning, typing.typed.length > 0 && !finished);
 
   return (
     <div className="screen typing">
-      <h1>Digitação</h1>
+      <PanelTitle title="Digitação">
+        Digite o trecho de código; o tempo começa na primeira tecla.
+      </PanelTitle>
 
-      <fieldset className="modes">
+      <fieldset className="modes" data-panel="options">
         <legend>Linguagens</legend>
         {LANGUAGES.map((language) => (
           <label key={language} className="op">
@@ -151,7 +157,7 @@ export function TypingScreen({ clock, store, newSeed, onBack }: Props): ReactNod
         ))}
       </fieldset>
 
-      <div className="typing-area">
+      <div className="typing-area" data-panel="area">
         <textarea
           ref={box}
           className="typing-input"
@@ -211,17 +217,17 @@ export function TypingScreen({ clock, store, newSeed, onBack }: Props): ReactNod
             />
           ))}
         </pre>
+
+        {finished ? (
+          <TypingResults typing={typing} snippet={snippet} seed={seed} onNext={next} />
+        ) : (
+          <p className="muted hint">
+            Enter quebra a linha e indenta · Esc troca o trecho · Ctrl+Enter recomeça.
+          </p>
+        )}
       </div>
 
-      {finished ? (
-        <TypingResults typing={typing} snippet={snippet} seed={seed} onNext={next} />
-      ) : (
-        <p className="muted hint">
-          Enter quebra a linha e indenta · Esc troca o trecho · Ctrl+Enter recomeça.
-        </p>
-      )}
-
-      <div data-testid="typing-summary" className="typing-summary">
+      <div data-testid="typing-summary" className="typing-summary" data-panel="history">
         {LANGUAGES.map((language) => {
           const s = summary[language];
           return (
