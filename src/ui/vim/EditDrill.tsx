@@ -51,6 +51,7 @@ import { ROUND_DURATIONS_S } from "../../vim/round";
 import type { VimState } from "../../vim/state";
 import { selectionRange } from "../../vim/visual";
 import { matchTrainingKey } from "../keys";
+import { detectPlateau, weeklyRate } from "../../stats/learning";
 import { RoundHistory } from "../shell/History";
 import { PanelTitle, Reference, useRunning } from "../shell/panel";
 import { Result } from "../shell/Result";
@@ -70,6 +71,8 @@ type Props = {
   readonly onRunning?: (running: boolean) => void;
   /** Switches to the Vim Learn screen (T19 AC-7, T20 AC-5). */
   readonly onLearn?: (lessonId?: string) => void;
+  /** Jump to this item's section in Evolução (T23 AC-5). */
+  readonly onProgress?: (sectionId: "vim-motion" | "vim-edit") => void;
 };
 
 const EDIT_FAMILIES: readonly {
@@ -148,6 +151,7 @@ export function EditDrill({
   onSettings,
   onRunning,
   onLearn,
+  onProgress,
 }: Props): ReactNode {
   const [unlocked] = useState(() => loadUnlocked(store));
   const [current, setCurrent] = useState<Run>(() => newRun(settings, unlocked, newSeed(), 0));
@@ -395,9 +399,16 @@ export function EditDrill({
     () => diffText(vim.lines.join("\n"), target.after.join("\n")),
     [vim.lines, target.after],
   );
-  const historyScores = results
-    .filter((r) => r.durationS === current.settings.durationS && !r.assisted)
-    .map((r) => r.reached);
+  const historyMatched = results.filter(
+    (r) => r.durationS === current.settings.durationS && !r.assisted,
+  );
+  const historyScores = historyMatched.map((r) => r.reached);
+  const historyPoints = historyMatched.map((r) => ({
+    at: r.finishedAt,
+    score: (r.reached / r.durationS) * 60,
+  }));
+  const historyRate = weeklyRate(historyPoints, clock.wallTime());
+  const historyPlateau = detectPlateau(historyPoints);
   const excludedAssisted = assistedEditRoundCount(results, current.settings.durationS);
   const remainingS = Math.ceil(
     editRemainingMs(round, Math.max(now, round.startedAt ?? now)) / 1000,
@@ -660,6 +671,15 @@ export function EditDrill({
       <RoundHistory
         scores={historyScores}
         excluded={excludedAssisted}
+        weeklyRate={historyRate}
+        plateau={historyPlateau}
+        onProgress={
+          onProgress !== undefined
+            ? () => {
+                onProgress("vim-edit");
+              }
+            : undefined
+        }
         unit="edições"
         testId="vim-summary"
       />
