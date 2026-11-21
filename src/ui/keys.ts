@@ -26,6 +26,7 @@ export const ROUND_HINTS: readonly Hint[] = [
 ];
 
 export const VIM_ROUND_HINTS: readonly Hint[] = [
+  ["Ctrl+P", "prévia do ótimo"],
   ["Ctrl+Enter", "pular"],
   ["Ctrl+Shift+Enter", "recomeçar"],
   [":q", "sair"],
@@ -42,6 +43,7 @@ export const HELP_HINTS: readonly Hint[] = [
   ["?", "esta ajuda"],
   ["Ctrl+Enter", "no treino, pular o item atual"],
   ["Ctrl+Shift+Enter", "no treino, recomeçar com seed nova"],
+  ["Ctrl+P", "no Vim, mostrar a prévia do alvo atual"],
   ["Esc", "sair do treino ou fechar o menu"],
   [":q", "no Vim, sair do treino (com Enter)"],
   ["Enter", "no resultado, jogar de novo"],

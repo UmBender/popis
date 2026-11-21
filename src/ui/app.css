@@ -1341,3 +1341,59 @@ th {
 .vim-cmd-learn {
   font-size: var(--text-sm);
 }
+
+/* Vim optimal preview bar, waypoints and lesson modal (T21, ADR-T21-1). */
+.vim-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-2);
+}
+
+.vim-preview-blocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.vim-preview-block {
+  font-family: var(--mono, monospace);
+  font-size: var(--text-sm);
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--surface);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.vim-preview-block[data-state="next"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.vim-preview-block[data-state="done"] {
+  color: var(--muted);
+  border-color: var(--bg);
+}
+
+.vim-preview-literal {
+  cursor: default;
+}
+
+.vim-preview-desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.vim-waypoint {
+  text-decoration: underline;
+  text-decoration-color: var(--muted);
+  text-underline-offset: 2px;
+}
+
+.vim-lesson-modal h3 {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: var(--text-base);
+}

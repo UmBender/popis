@@ -1,6 +1,6 @@
 import { ALL_EDIT_KINDS, EDIT_KINDS, type EditKind } from "../vim/drills/edit";
 import { LEVELS, type Level } from "../vim/levels";
-import type { PreviewMode } from "../vim/preview";
+import { PREVIEW_MODES, type PreviewMode } from "../vim/preview";
 import { ROUND_DURATIONS_S } from "../vim/round";
 import type { KeyValueStore } from "./history";
 
@@ -95,12 +95,17 @@ const isLevel = (value: unknown): value is Level => LEVELS.includes(value as Lev
 const isDuration = (value: unknown): value is number =>
   ROUND_DURATIONS_S.includes(value as (typeof ROUND_DURATIONS_S)[number]);
 
+const isPreviewMode = (value: unknown): value is PreviewMode =>
+  PREVIEW_MODES.includes(value as PreviewMode);
+
 /** Settings from parsed JSON; an invalid field loads as its default. */
 export function parseVimSettings(value: unknown): VimSettings {
   const raw = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+  const preview = isPreviewMode(raw["preview"]) ? raw["preview"] : undefined;
   return {
     level: isLevel(raw["level"]) ? raw["level"] : DEFAULT_VIM_SETTINGS.level,
     durationS: isDuration(raw["durationS"]) ? raw["durationS"] : DEFAULT_VIM_SETTINGS.durationS,
+    ...(preview !== undefined ? { preview } : {}),
   };
 }
 
@@ -152,7 +157,7 @@ function appendResult(store: KeyValueStore, result: VimResult | VimEditResult): 
 export function loadVimResults(store: KeyValueStore): VimResult[] {
   return loadAllResults(store)
     .filter((r): r is VimResult => r.kind !== "edit")
-    .map((r) => ({ ...r, kind: "motion" }));
+    .map((r) => ({ ...r, kind: "motion", assisted: r.assisted === true }));
 }
 
 export function appendVimResult(store: KeyValueStore, result: VimResult): void {
@@ -160,7 +165,9 @@ export function appendVimResult(store: KeyValueStore, result: VimResult): void {
 }
 
 export function loadVimEditResults(store: KeyValueStore): VimEditResult[] {
-  return loadAllResults(store).filter((r): r is VimEditResult => r.kind === "edit");
+  return loadAllResults(store)
+    .filter((r): r is VimEditResult => r.kind === "edit")
+    .map((r) => ({ ...r, assisted: r.assisted === true }));
 }
 
 export function appendVimEditResult(store: KeyValueStore, result: VimEditResult): void {
@@ -173,12 +180,14 @@ export function parseVimEditSettings(value: unknown): VimEditSettings {
   const wanted = Array.isArray(raw["kinds"]) ? raw["kinds"] : [];
   const kinds = ALL_EDIT_KINDS.filter((kind) => wanted.includes(kind));
   const drill = raw["drill"];
+  const preview = isPreviewMode(raw["preview"]) ? raw["preview"] : undefined;
   return {
     drill: drill === "edit" || drill === "motion" || drill === "learn" ? drill : "motion",
     durationS: isDuration(raw["durationS"])
       ? raw["durationS"]
       : DEFAULT_VIM_EDIT_SETTINGS.durationS,
     kinds: kinds.length > 0 ? kinds : EDIT_KINDS,
+    ...(preview !== undefined ? { preview } : {}),
   };
 }
 
@@ -190,25 +199,10 @@ export function saveVimEditSettings(store: KeyValueStore, settings: VimEditSetti
   writeJson(store, VIM_EDIT_SETTINGS_KEY, settings);
 }
 
-/** Best count of edits and mean of the last 10 edit rounds of a duration. */
+/** Best count of edits and mean of the last 10 unassisted edit rounds of a duration. */
 export function vimEditSummary(results: readonly VimEditResult[], durationS: number): VimSummary {
-  const counts = results.filter((r) => r.durationS === durationS).map((r) => r.reached);
-  if (counts.length === 0) return null;
-  const recent = counts.slice(-RECENT);
-  return {
-    best: Math.max(...counts),
-    recentMean: recent.reduce((a, b) => a + b, 0) / recent.length,
-  };
-}
-
-/** Best count of targets and mean of the last 10 rounds of a level and duration. */
-export function vimSummary(
-  results: readonly VimResult[],
-  level: Level,
-  durationS: number,
-): VimSummary {
   const counts = results
-    .filter((r) => r.level === level && r.durationS === durationS)
+    .filter((r) => r.durationS === durationS && r.assisted !== true)
     .map((r) => r.reached);
   if (counts.length === 0) return null;
   const recent = counts.slice(-RECENT);
@@ -218,21 +212,41 @@ export function vimSummary(
   };
 }
 
-export function defaultPreviewMode(_store: KeyValueStore): PreviewMode {
-  throw new Error("todo");
+/** Best count of targets and mean of the last 10 unassisted rounds of a level and duration. */
+export function vimSummary(
+  results: readonly VimResult[],
+  level: Level,
+  durationS: number,
+): VimSummary {
+  const counts = results
+    .filter((r) => r.level === level && r.durationS === durationS && r.assisted !== true)
+    .map((r) => r.reached);
+  if (counts.length === 0) return null;
+  const recent = counts.slice(-RECENT);
+  return {
+    best: Math.max(...counts),
+    recentMean: recent.reduce((a, b) => a + b, 0) / recent.length,
+  };
+}
+
+/** Auto for someone with no Vim results yet; off for someone who already has results (T21 AC-1). */
+export function defaultPreviewMode(store: KeyValueStore): PreviewMode {
+  return loadAllResults(store).length === 0 ? "auto" : "off";
 }
 
 export function assistedRoundCount(
-  _results: readonly VimResult[],
-  _level: Level,
-  _durationS: number,
+  results: readonly VimResult[],
+  level: Level,
+  durationS: number,
 ): number {
-  throw new Error("todo");
+  return results.filter(
+    (r) => r.level === level && r.durationS === durationS && r.assisted === true,
+  ).length;
 }
 
 export function assistedEditRoundCount(
-  _results: readonly VimEditResult[],
-  _durationS: number,
+  results: readonly VimEditResult[],
+  durationS: number,
 ): number {
-  throw new Error("todo");
+  return results.filter((r) => r.durationS === durationS && r.assisted === true).length;
 }

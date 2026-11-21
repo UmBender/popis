@@ -19,12 +19,28 @@ export type HistoryProps = {
 };
 
 /** Shared "Últimas 10 rodadas" summary with sparkline, best and mean (ADR-T19-1). */
-export function RoundHistory({ scores, unit, testId, sparkTestId }: HistoryProps): ReactNode {
+export function RoundHistory({
+  scores,
+  unit,
+  excluded = 0,
+  testId,
+  sparkTestId,
+}: HistoryProps): ReactNode {
+  const excludedNote =
+    excluded > 0
+      ? `(${String(excluded)} ${excluded === 1 ? "rodada assistida fora" : "rodadas assistidas fora"})`
+      : null;
   const last = scores.slice(-HISTORY_ROUNDS);
   if (last.length === 0) {
     return (
       <p className="history muted" data-panel="history" data-testid={testId}>
         {EMPTY_HISTORY}
+        {excludedNote !== null && (
+          <>
+            {" "}
+            <span data-testid="history-excluded">{excludedNote}</span>
+          </>
+        )}
       </p>
     );
   }
@@ -45,6 +61,12 @@ export function RoundHistory({ scores, unit, testId, sparkTestId }: HistoryProps
         média <strong>{mean}</strong>
         {suffix}
       </span>
+      {excludedNote !== null && (
+        <>
+          {" "}
+          <span data-testid="history-excluded">{excludedNote}</span>
+        </>
+      )}
     </p>
   );
 }

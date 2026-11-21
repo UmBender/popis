@@ -84,7 +84,7 @@ export function startEditRound(config: EditRoundConfig): EditRound {
 }
 
 const timeIsUp = (round: EditRound, now: number): boolean =>
-  round.startedAt !== null && now >= round.startedAt + round.config.durationMs;
+  round.startedAt !== null && (round.pausedAt ?? now) >= round.startedAt + round.config.durationMs;
 
 const sameLines = (a: readonly string[], b: readonly string[]): boolean =>
   a.length === b.length && a.every((line, i) => line === b[i]);
@@ -108,6 +108,7 @@ function finishEdit(
     reference: target.reference,
     timeMs: now - (round.targetStartedAt ?? now),
     skipped,
+    assisted: round.assisted,
   };
   return {
     ...round,
@@ -115,6 +116,8 @@ function finishEdit(
     keys: 0,
     startedAt: round.startedAt ?? now,
     targetStartedAt: now,
+    lastActivityAt: now,
+    assisted: false,
     results: [...round.results, result],
     last: result,
     closingEsc,
@@ -122,11 +125,12 @@ function finishEdit(
 }
 
 export function pressEditRoundKey(round: EditRound, key: Key, now: number): EditRound {
-  if (round.finished) return round;
+  if (round.finished || round.pausedAt !== null) return round;
   if (timeIsUp(round, now)) return { ...round, finished: true };
   const started = {
     startedAt: round.startedAt ?? now,
     targetStartedAt: round.targetStartedAt ?? now,
+    lastActivityAt: now,
   };
   const previous = round.results.at(-1);
   if (round.closingEsc && key === "<Esc>" && previous !== undefined) {
@@ -149,14 +153,15 @@ export function pressEditRoundKey(round: EditRound, key: Key, now: number): Edit
 }
 
 export function skipEdit(round: EditRound, now: number): EditRound {
-  if (round.finished) return round;
+  if (round.finished || round.pausedAt !== null) return round;
   if (timeIsUp(round, now)) return { ...round, finished: true };
   return finishEdit(round, now, round.keys, true, false);
 }
 
 /** Ends the round when the time is up. */
 export function tickEditRound(round: EditRound, now: number): EditRound {
-  return !round.finished && timeIsUp(round, now) ? { ...round, finished: true } : round;
+  if (round.finished || round.pausedAt !== null) return round;
+  return timeIsUp(round, now) ? { ...round, finished: true } : round;
 }
 
 export function isEditRoundFinished(round: EditRound): boolean {
@@ -166,7 +171,8 @@ export function isEditRoundFinished(round: EditRound): boolean {
 export function editRemainingMs(round: EditRound, now: number): number {
   if (round.finished) return 0;
   if (round.startedAt === null) return round.config.durationMs;
-  return Math.max(0, round.startedAt + round.config.durationMs - now);
+  const effectiveNow = round.pausedAt ?? now;
+  return Math.max(0, round.startedAt + round.config.durationMs - effectiveNow);
 }
 
 /** Reference keys over keys used, with no ceiling; 0 for a skipped edit. */
@@ -186,18 +192,29 @@ export function editRoundStats(round: Pick<EditRound, "results">): EditRoundStat
   };
 }
 
-export function markEditAssisted(_round: EditRound): EditRound {
-  throw new Error("todo");
+export function markEditAssisted(round: EditRound): EditRound {
+  return round.finished || round.assisted ? round : { ...round, assisted: true };
 }
 
-export function pauseEditRound(_round: EditRound, _now: number): EditRound {
-  throw new Error("todo");
+export function pauseEditRound(round: EditRound, now: number): EditRound {
+  return round.finished || round.pausedAt !== null ? round : { ...round, pausedAt: now };
 }
 
-export function resumeEditRound(_round: EditRound, _now: number): EditRound {
-  throw new Error("todo");
+export function resumeEditRound(round: EditRound, now: number): EditRound {
+  if (round.pausedAt === null) return round;
+  const pausedFor = Math.max(0, now - round.pausedAt);
+  return {
+    ...round,
+    pausedAt: null,
+    startedAt: round.startedAt !== null ? round.startedAt + pausedFor : null,
+    targetStartedAt: round.targetStartedAt !== null ? round.targetStartedAt + pausedFor : null,
+    lastActivityAt: round.lastActivityAt !== null ? round.lastActivityAt + pausedFor : null,
+  };
 }
 
-export function editIdleMs(_round: EditRound, _now: number): number {
-  throw new Error("todo");
+export function editIdleMs(round: EditRound, now: number): number {
+  if (round.finished || round.startedAt === null) return 0;
+  const effectiveNow = round.pausedAt ?? now;
+  const since = round.lastActivityAt ?? round.targetStartedAt ?? effectiveNow;
+  return Math.max(0, effectiveNow - since);
 }

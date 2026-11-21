@@ -187,16 +187,21 @@ export function optimalSolution(
   for (let cost = 0; cost < maxKeys; cost++) {
     for (const node of buckets[cost] as Node[]) {
       if (settled.get(nodeKey(node.state)) !== cost) continue;
-      const budget = maxKeys - cost;
+      const limit = best !== null ? Math.min(maxKeys, (best as Node).cost - 1) : maxKeys;
+      const budget = limit - cost;
+      if (budget <= 0) continue;
       for (const step of simple) {
         if (step.keys.length > budget) break;
         reach(node, step.command, step.keys);
       }
       if (level >= 4 && budget >= 2) expandFinds(node, budget, level, target, reach);
       if (level >= 7) {
+        const searchLimit = best !== null ? Math.min(maxKeys, (best as Node).cost - 1) : maxKeys;
+        const searchBudget = searchLimit - cost;
         for (const p of patterns) {
           const length = p.length + 2;
-          if (length > budget || (length === budget && !matchesTarget.has(p.id))) continue;
+          if (length > searchBudget || (length === searchBudget && !matchesTarget.has(p.id)))
+            continue;
           const keys = [..."/"].concat([...p.spec.pattern], ["<CR>"]);
           reach(node, { name: "/", pattern: p.spec.pattern, count: null }, keys);
           reach(node, { name: "?", pattern: p.spec.pattern, count: null }, ["?", ...keys.slice(1)]);
@@ -214,14 +219,104 @@ export function optimalSolution(
   return { keys: formatKeys(keys), cost: found.cost };
 }
 
+/** Shortest literal `/` or `?` search that lands directly on `target` in one command, or null. */
+function directSearch(start: VimState, target: Pos, maxKeys: number): Solution | null {
+  const text = start.lines[target.line] as string;
+  const maxLen = Math.min(MAX_PATTERN, maxKeys - 2);
+  for (let len = 1; len <= maxLen && target.col + len <= text.length; len++) {
+    const pattern = text.slice(target.col, target.col + len);
+    if (REGEX_SPECIAL.test(pattern)) continue;
+    for (const dir of ["/", "?"] as const) {
+      const next = execute(start, { name: dir, pattern, count: null });
+      if (next.cursor.line === target.line && next.cursor.col === target.col) {
+        const keys = [dir, ...pattern, "<CR>"];
+        return { keys: formatKeys(keys), cost: keys.length };
+      }
+    }
+  }
+  return null;
+}
+
+/** Direct level-valid fallback path when `target` is farther than the BFS bound. */
+function directPath(start: VimState, target: Pos, level: Level): Solution {
+  const keys: Key[] = [];
+  let cur = start;
+
+  const dy = target.line - cur.cursor.line;
+  if (dy !== 0) {
+    const absY = Math.abs(dy);
+    const dir: SimpleName = dy > 0 ? "j" : "k";
+    if (level >= 6 && absY > 2) {
+      if (target.line === 0) {
+        keys.push("g", "g");
+        cur = execute(cur, { name: "gg", count: null });
+      } else if (target.line === cur.lines.length - 1) {
+        keys.push("G");
+        cur = execute(cur, { name: "G", count: null });
+      } else {
+        const lineNum = target.line + 1;
+        keys.push(...String(lineNum), "G");
+        cur = execute(cur, { name: "G", count: lineNum });
+      }
+    } else if (level >= 5 && absY > 1) {
+      keys.push(...String(absY), dir);
+      cur = execute(cur, { name: dir, count: absY });
+    } else {
+      for (let i = 0; i < absY; i++) {
+        keys.push(dir);
+        cur = execute(cur, { name: dir, count: null });
+      }
+    }
+  }
+
+  const dx = target.col - cur.cursor.col;
+  if (dx !== 0) {
+    const absX = Math.abs(dx);
+    const dir: SimpleName = dx > 0 ? "l" : "h";
+    if (level >= 3 && target.col === 0) {
+      keys.push("0");
+    } else if (level >= 5 && absX > 1) {
+      keys.push(...String(absX), dir);
+    } else {
+      for (let i = 0; i < absX; i++) keys.push(dir);
+    }
+  }
+
+  return { keys: formatKeys(keys), cost: keys.length };
+}
+
 /** Recalculates an optimal (or bounded fallback) path from any state to `target` (T21 AC-2, AC-3). */
 export function recalculateOptimal(
-  _state: VimState,
-  _target: Pos,
-  _level: Level,
-  _maxKeys: number = DEFAULT_MAX_KEYS,
+  state: VimState,
+  target: Pos,
+  level: Level,
+  maxKeys: number = DEFAULT_MAX_KEYS,
 ): Solution {
-  throw new Error("todo");
+  const clean = state.pending.length === 0 ? state : { ...state, pending: [] };
+  if (clean.cursor.line === target.line && clean.cursor.col === target.col) {
+    return { keys: "", cost: 0 };
+  }
+  // Progressive deepening keeps level-7 recalculation well under 16 ms.
+  const firstBound = Math.min(level >= 7 ? 3 : 4, maxKeys);
+  const quick = optimalSolution(clean, target, level, firstBound);
+  if (quick !== null) return quick;
+
+  if (level >= 7) {
+    const search = directSearch(clean, target, maxKeys);
+    const searchBound = search !== null ? Math.min(maxKeys, search.cost - 1) : maxKeys;
+    const med =
+      searchBound >= 4 ? optimalSolution(clean, target, 7, Math.min(4, searchBound)) : null;
+    if (med !== null) return med;
+    const noSearch =
+      searchBound >= 5 ? optimalSolution(clean, target, 6, searchBound) : null;
+    if (noSearch !== null) return noSearch;
+    if (search !== null) return search;
+  } else if (maxKeys > firstBound) {
+    const deeper = optimalSolution(clean, target, level, maxKeys);
+    if (deeper !== null) return deeper;
+  }
+
+  return directPath(clean, target, level);
 }
 
 /** `f F t T` with each character that the cursor's line holds in that direction. */

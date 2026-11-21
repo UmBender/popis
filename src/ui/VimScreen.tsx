@@ -1,10 +1,21 @@
-import { Fragment, memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Fragment,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Clock } from "../core/clock";
 import { motionEvents } from "../stats/derive";
-import { recordEvents } from "../storage/events";
+import { loadEvents, recordEvents } from "../storage/events";
 import type { KeyValueStore } from "../storage/history";
 import {
   appendVimResult,
+  assistedRoundCount,
+  defaultPreviewMode,
   loadVimEditSettings,
   loadVimResults,
   loadVimSettings,
@@ -18,12 +29,28 @@ import {
   type VimSettings,
 } from "../storage/vim";
 import { lessonForHelpKey } from "../vim/curriculum";
-import { formatKeys, keyFromEvent, type Key } from "../vim/keys";
+import { formatKeys, keyFromEvent, parseKeys, type Key } from "../vim/keys";
 import { LEVEL_LABELS, LEVELS, levelHelp } from "../vim/levels";
+import { recalculateOptimal } from "../vim/optimal";
 import {
+  assistedSplit,
+  eventsToSamples,
+  motionWaypoints,
+  parseSolutionBlocks,
+  PREVIEW_MODE_LABELS,
+  PREVIEW_MODES,
+  shouldShowPreview,
+  type CommandSample,
+  type PreviewMode,
+} from "../vim/preview";
+import {
+  idleMs,
   isRoundFinished,
+  markAssisted,
+  pauseRound,
   pressRoundKey,
   remainingMs,
+  resumeRound,
   ROUND_DURATIONS_S,
   roundStats,
   skipTarget,
@@ -40,6 +67,7 @@ import { Result } from "./shell/Result";
 import { RoundBar } from "./shell/RoundBar";
 import { EditDrill } from "./vim/EditDrill";
 import { LearnDrill } from "./vim/LearnDrill";
+import { LessonModal, OptimalPreview } from "./vim/Preview";
 
 type Props = {
   readonly clock: Clock;
@@ -89,6 +117,18 @@ type Run = {
   readonly run: number;
 };
 
+type PreviewPlan = {
+  readonly solution: string;
+  readonly keys: readonly Key[];
+  readonly matchedKeys: number;
+  readonly peeked: boolean;
+  readonly dirty: boolean;
+};
+
+function initialPlan(solution: string): PreviewPlan {
+  return { solution, keys: parseKeys(solution), matchedKeys: 0, peeked: false, dirty: false };
+}
+
 function newRun(settings: VimSettings, seed: number, run: number): Run {
   const round = startRound({
     level: settings.level,
@@ -104,22 +144,65 @@ const percent = (fraction: number): string => `${String(Math.round(fraction * 10
 function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Props): ReactNode {
   const [current, setCurrent] = useState<Run>(() => newRun(loadVimSettings(store), newSeed(), 0));
   const [results, setResults] = useState<readonly VimResult[]>(() => loadVimResults(store));
+  const [defaultPreview] = useState<PreviewMode>(() => defaultPreviewMode(store));
   const [now, setNow] = useState(() => clock.now());
   const [cmdline, setCmdline] = useState<string | null>(null);
-  // The latest run and cmdline, read by the event handlers between renders.
+  const [plan, setPlan] = useState<PreviewPlan>(() => initialPlan(current.round.target.solution));
+  const [openLessonId, setOpenLessonId] = useState<string | null>(null);
+  // The latest run, cmdline and plan, read by event handlers between renders.
   const latest = useRef(current);
   const cmdlineRef = useRef(cmdline);
+  const planRef = useRef(plan);
   const box = useRef<HTMLTextAreaElement>(null);
+
+  const storedSamples = useMemo(
+    () => eventsToSamples(loadEvents(store), "vim.motion"),
+    [store, results],
+  );
+  const storedSamplesRef = useRef(storedSamples);
+  storedSamplesRef.current = storedSamples;
 
   const updateCmdline = (next: string | null) => {
     cmdlineRef.current = next;
     setCmdline(next);
   };
 
+  const updatePlan = useCallback((next: PreviewPlan) => {
+    planRef.current = next;
+    setPlan(next);
+  }, []);
+
   const show = useCallback((next: Run) => {
     latest.current = next;
     setCurrent(next);
   }, []);
+
+  const previewModeOf = useCallback(
+    (s: VimSettings): PreviewMode => s.preview ?? defaultPreview,
+    [defaultPreview],
+  );
+
+  const samplesFor = useCallback(
+    (round: Round): readonly CommandSample[] => [
+      ...storedSamplesRef.current,
+      ...round.results.map((r) => ({ solution: r.solution, efficiency: targetEfficiency(r) })),
+    ],
+    [],
+  );
+
+  const isPreviewVisible = useCallback(
+    (round: Round, s: VimSettings, p: PreviewPlan, at: number): boolean =>
+      shouldShowPreview({
+        mode: previewModeOf(s),
+        solution: round.target.solution,
+        minimum: round.target.minimum,
+        keysTyped: round.keys,
+        idleMs: idleMs(round, at),
+        peeked: p.peeked,
+        history: samplesFor(round),
+      }),
+    [previewModeOf, samplesFor],
+  );
 
   const apply = useCallback(
     (round: Round) => {
@@ -127,6 +210,7 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
       if (round === run.round) return;
       if (!isRoundFinished(run.round) && isRoundFinished(round)) {
         const stats = roundStats(round);
+        const split = assistedSplit(round.results);
         const at = clock.wallTime();
         appendVimResult(store, {
           version: 1,
@@ -137,6 +221,7 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
           skipped: stats.skipped,
           efficiency: stats.efficiency,
           finishedAt: at,
+          assisted: split.anyAssisted,
         });
         recordEvents(store, motionEvents(round, at), at);
         setResults(loadVimResults(store));
@@ -147,9 +232,11 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
   );
 
   const { settings, round } = current;
+  const previewMode = previewModeOf(settings);
   const finished = isRoundFinished(round);
-  const running = round.startedAt !== null && !finished;
-  useRunning(onRunning, running);
+  const paused = round.pausedAt !== null;
+  const running = round.startedAt !== null && !finished && !paused;
+  useRunning(onRunning, running || paused);
 
   useEffect(() => {
     box.current?.focus();
@@ -160,21 +247,44 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
     const id = setInterval(() => {
       const t = clock.now();
       setNow(t);
-      apply(tickRound(latest.current.round, t));
+      const run = latest.current;
+      let next = tickRound(run.round, t);
+      if (!next.finished && isPreviewVisible(next, run.settings, planRef.current, t)) {
+        if (planRef.current.dirty) {
+          const recalc = recalculateOptimal(next.vim, next.target.target, next.config.level);
+          updatePlan({
+            solution: recalc.keys,
+            keys: parseKeys(recalc.keys),
+            matchedKeys: 0,
+            peeked: planRef.current.peeked,
+            dirty: false,
+          });
+        }
+        next = markAssisted(next);
+      }
+      apply(next);
     }, TICK_MS);
     return () => {
       clearInterval(id);
     };
-  }, [apply, clock, running]);
+  }, [apply, clock, isPreviewVisible, running, updatePlan]);
+
+  const resetRun = (next: Run) => {
+    setOpenLessonId(null);
+    updateCmdline(null);
+    updatePlan(initialPlan(next.round.target.solution));
+    show(next);
+  };
 
   const exit = () => {
-    updateCmdline(null);
     const run = latest.current;
-    show(newRun(run.settings, run.round.config.seed, run.run));
+    resetRun(newRun(run.settings, run.round.config.seed, run.run));
     box.current?.blur();
   };
 
   const feed = (key: Key) => {
+    const run = latest.current;
+    if (run.round.pausedAt !== null || run.round.finished) return;
     const cmd = cmdlineRef.current;
     if (cmd !== null) {
       if (key === "<Esc>") {
@@ -189,11 +299,47 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
       }
       return;
     }
-    if (key === ":" && latest.current.round.vim.pending.length === 0) {
+    if (key === ":" && run.round.vim.pending.length === 0) {
       updateCmdline("");
       return;
     }
-    apply(pressRoundKey(latest.current.round, key, clock.now()));
+    const t = clock.now();
+    const curPlan = planRef.current;
+    const visibleBefore = isPreviewVisible(run.round, run.settings, curPlan, t);
+    const prepared = visibleBefore ? markAssisted(run.round) : run.round;
+    let nextRound = pressRoundKey(prepared, key, t);
+    if (nextRound.target.index !== run.round.target.index) {
+      updatePlan(initialPlan(nextRound.target.solution));
+      apply(nextRound);
+      return;
+    }
+    const onPath = !curPlan.dirty && key === curPlan.keys[curPlan.matchedKeys];
+    const nextPlanBase: PreviewPlan = onPath
+      ? { ...curPlan, matchedKeys: curPlan.matchedKeys + 1 }
+      : { ...curPlan, dirty: true };
+    const visibleAfter = isPreviewVisible(nextRound, run.settings, nextPlanBase, t);
+    if (visibleAfter) {
+      nextRound = markAssisted(nextRound);
+      if (nextPlanBase.dirty) {
+        const recalc = recalculateOptimal(
+          nextRound.vim,
+          nextRound.target.target,
+          nextRound.config.level,
+        );
+        updatePlan({
+          solution: recalc.keys,
+          keys: parseKeys(recalc.keys),
+          matchedKeys: 0,
+          peeked: curPlan.peeked,
+          dirty: false,
+        });
+      } else {
+        updatePlan(nextPlanBase);
+      }
+    } else {
+      updatePlan(nextPlanBase);
+    }
+    apply(nextRound);
   };
 
   const typed = (text: string) => {
@@ -201,8 +347,7 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
   };
 
   const restart = (next = latest.current.settings) => {
-    updateCmdline(null);
-    show(newRun(next, newSeed(), latest.current.run + 1));
+    resetRun(newRun(next, newSeed(), latest.current.run + 1));
   };
 
   /** Applies an option from the form, validated like stored settings. */
@@ -212,15 +357,76 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
     restart(updated);
   };
 
+  const peek = () => {
+    const run = latest.current;
+    if (run.round.finished || run.round.pausedAt !== null) return;
+    const cur = planRef.current;
+    if (cur.dirty) {
+      const recalc = recalculateOptimal(
+        run.round.vim,
+        run.round.target.target,
+        run.round.config.level,
+      );
+      updatePlan({
+        solution: recalc.keys,
+        keys: parseKeys(recalc.keys),
+        matchedKeys: 0,
+        peeked: true,
+        dirty: false,
+      });
+    } else {
+      updatePlan({ ...cur, peeked: true });
+    }
+    apply(markAssisted(run.round));
+  };
+
+  const openLesson = useCallback(
+    (lessonId: string) => {
+      setOpenLessonId(lessonId);
+      apply(pauseRound(latest.current.round, clock.now()));
+    },
+    [apply, clock],
+  );
+
+  const closeLesson = useCallback(() => {
+    setOpenLessonId(null);
+    const t = clock.now();
+    setNow(t);
+    apply(resumeRound(latest.current.round, t));
+    box.current?.focus();
+  }, [apply, clock]);
+
   const historyScores = results
-    .filter((r) => r.level === settings.level && r.durationS === settings.durationS)
+    .filter((r) => r.level === settings.level && r.durationS === settings.durationS && !r.assisted)
     .map((r) => r.reached);
+  const excludedAssisted = assistedRoundCount(results, settings.level, settings.durationS);
   const { target, vim } = round;
   const remainingS = Math.ceil(remainingMs(round, Math.max(now, round.startedAt ?? now)) / 1000);
   const reached = round.results.filter((r) => !r.skipped).length;
   const allHelp = levelHelp(settings.level);
   const currentHelp = allHelp.filter((h) => h.level === settings.level);
   const earlierHelp = allHelp.filter((h) => h.level < settings.level);
+
+  const previewVisible = !finished && isPreviewVisible(round, settings, plan, now);
+  const previewBlocks = useMemo(
+    () => (previewVisible ? parseSolutionBlocks(plan.solution) : []),
+    [previewVisible, plan.solution],
+  );
+  const waypointsByLine = useMemo(() => {
+    const map = new Map<number, Set<number>>();
+    if (!previewVisible) return map;
+    const startIdx = previewBlocks.findIndex((b) => b.endKeyIndex > plan.matchedKeys);
+    if (startIdx < 0) return map;
+    for (const pos of motionWaypoints(vim, previewBlocks, startIdx, target.target, settings.level)) {
+      let cols = map.get(pos.line);
+      if (cols === undefined) {
+        cols = new Set<number>();
+        map.set(pos.line, cols);
+      }
+      cols.add(pos.col);
+    }
+    return map;
+  }, [previewVisible, previewBlocks, plan.matchedKeys, vim, target.target, settings.level]);
 
   return (
     <div className="screen vim">
@@ -255,6 +461,20 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
             </option>
           ))}
         </select>
+        <label htmlFor="vim-preview-mode">Prévia do ótimo</label>
+        <select
+          id="vim-preview-mode"
+          value={previewMode}
+          onChange={(e) => {
+            change({ preview: e.target.value });
+          }}
+        >
+          {PREVIEW_MODES.map((mode) => (
+            <option key={mode} value={mode}>
+              {PREVIEW_MODE_LABELS[mode]}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="typing-area" data-panel="area">
@@ -281,10 +501,24 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
           }}
           onKeyDown={(e) => {
             if (e.nativeEvent.isComposing) return;
+            if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "p") {
+              e.preventDefault();
+              peek();
+              return;
+            }
             const action = matchTrainingKey(e, { vim: true });
             if (action === "skip") {
               e.preventDefault();
-              apply(skipTarget(latest.current.round, clock.now()));
+              const run = latest.current;
+              const t = clock.now();
+              const base = isPreviewVisible(run.round, run.settings, planRef.current, t)
+                ? markAssisted(run.round)
+                : run.round;
+              const next = skipTarget(base, t);
+              if (next.target.index !== run.round.target.index) {
+                updatePlan(initialPlan(next.target.solution));
+              }
+              apply(next);
               return;
             }
             if (action === "restart") {
@@ -321,6 +555,13 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
                 { label: "alvos", value: reached },
               ]}
             />
+            {previewVisible && (
+              <OptimalPreview
+                blocks={previewBlocks}
+                matchedKeys={plan.matchedKeys}
+                onOpenLesson={openLesson}
+              />
+            )}
             <pre
               className="vim-code"
               data-testid="vim-code"
@@ -337,6 +578,7 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
                     line={line}
                     cursor={vim.cursor.line === line ? vim.cursor.col : -1}
                     target={target.target.line === line ? target.target.col : -1}
+                    waypoints={waypointsByLine.get(line)}
                     solution={target.solution}
                     minimum={target.minimum}
                   />
@@ -363,7 +605,12 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
         )}
       </div>
 
-      <RoundHistory scores={historyScores} unit="alvos" testId="vim-summary" />
+      <RoundHistory
+        scores={historyScores}
+        excluded={excludedAssisted}
+        unit="alvos"
+        testId="vim-summary"
+      />
 
       <Reference id="vim-motion-commands" title="Comandos deste nível" className="vim-commands">
         <ul>
@@ -388,6 +635,8 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
           Voltar
         </button>
       </div>
+
+      {openLessonId !== null && <LessonModal lessonId={openLessonId} onClose={closeLesson} />}
     </div>
   );
 }
@@ -449,6 +698,7 @@ function VimResults({
   readonly onNext: () => void;
 }): ReactNode {
   const stats = roundStats(round);
+  const split = assistedSplit(round.results);
   return (
     <Result
       headline={
@@ -459,6 +709,8 @@ function VimResults({
       pairs={[
         { label: "pulados", value: stats.skipped, testId: "vim-skipped" },
         { label: "eficiência média", value: percent(stats.efficiency), testId: "vim-efficiency" },
+        { label: "sem prévia", value: split.withoutPreview, testId: "vim-without-preview" },
+        { label: "com prévia", value: split.withPreview, testId: "vim-with-preview" },
       ]}
       worst={
         <ul className="vim-worst" data-testid="vim-worst">
@@ -491,6 +743,7 @@ const Line = memo(function Line({
   line,
   cursor,
   target,
+  waypoints,
   solution,
   minimum,
 }: {
@@ -500,10 +753,12 @@ const Line = memo(function Line({
   readonly cursor: number;
   /** Column of the target on this line, or -1. */
   readonly target: number;
+  /** Intermediate path columns on this line, or undefined. */
+  readonly waypoints?: ReadonlySet<number>;
   readonly solution: string;
   readonly minimum: number;
 }): ReactNode {
-  if (cursor < 0 && target < 0) return text;
+  if (cursor < 0 && target < 0 && (waypoints === undefined || waypoints.size === 0)) return text;
   return (
     <>
       {[...text].map((ch, col) => {
@@ -530,6 +785,19 @@ const Line = memo(function Line({
               data-col={col}
               data-solution={solution}
               data-minimum={minimum}
+            >
+              {ch}
+            </span>
+          );
+        }
+        if (waypoints?.has(col) === true) {
+          return (
+            <span
+              key={col}
+              className="vim-waypoint"
+              data-testid="vim-waypoint"
+              data-line={line}
+              data-col={col}
             >
               {ch}
             </span>

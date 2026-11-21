@@ -1,35 +1,52 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../../core/clock";
 import { editEvents } from "../../stats/derive";
-import { recordEvents } from "../../storage/events";
+import { loadEvents, recordEvents } from "../../storage/events";
 import type { KeyValueStore } from "../../storage/history";
 import {
   appendVimEditResult,
+  assistedEditRoundCount,
+  defaultPreviewMode,
   loadVimEditResults,
   parseVimEditSettings,
   saveVimEditSettings,
   type VimEditSettings,
 } from "../../storage/vim";
+import { loadUnlocked } from "../../storage/vim-learn";
 import { lessonForHelpKey } from "../../vim/curriculum";
 import { diffText } from "../../vim/diff";
-import { loadUnlocked } from "../../storage/vim-learn";
 import { ALL_EDIT_KINDS, EDIT_KIND_LABELS, EDIT_KINDS, type EditKind } from "../../vim/drills/edit";
 import { REGISTER_KINDS, type RegisterKind } from "../../vim/drills/register-edit";
-import { listRegisters } from "../../vim/registers";
 import { EDIT_HELP } from "../../vim/edit-help";
 import {
   editEfficiency,
+  editIdleMs,
   editRemainingMs,
   editRoundStats,
   isEditRoundFinished,
+  markEditAssisted,
+  pauseEditRound,
   pressEditRoundKey,
+  resumeEditRound,
   skipEdit,
   startEditRound,
   tickEditRound,
   type EditResult,
   type EditRound,
 } from "../../vim/edit-round";
-import { formatKeys, keyFromEvent, type Key } from "../../vim/keys";
+import { formatKeys, keyFromEvent, parseKeys, type Key } from "../../vim/keys";
+import {
+  assistedSplit,
+  eventsToSamples,
+  parseSolutionBlocks,
+  PREVIEW_MODE_LABELS,
+  PREVIEW_MODES,
+  recalculateEditPreview,
+  shouldShowPreview,
+  type CommandSample,
+  type PreviewMode,
+} from "../../vim/preview";
+import { listRegisters } from "../../vim/registers";
 import { ROUND_DURATIONS_S } from "../../vim/round";
 import type { VimState } from "../../vim/state";
 import { selectionRange } from "../../vim/visual";
@@ -38,6 +55,7 @@ import { RoundHistory } from "../shell/History";
 import { PanelTitle, Reference, useRunning } from "../shell/panel";
 import { Result } from "../shell/Result";
 import { RoundBar } from "../shell/RoundBar";
+import { LessonModal, OptimalPreview } from "./Preview";
 
 type Props = {
   readonly clock: Clock;
@@ -72,6 +90,18 @@ type Run = {
   readonly round: EditRound;
   readonly run: number;
 };
+
+type PreviewPlan = {
+  readonly solution: string;
+  readonly keys: readonly Key[];
+  readonly matchedKeys: number;
+  readonly peeked: boolean;
+  readonly dirty: boolean;
+};
+
+function initialPlan(solution: string): PreviewPlan {
+  return { solution, keys: parseKeys(solution), matchedKeys: 0, peeked: false, dirty: false };
+}
 
 const isRegisterKind = (kind: EditKind): kind is RegisterKind =>
   (REGISTER_KINDS as readonly string[]).includes(kind);
@@ -122,15 +152,61 @@ export function EditDrill({
   const [unlocked] = useState(() => loadUnlocked(store));
   const [current, setCurrent] = useState<Run>(() => newRun(settings, unlocked, newSeed(), 0));
   const [results, setResults] = useState(() => loadVimEditResults(store));
+  const [defaultPreview] = useState<PreviewMode>(() => defaultPreviewMode(store));
   const [now, setNow] = useState(() => clock.now());
-  // The latest run, read by the event handlers between renders.
+  const [plan, setPlan] = useState<PreviewPlan>(() => initialPlan(current.round.target.reference));
+  const [openLessonId, setOpenLessonId] = useState<string | null>(null);
+  // The latest run and plan, read by the event handlers between renders.
   const latest = useRef(current);
+  const planRef = useRef(plan);
   const box = useRef<HTMLTextAreaElement>(null);
+
+  const storedSamples = useMemo(
+    () => eventsToSamples(loadEvents(store), "vim.edit"),
+    [store, results],
+  );
+  const storedSamplesRef = useRef(storedSamples);
+  storedSamplesRef.current = storedSamples;
+
+  const updatePlan = useCallback((next: PreviewPlan) => {
+    planRef.current = next;
+    setPlan(next);
+  }, []);
 
   const show = useCallback((next: Run) => {
     latest.current = next;
     setCurrent(next);
   }, []);
+
+  const previewModeOf = useCallback(
+    (s: VimEditSettings): PreviewMode => s.preview ?? defaultPreview,
+    [defaultPreview],
+  );
+
+  const samplesFor = useCallback(
+    (round: EditRound): readonly CommandSample[] => [
+      ...storedSamplesRef.current,
+      ...round.results.map((r) => ({
+        solution: r.reference,
+        efficiency: Math.min(1, editEfficiency(r)),
+      })),
+    ],
+    [],
+  );
+
+  const isPreviewVisible = useCallback(
+    (round: EditRound, s: VimEditSettings, p: PreviewPlan, at: number): boolean =>
+      shouldShowPreview({
+        mode: previewModeOf(s),
+        solution: round.target.reference,
+        minimum: round.target.referenceKeys,
+        keysTyped: round.keys,
+        idleMs: editIdleMs(round, at),
+        peeked: p.peeked,
+        history: samplesFor(round),
+      }),
+    [previewModeOf, samplesFor],
+  );
 
   const apply = useCallback(
     (round: EditRound) => {
@@ -138,6 +214,7 @@ export function EditDrill({
       if (round === run.round) return;
       if (!isEditRoundFinished(run.round) && isEditRoundFinished(round)) {
         const stats = editRoundStats(round);
+        const split = assistedSplit(round.results);
         const at = clock.wallTime();
         appendVimEditResult(store, {
           version: 1,
@@ -148,6 +225,7 @@ export function EditDrill({
           skipped: stats.skipped,
           efficiency: stats.efficiency,
           finishedAt: at,
+          assisted: split.anyAssisted,
         });
         recordEvents(store, editEvents(round, at), at);
         setResults(loadVimEditResults(store));
@@ -158,9 +236,11 @@ export function EditDrill({
   );
 
   const { round } = current;
+  const previewMode = previewModeOf(current.settings);
   const finished = isEditRoundFinished(round);
-  const running = round.startedAt !== null && !finished;
-  useRunning(onRunning, running);
+  const paused = round.pausedAt !== null;
+  const running = round.startedAt !== null && !finished && !paused;
+  useRunning(onRunning, running || paused);
 
   useEffect(() => {
     box.current?.focus();
@@ -171,26 +251,85 @@ export function EditDrill({
     const id = setInterval(() => {
       const t = clock.now();
       setNow(t);
-      apply(tickEditRound(latest.current.round, t));
+      const run = latest.current;
+      let next = tickEditRound(run.round, t);
+      if (!next.finished && isPreviewVisible(next, run.settings, planRef.current, t)) {
+        if (planRef.current.dirty) {
+          const recalc = recalculateEditPreview(next.vim, next.target);
+          updatePlan({
+            solution: recalc,
+            keys: parseKeys(recalc),
+            matchedKeys: 0,
+            peeked: planRef.current.peeked,
+            dirty: false,
+          });
+        }
+        next = markEditAssisted(next);
+      }
+      apply(next);
     }, TICK_MS);
     return () => {
       clearInterval(id);
     };
-  }, [apply, clock, running]);
+  }, [apply, clock, isPreviewVisible, running, updatePlan]);
+
+  const resetRun = (next: Run) => {
+    setOpenLessonId(null);
+    updatePlan(initialPlan(next.round.target.reference));
+    show(next);
+  };
 
   const exit = () => {
     const run = latest.current;
-    show(newRun(run.settings, unlocked, run.round.config.seed, run.run));
+    resetRun(newRun(run.settings, unlocked, run.round.config.seed, run.run));
     box.current?.blur();
   };
 
   const feed = (key: Key) => {
-    const { vim } = latest.current.round;
+    const run = latest.current;
+    if (run.round.pausedAt !== null || run.round.finished) return;
+    const { vim } = run.round;
     if (vim.mode === "cmdline" && key === "<CR>" && vim.cmdline?.trim() === "q") {
       exit();
       return;
     }
-    apply(pressEditRoundKey(latest.current.round, key, clock.now()));
+    const t = clock.now();
+    const curPlan = planRef.current;
+    const visibleBefore = isPreviewVisible(run.round, run.settings, curPlan, t);
+    const prepared = visibleBefore ? markEditAssisted(run.round) : run.round;
+    let nextRound = pressEditRoundKey(prepared, key, t);
+    if (nextRound.target.index !== run.round.target.index) {
+      updatePlan(initialPlan(nextRound.target.reference));
+      apply(nextRound);
+      return;
+    }
+    if (run.round.closingEsc && key === "<Esc>") {
+      apply(nextRound);
+      return;
+    }
+    const onPath = !curPlan.dirty && key === curPlan.keys[curPlan.matchedKeys];
+    const nextPlanBase: PreviewPlan = onPath
+      ? { ...curPlan, matchedKeys: curPlan.matchedKeys + 1 }
+      : { ...curPlan, dirty: true };
+    const visibleAfter = isPreviewVisible(nextRound, run.settings, nextPlanBase, t);
+    if (visibleAfter) {
+      nextRound = markEditAssisted(nextRound);
+      if (nextPlanBase.dirty) {
+        const recalc = recalculateEditPreview(nextRound.vim, nextRound.target);
+        updatePlan({
+          solution: recalc,
+          keys: parseKeys(recalc),
+          matchedKeys: 0,
+          peeked: curPlan.peeked,
+          dirty: false,
+        });
+      } else {
+        updatePlan(nextPlanBase);
+      }
+    } else {
+      updatePlan(nextPlanBase);
+    }
+    apply(nextRound);
   };
 
   const typed = (text: string) => {
@@ -198,7 +337,7 @@ export function EditDrill({
   };
 
   const restart = (next = latest.current.settings) => {
-    show(newRun(next, unlocked, newSeed(), latest.current.run + 1));
+    resetRun(newRun(next, unlocked, newSeed(), latest.current.run + 1));
   };
 
   /** Applies an option from the form, validated like stored settings. */
@@ -218,20 +357,62 @@ export function EditDrill({
     });
   };
 
+  const peek = () => {
+    const run = latest.current;
+    if (run.round.finished || run.round.pausedAt !== null) return;
+    const cur = planRef.current;
+    if (cur.dirty) {
+      const recalc = recalculateEditPreview(run.round.vim, run.round.target);
+      updatePlan({
+        solution: recalc,
+        keys: parseKeys(recalc),
+        matchedKeys: 0,
+        peeked: true,
+        dirty: false,
+      });
+    } else {
+      updatePlan({ ...cur, peeked: true });
+    }
+    apply(markEditAssisted(run.round));
+  };
+
+  const openLesson = useCallback(
+    (lessonId: string) => {
+      setOpenLessonId(lessonId);
+      apply(pauseEditRound(latest.current.round, clock.now()));
+    },
+    [apply, clock],
+  );
+
+  const closeLesson = useCallback(() => {
+    setOpenLessonId(null);
+    const t = clock.now();
+    setNow(t);
+    apply(resumeEditRound(latest.current.round, t));
+    box.current?.focus();
+  }, [apply, clock]);
+
   const { target, vim } = round;
   const masks = useMemo(
     () => diffText(vim.lines.join("\n"), target.after.join("\n")),
     [vim.lines, target.after],
   );
   const historyScores = results
-    .filter((r) => r.durationS === current.settings.durationS)
+    .filter((r) => r.durationS === current.settings.durationS && !r.assisted)
     .map((r) => r.reached);
+  const excludedAssisted = assistedEditRoundCount(results, current.settings.durationS);
   const remainingS = Math.ceil(
     editRemainingMs(round, Math.max(now, round.startedAt ?? now)) / 1000,
   );
   const reached = round.results.filter((r) => !r.skipped).length;
   const insert = vim.mode === "insert";
   const hasLocked = REGISTER_KINDS.some((kind) => !unlocked.includes(kind));
+
+  const previewVisible = !finished && isPreviewVisible(round, current.settings, plan, now);
+  const previewBlocks = useMemo(
+    () => (previewVisible ? parseSolutionBlocks(plan.solution) : []),
+    [previewVisible, plan.solution],
+  );
 
   const helpList = useMemo(
     () => (
@@ -286,6 +467,20 @@ export function EditDrill({
             {ROUND_DURATIONS_S.map((s) => (
               <option key={s} value={s}>
                 {`${String(s)} s`}
+              </option>
+            ))}
+          </select>
+          <label htmlFor="vim-preview-mode">Prévia do ótimo</label>
+          <select
+            id="vim-preview-mode"
+            value={previewMode}
+            onChange={(e) => {
+              change({ preview: e.target.value });
+            }}
+          >
+            {PREVIEW_MODES.map((mode) => (
+              <option key={mode} value={mode}>
+                {PREVIEW_MODE_LABELS[mode]}
               </option>
             ))}
           </select>
@@ -362,10 +557,24 @@ export function EditDrill({
           }}
           onKeyDown={(e) => {
             if (e.nativeEvent.isComposing) return;
+            if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "p") {
+              e.preventDefault();
+              peek();
+              return;
+            }
             const action = matchTrainingKey(e, { vim: true });
             if (action === "skip") {
               e.preventDefault();
-              apply(skipEdit(latest.current.round, clock.now()));
+              const run = latest.current;
+              const t = clock.now();
+              const base = isPreviewVisible(run.round, run.settings, planRef.current, t)
+                ? markEditAssisted(run.round)
+                : run.round;
+              const next = skipEdit(base, t);
+              if (next.target.index !== run.round.target.index) {
+                updatePlan(initialPlan(next.target.reference));
+              }
+              apply(next);
               return;
             }
             if (action === "restart") {
@@ -402,6 +611,13 @@ export function EditDrill({
                 { label: "edições", value: reached },
               ]}
             />
+            {previewVisible && (
+              <OptimalPreview
+                blocks={previewBlocks}
+                matchedKeys={plan.matchedKeys}
+                onOpenLesson={openLesson}
+              />
+            )}
             <div className="vim-buffers">
               <pre
                 className="vim-code"
@@ -443,7 +659,12 @@ export function EditDrill({
         )}
       </div>
 
-      <RoundHistory scores={historyScores} unit="edições" testId="vim-summary" />
+      <RoundHistory
+        scores={historyScores}
+        excluded={excludedAssisted}
+        unit="edições"
+        testId="vim-summary"
+      />
 
       <Reference id="vim-edit-commands" title="Comandos" className="vim-commands">
         {helpList}
@@ -454,6 +675,8 @@ export function EditDrill({
           Voltar
         </button>
       </div>
+
+      {openLessonId !== null && <LessonModal lessonId={openLessonId} onClose={closeLesson} />}
     </div>
   );
 }
@@ -513,6 +736,7 @@ function EditResults({
   readonly onNext: () => void;
 }): ReactNode {
   const stats = editRoundStats(round);
+  const split = assistedSplit(round.results);
   return (
     <Result
       headline={
@@ -523,6 +747,8 @@ function EditResults({
       pairs={[
         { label: "puladas", value: stats.skipped, testId: "vim-skipped" },
         { label: "eficiência média", value: percent(stats.efficiency), testId: "vim-efficiency" },
+        { label: "sem prévia", value: split.withoutPreview, testId: "vim-without-preview" },
+        { label: "com prévia", value: split.withPreview, testId: "vim-with-preview" },
       ]}
       extra={
         stats.efficiency > 1 ? (
