@@ -43,9 +43,9 @@ describe("sections", () => {
     expect(itemByShortcut(10)).toBeUndefined();
   });
 
-  it("sections hide code typing and Vim on touch screens, as before", () => {
+  it("sections keep Aprender visible on touch screens and hide typing, motion and edit", () => {
     const hidden = ITEMS.filter((i) => !i.touch).map((i) => i.id);
-    expect(hidden).toEqual(["typing", "vim-learn", "vim-motion", "vim-edit"]);
+    expect(hidden).toEqual(["typing", "vim-motion", "vim-edit"]);
   });
 
   it("folderOf finds the folder of an item", () => {
