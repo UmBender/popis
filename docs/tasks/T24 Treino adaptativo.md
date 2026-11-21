@@ -1,7 +1,7 @@
 ---
 id: T24
 title: Treino adaptativo
-status: review
+status: done
 depends_on: [T23]
 branch: task/T24-adaptive-training
 adrs:
