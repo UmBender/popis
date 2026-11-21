@@ -1,7 +1,7 @@
 ---
 id: T20
 title: Vim - Aprender do básico ao avançado
-status: in-progress
+status: review
 depends_on: [T19]
 branch: task/T20-vim-curriculum
 adrs: [ADR-T20-1]
@@ -112,17 +112,17 @@ Edição.
 - `src/vim/lessons.ts`, `src/vim/lessons.test.ts`
 - `src/vim/cases/curriculum-motion.ts` (novo), `src/vim/cases/curriculum-edit.ts` (novo), `src/vim/cases/index.ts`
 - `src/storage/vim-learn.ts`, `src/storage/vim-learn.test.ts`
-- `src/ui/vim/LearnDrill.tsx`, `src/ui/VimScreen.tsx`, `src/ui/vim/EditDrill.tsx`, `src/ui/App.tsx`, `src/ui/shell/sections.ts`, `src/ui/app.css`
-- `src/ui/VimScreenLearn.test.tsx`, `src/ui/shell/sections.test.ts`, `tests/e2e/vim.spec.ts`
+- `src/ui/vim/LearnDrill.tsx`, `src/ui/VimScreen.tsx`, `src/ui/vim/EditDrill.tsx`, `src/ui/App.tsx`, `src/ui/shell/sections.ts`, `src/ui/shell/Shell.tsx`, `src/ui/app.css`
+- `src/ui/VimScreenLearn.test.tsx`, `src/ui/coherence.test.tsx`, `src/ui/shell/sections.test.ts`, `tests/e2e/vim.spec.ts`
 
 ## Subtasks
 
-- [ ] Definir ADR-T20-1 e especificar ACs e testes
-- [ ] Escrever testes unitários, de migração, de componente e casos do currículo
-- [ ] Criar tipos e assinaturas em `src/vim/curriculum.ts` e `src/storage/vim-learn.ts`
-- [ ] Implementar currículo completo (unidades 1–15), casos do oráculo, migração e telas
-- [ ] Validar `npm run vim:oracle`, `npm run check`, `npm run coverage`, `npm run test:e2e` e screenshots
-- [ ] Atualizar *Log* e status para `review`
+- [x] Definir ADR-T20-1 e especificar ACs e testes
+- [x] Escrever testes unitários, de migração, de componente e casos do currículo
+- [x] Criar tipos e assinaturas em `src/vim/curriculum.ts` e `src/storage/vim-learn.ts`
+- [x] Implementar currículo completo (unidades 1–15), casos do oráculo, migração e telas
+- [x] Validar `npm run vim:oracle`, `npm run check`, `npm run coverage`, `npm run test:e2e` e screenshots
+- [x] Atualizar *Log* e status para `review`
 
 ## Notas para o batch
 
@@ -134,4 +134,13 @@ Edição.
 
 ## Log
 
-- 2026-11-21 — Escopo de *Files owned* ampliado para incluir `src/ui/VimScreen.tsx`, `src/ui/vim/EditDrill.tsx`, `src/ui/App.tsx`, `src/ui/shell/sections.ts` e `src/ui/app.css`, necessários para AC-5 (botão "Treinar" e links "aprender" nos painéis de comandos) e AC-6 (Aprender visível somente leitura no celular e layout das unidades).
+- 2026-11-21 — Escopo de *Files owned* ampliado para incluir `src/ui/VimScreen.tsx`, `src/ui/vim/EditDrill.tsx`, `src/ui/App.tsx`, `src/ui/shell/sections.ts`, `src/ui/shell/Shell.tsx`, `src/ui/coherence.test.tsx` e `src/ui/app.css`, necessários para AC-5 (botão "Treinar" e links "aprender" nos painéis de comandos), AC-6 (Aprender visível somente leitura no celular, layout das unidades e remoção do ramo morto de pasta vazia em `Shell.tsx`) e atualização do seletor da lista em `coherence.test.tsx`.
+- 2026-11-21 — Currículo completo implementado em `src/vim/curriculum.ts` com todas as 15 unidades e 39 lições (unidades 1–7 de movimento em ordem dos níveis 1–7, unidades 8–13 de edição e unidades 14–15 mantendo as 8 lições de registradores e macros da T16). Todo comando de `levelHelp(7)` (33) e `EDIT_HELP` (59) aparece em exatamente uma lição, reaproveitando as descrições originais sem duplicação.
+- 2026-11-21 — Ajustes menores: pontuação das explicações de `number-lines` e `increment-indexes` em `src/vim/lessons.ts` ajustada para até 3 frases (AC-2); exercícios das lições da T16 carregados de forma preguiçosa (`get exercises()`) e lista de comandos de `EditDrill` memoizada para evitar trabalho desnecessário na importação/renderização.
+- 2026-11-21 — Gates verdes:
+  - `npm run vim:oracle`: `2200/2200 cases agree` (todos os 39 exemplos `learn:` validados no `nvim --clean --headless`).
+  - `npm run check`: verde (`tsc --noEmit`, `eslint --max-warnings 0`, `prettier --check`, `107/107` arquivos / `3892/3892` testes, `vite build`).
+  - `npm run coverage`: verde (`99.96%` statements, `99.4%` branches, `100%` functions, `99.97%` lines; todos os limiares atendidos).
+  - `npm run test:e2e`: `27/27 passed` (incluindo fluxo completo de retirada adaptativa e botão "Treinar").
+- 2026-11-21 — Verificação visual (AC-6): capturadas e inspecionadas 5 capturas Playwright em `.batch/visual/shots/` (`desktop-t20-learn-units.png`, `desktop-t20-learn-lesson.png`, `desktop-t20-motion-commands.png`, `phone-t20-learn-units.png`, `phone-t20-learn-lesson.png`). Layout desktop e celular conferidos: ordem do painel da T18 mantida, sem seletor no rodapé, Aprender visível e somente leitura no celular, links `aprender` no painel Comandos.
+- 2026-11-21 — Verificação manual para o dono: percorrer as unidades 1, 8 e 15 e avaliar a clareza das explicações e dos exemplos.

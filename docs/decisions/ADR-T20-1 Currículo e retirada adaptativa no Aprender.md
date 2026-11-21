@@ -1,7 +1,7 @@
 ---
 id: ADR-T20-1
 title: Currículo e retirada adaptativa no Aprender
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-21
 task: T20
