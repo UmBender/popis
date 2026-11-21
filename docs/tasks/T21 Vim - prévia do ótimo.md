@@ -1,7 +1,7 @@
 ---
 id: T21
 title: Vim - prévia do ótimo
-status: review
+status: done
 depends_on: [T20]
 branch: task/T21-vim-optimal-preview
 adrs: [ADR-T21-1]
