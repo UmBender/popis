@@ -26,9 +26,7 @@ import {
 describe("curriculum structure (AC-1)", () => {
   it("has 15 units in order with units 1 to 7 matching motion levels 1 to 7", () => {
     expect(UNITS).toHaveLength(15);
-    expect(UNITS.map((u) => u.number)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-    ]);
+    expect(UNITS.map((u) => u.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
     expect(UNITS.slice(0, 7).map((u) => u.level)).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 

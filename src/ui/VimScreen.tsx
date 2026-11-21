@@ -367,55 +367,17 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
 
       <Reference id="vim-motion-commands" title="Comandos deste nível" className="vim-commands">
         <ul>
-          {currentHelp.map((help) => {
-            const lesson = lessonForHelpKey(help.keys);
-            return (
-              <li key={help.keys}>
-                <code>{help.keys}</code> — {help.text}
-                {lesson !== undefined && onLearn !== undefined && (
-                  <>
-                    {" "}
-                    <button
-                      type="button"
-                      className="link vim-cmd-learn"
-                      onClick={() => {
-                        onLearn(lesson.id);
-                      }}
-                    >
-                      aprender
-                    </button>
-                  </>
-                )}
-              </li>
-            );
-          })}
+          {currentHelp.map((help) => (
+            <MotionHelpItem key={help.keys} help={help} onLearn={onLearn} />
+          ))}
         </ul>
         {earlierHelp.length > 0 && (
           <details className="vim-earlier" data-testid="vim-earlier-commands">
             <summary>{`já valem (níveis 1–${String(settings.level - 1)})`}</summary>
             <ul>
-              {earlierHelp.map((help) => {
-                const lesson = lessonForHelpKey(help.keys);
-                return (
-                  <li key={help.keys}>
-                    <code>{help.keys}</code> — {help.text}
-                    {lesson !== undefined && onLearn !== undefined && (
-                      <>
-                        {" "}
-                        <button
-                          type="button"
-                          className="link vim-cmd-learn"
-                          onClick={() => {
-                            onLearn(lesson.id);
-                          }}
-                        >
-                          aprender
-                        </button>
-                      </>
-                    )}
-                  </li>
-                );
-              })}
+              {earlierHelp.map((help) => (
+                <MotionHelpItem key={help.keys} help={help} onLearn={onLearn} />
+              ))}
             </ul>
           </details>
         )}
@@ -427,6 +389,35 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
         </button>
       </div>
     </div>
+  );
+}
+
+function MotionHelpItem({
+  help,
+  onLearn,
+}: {
+  readonly help: { readonly keys: string; readonly text: string };
+  readonly onLearn?: (lessonId?: string) => void;
+}): ReactNode {
+  const lesson = lessonForHelpKey(help.keys);
+  return (
+    <li>
+      <code>{help.keys}</code> — {help.text}
+      {lesson !== undefined && onLearn !== undefined && (
+        <>
+          {" "}
+          <button
+            type="button"
+            className="link vim-cmd-learn"
+            onClick={() => {
+              onLearn(lesson.id);
+            }}
+          >
+            aprender
+          </button>
+        </>
+      )}
+    </li>
   );
 }
 

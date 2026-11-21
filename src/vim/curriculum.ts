@@ -98,6 +98,7 @@ function t16Lesson(
   helpKeys: readonly string[],
 ): CurriculumLesson {
   const base = lessonFor(kind);
+  let cachedExercises: readonly [LessonExercise, LessonExercise, LessonExercise] | null = null;
   const ex = (index: number): EditExercise => {
     const generated = generateEdit(base.exercise.seed, index, [kind]);
     return {
@@ -122,7 +123,9 @@ function t16Lesson(
       keys: base.example.keys,
       after: base.example.after,
     },
-    exercises: [ex(0), ex(1), ex(2)],
+    get exercises() {
+      return (cachedExercises ??= [ex(0), ex(1), ex(2)]);
+    },
     practice: { drill: "edit", kinds: [kind] },
     registerKind: kind,
   };
@@ -136,12 +139,7 @@ const SNIP_BS = [
   "}",
 ];
 
-const SNIP_BFS = [
-  "vector<int> dist(n, -1);",
-  "queue<int> q;",
-  "dist[s] = 0;",
-  "q.push(s);",
-];
+const SNIP_BFS = ["vector<int> dist(n, -1);", "queue<int> q;", "dist[s] = 0;", "q.push(s);"];
 
 const SNIP_PARA = [
   "int gcd(int a, int b) {",
@@ -657,7 +655,12 @@ export const UNITS: readonly Unit[] = [
         },
         exercises: [
           eEx(["int a = 1;", "int b = 2;"], p(0, 0), ["int b = 2;", "int a = 1;"], "ddp"),
-          eEx(["cin >> n;", "cout << n;"], p(0, 0), ["cin >> n;", "cin >> n;", "cout << n;"], "yyp"),
+          eEx(
+            ["cin >> n;", "cout << n;"],
+            p(0, 0),
+            ["cin >> n;", "cin >> n;", "cout << n;"],
+            "yyp",
+          ),
           eEx(["a = 1;", "b = 2;"], p(0, 0), ["b = 2;", "a = 1;"], "ddp"),
         ],
         practice: { drill: "edit", kinds: ["swap-lines", "duplicate-line"] },
@@ -711,7 +714,12 @@ export const UNITS: readonly Unit[] = [
         exercises: [
           eEx(["cout << a[mid];"], p(0, 11), ["cout << a[i];"], "ci[i<Esc>"),
           eEx(["vector<int> a(n);"], p(0, 8), ["vector<long long> a(n);"], "ci<lt>long long<Esc>"),
-          eEx(["if (ok) { return 1; }"], p(0, 12), ["if (ok) { return 0; }"], "ci{ return 0; <Esc>"),
+          eEx(
+            ["if (ok) { return 1; }"],
+            p(0, 12),
+            ["if (ok) { return 0; }"],
+            "ci{ return 0; <Esc>",
+          ),
         ],
         practice: {
           drill: "edit",
@@ -723,7 +731,7 @@ export const UNITS: readonly Unit[] = [
         unitId: "u9-textobjects",
         title: "Aspas e crases: i\", i' e i`",
         explanation:
-          "i\", i' e i` agem no texto dentro de aspas duplas, simples ou crases na linha atual. Mesmo com o cursor antes da abertura, ci\" salta até as aspas e troca o conteúdo.",
+          'i", i\' e i` agem no texto dentro de aspas duplas, simples ou crases na linha atual. Mesmo com o cursor antes da abertura, ci" salta até as aspas e troca o conteúdo.',
         helpKeys: ['i"', "i'", "i`"],
         commands: ['ci"', "ci'", "ci`"],
         example: {
@@ -765,7 +773,12 @@ export const UNITS: readonly Unit[] = [
           after: ["long long a;", "long long b;"],
         },
         exercises: [
-          eEx(["int a;", "int b;"], p(0, 0), ["long long a;", "long long b;"], "ciwlong long<Esc>j0."),
+          eEx(
+            ["int a;", "int b;"],
+            p(0, 0),
+            ["long long a;", "long long b;"],
+            "ciwlong long<Esc>j0.",
+          ),
           eEx(["a[0] = 1", "a[1] = 2"], p(0, 0), ["a[0] = 1;", "a[1] = 2;"], "A;<Esc>j."),
           eEx(["x = 1;", "y = 1;"], p(0, 4), ["x = 0;", "y = 0;"], "r0j."),
         ],
@@ -871,8 +884,18 @@ export const UNITS: readonly Unit[] = [
           after: ["a = 1;", "b = 2;", "c = 3;"],
         },
         exercises: [
-          eEx(["// a = 1;", "// b = 2;", "// c = 3;"], p(0, 0), ["a = 1;", "b = 2;", "c = 3;"], "<C-v>2j2ld"),
-          eEx(["a = 1;", "b = 2;", "c = 3;"], p(0, 0), ["    a = 1;", "    b = 2;", "c = 3;"], "Vj>"),
+          eEx(
+            ["// a = 1;", "// b = 2;", "// c = 3;"],
+            p(0, 0),
+            ["a = 1;", "b = 2;", "c = 3;"],
+            "<C-v>2j2ld",
+          ),
+          eEx(
+            ["a = 1;", "b = 2;", "c = 3;"],
+            p(0, 0),
+            ["    a = 1;", "    b = 2;", "c = 3;"],
+            "Vj>",
+          ),
           eEx(["int tmp = 1;"], p(0, 4), ["int  = 1;"], "v2ld"),
         ],
         practice: { drill: "edit", kinds: ["uncomment-block", "indent-lines"] },
@@ -915,8 +938,18 @@ export const UNITS: readonly Unit[] = [
           after: ["int a = 1;", "int b = 2;", "int c = 3;"],
         },
         exercises: [
-          eEx(["int a = 1", "int b = 2", "int c = 3"], p(0, 0), ["int a = 1;", "int b = 2;", "int c = 3;"], "<C-v>2j$A;<Esc>"),
-          eEx(["a = 1;", "b = 2;", "c = 3;"], p(0, 0), ["// a = 1;", "// b = 2;", "// c = 3;"], "<C-v>2jI// <Esc>"),
+          eEx(
+            ["int a = 1", "int b = 2", "int c = 3"],
+            p(0, 0),
+            ["int a = 1;", "int b = 2;", "int c = 3;"],
+            "<C-v>2j$A;<Esc>",
+          ),
+          eEx(
+            ["a = 1;", "b = 2;", "c = 3;"],
+            p(0, 0),
+            ["// a = 1;", "// b = 2;", "// c = 3;"],
+            "<C-v>2jI// <Esc>",
+          ),
           eEx(["x = 1", "y = 2"], p(0, 0), ["x = 1;", "y = 2;"], "<C-v>j$A;<Esc>"),
         ],
         practice: { drill: "edit", kinds: ["comment-block", "append-semicolons"] },
@@ -947,7 +980,12 @@ export const UNITS: readonly Unit[] = [
         },
         exercises: [
           eEx(["if (ok)", "    break;"], p(0, 0), ["if (ok) break;"], "J"),
-          eEx(["for (int i = 0; i < n; i++) {", "sum += a[i];", "}"], p(1, 0), ["for (int i = 0; i < n; i++) {", "    sum += a[i];", "}"], ">i{"),
+          eEx(
+            ["for (int i = 0; i < n; i++) {", "sum += a[i];", "}"],
+            p(1, 0),
+            ["for (int i = 0; i < n; i++) {", "    sum += a[i];", "}"],
+            ">i{",
+          ),
           eEx(["    return 0;"], p(0, 0), ["return 0;"], "<lt><lt>"),
         ],
         practice: { drill: "edit", kinds: ["indent-block", "dedent-block", "join-lines"] },
@@ -968,8 +1006,18 @@ export const UNITS: readonly Unit[] = [
           after: ["cout << a << '\\n';", "cout << b << '\\n';"],
         },
         exercises: [
-          eEx(["cout << a << endl;", "cout << b << endl;"], p(0, 0), ["cout << a << '\\n';", "cout << b << '\\n';"], ":%s/endl/'\\\\n'/g<CR>"),
-          eEx(["int x = 1;", "ans += x;"], p(0, 0), ["int val = 1;", "ans += val;"], ":%s/\\<lt>x\\>/val/g<CR>"),
+          eEx(
+            ["cout << a << endl;", "cout << b << endl;"],
+            p(0, 0),
+            ["cout << a << '\\n';", "cout << b << '\\n';"],
+            ":%s/endl/'\\\\n'/g<CR>",
+          ),
+          eEx(
+            ["int x = 1;", "ans += x;"],
+            p(0, 0),
+            ["int val = 1;", "ans += val;"],
+            ":%s/\\<lt>x\\>/val/g<CR>",
+          ),
           eEx(["int a = b + b;"], p(0, 0), ["int a = c + c;"], ":s/b/c/g<CR>"),
         ],
         practice: {
@@ -1043,7 +1091,10 @@ export function curriculumExampleFrames(lesson: CurriculumLesson): readonly Fram
     { key: null, lines: state.lines, cursor: state.cursor, mode: state.mode },
   ];
   for (const key of parseKeys(example.keys)) {
-    state = example.kind === "motion" ? pressKey(state, key, example.level).state : pressEditKey(state, key);
+    state =
+      example.kind === "motion"
+        ? pressKey(state, key, example.level).state
+        : pressEditKey(state, key);
     frames.push({ key, lines: state.lines, cursor: state.cursor, mode: state.mode });
   }
   return frames;

@@ -233,6 +233,42 @@ export function EditDrill({
   const insert = vim.mode === "insert";
   const hasLocked = REGISTER_KINDS.some((kind) => !unlocked.includes(kind));
 
+  const helpList = useMemo(
+    () => (
+      <ul>
+        {EDIT_HELP.map((help) => {
+          const lesson = lessonForHelpKey(help.keys);
+          return (
+            <li key={help.keys}>
+              <code>{help.keys}</code> — {help.text}
+              {lesson !== undefined && onLearn !== undefined && (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    className="link vim-cmd-learn"
+                    onClick={() => {
+                      onLearn(lesson.id);
+                    }}
+                  >
+                    aprender
+                  </button>
+                </>
+              )}
+              {help.example !== undefined && (
+                <>
+                  <br />
+                  <span className="muted">ex.: {help.example}</span>
+                </>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    ),
+    [onLearn],
+  );
+
   return (
     <div className="screen vim vim-edit">
       <PanelTitle title="Edição">Deixe o texto igual ao depois com o mínimo de teclas.</PanelTitle>
@@ -410,36 +446,7 @@ export function EditDrill({
       <RoundHistory scores={historyScores} unit="edições" testId="vim-summary" />
 
       <Reference id="vim-edit-commands" title="Comandos" className="vim-commands">
-        <ul>
-          {EDIT_HELP.map((help) => {
-            const lesson = lessonForHelpKey(help.keys);
-            return (
-              <li key={help.keys}>
-                <code>{help.keys}</code> — {help.text}
-                {lesson !== undefined && onLearn !== undefined && (
-                  <>
-                    {" "}
-                    <button
-                      type="button"
-                      className="link vim-cmd-learn"
-                      onClick={() => {
-                        onLearn(lesson.id);
-                      }}
-                    >
-                      aprender
-                    </button>
-                  </>
-                )}
-                {help.example !== undefined && (
-                  <>
-                    <br />
-                    <span className="muted">ex.: {help.example}</span>
-                  </>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        {helpList}
       </Reference>
 
       <div className="actions">

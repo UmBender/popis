@@ -17,7 +17,9 @@ export function parseCompleted(value: unknown): string[] {
     : Array.isArray(raw["unlocked"])
       ? raw["unlocked"]
       : [];
-  const wanted = new Set(list.filter((id): id is string => typeof id === "string" && VALID_LESSON_IDS.has(id)));
+  const wanted = new Set(
+    list.filter((id): id is string => typeof id === "string" && VALID_LESSON_IDS.has(id)),
+  );
   return ALL_LESSONS.map((l) => l.id).filter((id) => wanted.has(id));
 }
 

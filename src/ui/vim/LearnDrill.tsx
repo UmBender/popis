@@ -59,8 +59,7 @@ type Props = {
 function targetMask(lines: readonly string[], target: Pos): boolean[] {
   const total = lines.reduce((sum, l) => sum + l.length + 1, 0);
   const mask = new Array<boolean>(total).fill(false);
-  const offset =
-    lines.slice(0, target.line).reduce((sum, l) => sum + l.length + 1, 0) + target.col;
+  const offset = lines.slice(0, target.line).reduce((sum, l) => sum + l.length + 1, 0) + target.col;
   mask[offset] = true;
   return mask;
 }
@@ -82,12 +81,6 @@ export function LearnDrill({
   );
   const [completed, setCompleted] = useState(() => loadCompleted(store));
   const completedSet = useMemo(() => new Set(completed), [completed]);
-
-  useEffect(() => {
-    if (initialLesson !== null && curriculumLessonById(initialLesson) !== undefined) {
-      setOpen(initialLesson);
-    }
-  }, [initialLesson]);
 
   // AC-4: Enter opens the next uncompleted lesson when on the list.
   useEffect(() => {
@@ -547,7 +540,9 @@ function Exercise({
       )}
       {(finished || done) && (
         <p className="vim-better" data-testid={finished ? "learn-done" : "learn-was-done"}>
-          {finished ? "Lição concluída! Pronto para o treino livre." : "Esta lição já foi concluída."}
+          {finished
+            ? "Lição concluída! Pronto para o treino livre."
+            : "Esta lição já foi concluída."}
         </p>
       )}
       <div className="actions">

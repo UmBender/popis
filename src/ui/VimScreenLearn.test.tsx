@@ -3,17 +3,15 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { manualClock, type ManualClock } from "../core/clock";
 import { memoryStore, type KeyValueStore } from "../storage/history";
+import { VIM_EDIT_SETTINGS_KEY, loadVimEditSettings, loadVimSettings } from "../storage/vim";
 import {
-  VIM_EDIT_SETTINGS_KEY,
-  loadVimEditSettings,
-  loadVimSettings,
-} from "../storage/vim";
-import { VIM_LEARN_KEY, completeLesson, loadCompleted, loadUnlocked, unlockKind } from "../storage/vim-learn";
-import {
-  UNITS,
-  curriculumLessonById,
-  type CurriculumLesson,
-} from "../vim/curriculum";
+  VIM_LEARN_KEY,
+  completeLesson,
+  loadCompleted,
+  loadUnlocked,
+  unlockKind,
+} from "../storage/vim-learn";
+import { UNITS, curriculumLessonById, type CurriculumLesson } from "../vim/curriculum";
 import { EDIT_KIND_LABELS } from "../vim/drills/edit";
 import { REGISTER_KINDS } from "../vim/drills/register-edit";
 import { formatKeys, parseKeys } from "../vim/keys";
@@ -392,6 +390,9 @@ describe("VimScreen Learn curriculum (T20 AC-3..AC-6)", () => {
     const store = memoryStore();
     completeLesson(store, UNITS[0]!.lessons[0]!.id);
     setup(store);
+    // Enter on a button control does not intercept it.
+    fireEvent.keyDown(screen.getByRole("button", { name: "Voltar" }), { key: "Enter" });
+    expect(screen.queryByTestId("learn-explanation")).toBeNull();
     fireEvent.keyDown(window, { key: "Enter" });
     expect(screen.getByTestId("learn-explanation").textContent).toBe(
       UNITS[0]!.lessons[1]!.explanation,
@@ -474,14 +475,33 @@ describe("VimScreen Learn curriculum (T20 AC-3..AC-6)", () => {
     const store = memoryStore({
       [VIM_EDIT_SETTINGS_KEY]: JSON.stringify({ drill: "learn", durationS: 60 }),
     });
-    render(
-      <VimScreen clock={clock} store={store} newSeed={() => 21} onBack={vi.fn()} readOnly />,
-    );
+    render(<VimScreen clock={clock} store={store} newSeed={() => 21} onBack={vi.fn()} readOnly />);
     const lesson = UNITS[0]!.lessons[0]!;
     fireEvent.click(screen.getByRole("button", { name: new RegExp(lesson.title) }));
     expect(screen.getByTestId("learn-explanation").textContent).toBe(lesson.explanation);
     expect(screen.getByTestId("learn-buffer")).toBeTruthy();
     expect(screen.queryByRole("textbox", { name: "Teclas do Vim" })).toBeNull();
     expect(screen.getByTestId("learn-readonly-notice")).toBeTruthy();
+  });
+
+  it("cmdline handles Escape, Backspace, unknown commands and :q in motion and edit exercises", () => {
+    setup();
+    // Motion exercise cmdline branches
+    fireEvent.click(screen.getByRole("button", { name: /Mover com h j k l/ }));
+    press(":a<BS><BS>");
+    expect(screen.getByTestId("vim-status").textContent).toContain("NORMAL");
+    press(":w<Esc>");
+    expect(screen.getByTestId("vim-status").textContent).toContain("NORMAL");
+    press(":w<CR>");
+    expect(screen.getByTestId("vim-status").textContent).toContain("NORMAL");
+    press(":q<CR>");
+    expect(screen.queryByTestId("learn-explanation")).toBeNull();
+
+    // Edit exercise :q exit
+    open("number-lines");
+    press(":q");
+    expect(screen.getByTestId("vim-status").textContent).toBe(":q");
+    press("<CR>");
+    expect(screen.queryByTestId("learn-explanation")).toBeNull();
   });
 });
