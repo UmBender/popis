@@ -1,7 +1,7 @@
 ---
 id: T18
 title: Reformulação gráfica
-status: in-progress
+status: review
 depends_on: [T16, T17, T22]
 branch: task/T18-redesign
 adrs: [ADR-0001, ADR-T22-1, ADR-T18-1]
@@ -245,15 +245,15 @@ Detalhes decididos no spec (ADR-T18-1):
 
 ## Subtasks
 
-- [ ] Spec: testes por AC, ADR-T18-1, protótipo com árvore recolhida e
+- [x] Spec: testes por AC, ADR-T18-1, protótipo com árvore recolhida e
       gaveta
-- [ ] Testes vermelhos (Shell, sections, verdicts, shell.spec) e troca de
+- [x] Testes vermelhos (Shell, sections, verdicts, shell.spec) e troca de
       seletores dos testes existentes
-- [ ] Modelos: `sections.ts`, `verdicts.ts`, preferências e props novas
-- [ ] Comportamento: janela, árvore, teclado, gaveta, painéis, vereditos
+- [x] Modelos: `sections.ts`, `verdicts.ts`, preferências e props novas
+- [x] Comportamento: janela, árvore, teclado, gaveta, painéis, vereditos
       e placar
-- [ ] Qualidade: check, coverage, e2e e capturas
-- [ ] Docs: Log, [[Shell]] e ADR aceitos
+- [x] Qualidade: check, coverage, e2e e capturas
+- [x] Docs: Log, [[Shell]] e ADR aceitos
 
 ## Notas para o batch
 
@@ -265,3 +265,8 @@ Detalhes decididos no spec (ADR-T18-1):
   examinar, corrigir e listar o restante como verificação manual).
 
 ## Log
+
+- 2026-11-20 — Qualidade: corrigido `latest.current` em `useEffect` e guarda morta em `trapTab` (`src/ui/shell/Shell.tsx`); adicionados testes de cobertura em `src/ui/shell/Shell.test.tsx` e `src/ui/shell/sections.test.ts`. `npm run check` (typecheck, lint, format, 105 arquivos / 3856 testes, build) e `npm run coverage` (`src/ui`: 100% linhas/funções/declarações, 98,29% branches; `src/ui/shell`: 100% linhas/funções/declarações, 95,86% branches; `src/ui/vim`: 100% linhas/funções/declarações, 99,34% branches) verdes.
+- 2026-11-20 — Visual e E2E: capturas em `.batch/visual/shots/` geradas e inspecionadas no desktop (`1280×800`, menu, recolhido, partida com `WA`/`AC`, resultado com placar ICPC, Dados, Código, Texto e os três treinos de Vim) e no Pixel 7 (menu, gaveta aberta após aguardar os 150 ms da animação em `.batch/visual/audit.spec.ts`, partida e resultado). Layout fiel ao protótipo em `docs/architecture/shell/`, sem rolagem horizontal nem sobreposição; diferença menor no celular onde `0 resolvidas em 120 s` quebra `s` para a linha seguinte por causa do `--text-xl`. `npm run test:e2e` verde após a última edição de código (22/22).
+- 2026-11-20 — Verificações manuais pendentes para o dono: percorrer o menu, a gaveta e todas as telas no desktop e no celular.
+- 2026-11-20 — Docs: `ADR-T18-1` e `[[Shell]]` aceitos; task movida para `review`.

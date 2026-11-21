@@ -1,7 +1,7 @@
 ---
 id: ADR-T18-1
 title: Janela de editor com menu recolhível
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-20
 task: T18

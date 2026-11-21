@@ -1,6 +1,6 @@
 ---
 tags: [architecture]
-status: proposed
+status: accepted
 task: "[[T18 Reformulação gráfica]]"
 ---
 
