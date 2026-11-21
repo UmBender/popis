@@ -161,12 +161,9 @@ export function EditDrill({
   const planRef = useRef(plan);
   const box = useRef<HTMLTextAreaElement>(null);
 
-  const storedSamples = useMemo(
-    () => eventsToSamples(loadEvents(store), "vim.edit"),
-    [store, results],
+  const [storedSamples, setStoredSamples] = useState<readonly CommandSample[]>(() =>
+    eventsToSamples(loadEvents(store), "vim.edit"),
   );
-  const storedSamplesRef = useRef(storedSamples);
-  storedSamplesRef.current = storedSamples;
 
   const updatePlan = useCallback((next: PreviewPlan) => {
     planRef.current = next;
@@ -185,13 +182,13 @@ export function EditDrill({
 
   const samplesFor = useCallback(
     (round: EditRound): readonly CommandSample[] => [
-      ...storedSamplesRef.current,
+      ...storedSamples,
       ...round.results.map((r) => ({
         solution: r.reference,
         efficiency: Math.min(1, editEfficiency(r)),
       })),
     ],
-    [],
+    [storedSamples],
   );
 
   const isPreviewVisible = useCallback(
@@ -229,6 +226,7 @@ export function EditDrill({
         });
         recordEvents(store, editEvents(round, at), at);
         setResults(loadVimEditResults(store));
+        setStoredSamples(eventsToSamples(loadEvents(store), "vim.edit"));
       }
       show({ ...run, round });
     },

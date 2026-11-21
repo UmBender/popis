@@ -51,13 +51,13 @@ export function OptimalPreview({
               setActiveIndex(idx);
             },
             onMouseLeave: () => {
-              setActiveIndex((cur) => (cur === idx ? null : cur));
+              setActiveIndex(null);
             },
             onFocus: () => {
               setActiveIndex(idx);
             },
             onBlur: () => {
-              setActiveIndex((cur) => (cur === idx ? null : cur));
+              setActiveIndex(null);
             },
           };
           if (block.lessonId !== null) {
@@ -95,7 +95,7 @@ export function OptimalPreview({
           );
         })}
       </div>
-      {active?.description !== undefined && active.description !== null && (
+      {active !== undefined && active.description !== null && (
         <p className="vim-preview-desc" data-testid="vim-preview-desc">
           <code>{active.text}</code> — {active.description}
         </p>
@@ -153,7 +153,7 @@ export function LessonModal({ lessonId, onClose }: LessonModalProps): ReactNode 
         </ul>
         <ModalExample lesson={lesson} />
         <div className="actions">
-          <button type="button" className="primary" autoFocus onClick={onClose}>
+          <button type="button" autoFocus onClick={onClose}>
             Voltar para a rodada <kbd>Esc</kbd>
           </button>
         </div>

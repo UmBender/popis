@@ -20,6 +20,7 @@ import { generateEdit, type EditKind } from "../vim/drills/edit";
 import { generateTarget } from "../vim/drills/target";
 import { parseKeys } from "../vim/keys";
 import { AUTO_WINDOW, parseSolutionBlocks, type PreviewMode } from "../vim/preview";
+import { LessonModal } from "./vim/Preview";
 import { VimScreen } from "./VimScreen";
 
 const SEED = 21;
@@ -154,6 +155,8 @@ describe("VimScreen optimal preview — Motion (T21 AC-1..AC-6)", () => {
     expect(screen.getByTestId("vim-preview-desc").textContent).toContain(
       expectedBlocks[0]?.description ?? "",
     );
+    fireEvent.blur(blocks[0] as HTMLElement);
+    expect(screen.queryByTestId("vim-preview-desc")).toBeNull();
 
     // Multi-block solution shows waypoints without covering the target.
     if (expectedBlocks.length > 1) {
@@ -251,12 +254,23 @@ describe("VimScreen optimal preview — Motion (T21 AC-1..AC-6)", () => {
     expect(screen.getByTestId("vim-preview")).toBeTruthy();
     press(first.solution);
 
-    // Next target hides preview again and finishes unassisted.
+    // Next target hides preview again; going off-path then pressing Ctrl+P recalculates from current pos.
     expect(screen.queryByTestId("vim-preview")).toBeNull();
-    press(second.solution);
+    const wrong = second.solution.startsWith("j") ? "k" : "j";
+    press(wrong);
+    fireEvent.keyDown(box(), { key: "p", ctrlKey: true });
+    const recalc = within(screen.getByTestId("vim-preview"))
+      .getAllByTestId("vim-preview-block")
+      .map((b) => b.textContent ?? "")
+      .join("");
+    press(recalc);
+    // Third target finishes unassisted.
+    const third = generateTarget(SEED, 2, 4);
+    expect(screen.queryByTestId("vim-preview")).toBeNull();
+    press(third.solution);
 
     advance(31_000);
-    expect(screen.getByTestId("vim-with-preview").textContent).toBe("1");
+    expect(screen.getByTestId("vim-with-preview").textContent).toBe("2");
     expect(screen.getByTestId("vim-without-preview").textContent).toBe("1");
     expect(loadVimResults(store)[0]?.assisted).toBe(true);
   });
@@ -287,7 +301,9 @@ describe("VimScreen optimal preview — Motion (T21 AC-1..AC-6)", () => {
     const modal = screen.getByTestId("vim-lesson-modal");
     expect(modal.getAttribute("role")).toBe("dialog");
 
-    // Advancing 10 seconds while paused must NOT reduce remaining time.
+    // Advancing 10 seconds while paused must NOT reduce remaining time; keys and Ctrl+P are ignored.
+    press("l");
+    fireEvent.keyDown(box(), { key: "p", ctrlKey: true });
     advance(10_000);
     expect(screen.getByTestId("vim-time").textContent).toBe("25 s");
 
@@ -335,6 +351,9 @@ describe("VimScreen optimal preview — Edit (T21 AC-1..AC-6)", () => {
     );
     fireEvent.click(recalcBlocks[0] as HTMLElement);
     expect(screen.getByTestId("vim-lesson-modal")).toBeTruthy();
+    press("l");
+    fireEvent.keyDown(box(), { key: "p", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "a" });
     advance(8000);
     expect(screen.getByTestId("vim-time").textContent).toBe("26 s");
     fireEvent.keyDown(window, { key: "Escape" });
@@ -368,5 +387,26 @@ describe("VimScreen optimal preview — Edit (T21 AC-1..AC-6)", () => {
     const summary = screen.getByTestId("vim-summary").textContent ?? "";
     expect(summary).toContain("melhor 5 edições");
     expect(summary).toContain("1 rodada assistida fora");
+  });
+
+  it("Edit recalculates dirty plan on Ctrl+P and on 5 s stuck idle", () => {
+    renderVim(editStore(["delete-line"], 60, "stuck"));
+    // Move off-path while preview is hidden, then wait 5 s for stuck idle to trigger recalculation.
+    press("j");
+    expect(screen.queryByTestId("vim-preview")).toBeNull();
+    advance(5100);
+    expect(screen.getByTestId("vim-preview")).toBeTruthy();
+
+    // Skip to edit 1, move off-path while hidden, then trigger Ctrl+P to recalculate dirty plan.
+    fireEvent.keyDown(box(), { key: "Enter", ctrlKey: true });
+    expect(screen.queryByTestId("vim-preview")).toBeNull();
+    press("j");
+    fireEvent.keyDown(box(), { key: "p", ctrlKey: true });
+    expect(screen.getByTestId("vim-preview")).toBeTruthy();
+  });
+
+  it("LessonModal renders null for an unknown lesson id", () => {
+    const { container } = render(<LessonModal lessonId="nonexistent" onClose={vi.fn()} />);
+    expect(container.firstChild).toBeNull();
   });
 });

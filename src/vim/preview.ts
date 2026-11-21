@@ -78,11 +78,7 @@ const SIMPLE_EDIT_COMMANDS = new Set<string>([
   "<C-x>",
 ]);
 const FIND_COMMANDS = new Set<string>(["f", "F", "t", "T"]);
-const MOTION_COMMAND_KEYS = new Set<string>([
-  ..."hjklwbeWBE0^$G{}%;,nN*#fFtT/?",
-  "ge",
-  "gg",
-]);
+const MOTION_COMMAND_KEYS = new Set<string>([..."hjklwbeWBE0^$G{}%;,nN*#fFtT/?", "ge", "gg"]);
 
 const OBJECT_MAP: Readonly<Record<string, string>> = {
   iw: "iw",
@@ -142,7 +138,10 @@ function cmdlineHelpKey(text: string): string {
   return ":noh";
 }
 
-function motionExtent(keys: readonly Key[], at: number): {
+function motionExtent(
+  keys: readonly Key[],
+  at: number,
+): {
   readonly end: number;
   readonly name: string;
 } {

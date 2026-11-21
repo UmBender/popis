@@ -209,5 +209,14 @@ describe("edit round", () => {
     expect(round.pausedAt).toBeNull();
     expect(editRemainingMs(round, 20_000)).toBe(25_000);
     expect(editRemainingMs(round, 25_000)).toBe(20_000);
+
+    // Idempotent guards and pausing before the first key.
+    const fresh = startEditRound(config(["delete-line"], 30_000));
+    expect(editIdleMs(fresh, 5000)).toBe(0);
+    expect(resumeEditRound(fresh, 5000)).toBe(fresh);
+    const pausedFresh = pauseEditRound(fresh, 1000);
+    expect(pauseEditRound(pausedFresh, 2000)).toBe(pausedFresh);
+    expect(resumeEditRound(pausedFresh, 4000).startedAt).toBeNull();
+    expect(markEditAssisted(markEditAssisted(fresh))).toEqual(markEditAssisted(fresh));
   });
 });

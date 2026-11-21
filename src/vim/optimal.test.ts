@@ -145,6 +145,33 @@ describe("recalculateOptimal (T21 AC-2, AC-3)", () => {
       expect(sol.cost).toBeGreaterThan(0);
       expect(replay(s, sol.keys, level)).toEqual(target);
     }
+    // Going back up to line 0 col 10 at level 6 hits gg, to bottom col 10 hits G, and to col 0 at level 3 hits 0.
+    const fromBottom = createState(lines, { line: 11, col: 15 });
+    const toTop = recalculateOptimal(fromBottom, { line: 0, col: 10 }, 6);
+    expect(replay(fromBottom, toTop.keys, 6)).toEqual({ line: 0, col: 10 });
+    const toBottomMid = recalculateOptimal(s, { line: 11, col: 10 }, 6);
+    expect(replay(s, toBottomMid.keys, 6)).toEqual({ line: 11, col: 10 });
+    const toCol0 = recalculateOptimal(
+      createState(lines, { line: 0, col: 15 }),
+      { line: 11, col: 0 },
+      3,
+    );
+    expect(replay(createState(lines, { line: 0, col: 15 }), toCol0.keys, 3)).toEqual({
+      line: 11,
+      col: 0,
+    });
+    const verticalOnly = recalculateOptimal(s, { line: 11, col: 0 }, 1);
+    expect(replay(s, verticalOnly.keys, 1)).toEqual({ line: 11, col: 0 });
+    // Strips pending keys before recalculating, and handles mid-file line jumps & level-7 direct search.
+    const withPending = { ...fromBottom, pending: ["2"] };
+    const toMid = recalculateOptimal(withPending, { line: 5, col: 12 }, 6);
+    expect(replay(fromBottom, toMid.keys, 6)).toEqual({ line: 5, col: 12 });
+    const uniqueLines = Array.from({ length: 12 }, (_, i) =>
+      i === 8 ? "0123456789XYabcdefgh" : "0123456789abcdefghij",
+    );
+    const searchFrom = createState(uniqueLines, { line: 0, col: 0 });
+    const searchSol = recalculateOptimal(searchFrom, { line: 8, col: 10 }, 7);
+    expect(replay(searchFrom, searchSol.keys, 7)).toEqual({ line: 8, col: 10 });
   });
 
   it("recalculateOptimal answers in under 16 ms on level 7 worst-case corpus snippets", () => {

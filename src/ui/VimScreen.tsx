@@ -155,12 +155,9 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
   const planRef = useRef(plan);
   const box = useRef<HTMLTextAreaElement>(null);
 
-  const storedSamples = useMemo(
-    () => eventsToSamples(loadEvents(store), "vim.motion"),
-    [store, results],
+  const [storedSamples, setStoredSamples] = useState<readonly CommandSample[]>(() =>
+    eventsToSamples(loadEvents(store), "vim.motion"),
   );
-  const storedSamplesRef = useRef(storedSamples);
-  storedSamplesRef.current = storedSamples;
 
   const updateCmdline = (next: string | null) => {
     cmdlineRef.current = next;
@@ -184,10 +181,10 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
 
   const samplesFor = useCallback(
     (round: Round): readonly CommandSample[] => [
-      ...storedSamplesRef.current,
+      ...storedSamples,
       ...round.results.map((r) => ({ solution: r.solution, efficiency: targetEfficiency(r) })),
     ],
-    [],
+    [storedSamples],
   );
 
   const isPreviewVisible = useCallback(
@@ -225,6 +222,7 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
         });
         recordEvents(store, motionEvents(round, at), at);
         setResults(loadVimResults(store));
+        setStoredSamples(eventsToSamples(loadEvents(store), "vim.motion"));
       }
       show({ ...run, round });
     },
@@ -415,9 +413,17 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning, onLearn }: Prop
   const waypointsByLine = useMemo(() => {
     const map = new Map<number, Set<number>>();
     if (!previewVisible) return map;
-    const startIdx = previewBlocks.findIndex((b) => b.endKeyIndex > plan.matchedKeys);
-    if (startIdx < 0) return map;
-    for (const pos of motionWaypoints(vim, previewBlocks, startIdx, target.target, settings.level)) {
+    const startIdx = Math.max(
+      0,
+      previewBlocks.findIndex((b) => b.endKeyIndex > plan.matchedKeys),
+    );
+    for (const pos of motionWaypoints(
+      vim,
+      previewBlocks,
+      startIdx,
+      target.target,
+      settings.level,
+    )) {
       let cols = map.get(pos.line);
       if (cols === undefined) {
         cols = new Set<number>();

@@ -77,7 +77,10 @@ describe("parseSolutionBlocks (T21 AC-2, AC-6)", () => {
       const edit = generateEdit(17, 0, [kind]);
       const blocks = parseSolutionBlocks(edit.reference);
       expect(blocks.length, kind).toBeGreaterThan(0);
-      expect(blocks.flatMap((b) => b.keys), kind).toEqual(parseKeys(edit.reference));
+      expect(
+        blocks.flatMap((b) => b.keys),
+        kind,
+      ).toEqual(parseKeys(edit.reference));
       const withLessons = blocks.filter((b) => b.lessonId !== null);
       expect(withLessons.length, kind).toBeGreaterThan(0);
       for (const b of withLessons) {
@@ -105,6 +108,23 @@ describe("parseSolutionBlocks (T21 AC-2, AC-6)", () => {
     expect(macroBlocks.flatMap((b) => b.keys)).toEqual(parseKeys("qayyp<C-a>q3@a"));
     expect(macroBlocks[0]?.helpKey).toBe("q");
     expect(macroBlocks.at(-1)?.helpKey).toBe("9@a");
+
+    // Additional command forms: :noh, uppercase/numbered registers, @@, @a, visual c/I, unterminated insert/search/cmdline.
+    expect(parseSolutionBlocks(":noh<CR>")[0]?.helpKey).toBe(":noh");
+    expect(parseSolutionBlocks('"Ayy"1p@@')[0]?.helpKey).toBe('"A');
+    expect(parseSolutionBlocks('"1p')[0]?.helpKey).toBe('"1');
+    expect(parseSolutionBlocks("@@")[0]?.helpKey).toBe("@@");
+    expect(parseSolutionBlocks("@a")[0]?.helpKey).toBe("@a");
+    expect(parseSolutionBlocks("vcx<Esc>").map((b) => b.text)).toEqual(["v", "c", "x<Esc>"]);
+    expect(parseSolutionBlocks("vIx<Esc>").map((b) => b.text)).toEqual(["v", "I", "x<Esc>"]);
+    expect(parseSolutionBlocks("iabc").map((b) => b.text)).toEqual(["i", "abc"]);
+    expect(parseSolutionBlocks("/abc")[0]?.helpKey).toBe("/");
+    expect(parseSolutionBlocks("vi{:s/a/b/g")[2]?.helpKey).toBe(":s");
+    expect(parseSolutionBlocks(":s/a/b/g")[0]?.helpKey).toBe(":s");
+    expect(parseSolutionBlocks("d>>")[0]?.helpKey).toBe("d");
+    expect(parseSolutionBlocks("<lt><lt>")[0]?.helpKey).toBe("<<");
+    expect(parseSolutionBlocks(">>")[0]?.helpKey).toBe(">>");
+    expect(parseSolutionBlocks("cizx<Esc>")[0]?.helpKey).toBe("iw");
   });
 });
 
@@ -125,7 +145,9 @@ describe("motionWaypoints (T21 AC-2)", () => {
     expect(points).not.toContainEqual(target);
     // Starting from block 1 after moving to col 4 leaves only col 8.
     const afterFirst = pressKey(state, "w", 2).state;
-    expect(motionWaypoints(afterFirst, exactBlocks, 1, target, 2)).toEqual([{ line: 0, col: 8 }]);
+    expect(motionWaypoints({ ...afterFirst, pending: ["2"] }, exactBlocks, 1, target, 2)).toEqual([
+      { line: 0, col: 8 },
+    ]);
     // Verify blocks variable used.
     expect(blocks.length).toBe(3);
   });
@@ -168,9 +190,9 @@ describe("shouldShowPreview and commandEfficiencies (T21 AC-1, AC-5)", () => {
       efficiency: 0.9,
     }));
     expect(shouldShowPreview({ ...base, mode: "auto", history: mastered })).toBe(false);
-    expect(
-      shouldShowPreview({ ...base, mode: "auto", history: mastered, keysTyped: 6 }),
-    ).toBe(true);
+    expect(shouldShowPreview({ ...base, mode: "auto", history: mastered, keysTyped: 6 })).toBe(
+      true,
+    );
     expect(shouldShowPreview({ ...base, mode: "auto", history: mastered, idleMs: 5000 })).toBe(
       true,
     );
@@ -215,6 +237,15 @@ describe("recalculateEditPreview (T21 AC-2, AC-3)", () => {
     let replay = state;
     for (const key of parseKeys(plan)) replay = pressEditKey(replay, key);
     expect(replay.lines).toEqual(edit.after);
+
+    // When more than 6 edits diverge from original buffer, falls back to reference.
+    let diverged = createState(edit.lines, edit.start);
+    for (let i = 0; i < 8; i++) {
+      diverged = pressEditKey(diverged, "i");
+      diverged = pressEditKey(diverged, "x");
+      diverged = pressEditKey(diverged, "<Esc>");
+    }
+    expect(recalculateEditPreview(diverged, edit)).toBe(edit.reference);
   });
 
   it("recalculateEditPreview answers in under 16 ms on the largest corpus edits", () => {
@@ -280,6 +311,15 @@ describe("assistedSplit and eventsToSamples (T21 AC-1, AC-4)", () => {
           ok: true,
           timeMs: 1000,
           extra: { seed: 2, i: 0, keys: 2, min: 2, sol: "dd", skipped: false, snippet: "s" },
+        },
+        {
+          at: 4,
+          drill: "vim.motion",
+          config: "L4",
+          kc: "w",
+          ok: true,
+          timeMs: 500,
+          extra: { seed: 3, i: 0 },
         },
       ],
       "vim.motion",

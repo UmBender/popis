@@ -188,6 +188,16 @@ describe("round", () => {
     // Finishing after resuming excludes the 14 s paused interval from target timeMs.
     round = typeKeys(round, round.target.solution, 22_000);
     expect(round.results[0]?.timeMs).toBe(7000);
+
+    // Idempotent guards and pausing before the first key keep null timestamps.
+    const fresh = startRound(CONFIG);
+    expect(idleMs(fresh, 5000)).toBe(0);
+    expect(resumeRound(fresh, 5000)).toBe(fresh);
+    const pausedFresh = pauseRound(fresh, 1000);
+    expect(pauseRound(pausedFresh, 2000)).toBe(pausedFresh);
+    const resumedFresh = resumeRound(pausedFresh, 4000);
+    expect(resumedFresh.startedAt).toBeNull();
+    expect(markAssisted(markAssisted(fresh))).toEqual(markAssisted(fresh));
   });
 });
 

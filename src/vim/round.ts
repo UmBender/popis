@@ -198,6 +198,5 @@ export function resumeRound(round: Round, now: number): Round {
 export function idleMs(round: Round, now: number): number {
   if (round.finished || round.startedAt === null) return 0;
   const effectiveNow = round.pausedAt ?? now;
-  const since = round.lastActivityAt ?? round.targetStartedAt ?? effectiveNow;
-  return Math.max(0, effectiveNow - since);
+  return Math.max(0, effectiveNow - (round.lastActivityAt as number));
 }

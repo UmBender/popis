@@ -215,6 +215,5 @@ export function resumeEditRound(round: EditRound, now: number): EditRound {
 export function editIdleMs(round: EditRound, now: number): number {
   if (round.finished || round.startedAt === null) return 0;
   const effectiveNow = round.pausedAt ?? now;
-  const since = round.lastActivityAt ?? round.targetStartedAt ?? effectiveNow;
-  return Math.max(0, effectiveNow - since);
+  return Math.max(0, effectiveNow - (round.lastActivityAt as number));
 }
