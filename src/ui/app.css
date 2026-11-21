@@ -188,6 +188,10 @@ button.burger {
   max-width: 80ch;
 }
 
+.shell-main > .screen.vim-edit {
+  max-width: 120ch;
+}
+
 .shell-status {
   display: flex;
   flex-wrap: wrap;
@@ -285,7 +289,7 @@ button.burger {
   gap: var(--space-3);
 }
 
-.panel-title h2 {
+.panel-title h1 {
   margin: 0 0 var(--space-1);
   font-size: var(--text-xl);
   line-height: 1.2;
@@ -458,6 +462,69 @@ button:disabled {
 
 .game {
   min-height: calc(100vh - 9rem);
+}
+
+.round-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-2);
+  color: var(--muted);
+}
+
+.round-metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.round-label {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.round-value {
+  color: var(--text);
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.round-value.accent {
+  color: var(--accent);
+}
+
+.round-value.warning {
+  color: var(--warning);
+}
+
+.options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.ranges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.range-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+button.link {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent);
+  text-decoration: underline;
 }
 
 .game .status {
@@ -796,7 +863,15 @@ th {
     display: none;
   }
 
-  .panel-title h2 {
+  .panel-title h1 {
+    font-size: var(--text-lg);
+  }
+
+  .round-bar {
+    margin-bottom: var(--space-1);
+  }
+
+  .round-value {
     font-size: var(--text-lg);
   }
 
@@ -805,9 +880,37 @@ th {
   }
 
   .problem {
-    gap: var(--space-2) var(--space-3);
-    padding: var(--space-3) 0 var(--space-2);
-    font-size: var(--text-xl);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+  }
+
+  .problem .prompt {
+    font-size: var(--text-xxl);
+  }
+
+  .problem .prompt.long {
+    font-size: clamp(1.25rem, 5.5vw, var(--text-xl));
+  }
+
+  .problem .prompt.code {
+    font-size: 1rem;
+  }
+
+  .problem .equals {
+    display: none;
+  }
+
+  .ranges {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+    width: 100%;
+  }
+
+  .vim-buffers {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .answer,
@@ -909,9 +1012,16 @@ th {
 
 .text-options {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 0.5rem 0.75rem;
   align-items: center;
+}
+
+.text-options select,
+.vim-options select {
+  width: auto;
+  max-width: 100%;
+  justify-self: start;
 }
 
 .text-flags {
@@ -1032,9 +1142,46 @@ th {
 
 .vim-options {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 0.5rem 0.75rem;
   align-items: center;
+}
+
+.vim-options-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.vim-kinds-details summary,
+.vim-earlier summary {
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.vim-earlier {
+  margin-top: var(--space-2);
+}
+
+.vim-kind-family {
+  margin-top: var(--space-2);
+}
+
+.vim-kind-family h3 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.vim-buffers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.vim-buffers .vim-after {
+  margin: 0;
 }
 
 .vim-commands ul,

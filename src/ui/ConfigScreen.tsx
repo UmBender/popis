@@ -10,8 +10,8 @@ import type { SumsKind } from "../gen/sums";
 import { MODES, type Mode } from "../modes";
 import { DURATIONS_S } from "../session/engine";
 import type { StoredSettings } from "../storage/history";
+import { RoundHistory } from "./shell/History";
 import { PanelTitle } from "./shell/panel";
-import { sparkline } from "./verdicts";
 
 const ERROR_MESSAGES: Readonly<Record<string, string>> = {
   "no-operation": "Escolha pelo menos uma operação.",
@@ -219,7 +219,7 @@ export function ConfigScreen({
         )}
       </div>
 
-      <History scores={history} />
+      <RoundHistory scores={history} testId="mode-history" sparkTestId="mode-spark" />
 
       <div className="actions">
         <button
@@ -232,36 +232,6 @@ export function ConfigScreen({
         </button>
       </div>
     </form>
-  );
-}
-
-/** How many past rounds the mode panel shows. */
-const HISTORY_ROUNDS = 10;
-
-/** "Últimas 10 rodadas ▁▃▄ melhor 52 média 46", or an invitation. */
-function History({ scores }: { readonly scores: readonly number[] }): ReactNode {
-  const last = scores.slice(-HISTORY_ROUNDS);
-  if (last.length === 0) {
-    return (
-      <p className="history muted" data-panel="history" data-testid="mode-history">
-        Nenhuma rodada nesta configuração. Enter começa a primeira.
-      </p>
-    );
-  }
-  const mean = last.reduce((a, b) => a + b, 0) / last.length;
-  return (
-    <p className="history muted" data-panel="history" data-testid="mode-history">
-      <span>{`Últimas ${String(HISTORY_ROUNDS)} rodadas`}</span>{" "}
-      <span className="spark" data-testid="mode-spark">
-        {sparkline(last)}
-      </span>{" "}
-      <span>
-        melhor <strong>{Math.max(...last)}</strong>
-      </span>{" "}
-      <span>
-        média <strong>{Math.round(mean)}</strong>
-      </span>
-    </p>
   );
 }
 
@@ -311,10 +281,15 @@ function ArithmeticFields({
 
   const rangePair = (name: string, left: RangeKey, right: RangeKey, symbol: string) => (
     <span className="ranges">
-      ({bound(left, "min", `${name}: mínimo à esquerda`)} a{" "}
-      {bound(left, "max", `${name}: máximo à esquerda`)}) {symbol} (
-      {bound(right, "min", `${name}: mínimo à direita`)} a{" "}
-      {bound(right, "max", `${name}: máximo à direita`)})
+      <span className="range-group">
+        ({bound(left, "min", `${name}: mínimo à esquerda`)} a{" "}
+        {bound(left, "max", `${name}: máximo à esquerda`)})
+      </span>{" "}
+      <span className="range-op">{symbol}</span>{" "}
+      <span className="range-group">
+        ({bound(right, "min", `${name}: mínimo à direita`)} a{" "}
+        {bound(right, "max", `${name}: máximo à direita`)})
+      </span>
     </span>
   );
 

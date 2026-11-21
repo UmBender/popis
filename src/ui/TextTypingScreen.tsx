@@ -16,7 +16,6 @@ import {
   loadTextResults,
   loadTextSettings,
   saveTextSettings,
-  textSummary,
   type TextResult,
 } from "../storage/text-typing";
 import {
@@ -47,7 +46,11 @@ import {
 } from "../typing/words-engine";
 import { LIST_SIZES, TEXT_LANGUAGE_LABELS, TEXT_LANGUAGES } from "../typing/words";
 import { seconds } from "./format";
+import { matchTrainingKey } from "./keys";
+import { RoundHistory } from "./shell/History";
 import { PanelTitle, useRunning } from "./shell/panel";
+import { Result } from "./shell/Result";
+import { RoundBar } from "./shell/RoundBar";
 
 type Props = {
   readonly clock: Clock;
@@ -186,9 +189,10 @@ export function TextTypingScreen({ clock, store, newSeed, onBack, onRunning }: P
     show(startRun(nextSettings, newSeed(), latest.current.run + 1));
   };
 
-  const restart = () => {
+  const exit = () => {
     const run = latest.current;
-    show(startRun(run.settings, run.seed, run.run + 1));
+    show(startRun(run.settings, run.seed, run.run));
+    box.current?.blur();
   };
 
   /** Applies an option from the form, validated like stored settings. */
@@ -207,7 +211,8 @@ export function TextTypingScreen({ clock, store, newSeed, onBack, onRunning }: P
 
   const view = wordView(state);
   const typedInCurrent = [...(state.inputs[state.current] ?? "")].length;
-  const summary = textSummary(results, textConfigKey(settings));
+  const configKey = textConfigKey(settings);
+  const historyScores = results.filter((r) => r.config === configKey).map((r) => r.wpm);
   const quote = settings.source === "quote";
   const remainingS = Math.ceil(
     state.startedAt === null || state.timeLimitMs === null
@@ -215,15 +220,14 @@ export function TextTypingScreen({ clock, store, newSeed, onBack, onRunning }: P
       : Math.max(0, state.startedAt + state.timeLimitMs - Math.max(now, state.startedAt)) / 1000,
   );
   const progress = timed
-    ? String(remainingS)
+    ? `${String(remainingS)} s`
     : `${String(finished ? state.words.length : state.current)}/${String(state.words.length)}`;
 
   return (
     <div className="screen text-typing">
       <PanelTitle title="Texto">Digite as palavras; o tempo começa na primeira tecla.</PanelTitle>
 
-      <fieldset className="text-options" data-panel="options">
-        <legend>Opções</legend>
+      <div className="text-options" data-panel="options" role="group" aria-label="Opções">
         <label htmlFor="text-source">Tipo</label>
         <select
           id="text-source"
@@ -334,12 +338,24 @@ export function TextTypingScreen({ clock, store, newSeed, onBack, onRunning }: P
             }}
           />
         </div>
-      </fieldset>
+      </div>
 
       <div className="text-area" data-panel="area">
-        <p className="text-progress" data-testid="text-progress">
-          {progress}
-        </p>
+        <RoundBar
+          metrics={
+            timed
+              ? [
+                  {
+                    label: "tempo",
+                    value: progress,
+                    testId: "text-progress",
+                    tone: "accent",
+                  },
+                  { label: "palavras", value: state.current },
+                ]
+              : [{ label: "palavras", value: progress, testId: "text-progress", tone: "accent" }]
+          }
+        />
 
         <div className="typing-area">
           <textarea
@@ -364,6 +380,17 @@ export function TextTypingScreen({ clock, store, newSeed, onBack, onRunning }: P
               typed(text);
             }}
             onKeyDown={(e) => {
+              const action = matchTrainingKey(e);
+              if (action === "exit") {
+                e.preventDefault();
+                exit();
+                return;
+              }
+              if (action === "skip" || action === "restart") {
+                e.preventDefault();
+                next();
+                return;
+              }
               switch (e.key) {
                 case "Backspace":
                   e.preventDefault();
@@ -375,11 +402,6 @@ export function TextTypingScreen({ clock, store, newSeed, onBack, onRunning }: P
                   break;
                 case "Tab":
                   e.preventDefault();
-                  restart();
-                  break;
-                case "Escape":
-                  e.preventDefault();
-                  next();
                   break;
                 case "Enter":
                   e.preventDefault();
@@ -408,7 +430,7 @@ export function TextTypingScreen({ clock, store, newSeed, onBack, onRunning }: P
           </div>
         </div>
 
-        {finished ? (
+        {finished && (
           <TextResults
             state={state}
             settings={settings}
@@ -417,17 +439,10 @@ export function TextTypingScreen({ clock, store, newSeed, onBack, onRunning }: P
               next();
             }}
           />
-        ) : (
-          <p className="muted hint">Esc troca o texto · Tab recomeça.</p>
         )}
       </div>
 
-      <p data-testid="text-summary" className="muted typing-summary" data-panel="history">
-        {summary === null
-          ? "Sem resultados nesta configuração."
-          : `melhor ${String(Math.round(summary.best))} WPM · ` +
-            `média dos últimos 10: ${String(Math.round(summary.recentMean))} WPM`}
-      </p>
+      <RoundHistory scores={historyScores} unit="WPM" testId="text-summary" />
 
       <div className="actions">
         <button type="button" onClick={onBack}>
@@ -531,23 +546,29 @@ function TextResults({
   const stats = wordsStats(state);
   const chars = [stats.correct, stats.incorrect, stats.extra, stats.missed].map(String).join("/");
   return (
-    <div className="typing-results">
-      <p className="score">
-        <strong data-testid="text-wpm">{Math.round(stats.wpm)}</strong> WPM · bruto{" "}
-        <span data-testid="text-raw">{Math.round(stats.raw)}</span> · precisão{" "}
-        <span data-testid="text-accuracy">{`${String(Math.round(stats.accuracy * 100))}%`}</span>
-      </p>
-      <p className="muted">
-        caracteres (certos/errados/a mais/faltando) <span data-testid="text-chars">{chars}</span> ·
-        tempo <span data-testid="text-time">{seconds(stats.timeMs)}</span>
-      </p>
-      <p className="seed">
-        <span data-testid="text-config">{textConfigLabel(settings)}</span> · seed{" "}
-        <span data-testid="text-seed">{seed}</span>
-      </p>
-      <button type="button" className="primary" autoFocus onClick={onNext}>
-        Próximo
-      </button>
-    </div>
+    <Result
+      headline={
+        <>
+          <strong data-testid="text-wpm">{Math.round(stats.wpm)}</strong> WPM
+        </>
+      }
+      pairs={[
+        { label: "bruto", value: Math.round(stats.raw), testId: "text-raw" },
+        {
+          label: "precisão",
+          value: `${String(Math.round(stats.accuracy * 100))}%`,
+          testId: "text-accuracy",
+        },
+        { label: "caracteres", value: chars, testId: "text-chars" },
+        { label: "tempo", value: seconds(stats.timeMs), testId: "text-time" },
+      ]}
+      seed={
+        <>
+          <span data-testid="text-config">{textConfigLabel(settings)}</span> · seed{" "}
+          <span data-testid="text-seed">{seed}</span>
+        </>
+      }
+      onPlayAgain={onNext}
+    />
   );
 }

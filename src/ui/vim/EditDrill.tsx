@@ -8,7 +8,6 @@ import {
   loadVimEditResults,
   parseVimEditSettings,
   saveVimEditSettings,
-  vimEditSummary,
   type VimEditSettings,
 } from "../../storage/vim";
 import { diffText } from "../../vim/diff";
@@ -33,7 +32,11 @@ import { formatKeys, keyFromEvent, type Key } from "../../vim/keys";
 import { ROUND_DURATIONS_S } from "../../vim/round";
 import type { VimState } from "../../vim/state";
 import { selectionRange } from "../../vim/visual";
+import { matchTrainingKey } from "../keys";
+import { RoundHistory } from "../shell/History";
 import { PanelTitle, Reference, useRunning } from "../shell/panel";
+import { Result } from "../shell/Result";
+import { RoundBar } from "../shell/RoundBar";
 
 type Props = {
   readonly clock: Clock;
@@ -46,7 +49,19 @@ type Props = {
   readonly onSettings: (settings: VimEditSettings) => void;
   /** Told when a round starts and ends, so the window hides the tree (T18). */
   readonly onRunning?: (running: boolean) => void;
+  /** Switches to the Vim Learn screen (T19 AC-7). */
+  readonly onLearn?: () => void;
 };
+
+const EDIT_FAMILIES: readonly {
+  readonly title: string;
+  readonly kinds: readonly EditKind[];
+  readonly lockedGroup?: boolean;
+}[] = [
+  { title: "Edição", kinds: EDIT_KINDS.slice(0, 18) },
+  { title: "Visual e blocos", kinds: EDIT_KINDS.slice(18) },
+  { title: "Registradores e macros", kinds: REGISTER_KINDS, lockedGroup: true },
+];
 
 const TICK_MS = 100;
 
@@ -101,6 +116,7 @@ export function EditDrill({
   settings,
   onSettings,
   onRunning,
+  onLearn,
 }: Props): ReactNode {
   const [unlocked] = useState(() => loadUnlocked(store));
   const [current, setCurrent] = useState<Run>(() => newRun(settings, unlocked, newSeed(), 0));
@@ -161,7 +177,18 @@ export function EditDrill({
     };
   }, [apply, clock, running]);
 
+  const exit = () => {
+    const run = latest.current;
+    show(newRun(run.settings, unlocked, run.round.config.seed, run.run));
+    box.current?.blur();
+  };
+
   const feed = (key: Key) => {
+    const { vim } = latest.current.round;
+    if (vim.mode === "cmdline" && key === "<CR>" && vim.cmdline?.trim() === "q") {
+      exit();
+      return;
+    }
     apply(pressEditRoundKey(latest.current.round, key, clock.now()));
   };
 
@@ -195,19 +222,22 @@ export function EditDrill({
     () => diffText(vim.lines.join("\n"), target.after.join("\n")),
     [vim.lines, target.after],
   );
-  const summary = vimEditSummary(results, current.settings.durationS);
+  const historyScores = results
+    .filter((r) => r.durationS === current.settings.durationS)
+    .map((r) => r.reached);
   const remainingS = Math.ceil(
     editRemainingMs(round, Math.max(now, round.startedAt ?? now)) / 1000,
   );
+  const reached = round.results.filter((r) => !r.skipped).length;
   const insert = vim.mode === "insert";
+  const hasLocked = REGISTER_KINDS.some((kind) => !unlocked.includes(kind));
 
   return (
-    <div className="screen vim">
-      <PanelTitle title="Vim">Deixe o texto igual ao depois com o mínimo de teclas.</PanelTitle>
+    <div className="screen vim vim-edit">
+      <PanelTitle title="Edição">Deixe o texto igual ao depois com o mínimo de teclas.</PanelTitle>
 
       <div className="vim-options-block" data-panel="options">
-        <fieldset className="vim-options">
-          <legend>Opções</legend>
+        <div className="vim-options" role="group" aria-label="Opções">
           <label htmlFor="vim-duration">Duração</label>
           <select
             id="vim-duration"
@@ -222,34 +252,53 @@ export function EditDrill({
               </option>
             ))}
           </select>
-        </fieldset>
+        </div>
 
-        <fieldset>
-          <legend>Tipos de edição</legend>
-          <div className="vim-kinds">
-            {ALL_EDIT_KINDS.map((kind) => {
-              const locked = isRegisterKind(kind) && !unlocked.includes(kind);
-              const on = !locked && current.settings.kinds.includes(kind);
-              const only = on && playable(current.settings.kinds, unlocked).length === 1;
-              return (
-                <span key={kind} className="vim-kind">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={on}
-                      disabled={locked || only}
-                      onChange={(e) => {
-                        toggleKind(kind, e.target.checked);
-                      }}
-                    />
-                    {EDIT_KIND_LABELS[kind]}
-                  </label>
-                  {locked && <span className="muted"> (libere em Aprender)</span>}
-                </span>
-              );
-            })}
-          </div>
-        </fieldset>
+        <details className="vim-kinds-details" data-testid="vim-kinds-details">
+          <summary>Tipos de edição</summary>
+          {EDIT_FAMILIES.map((family) => (
+            <div key={family.title} className="vim-kind-family">
+              <h3>{family.title}</h3>
+              {family.lockedGroup && hasLocked && (
+                <p className="muted" data-testid="vim-locked-notice">
+                  Alguns tipos são liberados em{" "}
+                  <button
+                    type="button"
+                    className="link"
+                    onClick={() => {
+                      onLearn?.();
+                    }}
+                  >
+                    Aprender
+                  </button>
+                  .
+                </p>
+              )}
+              <div className="vim-kinds">
+                {family.kinds.map((kind) => {
+                  const locked = isRegisterKind(kind) && !unlocked.includes(kind);
+                  const on = !locked && current.settings.kinds.includes(kind);
+                  const only = on && playable(current.settings.kinds, unlocked).length === 1;
+                  return (
+                    <span key={kind} className="vim-kind">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          disabled={locked || only}
+                          onChange={(e) => {
+                            toggleKind(kind, e.target.checked);
+                          }}
+                        />
+                        {EDIT_KIND_LABELS[kind]}
+                      </label>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </details>
       </div>
 
       <div className="typing-area" data-panel="area">
@@ -276,9 +325,15 @@ export function EditDrill({
           }}
           onKeyDown={(e) => {
             if (e.nativeEvent.isComposing) return;
-            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+            const action = matchTrainingKey(e, { vim: true });
+            if (action === "skip") {
               e.preventDefault();
               apply(skipEdit(latest.current.round, clock.now()));
+              return;
+            }
+            if (action === "restart") {
+              e.preventDefault();
+              restart();
               return;
             }
             const key = keyFromEvent(e);
@@ -299,29 +354,39 @@ export function EditDrill({
           />
         ) : (
           <>
-            <p className="vim-time" data-testid="vim-time">
-              {remainingS}
-            </p>
-            <pre
-              className="vim-code"
-              data-testid="vim-code"
-              data-edit-index={target.index}
-              onClick={() => {
-                box.current?.focus();
-              }}
-            >
-              <Buffer
-                lines={vim.lines}
-                mask={masks.aMask}
-                mark="vim-diff-del"
-                cursor={vim.mode === "cmdline" ? null : vim.cursor}
-                insert={insert}
-                selection={(line) => selectionRange(vim, line)}
-              />
-            </pre>
-            <pre className="vim-after" data-testid="vim-after" data-reference={target.reference}>
-              <Buffer lines={target.after} mask={masks.bMask} mark="vim-diff-add" cursor={null} />
-            </pre>
+            <RoundBar
+              metrics={[
+                {
+                  label: "tempo",
+                  value: `${String(remainingS)} s`,
+                  testId: "vim-time",
+                  tone: "accent",
+                },
+                { label: "edições", value: reached },
+              ]}
+            />
+            <div className="vim-buffers">
+              <pre
+                className="vim-code"
+                data-testid="vim-code"
+                data-edit-index={target.index}
+                onClick={() => {
+                  box.current?.focus();
+                }}
+              >
+                <Buffer
+                  lines={vim.lines}
+                  mask={masks.aMask}
+                  mark="vim-diff-del"
+                  cursor={vim.mode === "cmdline" ? null : vim.cursor}
+                  insert={insert}
+                  selection={(line) => selectionRange(vim, line)}
+                />
+              </pre>
+              <pre className="vim-after" data-testid="vim-after" data-reference={target.reference}>
+                <Buffer lines={target.after} mask={masks.bMask} mark="vim-diff-add" cursor={null} />
+              </pre>
+            </div>
             <p className="vim-status" data-testid="vim-status">
               {vim.mode === "cmdline" ? (
                 <span className="vim-pending">{`:${vim.cmdline ?? ""}`}</span>
@@ -337,17 +402,11 @@ export function EditDrill({
             </p>
             <Registers vim={vim} />
             {round.last !== null && <LastEdit result={round.last} />}
-            <p className="muted hint">Ctrl+Enter pula a edição · Esc volta ao modo normal.</p>
           </>
         )}
       </div>
 
-      <p data-testid="vim-summary" className="muted typing-summary" data-panel="history">
-        {summary === null
-          ? "Sem resultados nesta configuração."
-          : `melhor ${String(Math.round(summary.best))} edições · ` +
-            `média dos últimos 10: ${String(Math.round(summary.recentMean))} edições`}
-      </p>
+      <RoundHistory scores={historyScores} unit="edições" testId="vim-summary" />
 
       <Reference id="vim-edit-commands" title="Comandos" className="vim-commands">
         <ul>
@@ -378,8 +437,13 @@ export function EditDrill({
 function Registers({ vim }: { readonly vim: VimState }): ReactNode {
   const lines = listRegisters(vim);
   return (
-    <fieldset className="vim-registers" data-testid="vim-registers">
-      <legend>Registradores</legend>
+    <div
+      className="vim-registers"
+      data-testid="vim-registers"
+      role="region"
+      aria-label="Registradores"
+    >
+      <p className="muted">Registradores</p>
       {lines.length === 0 ? (
         <p className="muted">Nenhum registrador com texto.</p>
       ) : (
@@ -392,7 +456,7 @@ function Registers({ vim }: { readonly vim: VimState }): ReactNode {
           ))}
         </ul>
       )}
-    </fieldset>
+    </div>
   );
 }
 
@@ -425,32 +489,40 @@ function EditResults({
 }): ReactNode {
   const stats = editRoundStats(round);
   return (
-    <div className="typing-results">
-      <p className="score">
-        <strong data-testid="vim-reached">{stats.reached}</strong> edições · puladas{" "}
-        <span data-testid="vim-skipped">{stats.skipped}</span> · eficiência média{" "}
-        <span data-testid="vim-efficiency">{percent(stats.efficiency)}</span>
-      </p>
-      {stats.efficiency > 1 && (
-        <p className="vim-better" data-testid="vim-better">
-          melhor que a referência
-        </p>
-      )}
-      <ul className="vim-worst" data-testid="vim-worst">
-        {stats.worst.map((result) => (
-          <li key={result.index}>
-            <Comparison result={result} /> · {percent(editEfficiency(result))}
-          </li>
-        ))}
-      </ul>
-      <p className="seed">
-        <span data-testid="vim-config">{`${String(settings.durationS)} s`}</span> · seed{" "}
-        <span data-testid="vim-seed">{round.config.seed}</span>
-      </p>
-      <button type="button" className="primary" autoFocus onClick={onNext}>
-        Próximo
-      </button>
-    </div>
+    <Result
+      headline={
+        <>
+          <strong data-testid="vim-reached">{stats.reached}</strong> edições
+        </>
+      }
+      pairs={[
+        { label: "puladas", value: stats.skipped, testId: "vim-skipped" },
+        { label: "eficiência média", value: percent(stats.efficiency), testId: "vim-efficiency" },
+      ]}
+      extra={
+        stats.efficiency > 1 ? (
+          <p className="vim-better" data-testid="vim-better">
+            melhor que a referência
+          </p>
+        ) : undefined
+      }
+      worst={
+        <ul className="vim-worst" data-testid="vim-worst">
+          {stats.worst.map((result) => (
+            <li key={result.index}>
+              <Comparison result={result} /> · {percent(editEfficiency(result))}
+            </li>
+          ))}
+        </ul>
+      }
+      seed={
+        <>
+          <span data-testid="vim-config">{`${String(settings.durationS)} s`}</span> · seed{" "}
+          <span data-testid="vim-seed">{round.config.seed}</span>
+        </>
+      }
+      onPlayAgain={onNext}
+    />
   );
 }
 

@@ -30,7 +30,7 @@ test("typing a 15-second test in the real app ends with the time", async ({ page
   await page.clock.install();
   await openText(page);
   await page.getByRole("combobox", { name: "Tamanho" }).selectOption("15");
-  await expect(page.getByTestId("text-progress")).toHaveText("15");
+  await expect(page.getByTestId("text-progress")).toHaveText("15 s");
 
   const words = await shownWords(page);
   await page.getByRole("textbox", { name: "Texto digitado" }).focus();

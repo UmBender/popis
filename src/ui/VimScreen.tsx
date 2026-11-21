@@ -12,7 +12,6 @@ import {
   parseVimSettings,
   saveVimEditSettings,
   saveVimSettings,
-  vimSummary,
   type VimDrill,
   type VimEditSettings,
   type VimResult,
@@ -33,7 +32,11 @@ import {
   type Round,
   type TargetResult,
 } from "../vim/round";
+import { matchTrainingKey } from "./keys";
+import { RoundHistory } from "./shell/History";
 import { PanelTitle, Reference, useRunning } from "./shell/panel";
+import { Result } from "./shell/Result";
+import { RoundBar } from "./shell/RoundBar";
 import { EditDrill } from "./vim/EditDrill";
 import { LearnDrill } from "./vim/LearnDrill";
 
@@ -45,6 +48,8 @@ type Props = {
   readonly onBack: () => void;
   /** Told when a round starts and ends, so the window hides the tree (T18). */
   readonly onRunning?: (running: boolean) => void;
+  /** Switches to the Vim Learn screen (T19 AC-7). */
+  readonly onLearn?: () => void;
 };
 
 /**
@@ -93,9 +98,16 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
   const [current, setCurrent] = useState<Run>(() => newRun(loadVimSettings(store), newSeed(), 0));
   const [results, setResults] = useState<readonly VimResult[]>(() => loadVimResults(store));
   const [now, setNow] = useState(() => clock.now());
-  // The latest run, read by the event handlers between renders.
+  const [cmdline, setCmdline] = useState<string | null>(null);
+  // The latest run and cmdline, read by the event handlers between renders.
   const latest = useRef(current);
+  const cmdlineRef = useRef(cmdline);
   const box = useRef<HTMLTextAreaElement>(null);
+
+  const updateCmdline = (next: string | null) => {
+    cmdlineRef.current = next;
+    setCmdline(next);
+  };
 
   const show = useCallback((next: Run) => {
     latest.current = next;
@@ -148,7 +160,32 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
     };
   }, [apply, clock, running]);
 
+  const exit = () => {
+    updateCmdline(null);
+    const run = latest.current;
+    show(newRun(run.settings, run.round.config.seed, run.run));
+    box.current?.blur();
+  };
+
   const feed = (key: Key) => {
+    const cmd = cmdlineRef.current;
+    if (cmd !== null) {
+      if (key === "<Esc>") {
+        updateCmdline(null);
+      } else if (key === "<CR>") {
+        if (cmd.trim() === "q") exit();
+        else updateCmdline(null);
+      } else if (key === "<BS>") {
+        updateCmdline(cmd.length === 0 ? null : cmd.slice(0, -1));
+      } else if (key.length === 1) {
+        updateCmdline(cmd + key);
+      }
+      return;
+    }
+    if (key === ":" && latest.current.round.vim.pending.length === 0) {
+      updateCmdline("");
+      return;
+    }
     apply(pressRoundKey(latest.current.round, key, clock.now()));
   };
 
@@ -157,6 +194,7 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
   };
 
   const restart = (next = latest.current.settings) => {
+    updateCmdline(null);
     show(newRun(next, newSeed(), latest.current.run + 1));
   };
 
@@ -167,16 +205,21 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
     restart(updated);
   };
 
-  const summary = vimSummary(results, settings.level, settings.durationS);
+  const historyScores = results
+    .filter((r) => r.level === settings.level && r.durationS === settings.durationS)
+    .map((r) => r.reached);
   const { target, vim } = round;
   const remainingS = Math.ceil(remainingMs(round, Math.max(now, round.startedAt ?? now)) / 1000);
+  const reached = round.results.filter((r) => !r.skipped).length;
+  const allHelp = levelHelp(settings.level);
+  const currentHelp = allHelp.filter((h) => h.level === settings.level);
+  const earlierHelp = allHelp.filter((h) => h.level < settings.level);
 
   return (
     <div className="screen vim">
-      <PanelTitle title="Vim">Leve o cursor até o alvo com o mínimo de teclas.</PanelTitle>
+      <PanelTitle title="Movimento">Leve o cursor até o alvo com o mínimo de teclas.</PanelTitle>
 
-      <fieldset className="vim-options" data-panel="options">
-        <legend>Opções</legend>
+      <div className="vim-options" data-panel="options" role="group" aria-label="Opções">
         <label htmlFor="vim-level">Nível</label>
         <select
           id="vim-level"
@@ -205,7 +248,7 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
             </option>
           ))}
         </select>
-      </fieldset>
+      </div>
 
       <div className="typing-area" data-panel="area">
         <textarea
@@ -231,9 +274,15 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
           }}
           onKeyDown={(e) => {
             if (e.nativeEvent.isComposing) return;
-            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+            const action = matchTrainingKey(e, { vim: true });
+            if (action === "skip") {
               e.preventDefault();
               apply(skipTarget(latest.current.round, clock.now()));
+              return;
+            }
+            if (action === "restart") {
+              e.preventDefault();
+              restart();
               return;
             }
             const key = keyFromEvent(e);
@@ -254,9 +303,17 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
           />
         ) : (
           <>
-            <p className="vim-time" data-testid="vim-time">
-              {remainingS}
-            </p>
+            <RoundBar
+              metrics={[
+                {
+                  label: "tempo",
+                  value: `${String(remainingS)} s`,
+                  testId: "vim-time",
+                  tone: "accent",
+                },
+                { label: "alvos", value: reached },
+              ]}
+            />
             <pre
               className="vim-code"
               data-testid="vim-code"
@@ -280,7 +337,14 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
               ))}
             </pre>
             <p className="vim-status" data-testid="vim-status">
-              <strong>NORMAL</strong> <span className="vim-pending">{formatKeys(vim.pending)}</span>
+              {cmdline !== null ? (
+                <span className="vim-pending">{`:${cmdline}`}</span>
+              ) : (
+                <>
+                  <strong>NORMAL</strong>{" "}
+                  <span className="vim-pending">{formatKeys(vim.pending)}</span>
+                </>
+              )}
             </p>
             {round.blocked !== null && (
               <p className="vim-blocked" data-testid="vim-blocked">
@@ -288,26 +352,32 @@ function MotionDrill({ clock, store, newSeed, onBack, onRunning }: Props): React
               </p>
             )}
             {round.last !== null && <LastTarget result={round.last} />}
-            <p className="muted hint">Ctrl+Enter pula o alvo · Esc cancela o comando.</p>
           </>
         )}
       </div>
 
-      <p data-testid="vim-summary" className="muted typing-summary" data-panel="history">
-        {summary === null
-          ? "Sem resultados nesta configuração."
-          : `melhor ${String(Math.round(summary.best))} alvos · ` +
-            `média dos últimos 10: ${String(Math.round(summary.recentMean))} alvos`}
-      </p>
+      <RoundHistory scores={historyScores} unit="alvos" testId="vim-summary" />
 
       <Reference id="vim-motion-commands" title="Comandos deste nível" className="vim-commands">
         <ul>
-          {levelHelp(settings.level).map((help) => (
+          {currentHelp.map((help) => (
             <li key={help.keys}>
               <code>{help.keys}</code> — {help.text}
             </li>
           ))}
         </ul>
+        {earlierHelp.length > 0 && (
+          <details className="vim-earlier" data-testid="vim-earlier-commands">
+            <summary>{`já valem (níveis 1–${String(settings.level - 1)})`}</summary>
+            <ul>
+              {earlierHelp.map((help) => (
+                <li key={help.keys}>
+                  <code>{help.keys}</code> — {help.text}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </Reference>
 
       <div className="actions">
@@ -348,29 +418,35 @@ function VimResults({
 }): ReactNode {
   const stats = roundStats(round);
   return (
-    <div className="typing-results">
-      <p className="score">
-        <strong data-testid="vim-reached">{stats.reached}</strong> alvos · pulados{" "}
-        <span data-testid="vim-skipped">{stats.skipped}</span> · eficiência média{" "}
-        <span data-testid="vim-efficiency">{percent(stats.efficiency)}</span>
-      </p>
-      <ul className="vim-worst" data-testid="vim-worst">
-        {stats.worst.map((result) => (
-          <li key={result.index}>
-            <Comparison result={result} /> · {percent(targetEfficiency(result))}
-          </li>
-        ))}
-      </ul>
-      <p className="seed">
-        <span data-testid="vim-config">
-          {`nível ${String(settings.level)} · ${String(settings.durationS)} s`}
-        </span>{" "}
-        · seed <span data-testid="vim-seed">{round.config.seed}</span>
-      </p>
-      <button type="button" className="primary" autoFocus onClick={onNext}>
-        Próximo
-      </button>
-    </div>
+    <Result
+      headline={
+        <>
+          <strong data-testid="vim-reached">{stats.reached}</strong> alvos
+        </>
+      }
+      pairs={[
+        { label: "pulados", value: stats.skipped, testId: "vim-skipped" },
+        { label: "eficiência média", value: percent(stats.efficiency), testId: "vim-efficiency" },
+      ]}
+      worst={
+        <ul className="vim-worst" data-testid="vim-worst">
+          {stats.worst.map((result) => (
+            <li key={result.index}>
+              <Comparison result={result} /> · {percent(targetEfficiency(result))}
+            </li>
+          ))}
+        </ul>
+      }
+      seed={
+        <>
+          <span data-testid="vim-config">
+            {`nível ${String(settings.level)} · ${String(settings.durationS)} s`}
+          </span>{" "}
+          · seed <span data-testid="vim-seed">{round.config.seed}</span>
+        </>
+      }
+      onPlayAgain={onNext}
+    />
   );
 }
 

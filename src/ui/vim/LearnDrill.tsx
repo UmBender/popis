@@ -117,7 +117,7 @@ function LessonView({
         ))}
       </ul>
       <Example lesson={lesson} />
-      <Exercise lesson={lesson} done={done} onFinish={onFinish} />
+      <Exercise lesson={lesson} done={done} onFinish={onFinish} onExit={onList} />
       <div className="actions">
         <button type="button" onClick={onList}>
           Lições
@@ -192,10 +192,12 @@ function Exercise({
   lesson,
   done,
   onFinish,
+  onExit,
 }: {
   readonly lesson: Lesson;
   readonly done: boolean;
   readonly onFinish: () => void;
+  readonly onExit: () => void;
 }): ReactNode {
   const edit = useMemo(() => exerciseFor(lesson), [lesson]);
   const reference = useMemo(() => parseKeys(edit.reference), [edit]);
@@ -208,6 +210,10 @@ function Exercise({
 
   const feed = (key: Key) => {
     const state = latest.current;
+    if (state.vim.mode === "cmdline" && key === "<CR>" && state.vim.cmdline?.trim() === "q") {
+      onExit();
+      return;
+    }
     if (state.finished) return;
     const next = pressEditKey(state.vim, key);
     const keys = [...state.typed, key];
@@ -290,11 +296,17 @@ function Exercise({
         <Buffer lines={edit.after} mask={masks.bMask} mark="vim-diff-add" cursor={null} />
       </pre>
       <p className="vim-status" data-testid="vim-status">
-        <strong>{modeLabel(vim)}</strong>{" "}
-        {vim.recording !== null && (
-          <span className="vim-recording">{`gravando @${vim.recording.name}`}</span>
-        )}{" "}
-        <span className="vim-pending">{formatKeys(vim.pending)}</span>
+        {vim.mode === "cmdline" ? (
+          <span className="vim-pending">{`:${vim.cmdline ?? ""}`}</span>
+        ) : (
+          <>
+            <strong>{modeLabel(vim)}</strong>{" "}
+            {vim.recording !== null && (
+              <span className="vim-recording">{`gravando @${vim.recording.name}`}</span>
+            )}{" "}
+            <span className="vim-pending">{formatKeys(vim.pending)}</span>
+          </>
+        )}
       </p>
       <p className="vim-reference" data-testid="learn-reference">
         {reference.map((key, i) => (

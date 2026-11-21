@@ -4,7 +4,7 @@ const WORDS = ["Practice", "Of", "Problem-solving", "In", "Sprints"] as const;
 export function Brand() {
   return (
     <div className="brand">
-      <h1 className="visually-hidden">POPIS</h1>
+      <span className="visually-hidden">POPIS</span>
       <p className="muted brand-acronym" data-testid="brand-acronym">
         {WORDS.map((word, i) => (
           <span key={word}>

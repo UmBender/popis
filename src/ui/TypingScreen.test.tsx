@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { manualClock, type ManualClock } from "../core/clock";
 import { memoryStore, type KeyValueStore } from "../storage/history";
@@ -182,30 +182,30 @@ describe("typing screen", () => {
   );
 
   it(
-    "Próximo after the results picks a new snippet",
+    "Jogar de novo after the results picks a new snippet",
     () => {
       setup(memoryStore(), [SEED, 77]);
       typeSnippet(pickSnippet(SEED, LANGUAGES));
-      fireEvent.click(screen.getByRole("button", { name: "Próximo" }));
+      fireEvent.click(screen.getByRole("button", { name: "Jogar de novo" }));
       expect(code().getAttribute("data-snippet-id")).toBe(pickSnippet(77, LANGUAGES).id);
       expect(screen.queryByTestId("wpm")).toBeNull();
     },
     WHOLE_SNIPPET_TIMEOUT_MS,
   );
 
-  it("Escape picks another snippet", () => {
+  it("Escape exits the round and resets the snippet", () => {
     setup(memoryStore(), [SEED, 77]);
     typeChars("x");
     fireEvent.keyDown(box(), { key: "Escape" });
-    expect(code().getAttribute("data-snippet-id")).toBe(pickSnippet(77, LANGUAGES).id);
+    expect(code().getAttribute("data-snippet-id")).toBe(pickSnippet(SEED, LANGUAGES).id);
     expect(charSpans().every((s) => s.dataset["mark"] === "pending")).toBe(true);
   });
 
-  it("Ctrl+Enter restarts the same snippet", () => {
+  it("Ctrl+Enter skips to another snippet", () => {
     setup(memoryStore(), [SEED, 77]);
     typeChars("x");
     fireEvent.keyDown(box(), { key: "Enter", ctrlKey: true });
-    expect(code().getAttribute("data-snippet-id")).toBe(pickSnippet(SEED, LANGUAGES).id);
+    expect(code().getAttribute("data-snippet-id")).toBe(pickSnippet(77, LANGUAGES).id);
     expect(charSpans().every((s) => s.dataset["mark"] === "pending")).toBe(true);
   });
 
@@ -241,11 +241,11 @@ describe("typing screen", () => {
     expect(charSpans().every((s) => s.dataset["mark"] === "pending")).toBe(true);
   });
 
-  it("Cmd+Enter also restarts the same snippet", () => {
+  it("Cmd+Enter also skips to another snippet", () => {
     setup(memoryStore(), [SEED, 77]);
     typeChars("x");
     fireEvent.keyDown(box(), { key: "Enter", metaKey: true });
-    expect(code().getAttribute("data-snippet-id")).toBe(pickSnippet(SEED, LANGUAGES).id);
+    expect(code().getAttribute("data-snippet-id")).toBe(pickSnippet(77, LANGUAGES).id);
     expect(charSpans().every((s) => s.dataset["mark"] === "pending")).toBe(true);
   });
 
@@ -255,7 +255,7 @@ describe("typing screen", () => {
     expect(onBack).toHaveBeenCalledOnce();
   });
 
-  it("typing summary shows the best and the mean of the last 10 per language", () => {
+  it("typing summary shows the best and the mean of the last 10 for the selected languages", () => {
     const store = memoryStore();
     const base: TypingResult = {
       version: 1,
@@ -271,11 +271,12 @@ describe("typing screen", () => {
     for (const wpm of [80.4, 49.6]) appendTypingResult(store, { ...base, wpm });
     setup(store);
     const summary = screen.getByTestId("typing-summary");
-    expect(within(summary).getByTestId("summary-cpp").textContent).toBe(
-      "C++: melhor 80 WPM · média dos últimos 10: 65 WPM",
-    );
-    expect(within(summary).getByTestId("summary-python").textContent).toBe(
-      "Python: sem resultados",
+    expect(summary.textContent).toContain("Últimas 10 rodadas");
+    expect(summary.textContent).toContain("melhor 80 WPM");
+    expect(summary.textContent).toContain("média 65 WPM");
+    fireEvent.click(screen.getByRole("checkbox", { name: "C++" }));
+    expect(screen.getByTestId("typing-summary").textContent).toBe(
+      "Nenhuma rodada nesta configuração. Enter começa a primeira.",
     );
   });
 });
