@@ -1,7 +1,7 @@
 ---
 id: ADR-T29-1
 title: Ritmo-alvo adaptativo e cursor fantasma na digitação
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-21
 task: T29
