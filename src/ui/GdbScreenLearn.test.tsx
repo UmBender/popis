@@ -2,8 +2,8 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { manualClock, type ManualClock } from "../core/clock";
-import { GDB_LESSONS, GDB_UNITS, gdbLessonForCommand } from "../gdb/curriculum";
-import { loadGdbSettings } from "../storage/gdb";
+import { GDB_LESSONS, GDB_UNITS, gdbLessonById, gdbLessonForCommand } from "../gdb/curriculum";
+import { loadGdbOutSettings, loadGdbSettings } from "../storage/gdb";
 import { loadGdbCompleted } from "../storage/gdb-learn";
 import { memoryStore } from "../storage/history";
 import { App } from "./App";
@@ -182,5 +182,38 @@ describe("GdbScreen Learn mode (AC-6)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lições" }));
     fireEvent.click(screen.getByRole("button", { name: `${lesson.title} — feito` }));
     expect(screen.getByTestId("learn-was-done")).toBeTruthy();
+  });
+
+  it("Treinar opens Saída with the lesson kinds selected", () => {
+    const store = memoryStore();
+    render(<App clock={clock} store={store} newSeed={() => 11} />);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Aprender (GDB)" }));
+    const lesson = gdbLessonById("u10-formats")!;
+    expect(lesson).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: lesson.title }));
+
+    // Output lesson asks for gdb output (not a command) and follows adaptive fading.
+    const box = screen.getByRole<HTMLInputElement>("textbox", { name: "Saída do gdb" });
+    expect(screen.getByTestId("learn-reference").textContent).toContain(
+      lesson.exercises[0].canonical,
+    );
+
+    // Wrong answer shows reason; correct on step 1 -> step 2 -> complete.
+    fireEvent.change(box, { target: { value: "errado" } });
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(screen.getByTestId("learn-feedback")).toBeTruthy();
+
+    fireEvent.change(box, { target: { value: lesson.exercises[0].canonical } });
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(screen.getByTestId("learn-step").textContent).toContain("2");
+
+    fireEvent.change(box, { target: { value: lesson.exercises[1].canonical } });
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(screen.getByTestId("learn-done")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Treinar" }));
+    expect(screen.getByTestId("shell-path").textContent).toBe("popis/gdb/saida");
+    expect(loadGdbOutSettings(store).kinds).toEqual(lesson.practiceOutputKinds);
   });
 });

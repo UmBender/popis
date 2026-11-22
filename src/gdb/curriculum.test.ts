@@ -2,23 +2,29 @@ import { describe, expect, it } from "vitest";
 import { nextFadingStep, nextUncompleted, unitStatus } from "../learn/curriculum";
 import { LESSON_TRANSCRIPTS } from "./cases/transcripts";
 import { checkCommand } from "./check";
+import { checkOutput } from "./check-output";
 import { COMMAND_TABLE } from "./commands";
 import {
   GDB_LESSONS,
   GDB_UNITS,
+  OUTPUT_FORMAT_TABLE,
   gdbCommandDescription,
   gdbLessonById,
   gdbLessonForCommand,
+  gdbLessonForOutputKey,
+  isOutputLesson,
 } from "./curriculum";
 import { programById } from "./programs";
 
-// T25 AC-6: ordered 9-unit GDB curriculum, every command in one lesson,
-// short explanations, 3 exercises validated by the checker, and oracle transcripts.
+// T25 AC-6 & T26 AC-8: ordered 14-unit GDB curriculum (units 1-9 commands, units 10-14 output),
+// short explanations, 3 exercises validated by their checker, and oracle transcripts.
 
-describe("gdb curriculum (AC-6)", () => {
-  it("has 9 units in order covering the full command syllabus", () => {
-    expect(GDB_UNITS).toHaveLength(9);
-    expect(GDB_UNITS.map((u) => u.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+describe("gdb curriculum (AC-6, T26 AC-8)", () => {
+  it("has 14 units in order covering commands (1-9) and output/memory (10-14)", () => {
+    expect(GDB_UNITS).toHaveLength(14);
+    expect(GDB_UNITS.map((u) => u.number)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+    ]);
     const ids = GDB_LESSONS.map((l) => l.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const lesson of GDB_LESSONS) {
@@ -26,6 +32,7 @@ describe("gdb curriculum (AC-6)", () => {
     }
     expect(gdbLessonById("non-existent")).toBeUndefined();
     expect(gdbCommandDescription("non-existent")).toBeUndefined();
+    expect(gdbLessonForOutputKey("non-existent")).toBeUndefined();
   });
 
   it("every command of the table appears in exactly one lesson", () => {
@@ -62,10 +69,57 @@ describe("gdb curriculum (AC-6)", () => {
         const label = `${lesson.id}#${String(idx + 1)}`;
         const prog = programById(ex.programId);
         expect(prog.lines.length, label).toBeGreaterThan(0);
-        const res = checkCommand(ex.canonical, ex.expected, ex.context);
-        expect(res.ok, `${label} canonical "${ex.canonical}"`).toBe(true);
+        if (ex.mode === "output") {
+          const res = checkOutput(ex.canonical, ex.canonical, { kind: ex.commandKind });
+          expect(res.ok, `${label} output canonical "${ex.canonical}"`).toBe(true);
+        } else {
+          const res = checkCommand(ex.canonical, ex.expected, ex.context);
+          expect(res.ok, `${label} canonical "${ex.canonical}"`).toBe(true);
+        }
         expect(ex.prompt.length, label).toBeGreaterThan(5);
       });
+    }
+  });
+
+  it("output lessons have examples checked by the oracle and exercises whose answers pass the output checker", () => {
+    const outputUnits = GDB_UNITS.filter((u) => u.number >= 10);
+    expect(outputUnits.map((u) => u.number)).toEqual([10, 11, 12, 13, 14]);
+    const outputLessons = outputUnits.flatMap((u) => u.lessons);
+    expect(outputLessons.length).toBeGreaterThanOrEqual(12);
+
+    const unlockedKinds = new Set<string>();
+    for (const lesson of outputLessons) {
+      expect(isOutputLesson(lesson), lesson.id).toBe(true);
+      expect(lesson.explanation, `${lesson.id} backticks`).not.toContain("`");
+      expect(LESSON_TRANSCRIPTS[lesson.id], `transcript ${lesson.id}`).toBeDefined();
+      for (const k of lesson.practiceOutputKinds ?? []) unlockedKinds.add(k);
+
+      for (const ex of lesson.exercises) {
+        expect(ex.mode, lesson.id).toBe("output");
+        if (ex.mode === "output") {
+          expect(ex.command.length, lesson.id).toBeGreaterThan(1);
+          expect(ex.reason.length, lesson.id).toBeGreaterThan(5);
+          expect(checkOutput(ex.canonical, ex.canonical, { kind: ex.commandKind }).ok).toBe(true);
+        }
+      }
+    }
+
+    for (const kind of [
+      "formato",
+      "char",
+      "expressao",
+      "array",
+      "string",
+      "struct",
+      "ponteiro",
+      "sizeof",
+      "memoria",
+    ]) {
+      expect(unlockedKinds.has(kind), `output kind ${kind}`).toBe(true);
+    }
+
+    for (const entry of OUTPUT_FORMAT_TABLE) {
+      expect(gdbLessonForOutputKey(entry.key), `output ref ${entry.key}`).toBeDefined();
     }
   });
 

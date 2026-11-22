@@ -16,6 +16,7 @@ const SCREENS: readonly ItemId[] = [
   "vim-edit",
   "gdb-learn",
   "gdb-commands",
+  "gdb-output",
 ];
 
 describe("sections", () => {
@@ -27,7 +28,7 @@ describe("sections", () => {
       ["Treino", ["Revisar", "Dados", "Evolução"]],
       ["Digitação", ["Código", "Texto"]],
       ["Vim", ["Aprender", "Movimento", "Edição"]],
-      ["GDB", ["Aprender", "Comandos"]],
+      ["GDB", ["Aprender", "Comandos", "Saída"]],
     ]);
   });
 
@@ -40,6 +41,7 @@ describe("sections", () => {
     expect(gdb?.items.map((i) => [i.id, i.label, i.touch, i.shortcut])).toEqual([
       ["gdb-learn", "Aprender", true, null],
       ["gdb-commands", "Comandos", true, null],
+      ["gdb-output", "Saída", true, null],
     ]);
     expect(ITEMS.slice(1, 10).map((i) => i.shortcut)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
