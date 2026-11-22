@@ -96,22 +96,46 @@ export function appendGdbResult(store: KeyValueStore, result: GdbCmdResult): voi
   tryWriteJson(store, GDB_RESULTS_KEY, results.slice(-MAX_GDB_RESULTS));
 }
 
-export function parseGdbOutSettings(_value: unknown): GdbOutSettings {
-  throw new Error("todo");
+const isLevel = (value: unknown): value is GdbOutLevel =>
+  value === 1 || value === 2 || value === 3;
+
+/** GDB Saída settings from parsed JSON; invalid fields fall back to defaults. */
+export function parseGdbOutSettings(value: unknown): GdbOutSettings {
+  const raw = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+  const wanted = Array.isArray(raw["kinds"]) ? raw["kinds"] : [];
+  const kinds = GDB_OUT_KINDS.filter((kind) => wanted.includes(kind));
+  return {
+    durationS: isDuration(raw["durationS"]) ? raw["durationS"] : DEFAULT_GDB_OUT_SETTINGS.durationS,
+    level: isLevel(raw["level"]) ? raw["level"] : DEFAULT_GDB_OUT_SETTINGS.level,
+    kinds: kinds.length > 0 ? kinds : GDB_OUT_KINDS,
+  };
 }
 
-export function loadGdbOutSettings(_store: KeyValueStore): GdbOutSettings {
-  throw new Error("todo");
+export function loadGdbOutSettings(store: KeyValueStore): GdbOutSettings {
+  return parseGdbOutSettings(readJson(store, GDB_OUT_KEY));
 }
 
-export function saveGdbOutSettings(_store: KeyValueStore, _settings: GdbOutSettings): void {
-  throw new Error("todo");
+export function saveGdbOutSettings(store: KeyValueStore, settings: GdbOutSettings): void {
+  tryWriteJson(store, GDB_OUT_KEY, settings);
 }
 
-export function loadGdbOutResults(_store: KeyValueStore): GdbOutResult[] {
-  throw new Error("todo");
+function isGdbOutResult(value: unknown): value is GdbOutResult {
+  if (typeof value !== "object" || value === null) return false;
+  const r = value as Record<string, unknown>;
+  return (
+    r["version"] === 1 &&
+    isLevel(r["level"]) &&
+    RESULT_NUMBERS.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]))
+  );
 }
 
-export function appendGdbOutResult(_store: KeyValueStore, _result: GdbOutResult): void {
-  throw new Error("todo");
+export function loadGdbOutResults(store: KeyValueStore): GdbOutResult[] {
+  const value = readJson(store, GDB_OUT_RESULTS_KEY);
+  if (!Array.isArray(value)) return [];
+  return value.filter(isGdbOutResult);
+}
+
+export function appendGdbOutResult(store: KeyValueStore, result: GdbOutResult): void {
+  const results = [...loadGdbOutResults(store), result];
+  tryWriteJson(store, GDB_OUT_RESULTS_KEY, results.slice(-MAX_GDB_RESULTS));
 }

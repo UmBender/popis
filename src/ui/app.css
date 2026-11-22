@@ -1696,6 +1696,13 @@ th {
   color: var(--text);
 }
 
+.gdb-out-cmd-line code {
+  padding: 0 var(--space-1);
+  background: var(--surface);
+  border: 1px solid var(--selection);
+  color: var(--accent);
+}
+
 .gdb-viewer {
   display: flex;
   flex-direction: column;

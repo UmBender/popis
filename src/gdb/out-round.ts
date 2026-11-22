@@ -1,5 +1,11 @@
 import type { TrainingEvent } from "../stats/event";
-import type { GdbOutKind, GdbOutLevel, GdbOutputItem } from "./out-drill";
+import { checkOutput } from "./check-output";
+import {
+  generateOutputItem,
+  type GdbOutKind,
+  type GdbOutLevel,
+  type GdbOutputItem,
+} from "./out-drill";
 
 export type GdbOutRoundConfig = {
   readonly durationMs: number;
@@ -50,41 +56,160 @@ export type GdbOutRoundStats = {
   readonly wrongItems: readonly GdbOutItemResult[];
 };
 
-export function startGdbOutRound(_config: GdbOutRoundConfig): GdbOutRound {
-  throw new Error("todo");
+export function startGdbOutRound(config: GdbOutRoundConfig): GdbOutRound {
+  return {
+    config,
+    startedAt: null,
+    itemStartedAt: null,
+    finished: false,
+    current: generateOutputItem(config.seed, 0, config.level, config.kinds),
+    results: [],
+    last: null,
+  };
 }
 
-export function touchGdbOutRound(_round: GdbOutRound, _now: number): GdbOutRound {
-  throw new Error("todo");
+export function touchGdbOutRound(round: GdbOutRound, now: number): GdbOutRound {
+  if (round.finished || round.startedAt !== null) return round;
+  return { ...round, startedAt: now, itemStartedAt: now };
 }
 
-export function isGdbOutRoundFinished(_round: GdbOutRound): boolean {
-  throw new Error("todo");
+export function isGdbOutRoundFinished(round: GdbOutRound): boolean {
+  return round.finished;
 }
 
-export function gdbOutRemainingMs(_round: GdbOutRound, _now: number): number {
-  throw new Error("todo");
+export function gdbOutRemainingMs(round: GdbOutRound, now: number): number {
+  if (round.finished) return 0;
+  if (round.startedAt === null) return round.config.durationMs;
+  return Math.max(0, round.config.durationMs - (now - round.startedAt));
 }
 
-export function tickGdbOutRound(_round: GdbOutRound, _now: number): GdbOutRound {
-  throw new Error("todo");
+export function tickGdbOutRound(round: GdbOutRound, now: number): GdbOutRound {
+  if (round.finished || round.startedAt === null) return round;
+  if (now - round.startedAt >= round.config.durationMs) {
+    return { ...round, finished: true };
+  }
+  return round;
 }
 
-export function submitGdbOutput(_round: GdbOutRound, _text: string, _now: number): GdbOutRound {
-  throw new Error("todo");
+function advance(round: GdbOutRound, item: GdbOutItemResult, now: number): GdbOutRound {
+  const startedAt = round.startedAt ?? now;
+  const expired = now - startedAt >= round.config.durationMs;
+  const nextIndex = round.current.index + 1;
+  return {
+    ...round,
+    startedAt,
+    itemStartedAt: now,
+    finished: expired,
+    current: expired
+      ? round.current
+      : generateOutputItem(round.config.seed, nextIndex, round.config.level, round.config.kinds),
+    results: [...round.results, item],
+    last: item,
+  };
 }
 
-export function skipGdbOutItem(_round: GdbOutRound, _now: number): GdbOutRound {
-  throw new Error("todo");
+export function submitGdbOutput(round: GdbOutRound, text: string, now: number): GdbOutRound {
+  if (round.finished) return round;
+  const base = touchGdbOutRound(round, now);
+  const { current } = base;
+  const checked = checkOutput(text, current.canonical, {
+    command: current.command,
+    kind: current.commandKind,
+    fallbackReason: current.reason,
+  });
+  const timeMs = Math.max(0, now - (base.itemStartedAt ?? now));
+  const result: GdbOutItemResult = {
+    index: current.index,
+    seed: current.seed,
+    level: current.level,
+    kind: current.kind,
+    kc: current.kc,
+    command: current.command,
+    canonical: current.canonical,
+    typed: text.trim(),
+    ok: checked.ok,
+    skipped: false,
+    reason: checked.ok ? "" : checked.reason,
+    timeMs,
+  };
+  return advance(base, result, now);
 }
 
-export function gdbOutRoundStats(_round: GdbOutRound): GdbOutRoundStats {
-  throw new Error("todo");
+export function skipGdbOutItem(round: GdbOutRound, now: number): GdbOutRound {
+  if (round.finished) return round;
+  const base = touchGdbOutRound(round, now);
+  const { current } = base;
+  const timeMs = Math.max(0, now - (base.itemStartedAt ?? now));
+  const result: GdbOutItemResult = {
+    index: current.index,
+    seed: current.seed,
+    level: current.level,
+    kind: current.kind,
+    kc: current.kc,
+    command: current.command,
+    canonical: current.canonical,
+    typed: "",
+    ok: false,
+    skipped: true,
+    reason: current.reason,
+    timeMs,
+  };
+  return advance(base, result, now);
 }
 
-export function gdbOutputEvents(
-  _round: Pick<GdbOutRound, "results">,
-  _at: number,
-): TrainingEvent[] {
-  throw new Error("todo");
+export function gdbOutRoundStats(round: GdbOutRound): GdbOutRoundStats {
+  const { results } = round;
+  let correct = 0;
+  let wrong = 0;
+  let skipped = 0;
+  const groups = new Map<GdbOutKind, { total: number; correct: number; timeMs: number }>();
+
+  for (const r of results) {
+    if (r.skipped) skipped += 1;
+    else if (r.ok) correct += 1;
+    else wrong += 1;
+    const g = groups.get(r.kind) ?? { total: 0, correct: 0, timeMs: 0 };
+    g.total += 1;
+    if (r.ok) g.correct += 1;
+    g.timeMs += r.timeMs;
+    groups.set(r.kind, g);
+  }
+
+  const total = results.length;
+  const answered = correct + wrong;
+  const byKind: GdbOutKindStats[] = [...groups.entries()].map(([kind, g]) => ({
+    kind,
+    total: g.total,
+    correct: g.correct,
+    avgTimeMs: Math.round(g.timeMs / g.total),
+  }));
+
+  return {
+    correct,
+    wrong,
+    skipped,
+    total,
+    accuracy: answered > 0 ? correct / answered : 0,
+    byKind,
+    wrongItems: results.filter((r) => !r.ok && !r.skipped),
+  };
+}
+
+/** One T22 TrainingEvent per attempted or skipped item in a GDB Saída round (T26 AC-7). */
+export function gdbOutputEvents(round: Pick<GdbOutRound, "results">, at: number): TrainingEvent[] {
+  return round.results.map((r) => ({
+    at,
+    drill: "gdb.out",
+    config: `out-L${String(r.level)}`,
+    kc: r.kc,
+    ok: r.ok,
+    timeMs: r.timeMs,
+    extra: {
+      seed: r.seed,
+      i: r.index,
+      kind: r.kind,
+      level: r.level,
+      skipped: r.skipped,
+    },
+  }));
 }

@@ -81,7 +81,7 @@ const cTypeArb: fc.Arbitrary<CType> = fc.letrec((tie) => ({
         ),
     },
   ),
-})).type as fc.Arbitrary<CType>;
+})).type;
 
 describe("gdb memory properties (AC-1)", () => {
   it("reading back written little-endian bytes returns the exact value for every integer width", () => {
