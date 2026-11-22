@@ -1,7 +1,7 @@
 ---
 id: T31
 title: Digitação - código gerado e rajadas
-status: in-progress
+status: review
 depends_on: [T29, T34]
 branch: task/T31-typing-generated-code
 adrs: [ADR-T31-1]
@@ -98,12 +98,12 @@ porque é o texto dos treinos de Vim (T13–T16).
 
 ## Subtasks (one commit each)
 
-- [ ] spec: ADR-T31-1 (gramática no lugar do corpus no Código, oráculo de sintaxe, Rajada) e testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, `typing:oracle`, coverage e e2e
-- [ ] docs: *Log* e status `review`
+- [x] spec: ADR-T31-1 (gramática no lugar do corpus no Código, oráculo de sintaxe, Rajada) e testes nomeados
+- [x] tests
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, `typing:oracle`, coverage e e2e
+- [x] docs: *Log* e status `review`
 
 ## Notas para o batch
 
@@ -111,3 +111,51 @@ porque é o texto dos treinos de Vim (T13–T16).
   `python3` no ambiente do batch.
 
 ## Log
+
+
+- 2026-11-22 — **Mudança de spec (AC-4, teclas):** a nota pedia "Esc gera
+  outro trecho e Ctrl+Enter recomeça o mesmo", mas isso contradiz a
+  [[ADR-T19-1 Teclas e componentes comuns de treino]] e quebraria
+  `src/ui/coherence.test.tsx` e `tests/e2e/coherence.spec.ts`. O spec
+  foi corrigido no commit `docs` para manter as teclas uniformes
+  (`Ctrl+Enter` gera outro trecho, `Ctrl+Shift+Enter` recomeça com seed
+  nova, `Esc` sai e reinicia o trecho atual). **UNATTENDED CHOICE:**
+  decisão registrada em ADR-T31-1 para o dono revisar.
+- 2026-11-22 — **Testes da T10 migrados (AC-4):** os testes de
+  `src/ui/TypingScreen.test.tsx` e o de `src/ui/TrainingLog.test.tsx`
+  que fixavam `pickSnippet(SEED, …)` passaram a fixar
+  `generateCodeSnippet(SEED, …)`, no commit `test`, sem afrouxar
+  nenhuma asserção. "Esc generates another snippet" virou "Ctrl+Enter
+  generates another snippet" e "Escape exits the round and resets the
+  generated snippet" pela mudança de teclas acima.
+- 2026-11-22 — **Files owned ampliados (política do batch):**
+  `src/stats/keytrace.ts` e o teste (campo opcional `kc` em `CodeMeta`
+  para o KC `typing.idiom.<regra>` da Rajada, AC-5),
+  `src/storage/typing.test.ts`, `src/storage/typing-pace.test.ts` e
+  `src/ui/TrainingLog.test.tsx` (testes que fixavam o corpus).
+- 2026-11-22 — **Corpus mantido:** `src/typing/corpus.ts` não mudou;
+  Vim e `src/stats/typing-stats.ts` continuam usando o corpus. Eventos
+  `gen:*` e `burst:*` não aparecem nos bigramas/erros por caractere de
+  Evolução, porque `typing-stats.ts` resolve linhas só pelo corpus
+  (fora dos Files owned). Fica como melhoria futura.
+- 2026-11-22 — **Gramática:** C++ com 10 regras (`for-loop`, `cin-read`,
+  `vector-sized`, `prefix-sum`, `sort-lambda`, `lower-bound`,
+  `pair-struct`, `binary-search`, `constants`, `structured-binding`) e
+  Python com 7. Identificadores, constantes e pesos vêm de
+  `src/typing/library/profile.json`; os 20 identificadores mais
+  frequentes do perfil aparecem em 400 seeds.
+- 2026-11-22 — **Gates:** `npm run check` verde (137 arquivos, 4105
+  testes, build OK); `npm run coverage` verde (`src/typing/**` em 100%,
+  limiares sem mudança); `npm run test:e2e` verde (32 testes em chromium
+  e mobile); `npm run typing:oracle`:
+  `typing:oracle: cpp 500/500 ok, python 500/500 ok`.
+- 2026-11-22 — **Capturas visuais:** `.batch/visual/t31.spec.ts` (config
+  própria na porta 4177, porque a 4175 estava ocupada) gerou 5 capturas
+  no desktop: Código parado, em andamento com cursor fantasma, resultado,
+  Rajada parada e resultado da Rajada (5 tempos e razão `0,58×`). Nada
+  errado à vista. No celular o Código fica escondido (tela de toque),
+  então não há captura de phone. O resultado do Código mostra 3677 WPM
+  só porque o relógio falso não avançou na captura.
+- 2026-11-22 — **Verificação manual para o dono:** os trechos gerados
+  parecem com o seu código? A Rajada vale a pena manter? Os nomes de
+  tipo do perfil (`T`, `TRest`) às vezes aparecem como nome de `struct`.
