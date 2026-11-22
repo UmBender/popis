@@ -1,0 +1,1408 @@
+{
+  "identifiers": [
+    {
+      "value": "i",
+      "count": 16585
+    },
+    {
+      "value": "n",
+      "count": 7844
+    },
+    {
+      "value": "a",
+      "count": 4355
+    },
+    {
+      "value": "t",
+      "count": 3703
+    },
+    {
+      "value": "j",
+      "count": 3552
+    },
+    {
+      "value": "T",
+      "count": 2832
+    },
+    {
+      "value": "x",
+      "count": 2599
+    },
+    {
+      "value": "ll",
+      "count": 2562
+    },
+    {
+      "value": "b",
+      "count": 2202
+    },
+    {
+      "value": "k",
+      "count": 1762
+    },
+    {
+      "value": "i32",
+      "count": 1424
+    },
+    {
+      "value": "rest",
+      "count": 1324
+    },
+    {
+      "value": "m",
+      "count": 1270
+    },
+    {
+      "value": "s",
+      "count": 1263
+    },
+    {
+      "value": "l",
+      "count": 1259
+    },
+    {
+      "value": "TRest",
+      "count": 1240
+    },
+    {
+      "value": "counter",
+      "count": 1185
+    },
+    {
+      "value": "args",
+      "count": 1180
+    },
+    {
+      "value": "r",
+      "count": 1105
+    },
+    {
+      "value": "actual",
+      "count": 1087
+    },
+    {
+      "value": "fn",
+      "count": 1058
+    },
+    {
+      "value": "p",
+      "count": 924
+    },
+    {
+      "value": "left",
+      "count": 920
+    },
+    {
+      "value": "pos",
+      "count": 920
+    },
+    {
+      "value": "right",
+      "count": 850
+    },
+    {
+      "value": "acc",
+      "count": 768
+    },
+    {
+      "value": "middle",
+      "count": 745
+    },
+    {
+      "value": "v",
+      "count": 705
+    },
+    {
+      "value": "value",
+      "count": 705
+    },
+    {
+      "value": "i64",
+      "count": 678
+    },
+    {
+      "value": "MAX_INT",
+      "count": 658
+    },
+    {
+      "value": "dp",
+      "count": 638
+    },
+    {
+      "value": "adj",
+      "count": 607
+    },
+    {
+      "value": "c",
+      "count": 571
+    },
+    {
+      "value": "next",
+      "count": 565
+    },
+    {
+      "value": "q",
+      "count": 547
+    },
+    {
+      "value": "makefn",
+      "count": 533
+    },
+    {
+      "value": "pr",
+      "count": 533
+    },
+    {
+      "value": "arr",
+      "count": 496
+    },
+    {
+      "value": "temp",
+      "count": 476
+    },
+    {
+      "value": "y",
+      "count": 464
+    },
+    {
+      "value": "lp",
+      "count": 462
+    },
+    {
+      "value": "ans",
+      "count": 450
+    },
+    {
+      "value": "sum",
+      "count": 442
+    },
+    {
+      "value": "parents",
+      "count": 439
+    },
+    {
+      "value": "target",
+      "count": 409
+    },
+    {
+      "value": "sizes",
+      "count": 390
+    },
+    {
+      "value": "mmax",
+      "count": 368
+    },
+    {
+      "value": "d",
+      "count": 346
+    },
+    {
+      "value": "val",
+      "count": 341
+    },
+    {
+      "value": "pref",
+      "count": 333
+    },
+    {
+      "value": "a_root",
+      "count": 326
+    },
+    {
+      "value": "b_root",
+      "count": 324
+    },
+    {
+      "value": "ld",
+      "count": 310
+    },
+    {
+      "value": "last",
+      "count": 309
+    },
+    {
+      "value": "h",
+      "count": 300
+    },
+    {
+      "value": "u",
+      "count": 292
+    },
+    {
+      "value": "result",
+      "count": 291
+    },
+    {
+      "value": "node",
+      "count": 290
+    },
+    {
+      "value": "query",
+      "count": 278
+    },
+    {
+      "value": "tl",
+      "count": 273
+    },
+    {
+      "value": "grid",
+      "count": 262
+    },
+    {
+      "value": "mmin",
+      "count": 261
+    },
+    {
+      "value": "f",
+      "count": 258
+    },
+    {
+      "value": "tr",
+      "count": 246
+    },
+    {
+      "value": "MOD",
+      "count": 236
+    },
+    {
+      "value": "vi",
+      "count": 236
+    },
+    {
+      "value": "dfs",
+      "count": 234
+    },
+    {
+      "value": "w",
+      "count": 234
+    },
+    {
+      "value": "tree",
+      "count": 220
+    },
+    {
+      "value": "tm",
+      "count": 212
+    },
+    {
+      "value": "Sieve",
+      "count": 210
+    },
+    {
+      "value": "ranges",
+      "count": 206
+    },
+    {
+      "value": "dist",
+      "count": 197
+    },
+    {
+      "value": "VI",
+      "count": 192
+    },
+    {
+      "value": "base",
+      "count": 191
+    },
+    {
+      "value": "PII",
+      "count": 190
+    },
+    {
+      "value": "VII",
+      "count": 190
+    },
+    {
+      "value": "f64",
+      "count": 190
+    },
+    {
+      "value": "idx",
+      "count": 186
+    },
+    {
+      "value": "makeconst",
+      "count": 178
+    },
+    {
+      "value": "f128",
+      "count": 177
+    },
+    {
+      "value": "f32",
+      "count": 177
+    },
+    {
+      "value": "u64",
+      "count": 177
+    },
+    {
+      "value": "nodes",
+      "count": 172
+    },
+    {
+      "value": "qq",
+      "count": 170
+    },
+    {
+      "value": "cnt",
+      "count": 169
+    },
+    {
+      "value": "update",
+      "count": 159
+    },
+    {
+      "value": "used",
+      "count": 159
+    },
+    {
+      "value": "op",
+      "count": 157
+    },
+    {
+      "value": "elements",
+      "count": 156
+    },
+    {
+      "value": "bl",
+      "count": 153
+    },
+    {
+      "value": "setup",
+      "count": 153
+    },
+    {
+      "value": "bs",
+      "count": 151
+    },
+    {
+      "value": "values",
+      "count": 150
+    },
+    {
+      "value": "minimal",
+      "count": 145
+    },
+    {
+      "value": "DSU",
+      "count": 141
+    },
+    {
+      "value": "pii",
+      "count": 139
+    },
+    {
+      "value": "st",
+      "count": 134
+    },
+    {
+      "value": "path",
+      "count": 130
+    },
+    {
+      "value": "bit",
+      "count": 129
+    },
+    {
+      "value": "opt",
+      "count": 127
+    },
+    {
+      "value": "parent",
+      "count": 127
+    },
+    {
+      "value": "comp",
+      "count": 123
+    },
+    {
+      "value": "i128",
+      "count": 123
+    },
+    {
+      "value": "names",
+      "count": 122
+    },
+    {
+      "value": "it",
+      "count": 119
+    },
+    {
+      "value": "S",
+      "count": 112
+    },
+    {
+      "value": "mod",
+      "count": 112
+    },
+    {
+      "value": "max_size_set",
+      "count": 111
+    },
+    {
+      "value": "ab",
+      "count": 110
+    },
+    {
+      "value": "n_sets",
+      "count": 108
+    },
+    {
+      "value": "sz",
+      "count": 105
+    },
+    {
+      "value": "vvi",
+      "count": 104
+    },
+    {
+      "value": "e",
+      "count": 100
+    },
+    {
+      "value": "maxx",
+      "count": 100
+    },
+    {
+      "value": "ssort",
+      "count": 100
+    },
+    {
+      "value": "word",
+      "count": 99
+    },
+    {
+      "value": "Node",
+      "count": 98
+    },
+    {
+      "value": "build",
+      "count": 98
+    },
+    {
+      "value": "g",
+      "count": 98
+    },
+    {
+      "value": "join",
+      "count": 98
+    },
+    {
+      "value": "mkunique",
+      "count": 97
+    },
+    {
+      "value": "VVI",
+      "count": 96
+    },
+    {
+      "value": "height",
+      "count": 96
+    },
+    {
+      "value": "VVII",
+      "count": 95
+    },
+    {
+      "value": "actual_node",
+      "count": 94
+    },
+    {
+      "value": "acessed",
+      "count": 93
+    },
+    {
+      "value": "sol",
+      "count": 93
+    },
+    {
+      "value": "all",
+      "count": 92
+    },
+    {
+      "value": "delta",
+      "count": 92
+    },
+    {
+      "value": "okay",
+      "count": 92
+    },
+    {
+      "value": "shrink_to_fit",
+      "count": 92
+    },
+    {
+      "value": "cost",
+      "count": 91
+    },
+    {
+      "value": "__int128",
+      "count": 87
+    },
+    {
+      "value": "atcoder",
+      "count": 85
+    },
+    {
+      "value": "is_prime",
+      "count": 84
+    },
+    {
+      "value": "modint",
+      "count": 84
+    },
+    {
+      "value": "name",
+      "count": 83
+    },
+    {
+      "value": "mat",
+      "count": 82
+    },
+    {
+      "value": "tp",
+      "count": 82
+    },
+    {
+      "value": "total",
+      "count": 80
+    },
+    {
+      "value": "BIT",
+      "count": 79
+    },
+    {
+      "value": "MAX_N",
+      "count": 79
+    },
+    {
+      "value": "vals",
+      "count": 79
+    },
+    {
+      "value": "mint",
+      "count": 78
+    },
+    {
+      "value": "get",
+      "count": 76
+    },
+    {
+      "value": "function",
+      "count": 75
+    },
+    {
+      "value": "se",
+      "count": 75
+    },
+    {
+      "value": "caps",
+      "count": 74
+    },
+    {
+      "value": "diff",
+      "count": 74
+    },
+    {
+      "value": "nums",
+      "count": 74
+    },
+    {
+      "value": "primes",
+      "count": 73
+    },
+    {
+      "value": "dx",
+      "count": 72
+    },
+    {
+      "value": "dy",
+      "count": 72
+    },
+    {
+      "value": "rep",
+      "count": 72
+    },
+    {
+      "value": "N",
+      "count": 71
+    },
+    {
+      "value": "pq",
+      "count": 70
+    },
+    {
+      "value": "pb",
+      "count": 68
+    },
+    {
+      "value": "root",
+      "count": 67
+    },
+    {
+      "value": "dists",
+      "count": 66
+    },
+    {
+      "value": "prime",
+      "count": 66
+    },
+    {
+      "value": "rbegin",
+      "count": 65
+    },
+    {
+      "value": "res",
+      "count": 65
+    },
+    {
+      "value": "fi",
+      "count": 64
+    },
+    {
+      "value": "calc",
+      "count": 62
+    },
+    {
+      "value": "actual_pos",
+      "count": 61
+    },
+    {
+      "value": "zeros",
+      "count": 61
+    },
+    {
+      "value": "div",
+      "count": 60
+    },
+    {
+      "value": "ops",
+      "count": 60
+    },
+    {
+      "value": "rng",
+      "count": 60
+    },
+    {
+      "value": "sieve",
+      "count": 60
+    },
+    {
+      "value": "vii",
+      "count": 59
+    },
+    {
+      "value": "actual_sum",
+      "count": 58
+    },
+    {
+      "value": "add",
+      "count": 58
+    },
+    {
+      "value": "iter",
+      "count": 58
+    },
+    {
+      "value": "len",
+      "count": 58
+    },
+    {
+      "value": "z",
+      "count": 58
+    },
+    {
+      "value": "random_device",
+      "count": 57
+    },
+    {
+      "value": "self",
+      "count": 57
+    },
+    {
+      "value": "visited",
+      "count": 57
+    },
+    {
+      "value": "PRINT",
+      "count": 56
+    },
+    {
+      "value": "mt19937",
+      "count": 56
+    },
+    {
+      "value": "new_cell",
+      "count": 56
+    },
+    {
+      "value": "rec",
+      "count": 56
+    },
+    {
+      "value": "rend",
+      "count": 56
+    },
+    {
+      "value": "numbers",
+      "count": 55
+    },
+    {
+      "value": "eb",
+      "count": 54
+    },
+    {
+      "value": "fact",
+      "count": 54
+    },
+    {
+      "value": "ones",
+      "count": 53
+    },
+    {
+      "value": "pll",
+      "count": 53
+    },
+    {
+      "value": "same_set",
+      "count": 53
+    },
+    {
+      "value": "in",
+      "count": 52
+    },
+    {
+      "value": "xy",
+      "count": 51
+    },
+    {
+      "value": "positions",
+      "count": 50
+    },
+    {
+      "value": "ar",
+      "count": 49
+    },
+    {
+      "value": "hh",
+      "count": 48
+    },
+    {
+      "value": "results",
+      "count": 48
+    },
+    {
+      "value": "biggest",
+      "count": 47
+    },
+    {
+      "value": "color",
+      "count": 47
+    }
+  ],
+  "idioms": [
+    {
+      "value": "cin >> $0;",
+      "count": 1674
+    },
+    {
+      "value": "int $0;",
+      "count": 1344
+    },
+    {
+      "value": "for (int $0 = 0; $0 < $1; $0++) {",
+      "count": 1101
+    },
+    {
+      "value": "using $0 = long long;",
+      "count": 1099
+    },
+    {
+      "value": "#define int $0",
+      "count": 942
+    },
+    {
+      "value": "void $0() {",
+      "count": 910
+    },
+    {
+      "value": "int32_t $0() {",
+      "count": 890
+    },
+    {
+      "value": "int $0 = 0;",
+      "count": 843
+    },
+    {
+      "value": "} else {",
+      "count": 812
+    },
+    {
+      "value": "ios_base::sync_with_stdio(false);",
+      "count": 791
+    },
+    {
+      "value": "$0();",
+      "count": 740
+    },
+    {
+      "value": "cin >> $0 >> $1;",
+      "count": 627
+    },
+    {
+      "value": "#define endl '\\n'",
+      "count": 624
+    },
+    {
+      "value": "template < typename $0 > void $1($0 $2) { cerr << $2 << endl;}",
+      "count": 620
+    },
+    {
+      "value": "template < typename $0, typename ... $1 > void $2($0 first, $1 ... $3) {",
+      "count": 620
+    },
+    {
+      "value": "void $0() { cerr << endl;}",
+      "count": 620
+    },
+    {
+      "value": "} while (0)",
+      "count": 620
+    },
+    {
+      "value": "$0($1 ...);",
+      "count": 619
+    },
+    {
+      "value": "cerr << first << \", \";",
+      "count": 619
+    },
+    {
+      "value": "cin.tie(nullptr), cout.tie(nullptr);",
+      "count": 540
+    },
+    {
+      "value": "$0++;",
+      "count": 538
+    },
+    {
+      "value": "int $0, $1;",
+      "count": 534
+    },
+    {
+      "value": "#define $0((int64_t) 1E18 + 1000)",
+      "count": 531
+    },
+    {
+      "value": "#define $0($1)[] (auto ... $2) { return $1($2 ...);}",
+      "count": 529
+    },
+    {
+      "value": "return $0;",
+      "count": 518
+    },
+    {
+      "value": "using $0 = vector < $1 >;",
+      "count": 499
+    },
+    {
+      "value": "cout << $0 << endl;",
+      "count": 491
+    },
+    {
+      "value": "vector < int > $0($1);",
+      "count": 440
+    },
+    {
+      "value": "vector < int > $0;",
+      "count": 359
+    },
+    {
+      "value": "$0 = $1;",
+      "count": 304
+    },
+    {
+      "value": "$0[$1] = $2;",
+      "count": 293
+    },
+    {
+      "value": "using $0 = long double;",
+      "count": 292
+    },
+    {
+      "value": "for (auto & $0 : $1) {",
+      "count": 287
+    },
+    {
+      "value": "cin.tie(0)->sync_with_stdio(0);",
+      "count": 281
+    },
+    {
+      "value": "while ($0--)",
+      "count": 260
+    },
+    {
+      "value": "cin.tie(0), cout.tie(0);",
+      "count": 251
+    },
+    {
+      "value": "$0.push_back($1);",
+      "count": 249
+    },
+    {
+      "value": "$0--;",
+      "count": 225
+    },
+    {
+      "value": "while ($0--) {",
+      "count": 225
+    },
+    {
+      "value": "if ($0 == $1) {",
+      "count": 207
+    },
+    {
+      "value": "#define endl(char) 10",
+      "count": 198
+    },
+    {
+      "value": "struct $0 {",
+      "count": 198
+    },
+    {
+      "value": "string $0;",
+      "count": 178
+    },
+    {
+      "value": "using $0 = long long; using $1 = unsigned long long; using $2 = float; using $3 = double; using $4 = long double;",
+      "count": 177
+    },
+    {
+      "value": "void $0();",
+      "count": 176
+    },
+    {
+      "value": "int $0 = 1;",
+      "count": 165
+    },
+    {
+      "value": "while ($0 <= $1) {",
+      "count": 160
+    },
+    {
+      "value": "$0 = $1 + 1;",
+      "count": 158
+    },
+    {
+      "value": "$0 = $1 - 1;",
+      "count": 156
+    },
+    {
+      "value": "using $0 = pair < $1, $1 >;",
+      "count": 153
+    },
+    {
+      "value": "while ($0--) $1();",
+      "count": 151
+    },
+    {
+      "value": "int $0 = $1;",
+      "count": 147
+    },
+    {
+      "value": "$0[$1].push_back($2);",
+      "count": 144
+    },
+    {
+      "value": "for (int $0 = 1; $0 <= $1; $0++) {",
+      "count": 143
+    },
+    {
+      "value": "$0[$1] = $1;",
+      "count": 142
+    },
+    {
+      "value": "int $0() {",
+      "count": 139
+    },
+    {
+      "value": "cin >> $0[$1];",
+      "count": 137
+    },
+    {
+      "value": "cin >> $0 >> $1 >> $2;",
+      "count": 136
+    },
+    {
+      "value": "$0 $1;",
+      "count": 134
+    },
+    {
+      "value": "int $0 = $1 + ($2 - $1) / 2;",
+      "count": 133
+    },
+    {
+      "value": "for (int $0 = 0; $0 < $1.size(); $0++) {",
+      "count": 132
+    },
+    {
+      "value": "vector < int32_t > $0;",
+      "count": 132
+    },
+    {
+      "value": "$0 += $1;",
+      "count": 131
+    },
+    {
+      "value": "cout << endl;",
+      "count": 127
+    },
+    {
+      "value": "for ($0 $1 = 0; $1 < $2; $1++) {",
+      "count": 123
+    },
+    {
+      "value": "for (auto $0 : $1) {",
+      "count": 122
+    },
+    {
+      "value": "$0 $1 = 0;",
+      "count": 119
+    },
+    {
+      "value": "return - 1;",
+      "count": 118
+    },
+    {
+      "value": "cout << \"NO\" << endl;",
+      "count": 116
+    },
+    {
+      "value": "int $0, $1, $2;",
+      "count": 115
+    },
+    {
+      "value": "cout << \"YES\" << endl;",
+      "count": 113
+    },
+    {
+      "value": "sort($0.begin(), $0.end());",
+      "count": 109
+    },
+    {
+      "value": "$0 $1() {",
+      "count": 108
+    },
+    {
+      "value": "int $0 = this->find($1);",
+      "count": 108
+    },
+    {
+      "value": "return false;",
+      "count": 107
+    },
+    {
+      "value": "signed $0() {",
+      "count": 104
+    },
+    {
+      "value": "return true;",
+      "count": 103
+    },
+    {
+      "value": "$0 += $1[$2];",
+      "count": 100
+    },
+    {
+      "value": "$0.pop();",
+      "count": 98
+    },
+    {
+      "value": "$0 %= $1;",
+      "count": 97
+    },
+    {
+      "value": "cout << - 1 << endl;",
+      "count": 97
+    },
+    {
+      "value": "if ($0[$1] == 0) {",
+      "count": 95
+    },
+    {
+      "value": "for (auto & $0 : $1) { cin >> $0;}",
+      "count": 93
+    },
+    {
+      "value": "if ($0 == 1) {",
+      "count": 93
+    },
+    {
+      "value": "#define $0($1) $2::sort($1)",
+      "count": 92
+    },
+    {
+      "value": "#define $0($1) $2::sort($1), $1.erase(unique($1.begin(), $1.end()), $1.end()), $1.$3()",
+      "count": 92
+    },
+    {
+      "value": "swap($0, $1);",
+      "count": 91
+    },
+    {
+      "value": "#define $0($1)[] () { return ($1);}",
+      "count": 90
+    },
+    {
+      "value": "$0.clear();",
+      "count": 90
+    },
+    {
+      "value": "for (int $0 = 0; $0 < $1 - 1; $0++) {",
+      "count": 89
+    },
+    {
+      "value": "using $0 = $1;",
+      "count": 89
+    },
+    {
+      "value": "using $0 = int32_t;",
+      "count": 88
+    },
+    {
+      "value": "using $0 = int64_t;",
+      "count": 88
+    },
+    {
+      "value": "$0 $1, $2;",
+      "count": 87
+    },
+    {
+      "value": "$0 = 0;",
+      "count": 86
+    },
+    {
+      "value": "#define $0($1)[] (return ($1);)",
+      "count": 85
+    },
+    {
+      "value": "$0--, $1--;",
+      "count": 85
+    },
+    {
+      "value": "using $0 = vector < int >;",
+      "count": 84
+    },
+    {
+      "value": "using $0 = pair < int, int >;",
+      "count": 83
+    },
+    {
+      "value": "$0.insert($1);",
+      "count": 80
+    }
+  ],
+  "constants": [
+    {
+      "value": "1e18 + 1000",
+      "count": 570
+    },
+    {
+      "value": "MAX_INT",
+      "count": 570
+    },
+    {
+      "value": "998244353",
+      "count": 58
+    },
+    {
+      "value": "1e9 + 7",
+      "count": 40
+    },
+    {
+      "value": "MOD",
+      "count": 40
+    },
+    {
+      "value": "1e9",
+      "count": 28
+    },
+    {
+      "value": "1e18",
+      "count": 24
+    },
+    {
+      "value": "MAX_N",
+      "count": 19
+    },
+    {
+      "value": "1e6 + 100",
+      "count": 15
+    },
+    {
+      "value": "INT_MAX",
+      "count": 15
+    },
+    {
+      "value": "1e9 + 100",
+      "count": 14
+    },
+    {
+      "value": "2e5 + 100",
+      "count": 13
+    },
+    {
+      "value": "mod",
+      "count": 13
+    },
+    {
+      "value": "200100",
+      "count": 11
+    },
+    {
+      "value": "MAXN",
+      "count": 9
+    },
+    {
+      "value": "1e6",
+      "count": 8
+    },
+    {
+      "value": "inf",
+      "count": 8
+    },
+    {
+      "value": "K",
+      "count": 7
+    },
+    {
+      "value": "1e8",
+      "count": 6
+    },
+    {
+      "value": "1000005",
+      "count": 5
+    },
+    {
+      "value": "1e15",
+      "count": 5
+    },
+    {
+      "value": "2e18",
+      "count": 5
+    },
+    {
+      "value": "2e6",
+      "count": 5
+    },
+    {
+      "value": "INF",
+      "count": 5
+    },
+    {
+      "value": "INT_MIN",
+      "count": 5
+    },
+    {
+      "value": "100005",
+      "count": 4
+    },
+    {
+      "value": "1e5 + 100",
+      "count": 4
+    },
+    {
+      "value": "1e9 + 9",
+      "count": 4
+    },
+    {
+      "value": "INT64_MAX",
+      "count": 4
+    },
+    {
+      "value": "MAX",
+      "count": 4
+    },
+    {
+      "value": "SIZE",
+      "count": 4
+    },
+    {
+      "value": "1e7",
+      "count": 3
+    },
+    {
+      "value": "1e9 - 100",
+      "count": 3
+    },
+    {
+      "value": "3e5",
+      "count": 3
+    },
+    {
+      "value": "MAX_M",
+      "count": 3
+    },
+    {
+      "value": "MAX_SIZE",
+      "count": 3
+    },
+    {
+      "value": "MAX_VALUE",
+      "count": 3
+    },
+    {
+      "value": "P",
+      "count": 3
+    },
+    {
+      "value": "10e6 + 100",
+      "count": 2
+    },
+    {
+      "value": "1e10",
+      "count": 2
+    },
+    {
+      "value": "1e12",
+      "count": 2
+    },
+    {
+      "value": "1e13",
+      "count": 2
+    },
+    {
+      "value": "1e17",
+      "count": 2
+    },
+    {
+      "value": "1e5 + 10",
+      "count": 2
+    },
+    {
+      "value": "1e6 + 10",
+      "count": 2
+    },
+    {
+      "value": "1e6 + 10000",
+      "count": 2
+    },
+    {
+      "value": "1e9 + 10000",
+      "count": 2
+    },
+    {
+      "value": "2.1e6",
+      "count": 2
+    },
+    {
+      "value": "2e6 + 100",
+      "count": 2
+    },
+    {
+      "value": "5e6 + 100",
+      "count": 2
+    }
+  ]
+}
