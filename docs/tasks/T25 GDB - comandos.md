@@ -1,10 +1,10 @@
 ---
 id: T25
 title: GDB - comandos
-status: ready
+status: in-progress
 depends_on: [T20, T22]
 branch: task/T25-gdb-commands
-adrs: []
+adrs: [ADR-T25-1]
 tags: [task]
 ---
 
@@ -169,13 +169,17 @@ livre de lição por causa do *expertise reversal*. Fontes em
 ## Files owned
 
 - `src/gdb/` (novo): `commands.ts`, `check.ts`, `programs.ts`,
-  `cmd-drill.ts`, `curriculum.ts`, `cases/` e os testes ao lado
-- `src/learn/` (novo, só se a extração do AC-7 for necessária), `src/vim/curriculum.ts`
+  `cmd-drill.ts`, `round.ts`, `curriculum.ts`, `cases/` e os testes ao lado
+- `src/learn/` (novo): `curriculum.ts`, `curriculum.test.ts`; `src/vim/curriculum.ts`
 - `src/storage/gdb.ts`, `src/storage/gdb-learn.ts` e os testes
-- `src/stats/event.ts`
+- `src/stats/event.ts`, `src/stats/event.test.ts` (novo)
 - `src/ui/GdbScreen.tsx`, `src/ui/gdb/` (novo), `src/ui/App.tsx`,
-  `src/ui/shell/sections.ts`, `src/ui/app.css`
-- `scripts/gdb-oracle.mjs` (novo), `package.json` (script `gdb:oracle`)
+  `src/ui/shell/sections.ts`, `src/ui/shell/sections.test.ts`,
+  `src/ui/shell/Shell.tsx`, `src/ui/shell/Shell.test.tsx`, `src/ui/app.css`,
+  `src/ui/GdbScreenCommands.test.tsx` (novo), `src/ui/GdbScreenLearn.test.tsx` (novo)
+- `scripts/gdb-oracle.mjs` (novo), `package.json` (script `gdb:oracle`),
+  `vite.config.ts` (limiares de cobertura para `src/gdb/**` e `src/learn/**`),
+  `playwright.config.ts` (incluir `gdb.spec.ts` no projeto `mobile`)
 - `tests/e2e/gdb.spec.ts` (novo)
 
 ## Subtasks (one commit each)
