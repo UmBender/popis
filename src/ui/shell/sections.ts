@@ -8,6 +8,7 @@ export type ItemId =
   | "progress"
   | "typing"
   | "text"
+  | "typing-weak"
   | "vim-learn"
   | "vim-motion"
   | "vim-edit";
@@ -66,6 +67,7 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
     [
       ["typing", "Código", false],
       ["text", "Texto"],
+      ["typing-weak", "Pontos fracos", false],
     ],
   ],
   [
