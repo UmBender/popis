@@ -1,10 +1,11 @@
 ---
 id: T34
 title: Digitação - trechos do repositório de CP
-status: ready
+status: in-progress
 depends_on: []
 branch: task/T34-typing-library-mining
-adrs: []
+adrs:
+  - "[[ADR-T34-1 Mineração da biblioteca de trechos e perfil de estilo]]"
 tags: [task]
 ---
 
@@ -86,7 +87,8 @@ de novo.
     (`FenwickTree` vira `fenwick`, `DSU` vira `dsu`).
   - Testes: `src/typing/mine/cluster.test.ts` ("near-identical Fenwick trees with renamed identifiers fall in one cluster", "the canonical variant is the most recently created one, higher contest number breaking ties", "clusters rank by file count then recency"), `src/typing/mine/cluster.prop.test.ts` (renomear identificadores não muda o grupo; o resultado não depende da ordem dos arquivos).
 - **AC-4**: **Saída** do script `npm run library:mine -- <caminho>`
-  (`scripts/library-mine.ts`, que roda com o Node 22 sem build):
+  (`scripts/library-mine.mjs`, carregando `src/typing/mine/` via `runnerImport`
+  do Vite conforme o plano do batch):
   - lê os arquivos e a data de criação de cada um numa única passada
     de `git log --diff-filter=A --name-only`, e chama os módulos puros;
   - escreve em `src/typing/library/`:
@@ -111,6 +113,7 @@ de novo.
     vez que apareceu, o caminho da variante escolhida e um checkbox
     "manter";
   - a lista dos arquivos marcados no AC-1.
+  - Testes: `src/typing/mine/output.test.ts` ("report includes commit, inventory counts, snippet checkboxes and flagged files").
 
   O dono confere tudo na revisão (`review`) e apaga os trechos que não
   quer antes do merge.
@@ -126,7 +129,7 @@ de novo.
 ## Files owned
 
 - `src/typing/mine/` (novo) e os testes
-- `scripts/library-mine.ts` (novo), `package.json` (script `library:mine`)
+- `scripts/library-mine.mjs` (novo), `package.json` (script `library:mine`)
 - `src/typing/library/` (os arquivos gerados)
 - `docs/architecture/Biblioteca de trechos.md` (novo)
 
