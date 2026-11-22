@@ -1,7 +1,14 @@
 import type { JsonValue } from "../core/problem";
 
-/** The drills that leave events (ADR-T22-1). */
-export const DRILLS = ["calc", "vim.motion", "vim.edit", "typing.code", "typing.text"] as const;
+/** The drills that leave events (ADR-T22-1, ADR-T25-1). */
+export const DRILLS = [
+  "calc",
+  "vim.motion",
+  "vim.edit",
+  "typing.code",
+  "typing.text",
+  "gdb.cmd",
+] as const;
 
 export type Drill = (typeof DRILLS)[number];
 
