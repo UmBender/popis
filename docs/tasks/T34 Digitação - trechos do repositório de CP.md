@@ -1,10 +1,11 @@
 ---
 id: T34
 title: Digitação - trechos do repositório de CP
-status: ready
+status: review
 depends_on: []
 branch: task/T34-typing-library-mining
-adrs: []
+adrs:
+  - "[[ADR-T34-1 Mineração da biblioteca de trechos e perfil de estilo]]"
 tags: [task]
 ---
 
@@ -86,7 +87,8 @@ de novo.
     (`FenwickTree` vira `fenwick`, `DSU` vira `dsu`).
   - Testes: `src/typing/mine/cluster.test.ts` ("near-identical Fenwick trees with renamed identifiers fall in one cluster", "the canonical variant is the most recently created one, higher contest number breaking ties", "clusters rank by file count then recency"), `src/typing/mine/cluster.prop.test.ts` (renomear identificadores não muda o grupo; o resultado não depende da ordem dos arquivos).
 - **AC-4**: **Saída** do script `npm run library:mine -- <caminho>`
-  (`scripts/library-mine.ts`, que roda com o Node 22 sem build):
+  (`scripts/library-mine.mjs`, carregando `src/typing/mine/` via `runnerImport`
+  do Vite conforme o plano do batch):
   - lê os arquivos e a data de criação de cada um numa única passada
     de `git log --diff-filter=A --name-only`, e chama os módulos puros;
   - escreve em `src/typing/library/`:
@@ -111,6 +113,7 @@ de novo.
     vez que apareceu, o caminho da variante escolhida e um checkbox
     "manter";
   - a lista dos arquivos marcados no AC-1.
+  - Testes: `src/typing/mine/output.test.ts` ("report includes commit, inventory counts, snippet checkboxes and flagged files").
 
   O dono confere tudo na revisão (`review`) e apaga os trechos que não
   quer antes do merge.
@@ -126,19 +129,19 @@ de novo.
 ## Files owned
 
 - `src/typing/mine/` (novo) e os testes
-- `scripts/library-mine.ts` (novo), `package.json` (script `library:mine`)
+- `scripts/library-mine.mjs` (novo), `package.json` (script `library:mine`)
 - `src/typing/library/` (os arquivos gerados)
 - `docs/architecture/Biblioteca de trechos.md` (novo)
 
 ## Subtasks (one commit each)
 
-- [ ] spec: ADR-T34-1 (o que conta como código do dono, critério da variante mais recente, saída reproduzível) e testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour: módulos puros e script
-- [ ] data: rodar `npm run library:mine -- ~/comp` e commitar `src/typing/library/` e o relatório, num commit próprio `feat(T34): mine snippet library from comp@<sha>`
-- [ ] quality: `npm run check` e coverage
-- [ ] docs: *Log* e status `review`
+- [x] spec: ADR-T34-1 (o que conta como código do dono, critério da variante mais recente, saída reproduzível) e testes nomeados
+- [x] tests
+- [x] models
+- [x] behaviour: módulos puros e script
+- [x] data: rodar `npm run library:mine -- ~/comp` e commitar `src/typing/library/` e o relatório, num commit próprio `feat(T34): mine snippet library from comp@<sha>`
+- [x] quality: `npm run check` e coverage
+- [x] docs: *Log* e status `review`
 
 ## Notas para o batch
 
@@ -150,3 +153,47 @@ de novo.
   na revisão.
 
 ## Log
+
+- 2026-11-21 — Branch `task/T34-typing-library-mining` criada a partir de
+  `task/T29-typing-target-pace` (conforme ordem do plano do batch).
+- 2026-11-21 — Desvio previsto do spec inicial: script implementado como
+  `scripts/library-mine.mjs` usando `runnerImport` do Vite (em vez de `.ts`
+  direto no Node), conforme decisão do plano do batch registrada em
+  [[ADR-T34-1 Mineração da biblioteca de trechos e perfil de estilo]].
+- 2026-11-21 — Correção de teste em commit próprio (`cf7e998`, antes do commit
+  de comportamento): o fixture inicial de `caps written snippets at maxSnippets`
+  em `src/typing/mine/output.test.ts` gerava 35 funções como prefixos
+  incrementais (`x += 10..44`) que encadeavam em um único grupo por alta
+  similaridade de 3-gramas; o fixture passou a gerar 35 funções estruturalmente
+  distintas, sem enfraquecer nenhuma asserção.
+- 2026-11-21 — UNATTENDED CHOICE: registrados em ADR-T34-1 — limiar `0,58` de
+  Dice em 3-gramas de tokens normalizados com componentes conexos (invariante à
+  ordem e à renomeação); janela de 6 meses (180 dias) ancorada na maior data de
+  criação do repositório (sem `Date.now()`, mantendo `tests/purity.test.ts`
+  verde e saída idêntica no tempo); exclusão de artefatos `combined.cpp` e de
+  `struct`s POD sem método/construtor; palavras de diretivas de pré-processador
+  (`define`, `ifdef`, etc.) tratadas como palavras-chave e linhas de continuação
+  `\` ignoradas nos idiomas de `profile.json`.
+- 2026-11-21 — Mineração executada com `npm run library:mine -- /home/bender/comp`
+  sobre `comp@0f83f9e8688f444342982aa1cdf7e0719a85bd90`: 1299 arquivos do dono,
+  409 de terceiros, 8 duplicados e 0 marcados → `template.cpp`, 30 trechos
+  `.cpp`, `profile.json` (200 identificadores, 100 idiomas, 50 constantes) e
+  `docs/architecture/Biblioteca de trechos.md`. Duas execuções consecutivas
+  conferidas via `sha256sum` geraram saídas idênticas byte a byte nos 33
+  arquivos.
+- 2026-11-21 — Gates verdes (commit `0dd684b`):
+  - `npm run check`: `tsc --noEmit` (0 erros), `eslint . --max-warnings 0` (0
+    avisos), `prettier --check .` (sem diff), `vitest run` (134/134 arquivos,
+    4082/4082 testes, incluindo 33 testes novos em `src/typing/mine/`),
+    `vite build` (compilou em 357 ms).
+  - `npm run coverage`: 99,97% statements / 99,27% branches / 100% functions /
+    99,98% lines no geral; `src/typing/**` (incluindo todos os arquivos de
+    `src/typing/mine/**`) em 100/100/100/100. Limiares de `vite.config.ts` já
+    estão no teto em `src/typing/**` e nenhuma outra pasta foi tocada.
+  - Fuzz (`FC_NUM_RUNS=20000` em `src/typing/mine/cluster.prop.test.ts`): 2/2
+    propriedades passaram em 35,62 s.
+  - Sem mudanças em `src/ui/`, portanto e2e e screenshots não se aplicam.
+- 2026-11-21 — Verificações manuais pendentes para o dono: revisar a lista de
+  trechos em `docs/architecture/Biblioteca de trechos.md`, desmarcar e apagar
+  em `src/typing/library/` o que não quiser publicar junto com o site, e
+  conferir os arquivos marcados antes do merge e antes de rodar a T32.
