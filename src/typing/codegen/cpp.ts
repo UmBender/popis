@@ -1,11 +1,5 @@
 import { createRng, type Rng } from "../../core/rng";
-import {
-  DEFAULT_PROFILE,
-  idiomWeight,
-  pickDistinct,
-  poolsFor,
-  weightedPick,
-} from "./profile";
+import { DEFAULT_PROFILE, idiomWeight, pickDistinct, poolsFor, weightedPick } from "./profile";
 import type { CodegenProfile, GeneratedSnippet, GrammarRule, ProfilePools } from "./types";
 
 export const CPP_RULE_NAMES = [
@@ -372,7 +366,11 @@ const CPP_RULES: readonly GrammarRule[] = [
   { name: "pair-struct", patterns: ["struct ", "pair <"], generate: pairStructRule },
   { name: "binary-search", patterns: ["while ($0 <= $1)", "/ 2;"], generate: binarySearchRule },
   { name: "constants", patterns: ["#define", "using $0 ="], generate: constantsRule },
-  { name: "structured-binding", patterns: ["for (auto", "pair <"], generate: structuredBindingRule },
+  {
+    name: "structured-binding",
+    patterns: ["for (auto", "pair <"],
+    generate: structuredBindingRule,
+  },
 ];
 
 /** Generates a deterministic C++20 snippet from `seed` weighted by `profile`. */

@@ -1,11 +1,5 @@
 import { createRng, type Rng } from "../../core/rng";
-import {
-  DEFAULT_PROFILE,
-  idiomWeight,
-  pickDistinct,
-  poolsFor,
-  weightedPick,
-} from "./profile";
+import { DEFAULT_PROFILE, idiomWeight, pickDistinct, poolsFor, weightedPick } from "./profile";
 import type { CodegenProfile, GeneratedSnippet, GrammarRule, ProfilePools } from "./types";
 
 export const PYTHON_RULE_NAMES = [

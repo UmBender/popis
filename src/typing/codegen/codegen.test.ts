@@ -61,7 +61,15 @@ describe("codegen grammar", () => {
     const corpus = Array.from({ length: 400 }, (_, seed) => generateCode(seed, "cpp").text).join(
       "\n",
     );
-    for (const token of ["1e9 + 7", "998244353", "LLONG_MAX", "MAXN", "#define int ll", "vi", "pii"]) {
+    for (const token of [
+      "1e9 + 7",
+      "998244353",
+      "LLONG_MAX",
+      "MAXN",
+      "#define int ll",
+      "vi",
+      "pii",
+    ]) {
       expect(corpus, `missing ${token}`).toContain(token);
     }
   });

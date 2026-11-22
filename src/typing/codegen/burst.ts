@@ -1,19 +1,7 @@
 import { createRng, deriveSeed, type Rng } from "../../core/rng";
 import type { Language } from "../corpus";
-import {
-  DEFAULT_PROFILE,
-  idiomWeight,
-  pickDistinct,
-  poolsFor,
-  weightedPick,
-} from "./profile";
-import type {
-  BurstRule,
-  BurstSnippet,
-  BurstSummary,
-  CodegenProfile,
-  ProfilePools,
-} from "./types";
+import { DEFAULT_PROFILE, idiomWeight, pickDistinct, poolsFor, weightedPick } from "./profile";
+import type { BurstRule, BurstSnippet, BurstSummary, CodegenProfile, ProfilePools } from "./types";
 
 export const BURST_REPETITIONS = 5 as const;
 
