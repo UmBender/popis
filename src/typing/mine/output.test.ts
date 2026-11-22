@@ -195,9 +195,17 @@ describe("mineLibrary output and report", () => {
 
   it("caps written snippets at maxSnippets (default 30) plus template.cpp and profile.json", () => {
     const files: RepoFile[] = [];
+    const containers = ["vector<int>", "deque<int>", "set<int>", "multiset<int>", "queue<int>", "stack<int>"];
+    const ops = ["+=", "-=", "*=", "^=", "|=", "&="];
     for (let i = 0; i < 35; i++) {
-      // Distinct structures so each lands in its own cluster
-      const ops = Array.from({ length: i + 1 }, (_, k) => `    x += ${k + 10};`).join("\n");
+      // Structurally distinct bodies with unique numeric literals and control flow
+      // so each function stays in its own cluster.
+      const c = containers[i % containers.length]!;
+      const op = ops[Math.floor(i / containers.length) % ops.length]!;
+      const k1 = 1000 + i * 37;
+      const k2 = 2000 + i * 53;
+      const k3 = 3000 + i * 71;
+      const k4 = 4000 + i * 97;
       files.push({
         path: `algols/algo_${i}/main.cpp`,
         createdAt: `2026-10-${String((i % 28) + 1).padStart(2, "0")}T10:00:00-03:00`,
@@ -205,9 +213,10 @@ describe("mineLibrary output and report", () => {
           "#include <bits/stdc++.h>",
           "using namespace std;",
           `int algo_${i}(int x) {`,
-          "    int y = x;",
-          ops,
-          "    return x + y;",
+          `    ${c} box;`,
+          `    if (x > ${k1}) x ${op} ${k2};`,
+          `    for (int t = ${k3}; t < ${k4}; t += ${i + 2}) x ^= t + ${i * 11 + 3};`,
+          `    return x + ${k1 + k4} - ${k2};`,
           "}",
           "int main() {",
           "    cin.tie(0)->sync_with_stdio(0);",
