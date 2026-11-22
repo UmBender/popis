@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { execute, type Command } from "./motions";
+import { execute, searchMatches, type Command } from "./motions";
 import { createState, type VimState } from "./state";
 
 // AC-2: the movements as pure functions of the state. The fidelity cases in
@@ -125,5 +125,18 @@ describe("execute", () => {
     expect(at(execute(state([0, 0], text), simple("}", null)))).toEqual([1, 0]);
     expect(at(execute(state([3, 0], text), simple("{", null)))).toEqual([1, 0]);
     expect(at(execute(state([5, 0], text), simple("}", null)))).toEqual([5, 0]);
+  });
+});
+
+describe("searchMatches", () => {
+  it("search with an empty pattern finds no match", () => {
+    // Arrange
+    const lines = ["ab ab"];
+
+    // Act
+    const found = searchMatches(lines, { pattern: "", startWord: false, endWord: false });
+
+    // Assert
+    expect(found).toEqual([]);
   });
 });

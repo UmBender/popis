@@ -1,10 +1,11 @@
 ---
 id: T29
 title: Digitação - ritmo-alvo
-status: ready
+status: review
 depends_on: [T24]
 branch: task/T29-typing-target-pace
-adrs: []
+adrs:
+  - "[[ADR-T29-1 Ritmo-alvo adaptativo e cursor fantasma na digitação]]"
 tags: [task]
 ---
 
@@ -56,7 +57,7 @@ perseguir, sem estacionar no ritmo confortável. Ideia D4 de
   - os eventos da T22 ganham `extra.target` e `extra.onPace` em cada
     unidade;
   - um dado corrompido carrega como sem histórico.
-  - Testes: `src/storage/typing-pace.test.ts`, `src/stats/keytrace.test.ts` ("events carry target and onPace").
+  - Testes: `src/storage/typing-pace.test.ts` ("saves and loads pace settings and targets per config", "corrupt data loads as empty history with defaults", "resolves initial target from recent history or 30 WPM"), `src/stats/keytrace.test.ts` ("events carry target and onPace").
 
 ## Out of scope
 
@@ -66,18 +67,48 @@ perseguir, sem estacionar no ritmo confortável. Ideia D4 de
 
 ## Files owned
 
-- `src/typing/pace.ts` (novo) e os testes
-- `src/storage/typing-pace.ts` (novo) e o teste
-- `src/stats/keytrace.ts`
-- `src/ui/TypingScreen.tsx`, `src/ui/TextTypingScreen.tsx`, `src/ui/app.css` e os testes de tela
+- `src/typing/pace.ts` (novo) e os testes (`src/typing/pace.test.ts`, `src/typing/pace.prop.test.ts`)
+- `src/storage/typing-pace.ts` (novo) e o teste (`src/storage/typing-pace.test.ts`)
+- `src/stats/keytrace.ts` e `src/stats/keytrace.test.ts`
+- `src/ui/TypingScreen.tsx`, `src/ui/TextTypingScreen.tsx`, `src/ui/app.css` e os testes de tela (`src/ui/TypingScreen.test.tsx`, `src/ui/TextTypingScreen.test.tsx`)
+- `tests/e2e/typing.spec.ts` e `tests/e2e/text-typing.spec.ts` (fluxo do cursor fantasma e resultado no app real)
 
 ## Subtasks (one commit each)
 
-- [ ] spec: ADR-T29-1 (unidade no ritmo, passo de 2 WPM, trava de 95%) e testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, coverage, e2e e screenshot do cursor fantasma
-- [ ] docs: *Log* e status `review`
+- [x] spec: ADR-T29-1 (unidade no ritmo, passo de 2 WPM, trava de 95%) e testes nomeados
+- [x] tests
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, coverage, e2e e screenshot do cursor fantasma
+- [x] docs: *Log* e status `review`
 
 ## Log
+
+- 2026-11-21 — Spec e ADR-T29-1 registrados; `tests/e2e/typing.spec.ts` e
+  `tests/e2e/text-typing.spec.ts` incluídos em *Files owned* para cobrir o
+  cursor fantasma e o resultado de ritmo no app real.
+- 2026-11-21 — UNATTENDED CHOICE: piso positivo `MIN_TARGET_WPM = 4` (mantém
+  passos exatos de 0 ou 2 WPM sem nunca zerar o alvo); indicador `alvo` na
+  `RoundBar` enquanto "Ritmo-alvo" está ligado; cursor fantasma em `--muted`
+  (cedendo ao `--accent` do cursor real quando coincidem na mesma posição);
+  chaves de configuração `text:<textConfigKey>` e `code:<linguagens ordenadas
+  por +>`.
+- 2026-11-21 — Gates verdes:
+  - `npm run coverage`: 128 arquivos / 4049 testes passaram; 99,97% statements,
+    99,21% branches, 100% functions, 99,98% lines (`src/typing/pace.ts`,
+    `src/storage/typing-pace.ts`, `src/stats/keytrace.ts` e
+    `src/ui/TextTypingScreen.tsx` em 100/100/100/100; `src/ui/TypingScreen.tsx`
+    em 100/98,41/100/100). Nenhum limiar de pasta subiu para inteiro acima do
+    atual em `vite.config.ts`.
+  - `npm run test:fuzz`: 25 arquivos / 188 testes passaram com
+    `FC_NUM_RUNS=20000`.
+  - `npm run test:e2e`: 31/31 testes passaram (desktop Chromium + mobile Pixel 7).
+  - Verificação visual (`.batch/visual/t29-pace.spec.ts`): 6 capturas abertas e
+    inspecionadas (`desktop-t29-code-ghost.png`, `desktop-t29-code-result.png`,
+    `desktop-t29-text-ghost.png`, `desktop-t29-text-result.png`,
+    `phone-t29-text-ghost.png`, `phone-t29-text-result.png`). Cursor fantasma
+    visível e distinto do cursor real sem deslocar o texto; opções e resultados
+    cabem sem rolagem horizontal no desktop e no celular.
+- 2026-11-21 — Verificações manuais pendentes para o dono: sentir se o cursor
+  fantasma acompanha bem na sua velocidade real e se o alvo se ajusta de forma
+  natural ao longo de algumas rodadas.

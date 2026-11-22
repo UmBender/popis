@@ -33,4 +33,27 @@ test("typing a Python and a C++ snippet with auto-indent in the real app", async
   await expect(page.getByTestId("accuracy")).toHaveText("100%");
   await expect(page.getByTestId("typing-summary")).toContainText("Últimas 10 rodadas");
   await expect(page.getByTestId("typing-summary")).toContainText("melhor");
+  await expect(page.getByTestId("typing-pace-result")).toContainText("das linhas no ritmo");
+  await expect(page.getByTestId("typing-pace-result")).toContainText("→");
+});
+
+test("code ghost caret advances during typing and hides when Ritmo-alvo is off", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.goto("/");
+  await page.getByRole("radio", { name: "Código" }).check();
+
+  const code = page.getByTestId("typing-code");
+  await expect(code.locator('[data-ghost="true"]')).toHaveCount(0);
+  await page.keyboard.type("a");
+  await page.clock.runFor(1600);
+  await expect(code.locator('[data-ghost="true"]')).toHaveCount(1);
+
+  await page.keyboard.press("Escape");
+  await page.getByRole("checkbox", { name: "Ritmo-alvo" }).uncheck();
+  await page.getByRole("textbox", { name: "Código digitado" }).focus();
+  await page.keyboard.type("a");
+  await page.clock.runFor(1600);
+  await expect(code.locator('[data-ghost="true"]')).toHaveCount(0);
 });

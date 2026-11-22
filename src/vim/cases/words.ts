@@ -51,6 +51,10 @@ export const WORDS: readonly VimCase[] = [
   ["E: count jumps that many WORD ends", "a.b c.d e.f", [0, 0], "3E", [0, 10]],
   ["E: skips an empty line", "a.b\n\nc.d", [0, 2], "E", [2, 2]],
   ["E: stays at the end of the buffer", "a.b", [0, 2], "E", [0, 2]],
+  // Edges only random property cases reached before (fix/vim-coverage-flake).
+  ["b: skips leading whitespace to the start of the buffer", "  foo", [0, 2], "b", [0, 0]],
+  ["ge: skips leading whitespace to the start of the buffer", "  foo", [0, 2], "ge", [0, 0]],
+  ["e: stays on an empty last line", "foo\n", [1, 0], "e", [1, 0]],
   ["ge: goes to the end of the previous word", "foo bar", [0, 4], "ge", [0, 2]],
   ["ge: from inside a word goes to the previous word end", "foo bar", [0, 5], "ge", [0, 2]],
   ["ge: stops at punctuation", "foo.bar", [0, 4], "ge", [0, 3]],
