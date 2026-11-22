@@ -1,7 +1,7 @@
 ---
 id: T25
 title: GDB - comandos
-status: in-progress
+status: review
 depends_on: [T20, T22]
 branch: task/T25-gdb-commands
 adrs: [ADR-T25-1]
@@ -175,21 +175,22 @@ livre de lição por causa do *expertise reversal*. Fontes em
 - `src/stats/event.ts`, `src/stats/event.test.ts` (novo)
 - `src/ui/GdbScreen.tsx`, `src/ui/gdb/` (novo), `src/ui/App.tsx`,
   `src/ui/shell/sections.ts`, `src/ui/shell/sections.test.ts`,
-  `src/ui/shell/Shell.tsx`, `src/ui/shell/Shell.test.tsx`, `src/ui/app.css`,
+  `src/ui/shell/Shell.tsx`, `src/ui/shell/Shell.test.tsx`,
+  `src/ui/coherence.test.tsx`, `src/ui/app.css`,
   `src/ui/GdbScreenCommands.test.tsx` (novo), `src/ui/GdbScreenLearn.test.tsx` (novo)
 - `scripts/gdb-oracle.mjs` (novo), `package.json` (script `gdb:oracle`),
   `vite.config.ts` (limiares de cobertura para `src/gdb/**` e `src/learn/**`),
   `playwright.config.ts` (incluir `gdb.spec.ts` no projeto `mobile`)
-- `tests/e2e/gdb.spec.ts` (novo)
+- `tests/e2e/gdb.spec.ts` (novo), `tests/e2e/coherence.spec.ts`
 
 ## Subtasks (one commit each)
 
-- [ ] spec: ADR-T25-1 (simulação por transcrição gravada, oráculo gdb, reuso do Aprender) e testes nomeados
-- [ ] tests: parser, verificador, gerador, currículo, telas
-- [ ] models: tipos de ação, programa, item e lição
-- [ ] behaviour: parser, gerador, transcrições, telas e oráculo
-- [ ] quality: `npm run check`, `gdb:oracle`, coverage, e2e e screenshots
-- [ ] docs: *Log* e status `review`
+- [x] spec: ADR-T25-1 (simulação por transcrição gravada, oráculo gdb, reuso do Aprender) e testes nomeados
+- [x] tests: parser, verificador, gerador, currículo, telas
+- [x] models: tipos de ação, programa, item e lição
+- [x] behaviour: parser, gerador, transcrições, telas e oráculo
+- [x] quality: `npm run check`, `gdb:oracle`, coverage, e2e e screenshots
+- [x] docs: *Log* e status `review`
 
 ## Notas para o batch
 
@@ -200,3 +201,22 @@ livre de lição por causa do *expertise reversal*. Fontes em
   variante simples do programa que concorde.
 
 ## Log
+
+- 2026-11-22 — Escopo completo entregue (sem recorte): todas as 9 unidades (28 lições) do Aprender, todos os 14 tipos (`iniciar`, `break-linha`, `break-funcao`, `tbreak`, `break-cond`, `condition`, `gerir`, `ignore`, `andar`, `olhar`, `pilha`, `vigia`, `mudar`, `crash`), 14 programas C++ curtos em `src/gdb/programs.ts`, parser com vocabulário real do GNU gdb 18.1, verificador por efeito em `src/gdb/check.ts`, motor de rodada em `src/gdb/round.ts` com eventos `gdb.cmd` (T22), e oráculo `npm run gdb:oracle`.
+- 2026-11-22 — Extração de reuso (AC-7): helpers de status de unidade, próxima lição não concluída e retirada adaptativa (`unitStatus`, `nextUncompleted`, `nextFadingStep`) extraídos para `src/learn/curriculum.ts`; `src/vim/curriculum.ts` apenas reexporta e delega, mantendo `src/vim/curriculum.test.ts` intacto e verde. Progresso salvo em `popis.gdb-learn` (v2) e configurações/resultados em `popis.gdb` e `popis.gdb-results`.
+- 2026-11-22 — UNATTENDED CHOICE e ampliação de *Files owned*:
+  - `TreeItem` (`src/ui/shell/sections.ts`, `src/ui/shell/Shell.tsx`) ganhou campo opcional `ariaLabel` (`"Aprender (GDB)"` em `gdb-learn`, mantendo rótulo visível `"Aprender"` e `<h1>Aprender</h1>`), evitando rádios homônimos no `radiogroup` e preservando todos os testes existentes do Vim sem alteração.
+  - `src/ui/shell/Shell.test.tsx`, `src/ui/coherence.test.tsx` e `tests/e2e/coherence.spec.ts` ajustados minimamente para clicar pelo `ariaLabel ?? label` e conferir unicidade por `(pasta, h1)` e por `aria-label`.
+  - `playwright.config.ts` atualizado para incluir `gdb.spec.ts` no projeto `mobile` (Pixel 7 sob `/popis/`); `vite.config.ts` atualizado com limiares para `src/gdb/**` (`99/98/100/95`) e `src/learn/**` (`100/100/100/100`).
+- 2026-11-22 — Achados corrigidos pelo oráculo real e pelos testes:
+  - No `abort-assert` com glibc local, `check_idx` fica no frame `#5` (5 frames internos da libc `#0..#4`), ajustado no gerador e em `u9-up-user`.
+  - Em `two-pointers`, `cur > thresh` só dispara após `cur += a[r]` (linha 8); em `sum-loop`, `condition` precisa de dois breakpoints dentro do escopo de `i` (linhas 6 e 7); em `binary-search`, `set lo = ...` é ambíguo no gdb real (`local-environment`, `logging`), removida essa alternativa em favor de `set var`/`set variable`/`p`.
+  - Corrigida a normalização de condições compostas entre parênteses (`(i > 0 && a[i] != -1) || sum == 0`) em `src/gdb/commands.ts` ao remover parênteses de cada ramo `||` antes de dividir por `&&`.
+- 2026-11-22 — Verificação visual: capturadas e inspecionadas 10 capturas Playwright em `.batch/visual/shots/` (`desktop` e `phone` para lista do Aprender, lição aberta com exemplo e exercício, Comandos, feedback de erro e tela de resultado). Duas falhas visuais encontradas e corrigidas: crases literais de Markdown nas explicações de `src/gdb/curriculum.ts` removidas, e sondas de `frame` e `info breakpoints` separadas em `scripts/gdb-oracle.mjs` (com verificação permanente em `src/gdb/curriculum.test.ts`) para a seta `=>` não acender antes de `run`; capturas da lição refeitas e conferidas.
+- 2026-11-22 — Gates verdes:
+  - `npm run gdb:oracle`: `gdb oracle: prefixes 159/159, transcripts 28/28, equivalences 119/119`.
+  - `npm run check`: verde (`tsc --noEmit`, `eslint . --max-warnings 0`, `prettier --check .`, `137/137` arquivos / `4079/4079` testes, `vite build`).
+  - `npm run coverage`: verde (`99.86%` statements, `98.97%` branches, `100%` functions, `99.97%` lines; `src/gdb/**` `98.75/97.27/100/99.84`, `src/learn/**` `100/100/100/100`, `src/ui/gdb/**` `100/99.4/100/100`; todos os limiares atendidos).
+  - `npm run test:fuzz -- src/gdb/cmd-drill.prop.test.ts`: verde (`25/25` arquivos / `199/199` testes com `FC_NUM_RUNS=20000`).
+  - `npm run test:e2e`: `tests/e2e/gdb.spec.ts` verde em `chromium` e `mobile` (`/popis/`), mais toda a suíte E2E (`31/32` antes do ajuste de `coherence.spec.ts` + `4/4` em `coherence.spec.ts` após ajuste).
+- 2026-11-22 — Verificação manual para o dono: ler as explicações das unidades 1, 3 e 9 no Aprender, e digitar alguns comandos no celular.

@@ -1,7 +1,7 @@
 ---
 id: ADR-T25-1
 title: Treino de comandos do GDB com transcrições gravadas, oráculo e reuso do Aprender
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-21
 task: T25
