@@ -1,4 +1,8 @@
+import { createRng } from "../../core/rng";
 import type { Language } from "../corpus";
+import { generateCpp } from "./cpp";
+import { DEFAULT_PROFILE } from "./profile";
+import { generatePython } from "./python";
 import type { CodegenProfile, GeneratedSnippet } from "./types";
 
 export { BURST_REPETITIONS, burstSummary, generateBurst } from "./burst";
@@ -13,18 +17,22 @@ export type {
   GeneratedSnippet,
 } from "./types";
 
+/** Generates a deterministic code snippet in `language` from `seed` (ADR-T31-1). */
 export function generateCode(
-  _seed: number,
-  _language: Language,
-  _profile?: CodegenProfile,
+  seed: number,
+  language: Language,
+  profile: CodegenProfile = DEFAULT_PROFILE,
 ): GeneratedSnippet {
-  throw new Error("todo");
+  return language === "cpp" ? generateCpp(seed, profile) : generatePython(seed, profile);
 }
 
+/** Picks one language from `languages` by `seed` and generates its code snippet. */
 export function generateCodeSnippet(
-  _seed: number,
-  _languages: readonly Language[],
-  _profile?: CodegenProfile,
+  seed: number,
+  languages: readonly Language[],
+  profile: CodegenProfile = DEFAULT_PROFILE,
 ): GeneratedSnippet {
-  throw new Error("todo");
+  if (languages.length === 0) throw new RangeError("choose at least one language");
+  const language = createRng(seed).pick(languages);
+  return generateCode(seed, language, profile);
 }

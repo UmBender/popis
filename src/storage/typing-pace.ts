@@ -41,8 +41,8 @@ export function codePaceKey(languages: readonly Language[]): string {
 }
 
 /** Stable pace key for Rajada (burst) mode in Código (T31 AC-6). */
-export function burstPaceKey(_languages: readonly Language[]): string {
-  throw new Error("todo");
+export function burstPaceKey(languages: readonly Language[]): string {
+  return `burst:${[...languages].sort().join("+")}`;
 }
 
 /** Parses untrusted JSON into a valid `TypingPaceStore`; corrupt data loads as empty history. */

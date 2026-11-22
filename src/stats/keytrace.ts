@@ -157,7 +157,7 @@ export function codeEvents(trace: KeyTrace, meta: CodeMeta): TrainingEvent[] {
       at: meta.at,
       drill: "typing.code",
       config: meta.config,
-      kc: "line",
+      kc: meta.kc ?? "line",
       ok: u.ok,
       timeMs: u.timeMs,
       extra,
