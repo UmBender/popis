@@ -14,6 +14,8 @@ const SCREENS: readonly ItemId[] = [
   "vim-learn",
   "vim-motion",
   "vim-edit",
+  "gdb-learn",
+  "gdb-commands",
 ];
 
 describe("sections", () => {
@@ -25,7 +27,21 @@ describe("sections", () => {
       ["Treino", ["Revisar", "Dados", "Evolução"]],
       ["Digitação", ["Código", "Texto"]],
       ["Vim", ["Aprender", "Movimento", "Edição"]],
+      ["GDB", ["Aprender", "Comandos"]],
     ]);
+  });
+
+  it("GDB folder follows Vim and keeps shortcuts 1-9", () => {
+    const vimIdx = SECTIONS.findIndex((f) => f.id === "vim");
+    const gdbIdx = SECTIONS.findIndex((f) => f.id === "gdb");
+    expect(gdbIdx).toBe(vimIdx + 1);
+    const gdb = SECTIONS[gdbIdx];
+    expect(gdb?.label).toBe("GDB");
+    expect(gdb?.items.map((i) => [i.id, i.label, i.touch, i.shortcut])).toEqual([
+      ["gdb-learn", "Aprender", true, null],
+      ["gdb-commands", "Comandos", true, null],
+    ]);
+    expect(ITEMS.slice(1, 10).map((i) => i.shortcut)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
 
   it("sections hold every mode and every screen exactly once", () => {
