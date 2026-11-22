@@ -1,12 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import {
-  ghostCodePosition,
-  isUnitOnPace,
-  nextTargetWpm,
-  PACE_BAND,
-  PACE_STEP_WPM,
-} from "./pace";
+import { ghostCodePosition, isUnitOnPace, nextTargetWpm, PACE_BAND, PACE_STEP_WPM } from "./pace";
 
 const GOALS = [0.7, 0.85, 0.95] as const;
 
@@ -71,10 +65,7 @@ describe("pace properties", () => {
 
   it("ghost code position is monotonically non-decreasing and never lands on auto-indent spaces", () => {
     const lineArb = fc
-      .tuple(
-        fc.integer({ min: 0, max: 8 }),
-        fc.stringMatching(/^[a-z0-9_;()=]+$/),
-      )
+      .tuple(fc.integer({ min: 0, max: 8 }), fc.stringMatching(/^[a-z0-9_;()=]+$/))
       .filter(([, body]) => body.length >= 1 && body.length <= 20)
       .map(([indent, body]) => `${" ".repeat(indent)}${body}`);
     const snippetArb = fc

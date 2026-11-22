@@ -474,4 +474,14 @@ describe("text typing results", () => {
     expect(events).toHaveLength(10);
     expect(events.every((e) => e.extra["target"] === 30 && e.extra["onPace"] === true)).toBe(true);
   });
+
+  it("initial target uses prior round history when no target is stored", () => {
+    const store = storeWith(WORDS_10);
+    appendTextResult(store, result({ config: textConfigKey(WORDS_10), wpm: 50 }));
+    setup(store);
+    expect(screen.getByTestId("pace-target").textContent).toBe("50 WPM");
+
+    typeAll(initialWords(SEED, WORDS_10));
+    expect(screen.getByTestId("text-pace-result").textContent).toContain("50 → 52 WPM");
+  });
 });

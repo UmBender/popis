@@ -344,4 +344,28 @@ describe("typing screen", () => {
     },
     WHOLE_SNIPPET_TIMEOUT_MS,
   );
+
+  it(
+    "initial target uses prior round history when no target is stored",
+    () => {
+      const store = memoryStore();
+      appendTypingResult(store, {
+        version: 1,
+        snippetId: "cpp-gcd",
+        language: "cpp",
+        seed: 1,
+        wpm: 50,
+        accuracy: 1,
+        errors: 0,
+        timeMs: 1000,
+        finishedAt: 0,
+      });
+      setup(store);
+      expect(screen.getByTestId("pace-target").textContent).toBe("50 WPM");
+
+      typeSnippet(pickSnippet(SEED, LANGUAGES));
+      expect(screen.getByTestId("typing-pace-result").textContent).toContain("50 → 52 WPM");
+    },
+    WHOLE_SNIPPET_TIMEOUT_MS,
+  );
 });

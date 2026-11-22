@@ -14,30 +14,18 @@ import {
 
 describe("pace target adjustment", () => {
   it("pace target rises 2 wpm when on-pace share is above goal and accuracy is at least 95%", () => {
-    expect(
-      nextTargetWpm({ target: 40, onPaceShare: 0.9, accuracy: 0.95, goal: 0.85 }),
-    ).toBe(42);
-    expect(
-      nextTargetWpm({ target: 40, onPaceShare: 0.85, accuracy: 0.98, goal: 0.8 }),
-    ).toBe(42);
-    expect(
-      nextTargetWpm({ target: 40, onPaceShare: 1, accuracy: 1, goal: 0.95 }),
-    ).toBe(42);
+    expect(nextTargetWpm({ target: 40, onPaceShare: 0.9, accuracy: 0.95, goal: 0.85 })).toBe(42);
+    expect(nextTargetWpm({ target: 40, onPaceShare: 0.85, accuracy: 0.98, goal: 0.8 })).toBe(42);
+    expect(nextTargetWpm({ target: 40, onPaceShare: 1, accuracy: 1, goal: 0.95 })).toBe(42);
   });
 
   it("pace target stays when accuracy is below 95%", () => {
-    expect(
-      nextTargetWpm({ target: 40, onPaceShare: 0.95, accuracy: 0.94, goal: 0.85 }),
-    ).toBe(40);
+    expect(nextTargetWpm({ target: 40, onPaceShare: 0.95, accuracy: 0.94, goal: 0.85 })).toBe(40);
   });
 
   it("pace target falls 2 wpm when on-pace share is below goal", () => {
-    expect(
-      nextTargetWpm({ target: 40, onPaceShare: 0.8, accuracy: 1, goal: 0.85 }),
-    ).toBe(38);
-    expect(
-      nextTargetWpm({ target: 40, onPaceShare: 0.65, accuracy: 0.9, goal: 0.7 }),
-    ).toBe(38);
+    expect(nextTargetWpm({ target: 40, onPaceShare: 0.8, accuracy: 1, goal: 0.85 })).toBe(38);
+    expect(nextTargetWpm({ target: 40, onPaceShare: 0.65, accuracy: 0.9, goal: 0.7 })).toBe(38);
     expect(
       nextTargetWpm({ target: MIN_TARGET_WPM, onPaceShare: 0, accuracy: 0.5, goal: 0.85 }),
     ).toBe(MIN_TARGET_WPM);
@@ -75,7 +63,9 @@ describe("on-pace unit check and round evaluation", () => {
   });
 
   it("evaluatePaceRound summarises on-pace share and next target", () => {
-    expect(evaluatePaceRound([true, true, true, true, true, true, true, true, true, false], 30, 0.98)).toEqual({
+    expect(
+      evaluatePaceRound([true, true, true, true, true, true, true, true, true, false], 30, 0.98),
+    ).toEqual({
       target: 30,
       nextTarget: 32,
       onPaceCount: 9,

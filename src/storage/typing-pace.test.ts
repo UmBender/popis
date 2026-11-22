@@ -59,9 +59,9 @@ describe("typing pace storage", () => {
       goal: 0.85,
       targets: { good: 42 },
     });
-    expect(
-      parseTypingPace({ version: 1, enabled: true, goal: 0.85, targets: "bad" }),
-    ).toEqual(DEFAULT_TYPING_PACE);
+    expect(parseTypingPace({ version: 1, enabled: true, goal: 0.85, targets: "bad" })).toEqual(
+      DEFAULT_TYPING_PACE,
+    );
   });
 
   it("resolves initial target from recent history or 30 WPM", () => {
