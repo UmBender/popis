@@ -11,6 +11,14 @@ import {
   type TypingResult,
 } from "../storage/typing";
 import {
+  codePaceKey,
+  loadTypingPace,
+  saveConfigTarget,
+  saveTypingPace,
+  targetForConfig,
+  type TypingPaceStore,
+} from "../storage/typing-pace";
+import {
   LANGUAGE_LABELS,
   LANGUAGES,
   pickSnippet,
@@ -28,6 +36,12 @@ import {
   type Mark,
   type TypingState,
 } from "../typing/engine";
+import {
+  evaluatePaceRound,
+  ghostCodePosition,
+  PACE_GOAL_STEPS,
+  type PaceRoundSummary,
+} from "../typing/pace";
 import { seconds } from "./format";
 import { matchTrainingKey } from "./keys";
 import { detectPlateau, weeklyRate } from "../stats/learning";
@@ -58,12 +72,22 @@ type Run = {
   readonly typing: TypingState;
   /** The keys typed so far, for the events of the run (T22). */
   readonly trace: KeyTrace;
+  /** Target-pace result once the run finishes (T29). */
+  readonly paceSummary: PaceRoundSummary | null;
   readonly run: number;
 };
 
 function newRun(languages: readonly Language[], seed: number, run: number): Run {
   const snippet = pickSnippet(seed, languages);
-  return { languages, seed, snippet, typing: startTyping(snippet.text), trace: [], run };
+  return {
+    languages,
+    seed,
+    snippet,
+    typing: startTyping(snippet.text),
+    trace: [],
+    paceSummary: null,
+    run,
+  };
 }
 
 /** Code typing test, apart from the game engine (ADR-T10-1). */
@@ -79,9 +103,11 @@ export function TypingScreen({
     newRun(loadTypingLanguages(store), newSeed(), 0),
   );
   const [results, setResults] = useState<readonly TypingResult[]>(() => loadTypingResults(store));
+  const [pace, setPace] = useState<TypingPaceStore>(() => loadTypingPace(store));
   const [now, setNow] = useState(() => clock.now());
-  // The latest run, read by the event handlers between renders.
+  // The latest run and pace settings, read by event handlers between renders.
   const latest = useRef(current);
+  const paceRef = useRef(pace);
   const box = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -93,15 +119,28 @@ export function TypingScreen({
     setCurrent(next);
   };
 
+  const updatePace = (nextPace: TypingPaceStore) => {
+    paceRef.current = nextPace;
+    saveTypingPace(store, nextPace);
+    setPace(nextPace);
+  };
+
   const apply = (typing: TypingState) => {
     const run = latest.current;
     if (typing === run.typing) return;
     const t = clock.now();
     setNow(t);
     const trace = traceCode(run.trace, run.typing, typing, t);
+    let paceSummary = run.paceSummary;
     if (!isFinished(run.typing) && isFinished(typing)) {
       const stats = typingStats(typing);
       const at = clock.wallTime();
+      const paceKey = codePaceKey(run.languages);
+      const priorWpms = loadTypingResults(store)
+        .filter((r) => run.languages.includes(r.language))
+        .map((r) => r.wpm);
+      const curPace = paceRef.current;
+      const target = targetForConfig(curPace, paceKey, priorWpms);
       appendTypingResult(store, {
         version: 1,
         snippetId: run.snippet.id,
@@ -110,16 +149,27 @@ export function TypingScreen({
         ...stats,
         finishedAt: at,
       });
-      const meta = {
+      const events = codeEvents(trace, {
         at,
         config: run.snippet.language,
         seed: run.seed,
         snippetId: run.snippet.id,
-      };
-      recordEvents(store, codeEvents(trace, meta), at);
+        text: run.snippet.text,
+        target,
+      });
+      recordEvents(store, events, at);
+      paceSummary = evaluatePaceRound(
+        events.map((e) => e.extra["onPace"] === true),
+        target,
+        stats.accuracy,
+        curPace.goal,
+      );
+      const nextPace = saveConfigTarget(store, paceKey, paceSummary.nextTarget);
+      paceRef.current = nextPace;
+      setPace(nextPace);
       setResults(loadTypingResults(store));
     }
-    show({ ...run, typing, trace });
+    show({ ...run, typing, trace, paceSummary });
   };
 
   const next = (languages = latest.current.languages) => {
@@ -128,7 +178,7 @@ export function TypingScreen({
 
   const exit = () => {
     const run = latest.current;
-    show({ ...run, typing: startTyping(run.snippet.text), trace: [] });
+    show({ ...run, typing: startTyping(run.snippet.text), trace: [], paceSummary: null });
     box.current?.blur();
   };
 
@@ -172,6 +222,11 @@ export function TypingScreen({
   const historyPoints = historyMatched.map((r) => ({ at: r.finishedAt, score: r.wpm }));
   const historyRate = weeklyRate(historyPoints, clock.wallTime());
   const historyPlateau = detectPlateau(historyPoints);
+  const activeTarget = targetForConfig(pace, codePaceKey(languages), historyScores);
+  const ghostPos =
+    pace.enabled && typing.startedAt !== null && !finished
+      ? ghostCodePosition(snippet.text, Math.max(0, now - typing.startedAt), activeTarget)
+      : -1;
 
   return (
     <div className="screen typing">
@@ -179,20 +234,52 @@ export function TypingScreen({
         Digite o trecho de código; o tempo começa na primeira tecla.
       </PanelTitle>
 
-      <div className="options-row" data-panel="options" role="group" aria-label="Linguagens">
-        {LANGUAGES.map((language) => (
-          <label key={language} className="op">
+      <div className="typing-options" data-panel="options">
+        <div className="options-row" role="group" aria-label="Linguagens">
+          {LANGUAGES.map((language) => (
+            <label key={language} className="op">
+              <input
+                type="checkbox"
+                checked={languages.includes(language)}
+                disabled={languages.length === 1 && languages.includes(language)}
+                onChange={() => {
+                  toggle(language);
+                }}
+              />
+              {LANGUAGE_LABELS[language]}
+            </label>
+          ))}
+        </div>
+        <div className="options-row" role="group" aria-label="Ritmo-alvo">
+          <label className="op">
             <input
               type="checkbox"
-              checked={languages.includes(language)}
-              disabled={languages.length === 1 && languages.includes(language)}
-              onChange={() => {
-                toggle(language);
+              checked={pace.enabled}
+              onChange={(e) => {
+                updatePace({ ...paceRef.current, enabled: e.target.checked });
               }}
             />
-            {LANGUAGE_LABELS[language]}
+            Ritmo-alvo
           </label>
-        ))}
+          {pace.enabled && (
+            <label className="pace-goal">
+              Meta no ritmo
+              <select
+                aria-label="Meta no ritmo"
+                value={String(pace.goal)}
+                onChange={(e) => {
+                  updatePace({ ...paceRef.current, goal: Number(e.target.value) });
+                }}
+              >
+                {PACE_GOAL_STEPS.map((step) => (
+                  <option key={step} value={String(step)}>
+                    {`${String(Math.round(step * 100))}%`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
       </div>
 
       <div className="typing-area" data-panel="area">
@@ -200,6 +287,9 @@ export function TypingScreen({
           metrics={[
             { label: "tempo", value: `${String(elapsedS)} s`, tone: "accent" },
             { label: "erros", value: typing.keystrokes - typing.correct },
+            ...(pace.enabled
+              ? [{ label: "alvo", value: `${String(activeTarget)} WPM`, testId: "pace-target" }]
+              : []),
           ]}
         />
         <textarea
@@ -264,11 +354,20 @@ export function TypingScreen({
               text={text}
               marks={markCodes.slice(start, start + text.length)}
               cursor={!finished ? typing.typed.length - start : -1}
+              ghost={ghostPos >= 0 ? ghostPos - start : -1}
             />
           ))}
         </pre>
 
-        {finished && <TypingResults typing={typing} snippet={snippet} seed={seed} onNext={next} />}
+        {finished && (
+          <TypingResults
+            typing={typing}
+            snippet={snippet}
+            seed={seed}
+            paceSummary={current.paceSummary}
+            onNext={next}
+          />
+        )}
       </div>
 
       <RoundHistory
@@ -311,20 +410,30 @@ const Line = memo(function Line({
   text,
   marks,
   cursor,
+  ghost,
 }: {
   readonly text: string;
   /** One code per character: c(orrect), w(rong) or p(ending). */
   readonly marks: string;
   /** Column of the cursor in this line, or outside [0, length) when absent. */
   readonly cursor: number;
+  /** Column of the ghost caret in this line, or outside [0, length) when absent. */
+  readonly ghost: number;
 }): ReactNode {
   return [...text].map((ch, i) => {
     const mark = MARKS_BY_CODE[marks.charAt(i)] ?? "pending";
+    const isGhost = i === ghost;
     const classes = [`mark-${mark}`];
     if (ch === " ") classes.push("space");
+    if (isGhost) classes.push("ghost-cursor");
     if (i === cursor) classes.push("cursor");
     return (
-      <span key={i} data-mark={mark} className={classes.join(" ")}>
+      <span
+        key={i}
+        data-mark={mark}
+        data-ghost={isGhost ? "true" : undefined}
+        className={classes.join(" ")}
+      >
         {ch === "\n" && mark === "wrong" ? "↵\n" : ch}
       </span>
     );
@@ -335,11 +444,13 @@ function TypingResults({
   typing,
   snippet,
   seed,
+  paceSummary,
   onNext,
 }: {
   readonly typing: TypingState;
   readonly snippet: Snippet;
   readonly seed: number;
+  readonly paceSummary: PaceRoundSummary | null;
   readonly onNext: () => void;
 }): ReactNode {
   const stats = typingStats(typing);
@@ -359,6 +470,13 @@ function TypingResults({
         { label: "erros", value: stats.errors, testId: "errors" },
         { label: "tempo", value: seconds(stats.timeMs), testId: "time" },
       ]}
+      extra={
+        paceSummary !== null && (
+          <p className="pace-result" data-testid="typing-pace-result">
+            {`${String(Math.round(paceSummary.onPaceShare * 100))}% das linhas no ritmo · alvo ${String(paceSummary.target)} → ${String(paceSummary.nextTarget)} WPM`}
+          </p>
+        )
+      }
       seed={
         <>
           trecho <span data-testid="snippet-id">{snippet.id}</span> · seed{" "}

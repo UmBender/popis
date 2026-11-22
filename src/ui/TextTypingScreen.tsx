@@ -19,6 +19,20 @@ import {
   type TextResult,
 } from "../storage/text-typing";
 import {
+  loadTypingPace,
+  saveConfigTarget,
+  saveTypingPace,
+  targetForConfig,
+  textPaceKey,
+  type TypingPaceStore,
+} from "../storage/typing-pace";
+import {
+  evaluatePaceRound,
+  ghostTextPosition,
+  PACE_GOAL_STEPS,
+  type PaceRoundSummary,
+} from "../typing/pace";
+import {
   initialWords,
   parseTextSettings,
   textConfigKey,
@@ -74,6 +88,8 @@ type Run = {
   readonly state: WordsState;
   /** The keys typed so far, for the events of the run (T22). */
   readonly trace: KeyTrace;
+  /** Target-pace result once the run finishes (T29). */
+  readonly paceSummary: PaceRoundSummary | null;
   readonly run: number;
 };
 
@@ -82,7 +98,7 @@ function startRun(settings: TextSettings, seed: number, run: number): Run {
     lenient: settings.lenientAccents,
     timeLimitMs: timeLimitMs(settings),
   });
-  return { settings, seed, state, trace: [], run };
+  return { settings, seed, state, trace: [], paceSummary: null, run };
 }
 
 /** Text typing test, judged word by word (ADR-T12-1). */
@@ -98,9 +114,11 @@ export function TextTypingScreen({
     startRun(loadTextSettings(store), newSeed(), 0),
   );
   const [results, setResults] = useState<readonly TextResult[]>(() => loadTextResults(store));
+  const [pace, setPace] = useState<TypingPaceStore>(() => loadTypingPace(store));
   const [now, setNow] = useState(() => clock.now());
-  // The latest run, read by the event handlers between renders.
+  // The latest run and pace settings, read by event handlers between renders.
   const latest = useRef(current);
+  const paceRef = useRef(pace);
   const box = useRef<HTMLTextAreaElement>(null);
   const area = useRef<HTMLDivElement>(null);
 
@@ -109,20 +127,35 @@ export function TextTypingScreen({
     setCurrent(next);
   }, []);
 
+  const updatePace = (nextPace: TypingPaceStore) => {
+    paceRef.current = nextPace;
+    saveTypingPace(store, nextPace);
+    setPace(nextPace);
+  };
+
   const apply = useCallback(
     (state: WordsState) => {
       const run = latest.current;
       if (state === run.state) return;
+      const t = clock.now();
+      setNow(t);
       let next = state;
       if (next.timeLimitMs !== null && next.words.length - next.current < TIME_LOOKAHEAD) {
         const more = wordsFrom(run.seed, run.settings, next.words.length, TIME_LOOKAHEAD);
         next = appendWords(next, more);
       }
-      const trace = traceText(run.trace, run.state, next, clock.now());
+      const trace = traceText(run.trace, run.state, next, t);
+      let paceSummary = run.paceSummary;
       if (!isWordsFinished(run.state) && isWordsFinished(next)) {
         const { correct, incorrect, extra, missed, ...stats } = wordsStats(next);
         const at = clock.wallTime();
         const config = textConfigKey(run.settings);
+        const paceKey = textPaceKey(run.settings);
+        const priorWpms = loadTextResults(store)
+          .filter((r) => r.config === config)
+          .map((r) => r.wpm);
+        const curPace = paceRef.current;
+        const target = targetForConfig(curPace, paceKey, priorWpms);
         appendTextResult(store, {
           version: 1,
           config,
@@ -134,14 +167,20 @@ export function TextTypingScreen({
           timeMs: stats.timeMs,
           finishedAt: at,
         });
-        recordEvents(
-          store,
-          textEvents(trace, { at, config, seed: run.seed, words: next.words }),
-          at,
+        const events = textEvents(trace, { at, config, seed: run.seed, words: next.words, target });
+        recordEvents(store, events, at);
+        paceSummary = evaluatePaceRound(
+          events.map((e) => e.extra["onPace"] === true),
+          target,
+          stats.accuracy,
+          curPace.goal,
         );
+        const nextPace = saveConfigTarget(store, paceKey, paceSummary.nextTarget);
+        paceRef.current = nextPace;
+        setPace(nextPace);
         setResults(loadTextResults(store));
       }
-      show({ ...run, state: next, trace });
+      show({ ...run, state: next, trace, paceSummary });
     },
     [clock, show, store],
   );
@@ -157,7 +196,7 @@ export function TextTypingScreen({
   }, [current.run]);
 
   useEffect(() => {
-    if (!timed || !running) return;
+    if (!running || (!timed && !pace.enabled)) return;
     const id = setInterval(() => {
       const t = clock.now();
       setNow(t);
@@ -166,7 +205,7 @@ export function TextTypingScreen({
     return () => {
       clearInterval(id);
     };
-  }, [apply, clock, timed, running]);
+  }, [apply, clock, pace.enabled, timed, running]);
 
   // Touch keyboards may send deletes without a Backspace keydown.
   useEffect(() => {
@@ -227,6 +266,11 @@ export function TextTypingScreen({
   const historyPoints = historyMatched.map((r) => ({ at: r.finishedAt, score: r.wpm }));
   const historyRate = weeklyRate(historyPoints, clock.wallTime());
   const historyPlateau = detectPlateau(historyPoints);
+  const activeTarget = targetForConfig(pace, textPaceKey(settings), historyScores);
+  const ghost =
+    pace.enabled && state.startedAt !== null && !finished
+      ? ghostTextPosition(state.words, Math.max(0, now - state.startedAt), activeTarget)
+      : null;
   const quote = settings.source === "quote";
   const remainingS = Math.ceil(
     state.startedAt === null || state.timeLimitMs === null
@@ -351,24 +395,60 @@ export function TextTypingScreen({
               change({ lenientAccents });
             }}
           />
+          <Flag
+            label="Ritmo-alvo"
+            checked={pace.enabled}
+            disabled={false}
+            onChange={(enabled) => {
+              updatePace({ ...paceRef.current, enabled });
+            }}
+          />
+          {pace.enabled && (
+            <label className="pace-goal">
+              Meta no ritmo
+              <select
+                aria-label="Meta no ritmo"
+                value={String(pace.goal)}
+                onChange={(e) => {
+                  updatePace({ ...paceRef.current, goal: Number(e.target.value) });
+                }}
+              >
+                {PACE_GOAL_STEPS.map((step) => (
+                  <option key={step} value={String(step)}>
+                    {`${String(Math.round(step * 100))}%`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
       </div>
 
       <div className="text-area" data-panel="area">
         <RoundBar
-          metrics={
-            timed
+          metrics={[
+            ...(timed
               ? [
                   {
                     label: "tempo",
                     value: progress,
                     testId: "text-progress",
-                    tone: "accent",
+                    tone: "accent" as const,
                   },
                   { label: "palavras", value: state.current },
                 ]
-              : [{ label: "palavras", value: progress, testId: "text-progress", tone: "accent" }]
-          }
+              : [
+                  {
+                    label: "palavras",
+                    value: progress,
+                    testId: "text-progress",
+                    tone: "accent" as const,
+                  },
+                ]),
+            ...(pace.enabled
+              ? [{ label: "alvo", value: `${String(activeTarget)} WPM`, testId: "pace-target" }]
+              : []),
+          ]}
         />
 
         <div className="typing-area">
@@ -439,6 +519,7 @@ export function TextTypingScreen({
                 chars={word.letters.map((l) => l.char).join("")}
                 marks={word.letters.map((l) => MARK_CODES[l.mark]).join("")}
                 cursor={!finished && i === state.current ? typedInCurrent : -1}
+                ghost={ghost !== null && ghost.word === i ? ghost.letter : -1}
               />
             ))}
           </div>
@@ -449,6 +530,7 @@ export function TextTypingScreen({
             state={state}
             settings={settings}
             seed={seed}
+            paceSummary={current.paceSummary}
             onNext={() => {
               next();
             }}
@@ -523,6 +605,7 @@ const Word = memo(function Word({
   chars,
   marks,
   cursor,
+  ghost,
 }: {
   readonly index: number;
   readonly status: WordStatus;
@@ -531,19 +614,30 @@ const Word = memo(function Word({
   readonly marks: string;
   /** Letter before which the cursor stands, or -1. */
   readonly cursor: number;
+  /** Letter before which the ghost caret stands, `letters.length` for after-word, or -1. */
+  readonly ghost: number;
 }): ReactNode {
   const letters = [...chars];
   const classes = ["word", `word-${status}`];
+  const ghostAfter = ghost === letters.length;
+  if (ghostAfter) classes.push("ghost-cursor-after");
   if (cursor === letters.length) classes.push("cursor-after");
   return (
-    <span className={classes.join(" ")} data-word={index} data-status={status}>
+    <span
+      className={classes.join(" ")}
+      data-word={index}
+      data-status={status}
+      data-ghost={ghostAfter ? "true" : undefined}
+    >
       {letters.map((ch, k) => {
         const mark = MARKS_BY_CODE[marks.charAt(k)] as LetterMark;
+        const isGhost = k === ghost;
         return (
           <span
             key={k}
             data-mark={mark}
-            className={`letter-${mark}${k === cursor ? " cursor" : ""}`}
+            data-ghost={isGhost ? "true" : undefined}
+            className={`letter-${mark}${isGhost ? " ghost-cursor" : ""}${k === cursor ? " cursor" : ""}`}
           >
             {ch}
           </span>
@@ -557,11 +651,13 @@ function TextResults({
   state,
   settings,
   seed,
+  paceSummary,
   onNext,
 }: {
   readonly state: WordsState;
   readonly settings: TextSettings;
   readonly seed: number;
+  readonly paceSummary: PaceRoundSummary | null;
   readonly onNext: () => void;
 }): ReactNode {
   const stats = wordsStats(state);
@@ -583,6 +679,13 @@ function TextResults({
         { label: "caracteres", value: chars, testId: "text-chars" },
         { label: "tempo", value: seconds(stats.timeMs), testId: "text-time" },
       ]}
+      extra={
+        paceSummary !== null && (
+          <p className="pace-result" data-testid="text-pace-result">
+            {`${String(Math.round(paceSummary.onPaceShare * 100))}% das palavras no ritmo · alvo ${String(paceSummary.target)} → ${String(paceSummary.nextTarget)} WPM`}
+          </p>
+        )
+      }
       seed={
         <>
           <span data-testid="text-config">{textConfigLabel(settings)}</span> · seed{" "}

@@ -1,7 +1,13 @@
 import type { Language } from "../typing/corpus";
-import { DEFAULT_PACE_GOAL } from "../typing/pace";
-import type { TextSettings } from "../typing/text";
-import type { KeyValueStore } from "./kv";
+import {
+  DEFAULT_PACE_GOAL,
+  initialTargetWpm,
+  MAX_PACE_GOAL,
+  MIN_PACE_GOAL,
+  MIN_TARGET_WPM,
+} from "../typing/pace";
+import { textConfigKey, type TextSettings } from "../typing/text";
+import { readJson, tryWriteJson, type KeyValueStore } from "./kv";
 
 export const TYPING_PACE_KEY = "popis.typing-pace";
 
@@ -20,38 +26,72 @@ export const DEFAULT_TYPING_PACE: TypingPaceStore = {
   targets: {},
 };
 
-export function textPaceKey(_settings: TextSettings): string {
-  throw new Error("todo");
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function codePaceKey(_languages: readonly Language[]): string {
-  throw new Error("todo");
+/** Stable pace key for a Texto configuration. */
+export function textPaceKey(settings: TextSettings): string {
+  return `text:${textConfigKey(settings)}`;
 }
 
-export function parseTypingPace(_value: unknown): TypingPaceStore {
-  throw new Error("todo");
+/** Stable pace key for the selected Código languages. */
+export function codePaceKey(languages: readonly Language[]): string {
+  return `code:${[...languages].sort().join("+")}`;
 }
 
-export function loadTypingPace(_store: KeyValueStore): TypingPaceStore {
-  throw new Error("todo");
+/** Parses untrusted JSON into a valid `TypingPaceStore`; corrupt data loads as empty history. */
+export function parseTypingPace(value: unknown): TypingPaceStore {
+  if (!isRecord(value) || value["version"] !== 1) return DEFAULT_TYPING_PACE;
+  const enabled =
+    typeof value["enabled"] === "boolean" ? value["enabled"] : DEFAULT_TYPING_PACE.enabled;
+  const rawGoal = value["goal"];
+  const goal =
+    typeof rawGoal === "number" &&
+    Number.isFinite(rawGoal) &&
+    rawGoal >= MIN_PACE_GOAL &&
+    rawGoal <= MAX_PACE_GOAL
+      ? rawGoal
+      : DEFAULT_PACE_GOAL;
+  const targets: Record<string, number> = {};
+  if (isRecord(value["targets"])) {
+    for (const [key, val] of Object.entries(value["targets"])) {
+      if (typeof val === "number" && Number.isFinite(val) && val >= MIN_TARGET_WPM) {
+        targets[key] = val;
+      }
+    }
+  }
+  return { version: 1, enabled, goal, targets };
 }
 
-export function saveTypingPace(_store: KeyValueStore, _pace: TypingPaceStore): void {
-  throw new Error("todo");
+export function loadTypingPace(store: KeyValueStore): TypingPaceStore {
+  return parseTypingPace(readJson(store, TYPING_PACE_KEY));
 }
 
+export function saveTypingPace(store: KeyValueStore, pace: TypingPaceStore): void {
+  tryWriteJson(store, TYPING_PACE_KEY, pace);
+}
+
+/** Stored target for `key`, or the median of recent WPMs (30 WPM without history). */
 export function targetForConfig(
-  _pace: TypingPaceStore,
-  _key: string,
-  _recentWpms: readonly number[],
+  pace: TypingPaceStore,
+  key: string,
+  recentWpms: readonly number[],
 ): number {
-  throw new Error("todo");
+  return pace.targets[key] ?? initialTargetWpm(recentWpms);
 }
 
+/** Updates and persists the target WPM for `key`, returning the updated store state. */
 export function saveConfigTarget(
-  _store: KeyValueStore,
-  _key: string,
-  _target: number,
+  store: KeyValueStore,
+  key: string,
+  target: number,
 ): TypingPaceStore {
-  throw new Error("todo");
+  const current = loadTypingPace(store);
+  const next: TypingPaceStore = {
+    ...current,
+    targets: { ...current.targets, [key]: target },
+  };
+  saveTypingPace(store, next);
+  return next;
 }

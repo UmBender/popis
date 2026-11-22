@@ -1,6 +1,7 @@
 import type { TypingState } from "../typing/engine";
+import { codeLineLengths, isUnitOnPace } from "../typing/pace";
 import type { WordsState } from "../typing/words-engine";
-import type { TrainingEvent } from "./event";
+import type { EventExtra, TrainingEvent } from "./event";
 
 /** One key that inserted something, as the typing run saw it. */
 export type Stamp = {
@@ -76,6 +77,10 @@ type UnitSummary = {
   readonly unit: number;
   readonly ok: boolean;
   readonly timeMs: number;
+  /** Number of stamps recorded for this unit. */
+  readonly keys: number;
+  /** Whether the unit ended with a space stamp (text mode). */
+  readonly endedWithSpace: boolean;
   /** Gaps between a key and the one before it. */
   readonly iv: number[];
   /** `[expected, typed]` of every key that typed the wrong character. */
@@ -102,6 +107,8 @@ function summarizeUnits(trace: KeyTrace): UnitSummary[] {
       unit,
       ok: stamps.every((s) => s.ok),
       timeMs: last.at - start,
+      keys: stamps.length,
+      endedWithSpace: last.typed === " ",
       iv: indexes
         .filter((i) => i > 0)
         .map((i) => (trace[i] as Stamp).at - (trace[i - 1] as Stamp).at),
@@ -124,15 +131,36 @@ export type CodeMeta = {
 
 /** One event per typed line. */
 export function codeEvents(trace: KeyTrace, meta: CodeMeta): TrainingEvent[] {
-  return summarizeUnits(trace).map((u) => ({
-    at: meta.at,
-    drill: "typing.code",
-    config: meta.config,
-    kc: "line",
-    ok: u.ok,
-    timeMs: u.timeMs,
-    extra: { seed: meta.seed, i: u.unit, snippet: meta.snippetId, iv: u.iv, bad: u.bad },
-  }));
+  const lengths = meta.text !== undefined ? codeLineLengths(meta.text) : null;
+  return summarizeUnits(trace).map((u) => {
+    const base: EventExtra = {
+      seed: meta.seed,
+      i: u.unit,
+      snippet: meta.snippetId,
+      iv: u.iv,
+      bad: u.bad,
+    };
+    const extra: EventExtra =
+      meta.target === undefined
+        ? base
+        : {
+            ...base,
+            target: meta.target,
+            onPace: isUnitOnPace(
+              { ok: u.ok, chars: lengths?.[u.unit] ?? u.keys, timeMs: u.timeMs },
+              meta.target,
+            ),
+          };
+    return {
+      at: meta.at,
+      drill: "typing.code",
+      config: meta.config,
+      kc: "line",
+      ok: u.ok,
+      timeMs: u.timeMs,
+      extra,
+    };
+  });
 }
 
 export type TextMeta = {
@@ -147,13 +175,28 @@ export type TextMeta = {
 
 /** One event per typed word. */
 export function textEvents(trace: KeyTrace, meta: TextMeta): TrainingEvent[] {
-  return summarizeUnits(trace).map((u) => ({
-    at: meta.at,
-    drill: "typing.text",
-    config: meta.config,
-    kc: "word",
-    ok: u.ok,
-    timeMs: u.timeMs,
-    extra: { seed: meta.seed, i: u.unit, w: meta.words[u.unit] as string, iv: u.iv, bad: u.bad },
-  }));
+  return summarizeUnits(trace).map((u) => {
+    const word = meta.words[u.unit] as string;
+    const base: EventExtra = { seed: meta.seed, i: u.unit, w: word, iv: u.iv, bad: u.bad };
+    let extra: EventExtra = base;
+    if (meta.target !== undefined) {
+      const wordLen = [...word].length;
+      const completed = u.endedWithSpace || u.keys >= wordLen;
+      const chars = wordLen + (u.endedWithSpace ? 1 : 0);
+      extra = {
+        ...base,
+        target: meta.target,
+        onPace: completed && isUnitOnPace({ ok: u.ok, chars, timeMs: u.timeMs }, meta.target),
+      };
+    }
+    return {
+      at: meta.at,
+      drill: "typing.text",
+      config: meta.config,
+      kc: "word",
+      ok: u.ok,
+      timeMs: u.timeMs,
+      extra,
+    };
+  });
 }

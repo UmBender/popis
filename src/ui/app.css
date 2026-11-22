@@ -991,10 +991,39 @@ th {
   background: var(--wrong);
 }
 
+/* Target-pace ghost caret (T29, ADR-T29-1); real caret below overrides on overlap. */
+.ghost-cursor {
+  margin-left: -2px;
+  border-left: 2px solid var(--muted);
+}
+
 /* A bar before the letter; the negative margin keeps the layout. */
 .cursor {
   margin-left: -2px;
   border-left: 2px solid var(--accent);
+}
+
+.typing-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pace-goal {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+}
+
+.pace-goal select {
+  width: auto;
+}
+
+.pace-result {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .typing-results {
@@ -1083,6 +1112,11 @@ th {
 .letter-incorrect,
 .letter-extra {
   color: var(--wrong);
+}
+
+.ghost-cursor-after {
+  margin-right: -2px;
+  border-right: 2px solid var(--muted);
 }
 
 .cursor-after {
