@@ -10,7 +10,7 @@ export type LessonTranscript = {
   readonly frames: readonly TranscriptFrame[];
 };
 
-// Recorded from real GNU gdb 18.1 by `npm run gdb:oracle -- --write` (ADR-T25-1).
+// Recorded from real GNU gdb 18.1 by `npm run gdb:oracle -- --write` (ADR-T25-1, ADR-T26-1).
 export const LESSON_TRANSCRIPTS: Readonly<Record<string, LessonTranscript>> = {
   "u1-compile": {
     programId: "sum-loop",
@@ -945,6 +945,450 @@ export const LESSON_TRANSCRIPTS: Readonly<Record<string, LessonTranscript>> = {
         ],
         line: null,
         breakpoints: [],
+      },
+    ],
+  },
+  "u10-formats": {
+    programId: "formats-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file formats.cpp, line 10.",
+          "Breakpoint 1, main () at formats.cpp:10",
+          "10\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p/x n",
+        output: ["$1 = 0x102"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p/o n",
+        output: ["$2 = 0402"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p/t n",
+        output: ["$3 = 100000010"],
+        line: 10,
+        breakpoints: [10],
+      },
+    ],
+  },
+  "u10-twos-complement": {
+    programId: "formats-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file formats.cpp, line 10.",
+          "Breakpoint 1, main () at formats.cpp:10",
+          "10\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p/x neg",
+        output: ["$1 = 0xffffffff"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p/u neg",
+        output: ["$2 = 4294967295"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p/x s",
+        output: ["$3 = 0xffff"],
+        line: 10,
+        breakpoints: [10],
+      },
+    ],
+  },
+  "u10-char": {
+    programId: "formats-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file formats.cpp, line 10.",
+          "Breakpoint 1, main () at formats.cpp:10",
+          "10\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p ch",
+        output: ["$1 = 65 'A'"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p nl",
+        output: ["$2 = 10 '\\n'"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p/c 65",
+        output: ["$3 = 65 'A'"],
+        line: 10,
+        breakpoints: [10],
+      },
+    ],
+  },
+  "u11-div-mod": {
+    programId: "formats-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file formats.cpp, line 10.",
+          "Breakpoint 1, main () at formats.cpp:10",
+          "10\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p a / b",
+        output: ["$1 = -3"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p a % c",
+        output: ["$2 = -1"],
+        line: 10,
+        breakpoints: [10],
+      },
+    ],
+  },
+  "u11-casts": {
+    programId: "formats-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file formats.cpp, line 10.",
+          "Breakpoint 1, main () at formats.cpp:10",
+          "10\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p (unsigned)-1",
+        output: ["$1 = 4294967295"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p (unsigned short)-1",
+        output: ["$2 = 65535"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p uc - 1",
+        output: ["$3 = -1"],
+        line: 10,
+        breakpoints: [10],
+      },
+    ],
+  },
+  "u12-slices": {
+    programId: "arrays-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file arrays.cpp, line 9.",
+          "Breakpoint 1, main () at arrays.cpp:9",
+          "9\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "p a",
+        output: ["$1 = {3, 1, 4, 1, 5}"],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "p a[1]@3",
+        output: ["$2 = {1, 4, 1}"],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "p *ptr@3",
+        output: ["$3 = {1, 4, 1}"],
+        line: 9,
+        breakpoints: [9],
+      },
+    ],
+  },
+  "u12-repeats": {
+    programId: "arrays-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file arrays.cpp, line 9.",
+          "Breakpoint 1, main () at arrays.cpp:9",
+          "9\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "p z",
+        output: ["$1 = {0 <repeats 16 times>}"],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "p z[0]@10",
+        output: ["$2 = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}"],
+        line: 9,
+        breakpoints: [9],
+      },
+    ],
+  },
+  "u12-char-arrays": {
+    programId: "arrays-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file arrays.cpp, line 9.",
+          "Breakpoint 1, main () at arrays.cpp:9",
+          "9\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "p s",
+        output: ['$1 = "abc\\000\\000\\000\\000\\000\\000"'],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "p big",
+        output: ["$2 = \"abc\", '\\000' <repeats 11 times>"],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "p full",
+        output: ['$3 = "abcd"'],
+        line: 9,
+        breakpoints: [9],
+      },
+    ],
+  },
+  "u13-structs-ptrs": {
+    programId: "structs-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file structs.cpp, line 10.",
+          "Breakpoint 1, main () at structs.cpp:10",
+          "10\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p sm",
+        output: ["$1 = {c = 97 'a', x = 7, y = 9}"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p h->next->val",
+        output: ["$2 = 20"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p *h->next",
+        output: ["$3 = {val = 20, next = 0x0}"],
+        line: 10,
+        breakpoints: [10],
+      },
+    ],
+  },
+  "u13-whatis-ptype": {
+    programId: "structs-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file structs.cpp, line 10.",
+          "Breakpoint 1, main () at structs.cpp:10",
+          "10\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "whatis h",
+        output: ["type = Node *"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "whatis sm",
+        output: ["type = Small"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "ptype sm",
+        output: ["type = struct Small {", "    char c;", "    int x;", "    int y;", "}"],
+        line: 10,
+        breakpoints: [10],
+      },
+    ],
+  },
+  "u13-nullptr": {
+    programId: "structs-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file structs.cpp, line 10.",
+          "Breakpoint 1, main () at structs.cpp:10",
+          "10\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p np",
+        output: ["$1 = (Node *) 0x0"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p n1",
+        output: ["$2 = {val = 10, next = ADDR}"],
+        line: 10,
+        breakpoints: [10],
+      },
+      {
+        cmd: "p *np",
+        output: ["Cannot access memory at address 0x0"],
+        line: 10,
+        breakpoints: [10],
+      },
+    ],
+  },
+  "u14-sizeof": {
+    programId: "memory-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file memory.cpp, line 9.",
+          "Breakpoint 1, main () at memory.cpp:9",
+          "9\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "p sizeof(Padded)",
+        output: ["$1 = 16"],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "p sizeof(a)",
+        output: ["$2 = 16"],
+        line: 9,
+        breakpoints: [9],
+      },
+    ],
+  },
+  "u14-endian": {
+    programId: "memory-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file memory.cpp, line 9.",
+          "Breakpoint 1, main () at memory.cpp:9",
+          "9\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "x/4xb &n",
+        output: ["ADDR:\t0x02\t0x01\t0x00\t0x00"],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "x/4xb &big",
+        output: ["ADDR:\t0x78\t0x56\t0x34\t0x12"],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "x/2xh &big",
+        output: ["ADDR:\t0x5678\t0x1234"],
+        line: 9,
+        breakpoints: [9],
+      },
+    ],
+  },
+  "u14-examine": {
+    programId: "memory-demo",
+    frames: [
+      {
+        cmd: null,
+        output: [
+          "Breakpoint 1 at ADDR: file memory.cpp, line 9.",
+          "Breakpoint 1, main () at memory.cpp:9",
+          "9\t  return done == 999999 ? 1 : 0;",
+        ],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "x/4dw a",
+        output: ["ADDR:\t3\t1\t4\t1"],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "x/s msg",
+        output: ['ADDR:\t"abc"'],
+        line: 9,
+        breakpoints: [9],
+      },
+      {
+        cmd: "x/4cb msg",
+        output: ["ADDR:\t97 'a'\t98 'b'\t99 'c'\t0 '\\000'"],
+        line: 9,
+        breakpoints: [9],
       },
     ],
   },

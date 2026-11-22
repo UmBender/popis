@@ -62,4 +62,23 @@ describe("event drills", () => {
     expect(recordEvents(store, [ev], at)).toBe(true);
     expect(loadEvents(store)).toEqual([ev]);
   });
+
+  it("DRILLS accepts gdb.out and stores gdb output events", () => {
+    expect(DRILLS).toContain("gdb.out");
+    const store = memoryStore();
+    const at = Date.UTC(2026, 10, 22, 3);
+    const ev: TrainingEvent = {
+      at,
+      drill: "gdb.out",
+      config: "out-L1",
+      kc: "gdb.out.formato",
+      ok: true,
+      timeMs: 2100,
+      extra: { seed: 7, i: 0, kind: "formato", level: 1, skipped: false },
+    };
+
+    expect(eventKey(ev)).toBe(`${String(at)}|gdb.out|7|0`);
+    expect(recordEvents(store, [ev], at)).toBe(true);
+    expect(loadEvents(store)).toEqual([ev]);
+  });
 });

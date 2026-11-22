@@ -82,3 +82,27 @@ test("T25: open a lesson, complete all 3 exercises and play a Comandos round", a
   await expect(page.getByTestId("gdb-kind-table")).toBeVisible();
   await expectNoHorizontalScroll(page, "gdb results");
 });
+
+test("T26: play a Saída round on desktop and mobile", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("./");
+
+  await chooseItem(page, "Saída");
+  await expect(page.getByTestId("shell-path")).toHaveText("popis/gdb/saída");
+  await expect(page.getByRole("heading", { level: 1, name: "Saída" })).toBeVisible();
+  await expect(page.getByTestId("gdb-out-code")).toBeVisible();
+  await expect(page.getByTestId("gdb-out-command")).toBeVisible();
+  await expectNoHorizontalScroll(page, "gdb output");
+
+  // Submit a wrong output to start the clock and verify real output + reason feedback.
+  const outBox = page.getByRole("textbox", { name: "Saída do gdb" });
+  await outBox.fill("resposta-errada");
+  await outBox.press("Enter");
+  await expect(page.getByTestId("gdb-out-feedback")).toHaveAttribute("data-outcome", "wrong");
+
+  // Finish the 60 s round on the fake clock.
+  await page.clock.runFor(61_000);
+  await expect(page.getByTestId("result")).toBeVisible();
+  await expect(page.getByTestId("gdb-out-kind-table")).toBeVisible();
+  await expectNoHorizontalScroll(page, "gdb output results");
+});

@@ -1,10 +1,36 @@
 import { GDB_CMD_KINDS, type GdbCmdKind } from "../gdb/cmd-drill";
+import { GDB_OUT_KINDS, type GdbOutKind, type GdbOutLevel } from "../gdb/out-drill";
 import { GDB_DURATIONS_S } from "../gdb/round";
 import { readJson, tryWriteJson, type KeyValueStore } from "./kv";
 
 export const GDB_KEY = "popis.gdb";
 export const GDB_RESULTS_KEY = "popis.gdb-results";
+export const GDB_OUT_KEY = "popis.gdb-output";
+export const GDB_OUT_RESULTS_KEY = "popis.gdb-output-results";
 export const MAX_GDB_RESULTS = 200;
+
+export type GdbOutSettings = {
+  readonly durationS: number;
+  readonly level: GdbOutLevel;
+  readonly kinds: readonly GdbOutKind[];
+};
+
+export const DEFAULT_GDB_OUT_SETTINGS: GdbOutSettings = {
+  durationS: 60,
+  level: 1,
+  kinds: GDB_OUT_KINDS,
+};
+
+export type GdbOutResult = {
+  readonly version: 1;
+  readonly durationS: number;
+  readonly level: GdbOutLevel;
+  readonly seed: number;
+  readonly correct: number;
+  readonly wrong: number;
+  readonly skipped: number;
+  readonly finishedAt: number;
+};
 
 export type GdbSettings = {
   readonly durationS: number;
@@ -68,4 +94,47 @@ export function loadGdbResults(store: KeyValueStore): GdbCmdResult[] {
 export function appendGdbResult(store: KeyValueStore, result: GdbCmdResult): void {
   const results = [...loadGdbResults(store), result];
   tryWriteJson(store, GDB_RESULTS_KEY, results.slice(-MAX_GDB_RESULTS));
+}
+
+const isLevel = (value: unknown): value is GdbOutLevel => value === 1 || value === 2 || value === 3;
+
+/** GDB Saída settings from parsed JSON; invalid fields fall back to defaults. */
+export function parseGdbOutSettings(value: unknown): GdbOutSettings {
+  const raw = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+  const wanted = Array.isArray(raw["kinds"]) ? raw["kinds"] : [];
+  const kinds = GDB_OUT_KINDS.filter((kind) => wanted.includes(kind));
+  return {
+    durationS: isDuration(raw["durationS"]) ? raw["durationS"] : DEFAULT_GDB_OUT_SETTINGS.durationS,
+    level: isLevel(raw["level"]) ? raw["level"] : DEFAULT_GDB_OUT_SETTINGS.level,
+    kinds: kinds.length > 0 ? kinds : GDB_OUT_KINDS,
+  };
+}
+
+export function loadGdbOutSettings(store: KeyValueStore): GdbOutSettings {
+  return parseGdbOutSettings(readJson(store, GDB_OUT_KEY));
+}
+
+export function saveGdbOutSettings(store: KeyValueStore, settings: GdbOutSettings): void {
+  tryWriteJson(store, GDB_OUT_KEY, settings);
+}
+
+function isGdbOutResult(value: unknown): value is GdbOutResult {
+  if (typeof value !== "object" || value === null) return false;
+  const r = value as Record<string, unknown>;
+  return (
+    r["version"] === 1 &&
+    isLevel(r["level"]) &&
+    RESULT_NUMBERS.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]))
+  );
+}
+
+export function loadGdbOutResults(store: KeyValueStore): GdbOutResult[] {
+  const value = readJson(store, GDB_OUT_RESULTS_KEY);
+  if (!Array.isArray(value)) return [];
+  return value.filter(isGdbOutResult);
+}
+
+export function appendGdbOutResult(store: KeyValueStore, result: GdbOutResult): void {
+  const results = [...loadGdbOutResults(store), result];
+  tryWriteJson(store, GDB_OUT_RESULTS_KEY, results.slice(-MAX_GDB_RESULTS));
 }

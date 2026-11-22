@@ -1,11 +1,13 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { LESSON_TRANSCRIPTS, type TranscriptFrame } from "../../gdb/cases/transcripts";
 import { checkCommand } from "../../gdb/check";
+import { checkOutput } from "../../gdb/check-output";
 import {
   GDB_LESSONS,
   GDB_UNITS,
   gdbCommandDescription,
   gdbLessonById,
+  isOutputLesson,
   type GdbLesson,
 } from "../../gdb/curriculum";
 import { programById } from "../../gdb/programs";
@@ -16,7 +18,14 @@ import {
   type ExerciseStep,
   type UnitStatus,
 } from "../../learn/curriculum";
-import { loadGdbSettings, parseGdbSettings, saveGdbSettings } from "../../storage/gdb";
+import {
+  loadGdbOutSettings,
+  loadGdbSettings,
+  parseGdbOutSettings,
+  parseGdbSettings,
+  saveGdbOutSettings,
+  saveGdbSettings,
+} from "../../storage/gdb";
 import { completeGdbLesson, loadGdbCompleted } from "../../storage/gdb-learn";
 import type { KeyValueStore } from "../../storage/history";
 import { PanelTitle } from "../shell/panel";
@@ -36,11 +45,18 @@ type Props = {
   readonly store: KeyValueStore;
   readonly onBack: () => void;
   readonly onPractice?: () => void;
+  readonly onPracticeOutput?: () => void;
   readonly initialLesson?: string | null;
 };
 
-/** GDB Aprender curriculum screen (T25 AC-6, AC-7): 9 ordered units with oracle transcripts and adaptive fading. */
-export function LearnDrill({ store, onBack, onPractice, initialLesson = null }: Props): ReactNode {
+/** GDB Aprender curriculum screen (T25 AC-6, AC-7; T26 AC-8): ordered units with oracle transcripts and adaptive fading. */
+export function LearnDrill({
+  store,
+  onBack,
+  onPractice,
+  onPracticeOutput,
+  initialLesson = null,
+}: Props): ReactNode {
   const [open, setOpen] = useState<string | null>(() =>
     initialLesson !== null && gdbLessonById(initialLesson) !== undefined ? initialLesson : null,
   );
@@ -69,6 +85,15 @@ export function LearnDrill({ store, onBack, onPractice, initialLesson = null }: 
   };
 
   const practice = (lesson: GdbLesson) => {
+    if (isOutputLesson(lesson)) {
+      const updated = parseGdbOutSettings({
+        ...loadGdbOutSettings(store),
+        kinds: lesson.practiceOutputKinds,
+      });
+      saveGdbOutSettings(store, updated);
+      onPracticeOutput?.();
+      return;
+    }
     const updated = parseGdbSettings({
       ...loadGdbSettings(store),
       kinds: lesson.practiceKinds,
@@ -301,10 +326,19 @@ function GdbExercise({
     setFinished(false);
   };
 
+  const isOut = exercise.mode === "output";
+
   const submit = () => {
     const trimmed = text.trim();
     if (trimmed.length === 0) return;
-    const res = checkCommand(trimmed, exercise.expected, exercise.context);
+    const res =
+      exercise.mode === "output"
+        ? checkOutput(trimmed, exercise.canonical, {
+            command: exercise.command,
+            kind: exercise.commandKind,
+            fallbackReason: exercise.reason,
+          })
+        : checkCommand(trimmed, exercise.expected, exercise.context);
     if (!res.ok) {
       setWrongCount((c) => c + 1);
       setFeedback(res.reason);
@@ -337,7 +371,8 @@ function GdbExercise({
 
       {step === 0 && (
         <p className="vim-reference" data-testid="learn-reference">
-          Comando: <code>{exercise.canonical}</code>
+          {isOut ? "Saída: " : "Comando: "}
+          <code>{exercise.canonical}</code>
         </p>
       )}
       {step === 1 && (
@@ -361,13 +396,17 @@ function GdbExercise({
           }}
         >
           <span className="gdb-prompt-prefix" aria-hidden="true">
-            (gdb)
+            {exercise.mode === "output"
+              ? exercise.commandKind === "print"
+                ? "$1 ="
+                : ">"
+              : "(gdb)"}
           </span>
           <input
             ref={inputRef}
             type="text"
             className="gdb-input"
-            aria-label="Comando gdb"
+            aria-label={isOut ? "Saída do gdb" : "Comando gdb"}
             value={text}
             autoComplete="off"
             autoCapitalize="off"

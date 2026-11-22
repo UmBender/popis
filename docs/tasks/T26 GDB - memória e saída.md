@@ -1,10 +1,10 @@
 ---
 id: T26
 title: GDB - memória e saída
-status: todo
+status: review
 depends_on: [T25]
 branch: task/T26-gdb-output
-adrs: []
+adrs: [ADR-T26-1]
 tags: [task]
 ---
 
@@ -97,7 +97,7 @@ da T25.
     parada e as variáveis locais visíveis quando o tipo pede;
   - um erro mostra a saída real e uma linha explicando por quê;
   - eventos com drill `gdb.out`.
-  - Testes: `src/ui/GdbScreenOutput.test.tsx` ("typing the gdb value counts as correct", "a wrong value shows the real output and the reason", "the round ends at 60 s on the fake clock").
+  - Testes: `src/ui/GdbScreenOutput.test.tsx` ("typing the gdb value counts as correct", "a wrong value shows the real output and the reason", "the round ends at 60 s on the fake clock"), `src/gdb/out-round.test.ts`, `src/stats/event.test.ts` (o drill `gdb.out` é aceito), `src/storage/gdb.test.ts` (configurações e histórico de Saída).
 - **AC-8**: **Aprender:** unidades novas depois das da T25, com o mesmo
   formato de lição e de retirada. Nos exercícios, a pessoa digita a
   saída em vez do comando.
@@ -124,20 +124,24 @@ da T25.
 ## Files owned
 
 - `src/gdb/memory.ts`, `expr.ts`, `format.ts`, `check-output.ts`,
-  `out-drill.ts`, `curriculum.ts`, `cases/` e os testes ao lado
-- `src/storage/gdb.ts`, `src/stats/event.ts`
-- `src/ui/gdb/OutputDrill.tsx`, `src/ui/GdbScreen.tsx`,
-  `src/ui/shell/sections.ts`, `src/ui/app.css`
-- `scripts/gdb-oracle.mjs`, `tests/e2e/gdb.spec.ts`
+  `out-drill.ts`, `out-round.ts`, `programs.ts`, `curriculum.ts`,
+  `cases/` e os testes ao lado
+- `src/storage/gdb.ts`, `src/storage/gdb.test.ts`, `src/stats/event.ts`,
+  `src/stats/event.test.ts`
+- `src/ui/gdb/OutputDrill.tsx`, `src/ui/gdb/LearnDrill.tsx`,
+  `src/ui/GdbScreen.tsx`, `src/ui/App.tsx`, `src/ui/shell/sections.ts`,
+  `src/ui/shell/sections.test.ts`, `src/ui/app.css`,
+  `src/ui/GdbScreenOutput.test.tsx`, `src/ui/GdbScreenLearn.test.tsx`
+- `scripts/gdb-oracle.mjs`, `tests/e2e/gdb.spec.ts`, `vite.config.ts`
 
 ## Subtasks (one commit each)
 
-- [ ] spec: ADR-T26-1 (modelo de memória, subconjunto de expressões, regras de formatação) e testes nomeados
-- [ ] tests: memória, expressões, formatação, verificador, gerador, telas
-- [ ] models: tipos C, estado, valor formatado
-- [ ] behaviour: modelo, formatação, gerador, lições, tela e oráculo
-- [ ] quality: `npm run check`, `gdb:oracle`, coverage, e2e e screenshots
-- [ ] docs: *Log* e status `review`
+- [x] spec: ADR-T26-1 (modelo de memória, subconjunto de expressões, regras de formatação) e testes nomeados
+- [x] tests: memória, expressões, formatação, verificador, gerador, telas
+- [x] models: tipos C, estado, valor formatado
+- [x] behaviour: modelo, formatação, gerador, lições, tela e oráculo
+- [x] quality: `npm run check`, `gdb:oracle`, coverage, e2e e screenshots
+- [x] docs: *Log* e status `review`
 
 ## Notas para o batch
 
@@ -148,3 +152,19 @@ da T25.
   ambiente (locale, versão). Nesse caso, tire o caso e registre no *Log*.
 
 ## Log
+
+- 2026-11-22 — Escopo completo entregue (sem recorte): modelo de memória x86-64 SysV LP64 little-endian (`src/gdb/memory.ts`), avaliador de expressões com semântica de C (`src/gdb/expr.ts`), formatador fiel ao GNU gdb 18.1 com `print elements = 200` e `print repeats = 10` (`src/gdb/format.ts`), tabela de 99 casos gravados do gdb 18.1 (`src/gdb/cases/format-cases.ts`), verificador de saída com diagnóstico de quase-acertos (`src/gdb/check-output.ts`), gerador de 9 tipos × 3 níveis (`src/gdb/out-drill.ts`) e motor de rodada com eventos `gdb.out` (`src/gdb/out-round.ts`), tela Saída (`src/ui/gdb/OutputDrill.tsx`), item "Saída" (`gdb-output`, `touch: true`) na pasta GDB, unidades 10–14 (14 novas lições, total 14 unidades / 42 lições) no Aprender com transcrições reais do gdb 18.1, e oráculo ampliado (`scripts/gdb-oracle.mjs`).
+- 2026-11-22 — UNATTENDED CHOICE e ampliação de *Files owned*:
+  - Configurações e histórico de Saída ficam em chaves próprias `popis.gdb-output` e `popis.gdb-output-results` em `src/storage/gdb.ts`, preservando `popis.gdb` do Comandos intacto (ADR-T26-1).
+  - Motor da rodada de Saída isolado em `src/gdb/out-round.ts` para manter `src/gdb/round.ts` intocado; adicionados 4 programas curtos (`formats-demo`, `arrays-demo`, `structs-demo`, `memory-demo`) em `src/gdb/programs.ts` para as unidades 10–14.
+  - `src/ui/gdb/LearnDrill.tsx` e `src/ui/App.tsx` ampliados para suportar exercícios no modo `"output"` (com a mesma retirada adaptativa da T20, prefixo `$1 =` para `print` e `>` para `x/`/`whatis`, e botão "Treinar" abrindo `Saída` com os tipos da lição selecionados).
+  - `vite.config.ts` atualizado com ratchet de cobertura em `src/gdb/**` (`99/99/100/96`, subindo `statements` de 98 para 99 e `branches` de 95 para 96).
+- 2026-11-22 — Correção de testes antes do commit de comportamento (`2e07e5b`): ajustado o caminho do breadcrumb nos novos testes de `"popis/gdb/saida"` para `"popis/gdb/saída"` (pois `Shell.tsx` aplica `toLowerCase()` preservando acentos), e restringida a regex de endereços não mascarados em `src/gdb/curriculum.test.ts` a endereços de memória x86-64 (`0x7f…`, `0x55…`/`0x56…`, `0x40xxxx`, `0x0000…`) para permitir saídas hexadecimais legítimas como `$1 = 0xffffffff` na unidade 10.
+- 2026-11-22 — Verificação visual: capturadas e inspecionadas 10 capturas Playwright (`.batch/visual/t26-gdb-output.spec.ts` em `desktop` e `phone` Pixel 7: unidades 10 e 14 no Aprender, tela ativa do Saída, feedback de erro com saída real e explicação, e tela de resultados). Nenhum overflow horizontal, corte ou erro de contraste encontrado; ajustado o prefixo do campo de exercício no `LearnDrill.tsx` para exibir `>` em exercícios de `x/` e `whatis` (em vez de `$1 =`), coberto em `src/ui/GdbScreenLearn.test.tsx`.
+- 2026-11-22 — Gates verdes:
+  - `npm run gdb:oracle`: `gdb oracle: prefixes 159/159, transcripts 42/42, equivalences 119/119, format 99/99, output 54/54`.
+  - `npm run check`: verde (`tsc --noEmit`, `eslint . --max-warnings 0`, `prettier --check .`, `146/146` arquivos / `4146/4146` testes, `vite build`).
+  - `npm run coverage`: verde (`99.79%` statements, `98.58%` branches, `100%` functions, `99.89%` lines; `src/gdb/**` `99.08/96.47/100/99.55`, `src/ui/gdb/**` `100/99.24/100/100`, `src/storage/**` e `src/stats/**` `100/100/100/100`; todos os limiares atendidos).
+  - `npm run test:fuzz -- src/gdb/memory.prop.test.ts src/gdb/expr.prop.test.ts src/gdb/out-drill.prop.test.ts`: verde (`28/28` arquivos / `230/230` testes com `FC_NUM_RUNS=20000`).
+  - `npm run test:e2e`: verde (`34/34` testes Playwright em `chromium` e `mobile` sob `/popis/`).
+- 2026-11-22 — Verificação manual para o dono: jogar algumas rodadas de Saída em cada nível (1–3) e ler as explicações das unidades 10 e 14 no Aprender.
