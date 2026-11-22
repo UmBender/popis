@@ -395,9 +395,9 @@ const ORDER = ["title", "options", "area", "history", "reference"];
 
 describe("panel order", () => {
   for (const item of ITEMS) {
-    it(`the ${item.label} panel keeps title, options, area, history, reference`, () => {
+    it(`the ${item.id} panel keeps title, options, area, history, reference`, () => {
       setup();
-      fireEvent.click(radio(item.label));
+      fireEvent.click(radio(item.ariaLabel ?? item.label));
       const blocks = Array.from(document.querySelectorAll<HTMLElement>("[data-panel]")).map(
         (el) => el.dataset["panel"] ?? "",
       );

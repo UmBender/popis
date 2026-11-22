@@ -11,12 +11,16 @@ export type ItemId =
   | "typing-weak"
   | "vim-learn"
   | "vim-motion"
-  | "vim-edit";
+  | "vim-edit"
+  | "gdb-learn"
+  | "gdb-commands";
 
 export type TreeItem = {
   readonly id: ItemId;
   /** Accessible name and visible label. */
   readonly label: string;
+  /** Disambiguated accessible name when another folder has the same visible label. */
+  readonly ariaLabel?: string;
   /** The digit that jumps to it, for the first nine items. */
   readonly shortcut: number | null;
   /** Shown on touch screens (code typing and Vim need a keyboard). */
@@ -29,7 +33,7 @@ export type Folder = {
   readonly items: readonly TreeItem[];
 };
 
-type Row = readonly [id: ItemId, label: string, touch?: false];
+type Row = readonly [id: ItemId, label: string, touch?: false, ariaLabel?: string];
 
 const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]])[] = [
   ["hoje", "Hoje", [["daily", "Treino do dia"]]],
@@ -79,6 +83,14 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
       ["vim-edit", "Edição", false],
     ],
   ],
+  [
+    "gdb",
+    "GDB",
+    [
+      ["gdb-learn", "Aprender", undefined, "Aprender (GDB)"],
+      ["gdb-commands", "Comandos"],
+    ],
+  ],
 ];
 
 let position = 0;
@@ -87,11 +99,12 @@ let position = 0;
 export const SECTIONS: readonly Folder[] = TABLE.map(([id, label, rows]) => ({
   id,
   label,
-  items: rows.map(([itemId, itemLabel, touch]) => {
+  items: rows.map(([itemId, itemLabel, touch, ariaLabel]) => {
     const shortcut = itemId === "daily" ? null : position < 9 ? (position += 1) : null;
     return {
       id: itemId,
       label: itemLabel,
+      ...(ariaLabel !== undefined ? { ariaLabel } : {}),
       shortcut,
       touch: touch ?? true,
     };

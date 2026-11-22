@@ -69,6 +69,7 @@ import { TextTypingScreen } from "./TextTypingScreen";
 import { TypingScreen } from "./TypingScreen";
 import { chooseVimDrill, VimScreen } from "./VimScreen";
 import { WeakTypingScreen } from "./WeakTypingScreen";
+import { GdbScreen, type GdbDrill } from "./GdbScreen";
 
 export type AppProps = {
   readonly clock: Clock;
@@ -100,6 +101,11 @@ const VIM_DRILLS: Partial<Readonly<Record<ItemId, VimDrill>>> = {
   "vim-learn": "learn",
   "vim-motion": "motion",
   "vim-edit": "edit",
+};
+
+const GDB_DRILLS: Partial<Readonly<Record<ItemId, GdbDrill>>> = {
+  "gdb-learn": "learn",
+  "gdb-commands": "commands",
 };
 
 function sessionConfig<M extends Mode>(
@@ -190,8 +196,9 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
   const [screen, setScreen] = useState<Screen>({ name: "menu" });
   // A typing or Vim round is being played: the tree hides.
   const [running, setRunning] = useState(false);
-  // Lesson to open when jumping to Aprender from a "Comandos" panel (T20 AC-5).
+  // Lesson to open when jumping to Aprender from a "Comandos" panel (T20 AC-5, T25 AC-6).
   const [learnLesson, setLearnLesson] = useState<string | null>(null);
+  const [gdbLesson, setGdbLesson] = useState<string | null>(null);
   // Section to focus when jumping to Evolução from an item's history (T23 AC-5).
   const [progressFocus, setProgressFocus] = useState<string | null>(null);
   const isNarrow = useMedia("(max-width: 48rem)", narrow);
@@ -291,6 +298,7 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
     const drill = VIM_DRILLS[id];
     if (drill !== undefined) chooseVimDrill(store, drill);
     if (id !== "vim-learn") setLearnLesson(null);
+    if (id !== "gdb-learn") setGdbLesson(null);
     if (id !== "progress") setProgressFocus(null);
     setItem(id);
     updatePrefs({ item: id });
@@ -511,6 +519,28 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
           }}
           initialLesson={learnLesson}
           readOnly={touch}
+        />
+      );
+    }
+    const gdbDrill = GDB_DRILLS[item];
+    if (gdbDrill !== undefined) {
+      return (
+        <GdbScreen
+          key={item}
+          drill={gdbDrill}
+          clock={clock}
+          store={store}
+          newSeed={newSeed}
+          onBack={backToMode}
+          onRunning={setRunning}
+          onLearn={(lessonId) => {
+            setGdbLesson(lessonId ?? null);
+            choose("gdb-learn");
+          }}
+          onPractice={() => {
+            choose("gdb-commands");
+          }}
+          initialLesson={gdbLesson}
         />
       );
     }

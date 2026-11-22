@@ -314,7 +314,7 @@ function Tree({
                   <input
                     type="radio"
                     name="shell-item"
-                    aria-label={item.label}
+                    aria-label={item.ariaLabel ?? item.label}
                     checked={tree.item === item.id}
                     // A click, not a change: choosing the checked item still closes the drawer.
                     onClick={() => {
