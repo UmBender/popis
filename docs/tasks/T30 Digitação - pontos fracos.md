@@ -1,10 +1,11 @@
 ---
 id: T30
 title: Digitação - pontos fracos
-status: todo
+status: in-progress
 depends_on: [T29]
 branch: task/T30-typing-weak-points
-adrs: []
+adrs:
+  - "[[ADR-T30-1 Seleção, geração e formatura nos pontos fracos de digitação]]"
 tags: [task]
 ---
 
@@ -44,7 +45,7 @@ previa. Ideia D2 de [[Datilografia para programação]].
     fragmentos de código curtos que o contêm;
   - cada linha gerada contém o n-grama pelo menos 2 vezes, e a mesma
     seed gera o mesmo texto.
-  - Testes: `src/typing/weak-text.prop.test.ts` (para muitas seeds e n-gramas: o texto contém o n-grama na frequência mínima, só tem ASCII imprimível e é determinístico), `src/typing/code-words.test.ts` (lista única, sem espaço).
+  - Testes: `src/typing/weak-text.test.ts` (palavras em inglês/código para letras, fragmentos curtos para símbolos, mínimo de 2 ocorrências por linha e determinismo), `src/typing/weak-text.prop.test.ts` (para muitas seeds e n-gramas: o texto contém o n-grama na frequência mínima, só tem ASCII imprimível e é determinístico), `src/typing/code-words.test.ts` (lista única, sem espaço).
 - **AC-3**: **Rodada:**
   - blocos de 30 s, cada um focado num n-grama;
   - o n-grama **se forma** quando a mediana do intervalo nele, no bloco,
@@ -67,7 +68,7 @@ previa. Ideia D2 de [[Datilografia para programação]].
     entram nas mesmas estatísticas de pares da Evolução;
   - o item "Pontos fracos" entra na pasta Digitação, depois de "Texto";
   - os atalhos 1–9 não mudam.
-  - Testes: `src/stats/event.test.ts`, `src/ui/shell/sections.test.ts`, `tests/e2e/typing.spec.ts` (uma rodada com histórico semeado).
+  - Testes: `src/stats/event.test.ts`, `src/stats/typing-stats.test.ts`, `src/stats/progress.test.ts`, `src/ui/shell/sections.test.ts`, `tests/e2e/typing.spec.ts` (uma rodada com histórico semeado).
 
 ## Out of scope
 
@@ -83,7 +84,7 @@ previa. Ideia D2 de [[Datilografia para programação]].
 
 ## Subtasks (one commit each)
 
-- [ ] spec: ADR-T30-1 (seleção, formatura do n-grama, drill novo) e testes nomeados
+- [x] spec: ADR-T30-1 (seleção, formatura do n-grama, drill novo) e testes nomeados
 - [ ] tests
 - [ ] models
 - [ ] behaviour
