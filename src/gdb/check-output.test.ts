@@ -5,37 +5,34 @@ import { checkOutput } from "./check-output";
 
 describe("gdb output checker (AC-4)", () => {
   it("output checker accepts equivalent forms", () => {
-    const cases: readonly (readonly [string, string, "print" | "examine" | "whatis" | "error"])[] = [
-      // With and without $N = prefix
-      ["0xffffffff", "0xffffffff", "print"],
-      ["$1 = 0xffffffff", "0xffffffff", "print"],
-      ["$42 = 0xffffffff", "0xffffffff", "print"],
-      ["$1=0xffffffff", "0xffffffff", "print"],
-      // Extra spaces outside quotes
-      ["  -3  ", "-3", "print"],
-      ["{ 3 , 1 , 4 , 1 , 5 }", "{3, 1, 4, 1, 5}", "print"],
-      ["{3,1,4,1,5}", "{3, 1, 4, 1, 5}", "print"],
-      ["{ c = 97 'a' , x = 7 , y = 9 }", "{c = 97 'a', x = 7, y = 9}", "print"],
-      ["{c=97 'a', x=7, y=9}", "{c = 97 'a', x = 7, y = 9}", "print"],
-      ["  0x02   0x01   0x00   0x00  ", "0x02 0x01 0x00 0x00", "examine"],
-      ["$3 = {0 <repeats 16 times>}", "{0 <repeats 16 times>}", "print"],
-      ["type = int *", "type = int *", "whatis"],
-      ["type=int*", "type = int *", "whatis"],
-      // ADDR accepted where gdb prints a non-null address (and concrete hex address accepted too)
-      ["{val = 10, next = ADDR}", "{val = 10, next = ADDR}", "print"],
-      ["{val = 10, next = 0x7fffffffd100}", "{val = 10, next = ADDR}", "print"],
-      ["(int *) ADDR", "(int *) ADDR", "print"],
-      ["(int *) 0x7fffffffc500", "(int *) ADDR", "print"],
-      // Exact string spaces preserved when matching
-      ['"a  b"', '"a  b"', "print"],
-      ["32 ' '", "32 ' '", "print"],
-      // Null pointer deref error
+    const cases: readonly (readonly [string, string, "print" | "examine" | "whatis" | "error"])[] =
       [
-        "Cannot access memory at address 0x0",
-        "Cannot access memory at address 0x0",
-        "error",
-      ],
-    ];
+        // With and without $N = prefix
+        ["0xffffffff", "0xffffffff", "print"],
+        ["$1 = 0xffffffff", "0xffffffff", "print"],
+        ["$42 = 0xffffffff", "0xffffffff", "print"],
+        ["$1=0xffffffff", "0xffffffff", "print"],
+        // Extra spaces outside quotes
+        ["  -3  ", "-3", "print"],
+        ["{ 3 , 1 , 4 , 1 , 5 }", "{3, 1, 4, 1, 5}", "print"],
+        ["{3,1,4,1,5}", "{3, 1, 4, 1, 5}", "print"],
+        ["{ c = 97 'a' , x = 7 , y = 9 }", "{c = 97 'a', x = 7, y = 9}", "print"],
+        ["{c=97 'a', x=7, y=9}", "{c = 97 'a', x = 7, y = 9}", "print"],
+        ["  0x02   0x01   0x00   0x00  ", "0x02 0x01 0x00 0x00", "examine"],
+        ["$3 = {0 <repeats 16 times>}", "{0 <repeats 16 times>}", "print"],
+        ["type = int *", "type = int *", "whatis"],
+        ["type=int*", "type = int *", "whatis"],
+        // ADDR accepted where gdb prints a non-null address (and concrete hex address accepted too)
+        ["{val = 10, next = ADDR}", "{val = 10, next = ADDR}", "print"],
+        ["{val = 10, next = 0x7fffffffd100}", "{val = 10, next = ADDR}", "print"],
+        ["(int *) ADDR", "(int *) ADDR", "print"],
+        ["(int *) 0x7fffffffc500", "(int *) ADDR", "print"],
+        // Exact string spaces preserved when matching
+        ['"a  b"', '"a  b"', "print"],
+        ["32 ' '", "32 ' '", "print"],
+        // Null pointer deref error
+        ["Cannot access memory at address 0x0", "Cannot access memory at address 0x0", "error"],
+      ];
 
     for (const [typed, expected, kind] of cases) {
       const res = checkOutput(typed, expected, { kind });

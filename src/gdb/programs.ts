@@ -534,9 +534,7 @@ export const PROGRAMS: readonly GdbProgram[] = [
       "}",
     ],
     functions: [{ name: "main", line: 1, params: [] }],
-    targets: [
-      { id: "fmt-stop", line: 10, label: "retorno de main", match: "return done" },
-    ],
+    targets: [{ id: "fmt-stop", line: 10, label: "retorno de main", match: "return done" }],
   },
   {
     id: "arrays-demo",
@@ -556,9 +554,7 @@ export const PROGRAMS: readonly GdbProgram[] = [
       "}",
     ],
     functions: [{ name: "main", line: 1, params: [] }],
-    targets: [
-      { id: "arr-stop", line: 9, label: "retorno de main", match: "return done" },
-    ],
+    targets: [{ id: "arr-stop", line: 9, label: "retorno de main", match: "return done" }],
   },
   {
     id: "structs-demo",
@@ -579,9 +575,7 @@ export const PROGRAMS: readonly GdbProgram[] = [
       "}",
     ],
     functions: [{ name: "main", line: 3, params: [] }],
-    targets: [
-      { id: "st-stop", line: 10, label: "retorno de main", match: "return done" },
-    ],
+    targets: [{ id: "st-stop", line: 10, label: "retorno de main", match: "return done" }],
   },
   {
     id: "memory-demo",
@@ -601,9 +595,7 @@ export const PROGRAMS: readonly GdbProgram[] = [
       "}",
     ],
     functions: [{ name: "main", line: 2, params: [] }],
-    targets: [
-      { id: "mem-stop", line: 9, label: "retorno de main", match: "return done" },
-    ],
+    targets: [{ id: "mem-stop", line: 9, label: "retorno de main", match: "return done" }],
   },
 ];
 

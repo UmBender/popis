@@ -81,7 +81,12 @@ function formatByteAsChar(byte: number, signed: boolean): string {
   return `${String(num)} '${formatCharLiteral(b, "'")}'`;
 }
 
-function formatScalar(raw: bigint, type: CType, fmt: PrintFormat | undefined, topLevel: boolean): string {
+function formatScalar(
+  raw: bigint,
+  type: CType,
+  fmt: PrintFormat | undefined,
+  topLevel: boolean,
+): string {
   const bits = sizeOf(type) * 8;
   const u = BigInt.asUintN(bits, raw);
   const s = BigInt.asIntN(bits, raw);
@@ -108,7 +113,8 @@ function formatScalar(raw: bigint, type: CType, fmt: PrintFormat | undefined, to
 }
 
 function formatCharArray(bytes: Uint8Array, elements: number, repeats: number): string {
-  const effLen = bytes.length > 0 && bytes[bytes.length - 1] === 0 ? bytes.length - 1 : bytes.length;
+  const effLen =
+    bytes.length > 0 && bytes[bytes.length - 1] === 0 ? bytes.length - 1 : bytes.length;
   if (effLen === 0) return '""';
 
   const parts: string[] = [];
@@ -213,7 +219,15 @@ function formatArrayElements(
     while (i + run < length && bytesEqualAt(raw, i * elemSize, (i + run) * elemSize, elemSize)) {
       run += 1;
     }
-    const elemStr = formatAt(addr + BigInt(i * elemSize), elem, state, fmt, elements, repeats, false);
+    const elemStr = formatAt(
+      addr + BigInt(i * elemSize),
+      elem,
+      state,
+      fmt,
+      elements,
+      repeats,
+      false,
+    );
     if (run > repeats) {
       items.push(`${elemStr} <repeats ${String(run)} times>`);
       printed += 1;
@@ -355,13 +369,21 @@ export function evalGdbCommand(cmd: string, state: MemoryState): FormatCommandRe
     // whatis <expr|type>
     const whatisMatch = /^whatis\s+(.+)$/.exec(trimmed);
     if (whatisMatch !== null) {
-      return { ok: true, kind: "whatis", output: formatWhatis(resolveTypeOrExpr(whatisMatch[1]!, state)) };
+      return {
+        ok: true,
+        kind: "whatis",
+        output: formatWhatis(resolveTypeOrExpr(whatisMatch[1]!, state)),
+      };
     }
 
     // ptype <expr|type>
     const ptypeMatch = /^ptype\s+(.+)$/.exec(trimmed);
     if (ptypeMatch !== null) {
-      return { ok: true, kind: "ptype", output: formatPtype(resolveTypeOrExpr(ptypeMatch[1]!, state)) };
+      return {
+        ok: true,
+        kind: "ptype",
+        output: formatPtype(resolveTypeOrExpr(ptypeMatch[1]!, state)),
+      };
     }
 
     // x/<spec> <expr>

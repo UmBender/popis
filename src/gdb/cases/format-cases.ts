@@ -22,14 +22,7 @@ import {
 // Verified against live GNU gdb 18.1 by `npm run gdb:oracle`.
 
 export type FormatCaseGroup =
-  | "formato"
-  | "char"
-  | "array"
-  | "string"
-  | "struct"
-  | "ponteiro"
-  | "whatis"
-  | "memoria";
+  "formato" | "char" | "array" | "string" | "struct" | "ponteiro" | "whatis" | "memoria";
 
 export type FormatCase = {
   readonly id: string;
@@ -67,7 +60,10 @@ nodeFields.push({ name: "val", type: T_INT }, { name: "next", type: pointerType(
 
 const bigArrVals = Array.from({ length: 205 }, (_, i) => i);
 const bigRepVals = Array.from({ length: 210 }, () => 4);
-const edgeRepVals = [...Array.from({ length: 195 }, (_, i) => i), ...Array.from({ length: 20 }, () => 9)];
+const edgeRepVals = [
+  ...Array.from({ length: 195 }, (_, i) => i),
+  ...Array.from({ length: 20 }, () => 9),
+];
 const alpha200 = Array.from({ length: 200 }, (_, i) => String.fromCharCode(97 + (i % 26))).join("");
 const alpha201 = Array.from({ length: 201 }, (_, i) => String.fromCharCode(97 + (i % 26))).join("");
 
@@ -262,7 +258,12 @@ export const FORMAT_CASES: readonly FormatCase[] = [
   { id: "arr-slice", group: "array", command: "p arr5[1]@3", expected: "{1, 4, 1}" },
   { id: "arr-ptr-slice", group: "array", command: "p *ip@3", expected: "{1, 4, 1}" },
   { id: "arr-hex", group: "array", command: "p/x arr5", expected: "{0x3, 0x1, 0x4, 0x1, 0x5}" },
-  { id: "arr-rep10", group: "array", command: "p rep10", expected: "{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}" },
+  {
+    id: "arr-rep10",
+    group: "array",
+    command: "p rep10",
+    expected: "{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}",
+  },
   { id: "arr-rep16", group: "array", command: "p rep16", expected: "{0 <repeats 16 times>}" },
   {
     id: "arr-repMix",
@@ -291,11 +292,16 @@ export const FORMAT_CASES: readonly FormatCase[] = [
     id: "str-15",
     group: "string",
     command: "p str15",
-    expected: '"abc", \'\\000\' <repeats 11 times>',
+    expected: "\"abc\", '\\000' <repeats 11 times>",
   },
   { id: "str-full", group: "string", command: "p strFull", expected: '"abcd"' },
   { id: "str-esc", group: "string", command: "p strEsc", expected: '"a\\n\\t\\"\\\\\'\\001"' },
-  { id: "str-repChar", group: "string", command: "p strRepChar", expected: "'x' <repeats 12 times>" },
+  {
+    id: "str-repChar",
+    group: "string",
+    command: "p strRepChar",
+    expected: "'x' <repeats 12 times>",
+  },
   {
     id: "str-allZero",
     group: "string",
@@ -408,5 +414,10 @@ export const FORMAT_CASES: readonly FormatCase[] = [
     expected: "0x00000003 0x00000001 0x00000004 0x00000001",
   },
   { id: "x-s-str6", group: "memoria", command: "x/s str6", expected: '"abc"' },
-  { id: "x-s-strEsc", group: "memoria", command: "x/s strEsc", expected: '"a\\n\\t\\"\\\\\'\\001"' },
+  {
+    id: "x-s-strEsc",
+    group: "memoria",
+    command: "x/s strEsc",
+    expected: '"a\\n\\t\\"\\\\\'\\001"',
+  },
 ];

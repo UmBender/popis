@@ -16,7 +16,7 @@ export default defineConfig({
       // Ratchet: raise these when coverage rises, never lower them without an ADR.
       thresholds: {
         "src/core/**": { lines: 100, statements: 100, functions: 100, branches: 92 },
-        "src/gdb/**": { lines: 99, statements: 98, functions: 100, branches: 95 },
+        "src/gdb/**": { lines: 99, statements: 99, functions: 100, branches: 96 },
         "src/gen/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
         "src/learn/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
         "src/math/**": { lines: 99, statements: 99, functions: 100, branches: 96 },

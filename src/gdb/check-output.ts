@@ -9,8 +9,7 @@ export type OutputCheckMeta = {
 };
 
 export type OutputCheckResult =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly reason: string };
+  { readonly ok: true } | { readonly ok: false; readonly reason: string };
 
 /**
  * Quote-aware normalizer: strips optional `$N = ` history prefix, collapses extra
@@ -123,11 +122,7 @@ function maskNonNullAddresses(s: string): string {
   );
 }
 
-function diagnoseNearMiss(
-  typed: string,
-  expected: string,
-  meta?: OutputCheckMeta,
-): string {
+function diagnoseNearMiss(typed: string, expected: string, meta?: OutputCheckMeta): string {
   // 1. Reversed endianness in x/ examine output
   if (meta?.kind === "examine") {
     const typedToks = typed.split(" ").filter((t) => t.length > 0);
@@ -172,7 +167,12 @@ function diagnoseNearMiss(
   }
 
   // 5. Struct without field names
-  if (expected.startsWith("{") && expected.includes(" = ") && typed.startsWith("{") && !typed.includes(" = ")) {
+  if (
+    expected.startsWith("{") &&
+    expected.includes(" = ") &&
+    typed.startsWith("{") &&
+    !typed.includes(" = ")
+  ) {
     return "O gdb imprime structs com os nomes dos campos: {campo = valor, ...}.";
   }
 

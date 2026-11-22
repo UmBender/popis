@@ -96,8 +96,7 @@ export function appendGdbResult(store: KeyValueStore, result: GdbCmdResult): voi
   tryWriteJson(store, GDB_RESULTS_KEY, results.slice(-MAX_GDB_RESULTS));
 }
 
-const isLevel = (value: unknown): value is GdbOutLevel =>
-  value === 1 || value === 2 || value === 3;
+const isLevel = (value: unknown): value is GdbOutLevel => value === 1 || value === 2 || value === 3;
 
 /** GDB Saída settings from parsed JSON; invalid fields fall back to defaults. */
 export function parseGdbOutSettings(value: unknown): GdbOutSettings {

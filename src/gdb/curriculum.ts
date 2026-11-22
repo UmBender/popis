@@ -1845,7 +1845,10 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           setup: ["break 9", "run"],
           steps: [
             { cmd: "p s", note: 'char[10] com "abc" tem 7 zeros; sem o último, sobram 6 \\000.' },
-            { cmd: "p big", note: "char[15] deixa 11 zeros (> 10), compactados em <repeats 11 times>." },
+            {
+              cmd: "p big",
+              note: "char[15] deixa 11 zeros (> 10), compactados em <repeats 11 times>.",
+            },
             { cmd: "p full", note: 'Sem \\0 final, imprime os 4 caracteres: "abcd".' },
           ],
         },
@@ -1865,7 +1868,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
             ["Breakpoint 1, main () at arrays.cpp:9", 'char big[15] = "abc";'],
             "p big",
             "print",
-            '"abc", \'\\000\' <repeats 11 times>',
+            "\"abc\", '\\000' <repeats 11 times>",
             "char[15] tem 12 zeros; removido o final, sobram 11 (> 10), compactados em <repeats 11 times>.",
           ),
           outEx(
@@ -1920,7 +1923,10 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           outEx(
             "structs-demo",
             10,
-            ["Breakpoint 1, main () at structs.cpp:10", "Node n2{20, nullptr}; Node n1{10, &n2}; Node* h = &n1;"],
+            [
+              "Breakpoint 1, main () at structs.cpp:10",
+              "Node n2{20, nullptr}; Node n1{10, &n2}; Node* h = &n1;",
+            ],
             "p h->next->val",
             "print",
             "20",
@@ -1929,7 +1935,10 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           outEx(
             "structs-demo",
             10,
-            ["Breakpoint 1, main () at structs.cpp:10", "Node n2{20, nullptr}; Node n1{10, &n2}; Node* h = &n1;"],
+            [
+              "Breakpoint 1, main () at structs.cpp:10",
+              "Node n2{20, nullptr}; Node n1{10, &n2}; Node* h = &n1;",
+            ],
             "p *h->next",
             "print",
             "{val = 20, next = 0x0}",
@@ -2003,7 +2012,10 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           setup: ["break 10", "run"],
           steps: [
             { cmd: "p np", note: "Ponteiro nulo no topo: (Node *) 0x0." },
-            { cmd: "p n1", note: "Dentro da struct, o ponteiro não nulo aparece mascarado como ADDR." },
+            {
+              cmd: "p n1",
+              note: "Dentro da struct, o ponteiro não nulo aparece mascarado como ADDR.",
+            },
             { cmd: "p *np", note: "Desreferenciar 0x0 dispara o erro de acesso à memória." },
           ],
         },
@@ -2068,7 +2080,10 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           outEx(
             "memory-demo",
             9,
-            ["Breakpoint 1, main () at memory.cpp:9", "struct Padded { char c; int x; long long y; };"],
+            [
+              "Breakpoint 1, main () at memory.cpp:9",
+              "struct Padded { char c; int x; long long y; };",
+            ],
             "p sizeof(Padded)",
             "print",
             "16",
@@ -2161,7 +2176,10 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           steps: [
             { cmd: "x/4dw a", note: "4 words de 4 bytes em decimal: 3 1 4 1." },
             { cmd: "x/s msg", note: 'Lê até o primeiro \\0 e imprime apenas "abc".' },
-            { cmd: "x/4cb msg", note: "4 bytes individuais como char, incluindo o terminador 0 '\\000'." },
+            {
+              cmd: "x/4cb msg",
+              note: "4 bytes individuais como char, incluindo o terminador 0 '\\000'.",
+            },
           ],
         },
         exercises: [
@@ -2230,15 +2248,27 @@ export const OUTPUT_FORMAT_TABLE: readonly OutputRefEntry[] = [
   { key: "p/t", syntax: "p/t expr", text: "binário sem zeros à esquerda" },
   { key: "p/o", syntax: "p/o expr", text: "octal com prefixo 0" },
   { key: "p/c", syntax: "p/c expr", text: "byte baixo como código numérico + caractere" },
-  { key: "div-c", syntax: "p -7 / 2", text: "divisão inteira truncada para zero e resto com sinal do dividendo" },
+  {
+    key: "div-c",
+    syntax: "p -7 / 2",
+    text: "divisão inteira truncada para zero e resto com sinal do dividendo",
+  },
   { key: "casts", syntax: "p (unsigned)-1", text: "casts modulares e promoções inteiras de C" },
   { key: "@", syntax: "p a[1]@3 / *ptr@3", text: "fatia artificial de N elementos consecutivos" },
-  { key: "repeats", syntax: "<repeats N times>", text: "compactação automática acima de 10 itens iguais" },
+  {
+    key: "repeats",
+    syntax: "<repeats N times>",
+    text: "compactação automática acima de 10 itens iguais",
+  },
   { key: "char[]", syntax: "p str", text: "string com \\000 (descarta só o último '\\0')" },
   { key: "struct-ptr", syntax: "p *h->next", text: "campos nomeados e navegação com * e ->" },
   { key: "whatis", syntax: "whatis expr", text: "mostra type = ... resumido" },
   { key: "nullptr", syntax: "p *np", text: "0x0 e erro Cannot access memory at address 0x0" },
-  { key: "sizeof", syntax: "p sizeof(T)", text: "tamanho em bytes com alinhamento e padding x86-64" },
+  {
+    key: "sizeof",
+    syntax: "p sizeof(T)",
+    text: "tamanho em bytes com alinhamento e padding x86-64",
+  },
   { key: "x/Nxb", syntax: "x/4xb &n", text: "bytes em hex preenchido (ordem little-endian)" },
   { key: "x/Ndw", syntax: "x/4dw arr", text: "N words de 4 bytes em decimal com sinal" },
   { key: "x/s", syntax: "x/s str", text: "string C lida até o primeiro byte nulo" },

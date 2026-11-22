@@ -155,12 +155,35 @@ describe("gdb memory model (AC-1)", () => {
     expect(typeName(arrayType(T_INT, 5))).toBe("int [5]");
     expect(typeName(small)).toBe("Small");
     expect(typeName(pointerType(small))).toBe("Small *");
-    expect(ptypeString(small)).toBe("type = struct Small {\n    char c;\n    int x;\n    int y;\n}");
+    expect(ptypeString(small)).toBe(
+      "type = struct Small {\n    char c;\n    int x;\n    int y;\n}",
+    );
 
     // Round-trip low-level little-endian helper directly.
     const buf = new Uint8Array(8);
     writeLittleEndian(buf, 0, 8, -1n);
     expect(readLittleEndian(buf, 0, 8, true)).toBe(-1n);
     expect(readLittleEndian(buf, 0, 8, false)).toBe(0xffffffffffffffffn);
+
+    // Pointer-to-pointer, non-struct ptype, struct with pointer and array fields, field refs and error paths.
+    expect(typeName(pointerType(pointerType(T_INT)))).toBe("int **");
+    expect(ptypeString(T_INT)).toBe("type = int");
+    const box = structType("Box", [
+      { name: "p", type: pointerType(T_INT) },
+      { name: "a", type: arrayType(T_INT, 3) },
+    ]);
+    expect(ptypeString(box)).toBe("type = struct Box {\n    int *p;\n    int a[3];\n}");
+    expect(() => offsetOf(small, "nope")).toThrow();
+
+    const state = buildMemoryState([
+      { name: "s", type: small, value: { c: "a", x: 11, y: 22 } },
+      { name: "px", type: pointerType(T_INT), value: { ref: "s", field: "x" } },
+    ]);
+    const pxVal = readScalar(state, state.vars.get("px")!.addr, pointerType(T_INT));
+    expect(readScalar(state, pxVal, T_INT)).toBe(11n);
+    expect(() => variableBytes(state, "missing")).toThrow();
+    expect(() =>
+      buildMemoryState([{ name: "bad", type: pointerType(T_INT), value: { ref: "ghost" } }]),
+    ).toThrow();
   });
 });

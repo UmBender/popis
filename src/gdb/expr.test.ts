@@ -166,5 +166,58 @@ describe("gdb expression evaluator (AC-2)", () => {
     expect(() => evalExpr("*np", state)).toThrow("Cannot access memory at address 0x0");
     expect(() => evalExpr("np->val", state)).toThrow("Cannot access memory at address 0x0");
     expect(() => evalExpr("*h->next->next", state)).toThrow("Cannot access memory at address 0x0");
+    expect(() => evalExpr("np[0]", state)).toThrow("Cannot access memory at address 0x0");
+  });
+
+  it("handles literal suffixes, char escapes, pointer arithmetic, sizeof variants, 64-bit promotions and ExprErrors", () => {
+    const state = makeState();
+    expect(evalScalar("'\\n' + '\\t'").value).toBe(19n);
+    expect(evalScalar("1L + 2LL").value).toBe(3n);
+    expect(evalScalar("1UL + 2ULL").value).toBe(3n);
+    expect(evalScalar("3000000000").typeName).toBe("long");
+    expect(evalScalar("5000000000U").typeName).toBe("unsigned long");
+    expect(evalScalar("(long long)1 + 1U").typeName).toBe("long long");
+    expect(evalScalar("(long long)1 + 1UL").typeName).toBe("unsigned long long");
+    expect(evalScalar("true + false + +a").value).toBe(-6n);
+    expect(evalScalar("*(2 + arr)").value).toBe(4n);
+    expect(evalScalar("*(ip - 1)").value).toBe(3n);
+    expect(evalScalar("sizeof(struct Padded)").value).toBe(16n);
+    expect(evalScalar("sizeof(struct Padded *)").value).toBe(8n);
+    expect(evalScalar("sizeof a").value).toBe(4n);
+    expect(evalScalar("sizeof(arr[1]@3)").value).toBe(12n);
+    expect(evalExpr("nullptr", state).kind).toBe("scalar");
+
+    const bad = [
+      "",
+      "1 / 0",
+      "1 % 0",
+      "1 +",
+      "1 2",
+      "$",
+      "'\\q'",
+      "'ab'",
+      "(int)arr",
+      "arr + arr",
+      "arr * 2",
+      "-arr",
+      "+arr",
+      "*a",
+      "&5",
+      "a[0]",
+      "a.x",
+      "out.nope",
+      "out.1",
+      "a->x",
+      "h->nope",
+      "h->1",
+      "ghost",
+      "5@3",
+      "arr[0]@-1",
+      "(1 + 2",
+      "sizeof(int",
+    ];
+    for (const expr of bad) {
+      expect(() => evalExpr(expr, state), expr).toThrow();
+    }
   });
 });

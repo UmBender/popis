@@ -40,11 +40,12 @@ import { CodeView } from "./CodeView";
 
 const TICK_MS = 100;
 
-const KIND_FAMILIES: readonly { readonly title: string; readonly kinds: readonly GdbOutKind[] }[] = [
-  { title: "Formatos e expressões", kinds: ["formato", "char", "expressao"] },
-  { title: "Coleções e tipos", kinds: ["array", "string", "struct", "ponteiro"] },
-  { title: "Memória e ABI", kinds: ["sizeof", "memoria"] },
-];
+const KIND_FAMILIES: readonly { readonly title: string; readonly kinds: readonly GdbOutKind[] }[] =
+  [
+    { title: "Formatos e expressões", kinds: ["formato", "char", "expressao"] },
+    { title: "Coleções e tipos", kinds: ["array", "string", "struct", "ponteiro"] },
+    { title: "Memória e ABI", kinds: ["sizeof", "memoria"] },
+  ];
 
 export type OutputDrillProps = {
   readonly clock: Clock;
@@ -85,7 +86,9 @@ export function OutputDrill({
   onRunning,
   onLearn,
 }: OutputDrillProps): ReactNode {
-  const [current, setCurrent] = useState<Run>(() => newRun(loadGdbOutSettings(store), newSeed(), 0));
+  const [current, setCurrent] = useState<Run>(() =>
+    newRun(loadGdbOutSettings(store), newSeed(), 0),
+  );
   const [results, setResults] = useState<readonly GdbOutResult[]>(() => loadGdbOutResults(store));
   const [text, setText] = useState("");
   const [now, setNow] = useState(() => clock.now());

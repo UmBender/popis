@@ -22,9 +22,7 @@ import { programById } from "./programs";
 describe("gdb curriculum (AC-6, T26 AC-8)", () => {
   it("has 14 units in order covering commands (1-9) and output/memory (10-14)", () => {
     expect(GDB_UNITS).toHaveLength(14);
-    expect(GDB_UNITS.map((u) => u.number)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-    ]);
+    expect(GDB_UNITS.map((u) => u.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
     const ids = GDB_LESSONS.map((l) => l.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const lesson of GDB_LESSONS) {

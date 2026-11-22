@@ -396,7 +396,11 @@ function GdbExercise({
           }}
         >
           <span className="gdb-prompt-prefix" aria-hidden="true">
-            {isOut ? "$1 =" : "(gdb)"}
+            {exercise.mode === "output"
+              ? exercise.commandKind === "print"
+                ? "$1 ="
+                : ">"
+              : "(gdb)"}
           </span>
           <input
             ref={inputRef}

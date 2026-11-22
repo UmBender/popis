@@ -12,8 +12,7 @@ export type IntTypeName =
   | "unsigned long long";
 
 export type PrimitiveType =
-  | { readonly kind: "int"; readonly name: IntTypeName }
-  | { readonly kind: "bool" };
+  { readonly kind: "int"; readonly name: IntTypeName } | { readonly kind: "bool" };
 
 export type StructField = {
   readonly name: string;
@@ -82,10 +81,11 @@ export type StructLayout = {
   readonly fields: readonly FieldLayout[];
 };
 
-export type PointerInit =
-  | null
-  | bigint
-  | { readonly ref: string; readonly index?: number; readonly field?: string };
+export type PointerInit = null | {
+  readonly ref: string;
+  readonly index?: number;
+  readonly field?: string;
+};
 
 export type CValueInit =
   | number
@@ -283,7 +283,6 @@ function collectStructs(type: CType, out: Map<string, StructType>): void {
 
 function resolvePointer(init: PointerInit, vars: ReadonlyMap<string, VariableBinding>): bigint {
   if (init === null) return 0n;
-  if (typeof init === "bigint") return init;
   const target = vars.get(init.ref);
   if (target === undefined) {
     throw new Error(`unknown pointer target "${init.ref}"`);
@@ -306,20 +305,13 @@ function writeInit(
   vars: ReadonlyMap<string, VariableBinding>,
 ): void {
   if (type.kind === "bool") {
-    const bit = typeof value === "boolean" ? (value ? 1n : 0n) : BigInt(value as number) !== 0n ? 1n : 0n;
-    writeLittleEndian(buf, offset, 1, bit);
+    writeLittleEndian(buf, offset, 1, value ? 1n : 0n);
     return;
   }
   if (type.kind === "int") {
     const size = INT_INFO[type.name].size;
     const raw =
-      typeof value === "string"
-        ? BigInt(value.charCodeAt(0))
-        : typeof value === "boolean"
-          ? value
-            ? 1n
-            : 0n
-          : BigInt(value as number | bigint);
+      typeof value === "string" ? BigInt(value.charCodeAt(0)) : BigInt(value as number | bigint);
     writeLittleEndian(buf, offset, size, raw);
     return;
   }

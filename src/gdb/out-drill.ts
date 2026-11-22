@@ -135,7 +135,8 @@ function genFormato(rng: Rng, level: GdbOutLevel): Draft {
         body: [`int n = ${String(n)};`],
         locals: [{ name: "n", value: String(n) }],
         command: "p/o n",
-        reason: n === 0 ? "/o imprime 0 para zero." : `/o imprime ${String(n)} em octal com prefixo 0.`,
+        reason:
+          n === 0 ? "/o imprime 0 para zero." : `/o imprime ${String(n)} em octal com prefixo 0.`,
         vars: [{ name: "n", type: T_INT, value: n }],
       };
     }
@@ -161,7 +162,8 @@ function genFormato(rng: Rng, level: GdbOutLevel): Draft {
         body: [`int neg = ${String(neg)};`],
         locals: [{ name: "neg", value: String(neg) }],
         command: "p/x neg",
-        reason: "int tem 4 bytes (32 bits): negativos em /x aparecem com 8 dígitos em complemento de dois.",
+        reason:
+          "int tem 4 bytes (32 bits): negativos em /x aparecem com 8 dígitos em complemento de dois.",
         vars: [{ name: "neg", type: T_INT, value: neg }],
       };
     }
@@ -172,7 +174,8 @@ function genFormato(rng: Rng, level: GdbOutLevel): Draft {
         body: [`short s = ${String(neg)};`],
         locals: [{ name: "s", value: String(neg) }],
         command: `p${fmt} s`,
-        reason: "short tem 2 bytes (16 bits): complemento de dois em 16 bits (0xffff para -1, 65535 em /u).",
+        reason:
+          "short tem 2 bytes (16 bits): complemento de dois em 16 bits (0xffff para -1, 65535 em /u).",
         vars: [{ name: "s", type: T_SHORT, value: neg }],
       };
     }
@@ -206,7 +209,8 @@ function genFormato(rng: Rng, level: GdbOutLevel): Draft {
       body: [`long long ll = ${String(neg)}LL;`],
       locals: [{ name: "ll", value: `${String(neg)} (long long)` }],
       command: `p${fmt} ll`,
-      reason: "long long tem 8 bytes (64 bits): complemento de dois com 16 dígitos hex ou 2^64 + valor.",
+      reason:
+        "long long tem 8 bytes (64 bits): complemento de dois com 16 dígitos hex ou 2^64 + valor.",
       vars: [{ name: "ll", type: T_LLONG, value: BigInt(neg) }],
     };
   }
@@ -281,7 +285,7 @@ function genChar(rng: Rng, level: GdbOutLevel): Draft {
       { code: 0, desc: "byte nulo (0, \\000)" },
       { code: 39, desc: "aspa simples (39, \\')" },
       { code: 92, desc: "barra invertida (92, \\\\)" },
-      { code: 34, desc: "aspa dupla (34, \")" },
+      { code: 34, desc: 'aspa dupla (34, ")' },
     ];
     const picked = rng.pick(escapes);
     return {
@@ -301,7 +305,8 @@ function genChar(rng: Rng, level: GdbOutLevel): Draft {
       body: [`signed char sc = ${String(val)};`],
       locals: [{ name: "sc", value: String(val) }],
       command: "p sc",
-      reason: "Em x86-64, signed char negativo imprime o número negativo seguido do octal de 3 dígitos do byte (256 + valor).",
+      reason:
+        "Em x86-64, signed char negativo imprime o número negativo seguido do octal de 3 dígitos do byte (256 + valor).",
       vars: [{ name: "sc", type: T_SCHAR, value: val }],
     };
   }
@@ -310,7 +315,8 @@ function genChar(rng: Rng, level: GdbOutLevel): Draft {
     body: [`unsigned char uc = ${String(uc)};`],
     locals: [{ name: "uc", value: String(uc) }],
     command: "p uc",
-    reason: "unsigned char imprime o código positivo (0..255) seguido do escape octal de 3 dígitos para bytes >= 128.",
+    reason:
+      "unsigned char imprime o código positivo (0..255) seguido do escape octal de 3 dígitos para bytes >= 128.",
     vars: [{ name: "uc", type: T_UCHAR, value: uc }],
   };
 }
@@ -328,7 +334,8 @@ function genExpressao(rng: Rng, level: GdbOutLevel): Draft {
           { name: "b", value: String(b) },
         ],
         command: "p a / b",
-        reason: "Em C/C++, a divisão inteira trunca em direção a zero (não arredonda para -infinito).",
+        reason:
+          "Em C/C++, a divisão inteira trunca em direção a zero (não arredonda para -infinito).",
         vars: [
           { name: "a", type: T_INT, value: a },
           { name: "b", type: T_INT, value: b },
@@ -343,7 +350,8 @@ function genExpressao(rng: Rng, level: GdbOutLevel): Draft {
           { name: "b", value: String(b) },
         ],
         command: "p a % b",
-        reason: "Em C/C++, o resto a % b tem o mesmo sinal do dividendo a (a / b * b + a % b == a).",
+        reason:
+          "Em C/C++, o resto a % b tem o mesmo sinal do dividendo a (a / b * b + a % b == a).",
         vars: [
           { name: "a", type: T_INT, value: a },
           { name: "b", type: T_INT, value: b },
@@ -359,7 +367,8 @@ function genExpressao(rng: Rng, level: GdbOutLevel): Draft {
         { name: "b", value: String(negB) },
       ],
       command: "p a % b",
-      reason: "O sinal de a % b segue o dividendo a (positivo aqui), independente do sinal do divisor.",
+      reason:
+        "O sinal de a % b segue o dividendo a (positivo aqui), independente do sinal do divisor.",
       vars: [
         { name: "a", type: T_INT, value: pos },
         { name: "b", type: T_INT, value: negB },
@@ -394,7 +403,8 @@ function genExpressao(rng: Rng, level: GdbOutLevel): Draft {
       body: [`int x = ${String(v)};`],
       locals: [{ name: "x", value: String(v) }],
       command: "p (signed char)x",
-      reason: "Converter para signed char trunca para 8 bits com sinal (valor - 256) e imprime como char.",
+      reason:
+        "Converter para signed char trunca para 8 bits com sinal (valor - 256) e imprime como char.",
       vars: [{ name: "x", type: T_INT, value: v }],
     };
   }
@@ -407,7 +417,8 @@ function genExpressao(rng: Rng, level: GdbOutLevel): Draft {
       body: [`unsigned char u = 0;`],
       locals: [{ name: "u", value: "0 (unsigned char)" }],
       command: `p u - ${String(k)}`,
-      reason: "unsigned char é promovido para int (com sinal) antes da subtração, resultando em int negativo.",
+      reason:
+        "unsigned char é promovido para int (com sinal) antes da subtração, resultando em int negativo.",
       vars: [{ name: "u", type: T_UCHAR, value: 0 }],
     };
   }
@@ -417,7 +428,8 @@ function genExpressao(rng: Rng, level: GdbOutLevel): Draft {
       body: [`unsigned int u = 0;`],
       locals: [{ name: "u", value: "0 (unsigned int)" }],
       command: `p u - ${String(k)}`,
-      reason: "unsigned int já tem largura de int: a subtração ocorre sem sinal e dá volta módulo 2^32.",
+      reason:
+        "unsigned int já tem largura de int: a subtração ocorre sem sinal e dá volta módulo 2^32.",
       vars: [{ name: "u", type: T_UINT, value: 0 }],
     };
   }
@@ -430,7 +442,8 @@ function genExpressao(rng: Rng, level: GdbOutLevel): Draft {
       { name: "b", value: `${String(b)} (unsigned char)` },
     ],
     command: "p a + b",
-    reason: "Ambos os unsigned char são promovidos para int antes da soma, evitando overflow de 8 bits.",
+    reason:
+      "Ambos os unsigned char são promovidos para int antes da soma, evitando overflow de 8 bits.",
     vars: [
       { name: "a", type: T_UCHAR, value: a },
       { name: "b", type: T_UCHAR, value: b },
@@ -449,7 +462,8 @@ function genArray(rng: Rng, level: GdbOutLevel): Draft {
         body: [`int a[${String(len)}] = {${initStr}};`],
         locals: [{ name: "a", value: `int[${String(len)}]` }],
         command: "p a",
-        reason: "Um array de int é impresso entre chaves com elementos separados por vírgula e espaço.",
+        reason:
+          "Um array de int é impresso entre chaves com elementos separados por vírgula e espaço.",
         vars: [{ name: "a", type: arrayType(T_INT, len), value: elems }],
       };
     }
@@ -471,10 +485,7 @@ function genArray(rng: Rng, level: GdbOutLevel): Draft {
       const start = rng.int(1, 2);
       const count = rng.int(2, 3);
       return {
-        body: [
-          `int a[5] = {${elems.join(", ")}};`,
-          `int* ptr = &a[${String(start)}];`,
-        ],
+        body: [`int a[5] = {${elems.join(", ")}};`, `int* ptr = &a[${String(start)}];`],
         locals: [
           { name: "a", value: `{${elems.join(", ")}}` },
           { name: "ptr", value: `&a[${String(start)}]` },
@@ -591,7 +602,8 @@ function genString(rng: Rng, level: GdbOutLevel): Draft {
       body: [`char s[4] = "${esc.cpp}";`],
       locals: [{ name: "s", value: "char[4]" }],
       command: "p s",
-      reason: "O '\\0' final é omitido e caracteres de controle aparecem com escape C dentro das aspas.",
+      reason:
+        "O '\\0' final é omitido e caracteres de controle aparecem com escape C dentro das aspas.",
       vars: [{ name: "s", type: arrayType(T_CHAR, 4), value: esc.bytes }],
     };
   }
@@ -618,10 +630,7 @@ function genString(rng: Rng, level: GdbOutLevel): Draft {
   const len = rng.int(11, 14);
   const bytes = Array.from({ length: len }, () => ch.charCodeAt(0));
   return {
-    body: [
-      `char s[${String(len)}];`,
-      `for (int i = 0; i < ${String(len)}; ++i) s[i] = '${ch}';`,
-    ],
+    body: [`char s[${String(len)}];`, `for (int i = 0; i < ${String(len)}; ++i) s[i] = '${ch}';`],
     locals: [{ name: "s", value: `${String(len)}× '${ch}' (sem '\\0')` }],
     command: "p s",
     reason: `Sem '\\0' no final e com ${String(len)} (> 10) caracteres iguais, o gdb imprime '${ch}' <repeats ${String(len)} times>.`,
@@ -703,7 +712,8 @@ function genStruct(rng: Rng, level: GdbOutLevel): Draft {
     body: [`Outer o{'${tag.ch}', {${String(a)}, '${b.ch}'}, ${String(val)}};`],
     locals: [{ name: "o", value: "Outer aninhada" }],
     command: "p o",
-    reason: "Structs aninhadas aparecem com chaves internas no campo correspondente: {tag = ..., in = {a = ..., b = ...}, val = ...}.",
+    reason:
+      "Structs aninhadas aparecem com chaves internas no campo correspondente: {tag = ..., in = {a = ..., b = ...}, val = ...}.",
     vars: [{ name: "o", type: outer, value: { tag: tag.code, in: { a, b: b.code }, val } }],
   };
 }
@@ -746,11 +756,7 @@ function genPonteiro(rng: Rng, level: GdbOutLevel): Draft {
     const cmd = sub === 0 ? "p h->next->val" : sub === 1 ? "p *n1.next" : "p *h->next";
     return {
       preMain: ["struct Node { int val; Node* next; };"],
-      body: [
-        `Node n2{${String(v2)}, nullptr};`,
-        `Node n1{${String(v1)}, &n2};`,
-        "Node* h = &n1;",
-      ],
+      body: [`Node n2{${String(v2)}, nullptr};`, `Node n1{${String(v1)}, &n2};`, "Node* h = &n1;"],
       locals: [
         { name: "n1", value: `{val = ${String(v1)}, next = &n2}` },
         { name: "n2", value: `{val = ${String(v2)}, next = nullptr}` },
@@ -777,7 +783,8 @@ function genPonteiro(rng: Rng, level: GdbOutLevel): Draft {
       body: ["Node* np = nullptr;"],
       locals: [{ name: "np", value: "nullptr (0x0)" }],
       command: "p *np",
-      reason: "Desreferenciar um ponteiro nulo (0x0) gera o erro Cannot access memory at address 0x0.",
+      reason:
+        "Desreferenciar um ponteiro nulo (0x0) gera o erro Cannot access memory at address 0x0.",
       vars: [{ name: "np", type: pointerType(node), value: null }],
     };
   }
@@ -787,22 +794,21 @@ function genPonteiro(rng: Rng, level: GdbOutLevel): Draft {
       body: ["Node* np = nullptr;"],
       locals: [{ name: "np", value: "nullptr" }],
       command: "p np",
-      reason: "Imprimir um ponteiro no topo mostra o tipo entre parênteses seguido do endereço: (Node *) 0x0.",
+      reason:
+        "Imprimir um ponteiro no topo mostra o tipo entre parênteses seguido do endereço: (Node *) 0x0.",
       vars: [{ name: "np", type: pointerType(node), value: null }],
     };
   }
   return {
     preMain: ["struct Node { int val; Node* next; };"],
-    body: [
-      `Node n2{${String(v2)}, nullptr};`,
-      `Node n1{${String(v1)}, &n2};`,
-    ],
+    body: [`Node n2{${String(v2)}, nullptr};`, `Node n1{${String(v1)}, &n2};`],
     locals: [
       { name: "n1", value: `{val = ${String(v1)}, next = &n2}` },
       { name: "n2", value: `{val = ${String(v2)}, next = nullptr}` },
     ],
     command: "p n1",
-    reason: "Dentro de uma struct, o ponteiro não nulo imprime o endereço (aceita ADDR) sem o cast de tipo.",
+    reason:
+      "Dentro de uma struct, o ponteiro não nulo imprime o endereço (aceita ADDR) sem o cast de tipo.",
     vars: [
       { name: "n2", type: node, value: { val: v2, next: null } },
       { name: "n1", type: node, value: { val: v1, next: { ref: "n2" } } },
@@ -818,7 +824,11 @@ function genSizeof(rng: Rng, level: GdbOutLevel): Draft {
         { cpp: "char", expr: "sizeof(char)", reason: "char ocupa 1 byte na ABI x86-64 LP64." },
         { cpp: "short", expr: "sizeof(short)", reason: "short ocupa 2 bytes na ABI x86-64 LP64." },
         { cpp: "int", expr: "sizeof(int)", reason: "int ocupa 4 bytes na ABI x86-64 LP64." },
-        { cpp: "long", expr: "sizeof(long)", reason: "Na ABI LP64 (Linux x86-64), long ocupa 8 bytes." },
+        {
+          cpp: "long",
+          expr: "sizeof(long)",
+          reason: "Na ABI LP64 (Linux x86-64), long ocupa 8 bytes.",
+        },
         { cpp: "long long", expr: "sizeof(long long)", reason: "long long ocupa 8 bytes." },
         { cpp: "bool", expr: "sizeof(bool)", reason: "bool ocupa 1 byte." },
       ]);
@@ -837,7 +847,9 @@ function genSizeof(rng: Rng, level: GdbOutLevel): Draft {
         locals: [{ name: "a", value: `int[${String(len)}]` }],
         command: "p sizeof(a)",
         reason: `Array de ${String(len)} ints: ${String(len)} × 4 = ${String(len * 4)} bytes.`,
-        vars: [{ name: "a", type: arrayType(T_INT, len), value: Array.from({ length: len }, () => 0) }],
+        vars: [
+          { name: "a", type: arrayType(T_INT, len), value: Array.from({ length: len }, () => 0) },
+        ],
       };
     }
     return {
@@ -865,7 +877,8 @@ function genSizeof(rng: Rng, level: GdbOutLevel): Draft {
           { name: "x", type: T_INT },
           { name: "y", type: T_LLONG },
         ]),
-        reason: "c em 0 (1B), 3B de padding, x em 4 (4B), y em 8 (8B): total 16 bytes (alinhamento 8).",
+        reason:
+          "c em 0 (1B), 3B de padding, x em 4 (4B), y em 8 (8B): total 16 bytes (alinhamento 8).",
       },
       {
         decl: "struct P { char c; int x; };",
@@ -881,7 +894,8 @@ function genSizeof(rng: Rng, level: GdbOutLevel): Draft {
           { name: "x", type: T_INT },
           { name: "c", type: T_CHAR },
         ]),
-        reason: "x em 0 (4B), c em 4 (1B), mais 3B de tail padding para múltiplo do alinhamento 4: total 8 bytes.",
+        reason:
+          "x em 0 (4B), c em 4 (1B), mais 3B de tail padding para múltiplo do alinhamento 4: total 8 bytes.",
       },
       {
         decl: "struct P { char a; short b; char c; };",
@@ -890,7 +904,8 @@ function genSizeof(rng: Rng, level: GdbOutLevel): Draft {
           { name: "b", type: T_SHORT },
           { name: "c", type: T_CHAR },
         ]),
-        reason: "a em 0, 1B padding, b em 2 (2B), c em 4, 1B tail padding para múltiplo de 2: total 6 bytes.",
+        reason:
+          "a em 0, 1B padding, b em 2 (2B), c em 4, 1B tail padding para múltiplo de 2: total 6 bytes.",
       },
       {
         decl: "struct P { char a; long long b; char c; };",
@@ -899,7 +914,8 @@ function genSizeof(rng: Rng, level: GdbOutLevel): Draft {
           { name: "b", type: T_LLONG },
           { name: "c", type: T_CHAR },
         ]),
-        reason: "a em 0, 7B padding, b em 8 (8B), c em 16, 7B tail padding para múltiplo de 8: total 24 bytes.",
+        reason:
+          "a em 0, 7B padding, b em 8 (8B), c em 16, 7B tail padding para múltiplo de 8: total 24 bytes.",
       },
     ];
     const picked = rng.pick(layouts);
@@ -927,14 +943,12 @@ function genSizeof(rng: Rng, level: GdbOutLevel): Draft {
       { name: "val", type: T_INT },
     ]);
     return {
-      preMain: [
-        "struct In { short a; char b; };",
-        "struct Out { char tag; In in; int val; };",
-      ],
+      preMain: ["struct In { short a; char b; };", "struct Out { char tag; In in; int val; };"],
       body: ["Out o{};"],
       locals: [],
       command: "p sizeof(Out)",
-      reason: "In tem tamanho 4 e alinhamento 2: tag em 0, 1B padding, in em 2..5, 2B padding, val em 8..11 -> total 12 bytes.",
+      reason:
+        "In tem tamanho 4 e alinhamento 2: tag em 0, 1B padding, in em 2..5, 2B padding, val em 8..11 -> total 12 bytes.",
       vars: [{ name: "o", type: outer, value: {} }],
       extraTypes: [inner, outer],
     };
@@ -949,7 +963,8 @@ function genSizeof(rng: Rng, level: GdbOutLevel): Draft {
       body: ["Node nd{};"],
       locals: [],
       command: "p sizeof(Node)",
-      reason: "val em 0 (4B), 4B de padding para alinhar o ponteiro de 8B em 8, next em 8..15 -> total 16 bytes.",
+      reason:
+        "val em 0 (4B), 4B de padding para alinhar o ponteiro de 8B em 8, next em 8..15 -> total 16 bytes.",
       vars: [{ name: "nd", type: node, value: {} }],
       extraTypes: [node],
     };
@@ -980,7 +995,8 @@ function genMemoria(rng: Rng, level: GdbOutLevel): Draft {
         body: [`int n = ${lit};`],
         locals: [{ name: "n", value: lit }],
         command: "x/4xb &n",
-        reason: "x86-64 é little-endian: x/4xb imprime 4 bytes com 2 dígitos hex cada, do byte menos significativo ao mais significativo.",
+        reason:
+          "x86-64 é little-endian: x/4xb imprime 4 bytes com 2 dígitos hex cada, do byte menos significativo ao mais significativo.",
         vars: [{ name: "n", type: T_INT, value: n }],
       };
     }
@@ -1013,7 +1029,8 @@ function genMemoria(rng: Rng, level: GdbOutLevel): Draft {
         body: [`int n = ${hexLit(n)};`],
         locals: [{ name: "n", value: hexLit(n) }],
         command: "x/2xh &n",
-        reason: "x/2xh lê 2 halfwords de 2 bytes (h) em little-endian: metade baixa primeiro, depois metade alta.",
+        reason:
+          "x/2xh lê 2 halfwords de 2 bytes (h) em little-endian: metade baixa primeiro, depois metade alta.",
         vars: [{ name: "n", type: T_INT, value: n }],
       };
     }
@@ -1035,7 +1052,8 @@ function genMemoria(rng: Rng, level: GdbOutLevel): Draft {
       body: [`char s[4] = "${word}";`],
       locals: [{ name: "s", value: `"${word}"` }],
       command: "x/4cb s",
-      reason: "x/4cb lê 4 bytes individuais como caracteres (código + literal, incluindo o terminador 0 '\\000').",
+      reason:
+        "x/4cb lê 4 bytes individuais como caracteres (código + literal, incluindo o terminador 0 '\\000').",
       vars: [{ name: "s", type: arrayType(T_CHAR, 4), value: word }],
     };
   }
@@ -1048,7 +1066,8 @@ function genMemoria(rng: Rng, level: GdbOutLevel): Draft {
       body: [`int n = ${String(n)};`],
       locals: [{ name: "n", value: String(n) }],
       command: "x/4tb &n",
-      reason: "x/4tb imprime cada um dos 4 bytes em binário com 8 bits (preenchidos com zeros à esquerda), em little-endian.",
+      reason:
+        "x/4tb imprime cada um dos 4 bytes em binário com 8 bits (preenchidos com zeros à esquerda), em little-endian.",
       vars: [{ name: "n", type: T_INT, value: n }],
     };
   }

@@ -44,7 +44,12 @@ export class ExprError extends Error {
 }
 
 type Token =
-  | { readonly kind: "int"; readonly value: bigint; readonly unsigned: boolean; readonly longCount: number }
+  | {
+      readonly kind: "int";
+      readonly value: bigint;
+      readonly unsigned: boolean;
+      readonly longCount: number;
+    }
   | { readonly kind: "char"; readonly value: number }
   | { readonly kind: "ident"; readonly value: string }
   | { readonly kind: "op"; readonly value: string };
@@ -158,11 +163,11 @@ function normalizeToType(raw: bigint, type: CType): bigint {
   throw new ExprError("cannot convert value to aggregate type");
 }
 
-function integerPromote(type: CType): PrimitiveType {
-  if (type.kind === "bool") return T_INT;
+function integerPromote(type: CType): { readonly kind: "int"; readonly name: IntTypeName } {
+  if (type.kind === "bool") return { kind: "int", name: "int" };
   if (type.kind === "int") {
     const info = intInfo(type.name);
-    if (info.rank < intInfo("int").rank) return T_INT;
+    if (info.rank < intInfo("int").rank) return { kind: "int", name: "int" };
     return type;
   }
   throw new ExprError("expected integer operand");
@@ -171,23 +176,16 @@ function integerPromote(type: CType): PrimitiveType {
 function commonArithType(a: CType, b: CType): PrimitiveType {
   const ta = integerPromote(a);
   const tb = integerPromote(b);
-  if (ta.kind === "int" && tb.kind === "int") {
-    if (ta.name === tb.name) return ta;
-    const ia = intInfo(ta.name);
-    const ib = intInfo(tb.name);
-    if (ia.signed === ib.signed) {
-      return ia.rank >= ib.rank ? ta : tb;
-    }
-    const [uType, uInfo, sType, sInfo] = ia.signed
-      ? [tb, ib, ta, ia]
-      : [ta, ia, tb, ib];
-    if (uInfo.rank >= sInfo.rank) return uType;
-    // Signed rank > unsigned rank: if signed type is strictly wider (64-bit vs 32-bit), use signed.
-    if (sInfo.size > uInfo.size) return sType;
-    // Same width (64-bit long long vs 64-bit unsigned long) -> unsigned counterpart of signed type.
-    return T_ULLONG;
+  if (ta.name === tb.name) return ta;
+  const ia = intInfo(ta.name);
+  const ib = intInfo(tb.name);
+  if (ia.signed === ib.signed) {
+    return ia.rank >= ib.rank ? ta : tb;
   }
-  return T_INT;
+  const [uType, uInfo, sType, sInfo] = ia.signed ? [tb, ib, ta, ia] : [ta, ia, tb, ib];
+  if (uInfo.rank >= sInfo.rank) return uType;
+  if (sInfo.size > uInfo.size) return sType;
+  return T_ULLONG;
 }
 
 const TYPE_KEYWORDS = new Set([
@@ -388,7 +386,8 @@ class Parser {
     if (countVal.kind !== "scalar" || countVal.raw < 0n) {
       throw new ExprError("invalid @ length");
     }
-    const addr = left.kind === "scalar" ? left.addr : left.kind === "aggregate" ? left.addr : undefined;
+    const addr =
+      left.kind === "scalar" ? left.addr : left.kind === "aggregate" ? left.addr : undefined;
     const elemType = left.kind === "synthetic-array" ? left.elem : left.type;
     if (addr === undefined) {
       throw new ExprError("left operand of @ must be in memory");
@@ -440,8 +439,7 @@ class Parser {
         const inner = this.parseExpr();
         this.expectOp(")");
         const t2 = inner.kind === "synthetic-array" ? inner.elem : inner.type;
-        const sz =
-          inner.kind === "synthetic-array" ? sizeOf(t2) * inner.length : sizeOf(t2);
+        const sz = inner.kind === "synthetic-array" ? sizeOf(t2) * inner.length : sizeOf(t2);
         return { kind: "scalar", type: T_ULONG, raw: BigInt(sz) };
       }
       const inner = this.parseUnary();

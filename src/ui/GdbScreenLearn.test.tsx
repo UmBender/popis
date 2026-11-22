@@ -215,5 +215,11 @@ describe("GdbScreen Learn mode (AC-6)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Treinar" }));
     expect(screen.getByTestId("shell-path").textContent).toBe("popis/gdb/saída");
     expect(loadGdbOutSettings(store).kinds).toEqual(lesson.practiceOutputKinds);
+
+    // Open an examine output lesson (u14-endian) to verify non-print `>` prompt prefix.
+    fireEvent.click(screen.getByRole("radio", { name: "Aprender (GDB)" }));
+    const endianLesson = gdbLessonById("u14-endian")!;
+    fireEvent.click(screen.getByRole("button", { name: endianLesson.title }));
+    expect(document.querySelector(".gdb-prompt-prefix")?.textContent).toBe(">");
   });
 });
