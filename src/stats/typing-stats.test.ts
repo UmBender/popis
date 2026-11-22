@@ -157,4 +157,29 @@ describe("typing-stats", () => {
     ]);
     expect(tiedErrs.map((e) => e.char)).toEqual(["c", "a", "b"]);
   });
+
+  it("slowestBigrams and errorChars include typing.weak events", () => {
+    const weakEvents: TrainingEvent[] = Array.from({ length: 5 }, (_, k) => ({
+      at: 3000 + k,
+      drill: "typing.weak",
+      config: "weak",
+      kc: "typing.ngram.->",
+      ok: k > 0,
+      timeMs: 310,
+      extra: {
+        seed: 10 + k,
+        i: 0,
+        w: "p->x",
+        iv: [220, 340, 150],
+        bad: k === 0 ? [[">", "."]] : [],
+      },
+    }));
+    const bigrams = slowestBigrams(weakEvents);
+    expect(bigrams[0]?.bigram).toBe("->");
+    expect(bigrams[0]?.medianMs).toBe(340);
+    expect(bigrams[0]?.symbol).toBe(true);
+    const errs = errorChars(weakEvents);
+    expect(errs[0]?.char).toBe(">");
+    expect(errs[0]?.symbol).toBe(true);
+  });
 });
