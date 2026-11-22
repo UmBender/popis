@@ -68,6 +68,7 @@ import { isControl, Shell, type TreeState } from "./shell/Shell";
 import { TextTypingScreen } from "./TextTypingScreen";
 import { TypingScreen } from "./TypingScreen";
 import { chooseVimDrill, VimScreen } from "./VimScreen";
+import { WeakTypingScreen } from "./WeakTypingScreen";
 
 export type AppProps = {
   readonly clock: Clock;
@@ -539,6 +540,19 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
             onProgress={() => {
               setProgressFocus("text");
               choose("progress");
+            }}
+          />
+        );
+      case "typing-weak":
+        return (
+          <WeakTypingScreen
+            clock={clock}
+            store={store}
+            newSeed={newSeed}
+            onBack={backToMode}
+            onRunning={setRunning}
+            onOpenText={() => {
+              choose("text");
             }}
           />
         );

@@ -30,9 +30,9 @@ export function isCodeSymbol(text: string): boolean {
   return SYMBOL_RE.test(text);
 }
 
-/** Expected text of a typing event (word for `typing.text`, line for `typing.code`). */
-function unitText(event: TrainingEvent): string | null {
-  if (event.drill === "typing.text") {
+/** Expected text of a typing event (word for `typing.text` and `typing.weak`, line for `typing.code`). */
+export function typingUnitText(event: TrainingEvent): string | null {
+  if (event.drill === "typing.text" || event.drill === "typing.weak") {
     const w = event.extra["w"];
     return typeof w === "string" ? w : null;
   }
@@ -48,7 +48,7 @@ function unitText(event: TrainingEvent): string | null {
 export function slowestBigrams(events: readonly TrainingEvent[], limit = 10): BigramStat[] {
   const intervals = new Map<string, number[]>();
   for (const event of events) {
-    const text = unitText(event);
+    const text = typingUnitText(event);
     const iv = event.extra["iv"];
     if (text === null || !Array.isArray(iv)) continue;
     const chars = [...text];
@@ -82,7 +82,7 @@ export function errorChars(events: readonly TrainingEvent[], limit = 10): CharEr
   const totals = new Map<string, number>();
   const errs = new Map<string, number>();
   for (const event of events) {
-    const text = unitText(event);
+    const text = typingUnitText(event);
     if (text !== null) {
       for (const ch of text) {
         if (ch.trim() !== "") totals.set(ch, (totals.get(ch) ?? 0) + 1);

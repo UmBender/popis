@@ -199,4 +199,42 @@ describe("computeProgress", () => {
     expect(seriesSummaryLine("Vim: Edição", editSeries)).toContain("1 semana");
     expect(seriesSummaryLine("Vim: Edição", editSeries)).toContain("-");
   });
+
+  it("computeProgress includes typing.weak events in typing pair statistics", () => {
+    const now = BASE + 10 * DAY_MS;
+    const progress = computeProgress(
+      {
+        sessions: [],
+        typing: [],
+        text: [],
+        vimMotion: [],
+        vimEdit: [],
+        events: [
+          ...Array.from({ length: 5 }, (_, k) => ({
+            at: BASE + k * DAY_MS,
+            drill: "typing.weak" as const,
+            config: "weak",
+            kc: "typing.ngram.->",
+            ok: true,
+            timeMs: 300,
+            extra: { seed: 1 + k, i: 0, w: "p->x", iv: [120, 310, 140], bad: [] },
+          })),
+          ...Array.from({ length: 5 }, (_, k) => ({
+            at: BASE + k * DAY_MS,
+            drill: "typing.weak" as const,
+            config: "weak",
+            kc: "typing.ngram.qu",
+            ok: true,
+            timeMs: 280,
+            extra: { seed: 20 + k, i: 0, w: "qu", iv: [280], bad: [] },
+          })),
+        ],
+      },
+      now,
+    );
+    const code = progress.find((d) => d.id === "typing");
+    const text = progress.find((d) => d.id === "text");
+    expect(code?.bigrams.some((b) => b.bigram === "->")).toBe(true);
+    expect(text?.bigrams.some((b) => b.bigram === "qu")).toBe(true);
+  });
 });

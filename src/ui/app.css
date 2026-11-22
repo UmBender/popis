@@ -1151,6 +1151,102 @@ th {
   border-right: 2px solid var(--accent);
 }
 
+/* Weak-spots typing drill (T30, ADR-T30-1) */
+
+.weak-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.weak-queue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.weak-chip {
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--muted);
+  background: var(--surface);
+  font-size: 0.9rem;
+}
+
+.weak-chip-active {
+  border-color: var(--accent);
+  background: var(--selection);
+  color: var(--selection-text);
+}
+
+.weak-chip-active .muted {
+  color: var(--selection-text);
+  opacity: 0.85;
+}
+
+.weak-chip-graduated {
+  border-color: var(--correct);
+  color: var(--correct);
+  text-decoration: line-through;
+}
+
+.weak-block-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.weak-highlight {
+  background: var(--selection);
+}
+
+.letter-pending.weak-highlight {
+  color: var(--selection-text);
+  opacity: 0.85;
+}
+
+.letter-correct.weak-highlight {
+  color: var(--selection-text);
+}
+
+.letter-incorrect.weak-highlight {
+  background: transparent;
+  color: var(--wrong);
+}
+
+.weak-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface);
+}
+
+.weak-empty p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.weak-results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.weak-results-table th,
+.weak-results-table td {
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--muted);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+.weak-results-table th {
+  color: var(--muted);
+  font-weight: 500;
+}
+
 /* Vim motion drill (T13, ADR-T13-1) */
 
 .vim-time {

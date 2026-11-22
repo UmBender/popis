@@ -11,6 +11,7 @@ const SCREENS: readonly ItemId[] = [
   "progress",
   "typing",
   "text",
+  "typing-weak",
   "vim-learn",
   "vim-motion",
   "vim-edit",
@@ -23,7 +24,7 @@ describe("sections", () => {
       ["Cálculo", ["Aritmética", "Álgebra", "Fatoração", "Somatórios"]],
       ["CP", ["Divisão inteira", "Estimativa", "Primos"]],
       ["Treino", ["Revisar", "Dados", "Evolução"]],
-      ["Digitação", ["Código", "Texto"]],
+      ["Digitação", ["Código", "Texto", "Pontos fracos"]],
       ["Vim", ["Aprender", "Movimento", "Edição"]],
     ]);
   });
@@ -49,9 +50,9 @@ describe("sections", () => {
     expect(itemByShortcut(10)).toBeUndefined();
   });
 
-  it("sections keep Aprender visible on touch screens and hide typing, motion and edit", () => {
+  it("sections keep Aprender visible on touch screens and hide typing, weak points, motion and edit", () => {
     const hidden = ITEMS.filter((i) => !i.touch).map((i) => i.id);
-    expect(hidden).toEqual(["typing", "vim-motion", "vim-edit"]);
+    expect(hidden).toEqual(["typing", "typing-weak", "vim-motion", "vim-edit"]);
   });
 
   it("folderOf finds the folder of an item", () => {
