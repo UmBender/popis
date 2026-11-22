@@ -1,3 +1,11 @@
+import {
+  nextFadingStep,
+  nextUncompleted,
+  unitStatus,
+  type ExerciseStep,
+  type LessonId,
+  type UnitStatus,
+} from "../learn/curriculum";
 import { generateEdit, type EditKind } from "./drills/edit";
 import type { RegisterKind } from "./drills/register-edit";
 import { pressEditKey } from "./edit";
@@ -8,11 +16,8 @@ import { LESSONS, lessonFor, type Frame } from "./lessons";
 import { levelHelp, type Level } from "./levels";
 import { createState, type Pos } from "./state";
 
-export type LessonId = string;
-
-export type UnitStatus = "new" | "in-progress" | "done";
-
-export type ExerciseStep = 0 | 1 | 2;
+export type { ExerciseStep, LessonId, UnitStatus };
+export { unitStatus };
 
 export type MotionExample = {
   readonly kind: "motion";
@@ -1100,15 +1105,8 @@ export function curriculumExampleFrames(lesson: CurriculumLesson): readonly Fram
   return frames;
 }
 
-export function unitStatus(unit: Unit, completed: ReadonlySet<string>): UnitStatus {
-  const doneCount = unit.lessons.filter((l) => completed.has(l.id)).length;
-  if (doneCount === 0) return "new";
-  if (doneCount === unit.lessons.length) return "done";
-  return "in-progress";
-}
-
 export function nextUncompletedLesson(completed: ReadonlySet<string>): CurriculumLesson | null {
-  return ALL_LESSONS.find((lesson) => !completed.has(lesson.id)) ?? null;
+  return nextUncompleted(ALL_LESSONS, completed);
 }
 
 /**
@@ -1120,10 +1118,7 @@ export function nextExerciseStep(
   typedKeys: number,
   minKeys: number,
 ): ExerciseStep | "done" {
-  if (step === 2) return "done";
-  const optimal = typedKeys <= minKeys;
-  if (step === 0) return optimal ? 2 : 1;
-  return optimal ? "done" : 2;
+  return nextFadingStep(step, typedKeys <= minKeys);
 }
 
 // Keep LESSONS referenced so T16 exports stay aligned with units 14 and 15.

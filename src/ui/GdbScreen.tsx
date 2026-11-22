@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import type { Clock } from "../core/clock";
 import type { KeyValueStore } from "../storage/history";
+import { CommandDrill } from "./gdb/CommandDrill";
+import { LearnDrill } from "./gdb/LearnDrill";
 
 export type GdbDrill = "learn" | "commands";
 
@@ -16,6 +18,26 @@ export type GdbScreenProps = {
   readonly initialLesson?: string | null;
 };
 
-export function GdbScreen(_props: GdbScreenProps): ReactNode {
-  throw new Error("todo");
+/** The GDB screen: ordered curriculum (Aprender) or timed command drill (Comandos) (ADR-T25-1). */
+export function GdbScreen(props: GdbScreenProps): ReactNode {
+  if (props.drill === "learn") {
+    return (
+      <LearnDrill
+        store={props.store}
+        onBack={props.onBack}
+        onPractice={props.onPractice}
+        initialLesson={props.initialLesson}
+      />
+    );
+  }
+  return (
+    <CommandDrill
+      clock={props.clock}
+      store={props.store}
+      newSeed={props.newSeed}
+      onBack={props.onBack}
+      onRunning={props.onRunning}
+      onLearn={props.onLearn}
+    />
+  );
 }

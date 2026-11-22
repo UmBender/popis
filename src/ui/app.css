@@ -1681,3 +1681,164 @@ th {
     min-height: 44px;
   }
 }
+
+/* GDB commands drill & Aprender curriculum (T25, ADR-T25-1). */
+.gdb-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.gdb-prompt {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--text);
+}
+
+.gdb-viewer {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--selection);
+  background: var(--surface);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.gdb-file-bar {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--selection);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.gdb-code {
+  margin: 0;
+  padding: var(--space-2) 0;
+  overflow-x: auto;
+  max-width: 100%;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.gdb-line {
+  display: block;
+  padding: 0 var(--space-2);
+}
+
+.gdb-line-current {
+  background: var(--selection);
+  color: var(--selection-text);
+}
+
+.gdb-gutter-bp {
+  display: inline-block;
+  width: 1.5ch;
+}
+
+.gdb-bp-on {
+  color: var(--wrong);
+}
+
+.gdb-bp-off {
+  color: var(--muted);
+}
+
+.gdb-gutter-arrow {
+  display: inline-block;
+  width: 2.5ch;
+  color: var(--accent);
+}
+
+.gdb-gutter-num {
+  color: var(--muted);
+  user-select: none;
+}
+
+.gdb-session {
+  margin: 0;
+  padding: var(--space-2);
+  border-top: 1px solid var(--selection);
+  overflow-x: auto;
+  max-width: 100%;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.gdb-example-note {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+}
+
+.gdb-input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.gdb-prompt-prefix {
+  color: var(--accent);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gdb-input {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--selection);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.gdb-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.gdb-feedback {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.gdb-feedback-ok {
+  color: var(--correct);
+}
+
+.gdb-feedback-wrong {
+  color: var(--wrong);
+}
+
+.gdb-feedback-skip {
+  color: var(--warning);
+}
+
+.gdb-kind-table {
+  margin-top: var(--space-2);
+}
+
+.gdb-wrong-wrap h3 {
+  margin: var(--space-2) 0 var(--space-1);
+  font-size: var(--text-md);
+}
+
+@media (max-width: 48rem) {
+  .gdb-input-row {
+    flex-wrap: wrap;
+  }
+
+  .gdb-input,
+  .gdb-send {
+    min-height: 44px;
+  }
+
+  .gdb-send {
+    width: 100%;
+  }
+}

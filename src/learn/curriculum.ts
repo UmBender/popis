@@ -12,20 +12,31 @@ export type UnitLike<L extends LessonLike = LessonLike> = {
   readonly lessons: readonly L[];
 };
 
+/** Status of a curriculum unit given the set of completed lesson ids (ADR-T20-1, ADR-T25-1). */
 export function unitStatus<L extends LessonLike>(
-  _unit: UnitLike<L>,
-  _completed: ReadonlySet<string>,
+  unit: UnitLike<L>,
+  completed: ReadonlySet<string>,
 ): UnitStatus {
-  throw new Error("todo");
+  const doneCount = unit.lessons.filter((l) => completed.has(l.id)).length;
+  if (doneCount === 0) return "new";
+  if (doneCount === unit.lessons.length) return "done";
+  return "in-progress";
 }
 
+/** First lesson in curriculum order that is not completed yet, or null when all are done. */
 export function nextUncompleted<L extends LessonLike>(
-  _lessons: readonly L[],
-  _completed: ReadonlySet<string>,
+  lessons: readonly L[],
+  completed: ReadonlySet<string>,
 ): L | null {
-  throw new Error("todo");
+  return lessons.find((lesson) => !completed.has(lesson.id)) ?? null;
 }
 
-export function nextFadingStep(_step: ExerciseStep, _firstTry: boolean): ExerciseStep | "done" {
-  throw new Error("todo");
+/**
+ * Adaptive fading (ADR-T20-1): succeeding cleanly on exercise 1 or 2 skips the
+ * next help level; finishing exercise 3 always completes the lesson.
+ */
+export function nextFadingStep(step: ExerciseStep, firstTry: boolean): ExerciseStep | "done" {
+  if (step === 2) return "done";
+  if (step === 0) return firstTry ? 2 : 1;
+  return firstTry ? "done" : 2;
 }
