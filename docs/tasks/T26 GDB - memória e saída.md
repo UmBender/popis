@@ -1,10 +1,10 @@
 ---
 id: T26
 title: GDB - memória e saída
-status: todo
+status: in-progress
 depends_on: [T25]
 branch: task/T26-gdb-output
-adrs: []
+adrs: [ADR-T26-1]
 tags: [task]
 ---
 
@@ -97,7 +97,7 @@ da T25.
     parada e as variáveis locais visíveis quando o tipo pede;
   - um erro mostra a saída real e uma linha explicando por quê;
   - eventos com drill `gdb.out`.
-  - Testes: `src/ui/GdbScreenOutput.test.tsx` ("typing the gdb value counts as correct", "a wrong value shows the real output and the reason", "the round ends at 60 s on the fake clock").
+  - Testes: `src/ui/GdbScreenOutput.test.tsx` ("typing the gdb value counts as correct", "a wrong value shows the real output and the reason", "the round ends at 60 s on the fake clock"), `src/gdb/out-round.test.ts`, `src/stats/event.test.ts` (o drill `gdb.out` é aceito), `src/storage/gdb.test.ts` (configurações e histórico de Saída).
 - **AC-8**: **Aprender:** unidades novas depois das da T25, com o mesmo
   formato de lição e de retirada. Nos exercícios, a pessoa digita a
   saída em vez do comando.
@@ -124,15 +124,19 @@ da T25.
 ## Files owned
 
 - `src/gdb/memory.ts`, `expr.ts`, `format.ts`, `check-output.ts`,
-  `out-drill.ts`, `curriculum.ts`, `cases/` e os testes ao lado
-- `src/storage/gdb.ts`, `src/stats/event.ts`
-- `src/ui/gdb/OutputDrill.tsx`, `src/ui/GdbScreen.tsx`,
-  `src/ui/shell/sections.ts`, `src/ui/app.css`
-- `scripts/gdb-oracle.mjs`, `tests/e2e/gdb.spec.ts`
+  `out-drill.ts`, `out-round.ts`, `programs.ts`, `curriculum.ts`,
+  `cases/` e os testes ao lado
+- `src/storage/gdb.ts`, `src/storage/gdb.test.ts`, `src/stats/event.ts`,
+  `src/stats/event.test.ts`
+- `src/ui/gdb/OutputDrill.tsx`, `src/ui/gdb/LearnDrill.tsx`,
+  `src/ui/GdbScreen.tsx`, `src/ui/App.tsx`, `src/ui/shell/sections.ts`,
+  `src/ui/shell/sections.test.ts`, `src/ui/app.css`,
+  `src/ui/GdbScreenOutput.test.tsx`, `src/ui/GdbScreenLearn.test.tsx`
+- `scripts/gdb-oracle.mjs`, `tests/e2e/gdb.spec.ts`, `vite.config.ts`
 
 ## Subtasks (one commit each)
 
-- [ ] spec: ADR-T26-1 (modelo de memória, subconjunto de expressões, regras de formatação) e testes nomeados
+- [x] spec: ADR-T26-1 (modelo de memória, subconjunto de expressões, regras de formatação) e testes nomeados
 - [ ] tests: memória, expressões, formatação, verificador, gerador, telas
 - [ ] models: tipos C, estado, valor formatado
 - [ ] behaviour: modelo, formatação, gerador, lições, tela e oráculo
