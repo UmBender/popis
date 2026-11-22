@@ -8,7 +8,8 @@ import { loadAllEvents, loadEvents } from "../storage/events";
 import { memoryStore, SETTINGS_KEY, type KeyValueStore } from "../storage/history";
 import { TEXT_TYPING_SETTINGS_KEY } from "../storage/text-typing";
 import { VIM_EDIT_SETTINGS_KEY, VIM_SETTINGS_KEY } from "../storage/vim";
-import { pickSnippet, LANGUAGES } from "../typing/corpus";
+import { generateCodeSnippet } from "../typing/codegen";
+import { LANGUAGES } from "../typing/corpus";
 import {
   DEFAULT_TEXT_SETTINGS,
   initialWords,
@@ -133,7 +134,7 @@ describe("training log", () => {
   it("a finished code run records one event per line", { timeout: 20_000 }, () => {
     const store = memoryStore();
     render(<TypingScreen clock={clock} store={store} newSeed={() => 5} onBack={vi.fn()} />);
-    const snippet = pickSnippet(5, LANGUAGES);
+    const snippet = generateCodeSnippet(5, LANGUAGES);
     const box = screen.getByRole("textbox", { name: "Código digitado" });
     const lines = snippet.text.split("\n");
     lines.forEach((line, i) => {

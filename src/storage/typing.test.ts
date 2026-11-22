@@ -8,6 +8,7 @@ import {
   saveTypingLanguages,
   TYPING_KEY,
   TYPING_SETTINGS_KEY,
+  typingResultKind,
   typingSummary,
   type TypingResult,
 } from "./typing";
@@ -77,6 +78,30 @@ describe("typing results", () => {
     expect(() => {
       appendTypingResult(broken, result());
     }).not.toThrow();
+  });
+
+  it("typing results keep old corpus and new generated results together", () => {
+    const oldCpp = result({ snippetId: "cpp-gcd", language: "cpp", wpm: 50, seed: 1 });
+    const oldPy = result({ snippetId: "py-memo", language: "python", wpm: 40, seed: 2 });
+    const store = memoryStore({ [TYPING_KEY]: JSON.stringify([oldCpp, oldPy]) });
+
+    const genCpp = result({ snippetId: "gen:cpp:5", language: "cpp", wpm: 70, seed: 5 });
+    const burstCpp = result({
+      snippetId: "burst:cpp:for-loop:7",
+      language: "cpp",
+      wpm: 90,
+      seed: 7,
+    });
+    appendTypingResult(store, genCpp);
+    appendTypingResult(store, burstCpp);
+
+    const loaded = loadTypingResults(store);
+    expect(loaded).toEqual([oldCpp, oldPy, genCpp, burstCpp]);
+    expect(typingResultKind(oldCpp.snippetId)).toBe("corpus");
+    expect(typingResultKind(genCpp.snippetId)).toBe("generated");
+    expect(typingResultKind(burstCpp.snippetId)).toBe("burst");
+    expect(typingSummary(loaded).cpp).toEqual({ best: 90, recentMean: 70 });
+    expect(typingSummary(loaded).python).toEqual({ best: 40, recentMean: 40 });
   });
 });
 

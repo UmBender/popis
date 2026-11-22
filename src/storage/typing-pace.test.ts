@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { memoryStore, type KeyValueStore } from "./history";
 import { DEFAULT_TEXT_SETTINGS, type TextSettings } from "../typing/text";
 import {
+  burstPaceKey,
   codePaceKey,
   DEFAULT_TYPING_PACE,
   loadTypingPace,
@@ -34,6 +35,21 @@ describe("typing pace storage", () => {
     });
     expect(codeKey).toBe("code:cpp+python");
     expect(codePaceKey(["cpp", "python"])).toBe(codeKey);
+  });
+
+  it("burstPaceKey separates burst pace targets from code pace targets", () => {
+    const burstKey = burstPaceKey(["python", "cpp"]);
+    expect(burstKey).toBe("burst:cpp+python");
+    expect(burstPaceKey(["cpp", "python"])).toBe(burstKey);
+    expect(burstKey).not.toBe(codePaceKey(["cpp", "python"]));
+
+    const store = memoryStore();
+    saveConfigTarget(store, codePaceKey(["cpp"]), 46);
+    saveConfigTarget(store, burstPaceKey(["cpp"]), 68);
+    expect(loadTypingPace(store).targets).toEqual({
+      "code:cpp": 46,
+      "burst:cpp": 68,
+    });
   });
 
   it("corrupt data loads as empty history with defaults", () => {

@@ -1,39 +1,59 @@
 import { expect, test, type Page } from "@playwright/test";
-import { CORPUS } from "../../src/typing/corpus";
 
-/** Types the shown snippet line by line, leaving the indentation to auto-indent. */
-async function typeShownSnippet(page: Page) {
-  const id = await page.getByTestId("typing-code").getAttribute("data-snippet-id");
-  const snippet = CORPUS.find((s) => s.id === id);
-  expect(snippet, `snippet ${id ?? ""}`).toBeDefined();
-  const lines = (snippet?.text ?? "").split("\n");
+/** Types the shown generated snippet or burst line by line, leaving indentation to auto-indent. */
+async function typeShownCode(page: Page) {
+  const code = page.getByTestId("typing-code");
+  const id = (await code.getAttribute("data-snippet-id")) ?? "";
+  const text = (await code.textContent()) ?? "";
+  expect(text.length).toBeGreaterThan(0);
+  const lines = text.split("\n");
   for (const [i, line] of lines.entries()) {
     await page.keyboard.type(line.trimStart());
     if (i < lines.length - 1) await page.keyboard.press("Enter");
   }
-  return snippet;
+  return { id, text, lines };
 }
 
-test("typing a Python and a C++ snippet with auto-indent in the real app", async ({ page }) => {
+test("typing a Python and a C++ generated snippet with auto-indent in the real app", async ({
+  page,
+}) => {
   await page.goto("/");
   await page.getByRole("radio", { name: "Código" }).check();
   await expect(page.getByRole("textbox", { name: "Código digitado" })).toBeFocused();
 
   await page.getByRole("checkbox", { name: "C++" }).uncheck();
-  const python = await typeShownSnippet(page);
-  expect(python?.language).toBe("python");
+  const python = await typeShownCode(page);
+  expect(python.id).toMatch(/^gen:python:\d+$/);
   await expect(page.getByTestId("accuracy")).toHaveText("100%");
   await expect(page.getByTestId("wpm")).toHaveText(/^\d+$/);
+  await expect(page.getByTestId("typing-seed")).toHaveText(/^\d+$/);
 
   await page.getByRole("checkbox", { name: "C++" }).check();
   await page.getByRole("checkbox", { name: "Python" }).uncheck();
   await page.getByRole("textbox", { name: "Código digitado" }).focus();
-  const cpp = await typeShownSnippet(page);
-  expect(cpp?.language).toBe("cpp");
+  const cpp = await typeShownCode(page);
+  expect(cpp.id).toMatch(/^gen:cpp:\d+$/);
   await expect(page.getByTestId("accuracy")).toHaveText("100%");
   await expect(page.getByTestId("typing-summary")).toContainText("Últimas 10 rodadas");
   await expect(page.getByTestId("typing-summary")).toContainText("melhor");
   await expect(page.getByTestId("typing-pace-result")).toContainText("das linhas no ritmo");
+  await expect(page.getByTestId("typing-pace-result")).toContainText("→");
+});
+
+test("burst mode repeats one idiom 5 times and shows repetition times and separate target", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("radio", { name: "Código" }).check();
+  await page.getByRole("checkbox", { name: "Rajada (5×)" }).check();
+
+  const burst = await typeShownCode(page);
+  expect(burst.id).toMatch(/^burst:(cpp|python):[a-z0-9-]+:\d+$/);
+  expect(burst.lines).toHaveLength(5);
+  expect(new Set(burst.lines).size).toBe(1);
+
+  await expect(page.getByTestId("burst-rep")).toHaveCount(5);
+  await expect(page.getByTestId("burst-ratio")).toContainText("×");
   await expect(page.getByTestId("typing-pace-result")).toContainText("→");
 });
 
