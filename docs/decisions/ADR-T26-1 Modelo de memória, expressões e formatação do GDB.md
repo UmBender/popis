@@ -1,7 +1,7 @@
 ---
 id: ADR-T26-1
 title: Modelo de memória, expressões e formatação do GDB em TypeScript puro
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-22
 task: T26
