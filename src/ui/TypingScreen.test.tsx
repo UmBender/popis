@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { manualClock, type ManualClock } from "../core/clock";
+import { loadEvents } from "../storage/events";
 import { memoryStore, type KeyValueStore } from "../storage/history";
 import {
   appendTypingResult,
@@ -9,8 +10,10 @@ import {
   loadTypingResults,
   type TypingResult,
 } from "../storage/typing";
+import { codePaceKey, loadTypingPace } from "../storage/typing-pace";
 import { LANGUAGES, pickSnippet, type Snippet } from "../typing/corpus";
 import { typeableLength } from "../typing/engine";
+import { ghostCodePosition } from "../typing/pace";
 import { seconds } from "./format";
 import { TypingScreen } from "./TypingScreen";
 
@@ -55,6 +58,13 @@ function charSpans(): HTMLElement[] {
 
 function typeChars(text: string) {
   for (const ch of text) fireEvent.change(box(), { target: { value: ch } });
+}
+
+function advance(ms: number) {
+  act(() => {
+    clock.advance(ms);
+    vi.advanceTimersByTime(ms);
+  });
 }
 
 /** Types the snippet line by line with Enter, one key every STEP_MS. */
@@ -279,4 +289,59 @@ describe("typing screen", () => {
       "Nenhuma rodada nesta configuração. Enter começa a primeira.",
     );
   });
+
+  it("ghost caret advances with the fake clock at the target pace", () => {
+    setup();
+    const snippet = pickSnippet(SEED, LANGUAGES);
+    expect(code().querySelectorAll('[data-ghost="true"]')).toHaveLength(0);
+
+    typeChars(snippet.text[0] ?? "");
+    expect(charSpans()[0]?.dataset["ghost"]).toBe("true");
+
+    advance(2000);
+    const expected = ghostCodePosition(snippet.text, 2000, 30);
+    expect(expected).toBeGreaterThan(0);
+    expect(code().querySelectorAll('[data-ghost="true"]')).toHaveLength(1);
+    expect(charSpans()[expected]?.dataset["ghost"]).toBe("true");
+  });
+
+  it("ghost caret is hidden when Ritmo-alvo is off", () => {
+    const { store } = setup();
+    const toggle = screen.getByRole<HTMLInputElement>("checkbox", { name: "Ritmo-alvo" });
+    expect(toggle.checked).toBe(true);
+    fireEvent.click(toggle);
+    expect(toggle.checked).toBe(false);
+    expect(loadTypingPace(store).enabled).toBe(false);
+
+    const snippet = pickSnippet(SEED, LANGUAGES);
+    typeChars(snippet.text[0] ?? "");
+    advance(2000);
+    expect(code().querySelectorAll('[data-ghost="true"]')).toHaveLength(0);
+  });
+
+  it(
+    "result shows on-pace share and the next target",
+    () => {
+      const { store } = setup();
+      fireEvent.change(screen.getByRole("combobox", { name: "Meta no ritmo" }), {
+        target: { value: "0.8" },
+      });
+      expect(loadTypingPace(store).goal).toBe(0.8);
+
+      const snippet = pickSnippet(SEED, LANGUAGES);
+      typeSnippet(snippet);
+
+      const paceText = screen.getByTestId("typing-pace-result").textContent ?? "";
+      expect(paceText).toContain("100% das linhas no ritmo");
+      expect(paceText).toContain("30 → 32 WPM");
+      expect(loadTypingPace(store).targets[codePaceKey(LANGUAGES)]).toBe(32);
+
+      const events = loadEvents(store).filter((e) => e.drill === "typing.code");
+      expect(events.length).toBeGreaterThan(0);
+      expect(events.every((e) => e.extra["target"] === 30 && e.extra["onPace"] === true)).toBe(
+        true,
+      );
+    },
+    WHOLE_SNIPPET_TIMEOUT_MS,
+  );
 });

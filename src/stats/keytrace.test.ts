@@ -203,4 +203,82 @@ describe("text trace", () => {
   it("text events of an empty trace are empty", () => {
     expect(textEvents([], { at: 1, config: "c", seed: 1, words: ["a"] })).toEqual([]);
   });
+
+  it("events carry target and onPace", () => {
+    // Code: line 0 is "ab\n" (3 chars), line 1 is "    cd" (2 typeable chars, 4 spaces auto-indent).
+    const code = codeRun("ab\n    cd", [
+      [100, (s) => typeText(s, "a", 100)],
+      [200, (s) => typeText(s, "b", 200)],
+      [300, (s) => pressEnter(s, 300)], // line 0: 3 chars in 200 ms -> 180 WPM (>= 40)
+      [700, (s) => typeText(s, "c", 700)],
+      [1300, (s) => typeText(s, "d", 1300)], // line 1: 2 chars in 1000 ms -> 24 WPM (< 40)
+    ]);
+    const cEvents = codeEvents(code.trace, {
+      at: 9000,
+      config: "cpp",
+      seed: 5,
+      snippetId: "cpp-1",
+      text: "ab\n    cd",
+      target: 40,
+    });
+    expect(cEvents.map((e) => [e.extra["target"], e.extra["onPace"]])).toEqual([
+      [40, true],
+      [40, false],
+    ]);
+
+    // Code without explicit text falls back to stamp count.
+    const cFallback = codeEvents(code.trace, {
+      at: 9000,
+      config: "cpp",
+      seed: 5,
+      snippetId: "cpp-1",
+      target: 40,
+    });
+    expect(cFallback.map((e) => [e.extra["target"], e.extra["onPace"]])).toEqual([
+      [40, true],
+      [40, false],
+    ]);
+
+    // Text: word 0 "ab" + space = 3 chars in 200 ms (180 WPM, on pace);
+    // word 1 "cd" had an error (not on pace);
+    // word 2 "efgh" incomplete (only "e" typed, not on pace).
+    const text = textRun(
+      ["ab", "cd", "efgh"],
+      [
+        typeWord("a", 100),
+        typeWord("b", 200),
+        [300, (s) => pressSpace(s, 300)],
+        typeWord("c", 350),
+        typeWord("x", 400),
+        [450, backspaceWord],
+        typeWord("d", 500),
+        [550, (s) => pressSpace(s, 550)],
+        typeWord("e", 600),
+      ],
+    );
+    const tEvents = textEvents(text.trace, {
+      at: 7000,
+      config: "pt-30",
+      seed: 3,
+      words: ["ab", "cd", "efgh"],
+      target: 40,
+    });
+    expect(tEvents.map((e) => [e.extra["target"], e.extra["onPace"]])).toEqual([
+      [40, true],
+      [40, false],
+      [40, false],
+    ]);
+
+    // Completed final word without trailing space is evaluated on its length.
+    const finished = textRun(["ab"], [typeWord("a", 100), typeWord("b", 200)]);
+    const [doneEvent] = textEvents(finished.trace, {
+      at: 1,
+      config: "c",
+      seed: 1,
+      words: ["ab"],
+      target: 40,
+    });
+    expect(doneEvent?.extra["target"]).toBe(40);
+    expect(doneEvent?.extra["onPace"]).toBe(true);
+  });
 });

@@ -2,6 +2,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { manualClock, type ManualClock } from "../core/clock";
+import { loadEvents } from "../storage/events";
 import { memoryStore, type KeyValueStore } from "../storage/history";
 import {
   appendTextResult,
@@ -10,6 +11,8 @@ import {
   TEXT_TYPING_SETTINGS_KEY,
   type TextResult,
 } from "../storage/text-typing";
+import { loadTypingPace, textPaceKey } from "../storage/typing-pace";
+import { ghostTextPosition } from "../typing/pace";
 import { pickQuote } from "../typing/quotes";
 import {
   DEFAULT_TEXT_SETTINGS,
@@ -412,5 +415,63 @@ describe("text typing results", () => {
     expect(screen.getByTestId("text-wpm")).toBeTruthy();
     const last = words.at(-1) ?? "";
     expect(loadTextResults(store)[0]?.chars.missed).toBe(Math.max(0, last.length - 1));
+  });
+
+  it("ghost caret advances with the fake clock at the target pace", () => {
+    setup(storeWith(WORDS_10));
+    const words = initialWords(SEED, WORDS_10);
+    const area = screen.getByTestId("text-words");
+    expect(area.querySelectorAll('[data-ghost="true"]')).toHaveLength(0);
+
+    type(words[0]?.[0] ?? "a");
+    expect(area.querySelectorAll('[data-ghost="true"]')).toHaveLength(1);
+
+    advance(2000);
+    const expected = ghostTextPosition(words, 2000, 30);
+    expect(expected).not.toBeNull();
+    expect(area.querySelectorAll('[data-ghost="true"]')).toHaveLength(1);
+    const targetWord = wordEls()[expected?.word ?? 0];
+    const wordLetters = [...(targetWord?.querySelectorAll<HTMLElement>("[data-mark]") ?? [])];
+    if ((expected?.letter ?? 0) === wordLetters.length) {
+      expect(targetWord?.dataset["ghost"]).toBe("true");
+    } else {
+      expect(wordLetters[expected?.letter ?? 0]?.dataset["ghost"]).toBe("true");
+    }
+  });
+
+  it("ghost caret is hidden when Ritmo-alvo is off", () => {
+    const { store } = setup(storeWith(WORDS_10));
+    const toggle = screen.getByRole<HTMLInputElement>("checkbox", { name: "Ritmo-alvo" });
+    expect(toggle.checked).toBe(true);
+    fireEvent.click(toggle);
+    expect(toggle.checked).toBe(false);
+    expect(loadTypingPace(store).enabled).toBe(false);
+
+    const words = initialWords(SEED, WORDS_10);
+    type(words[0]?.[0] ?? "a");
+    advance(2000);
+    expect(screen.getByTestId("text-words").querySelectorAll('[data-ghost="true"]')).toHaveLength(
+      0,
+    );
+  });
+
+  it("result shows on-pace share and the next target", () => {
+    const { store } = setup(storeWith(WORDS_10));
+    fireEvent.change(screen.getByRole("combobox", { name: "Meta no ritmo" }), {
+      target: { value: "0.8" },
+    });
+    expect(loadTypingPace(store).goal).toBe(0.8);
+
+    const words = initialWords(SEED, WORDS_10);
+    typeAll(words);
+
+    const paceText = screen.getByTestId("text-pace-result").textContent ?? "";
+    expect(paceText).toContain("100% das palavras no ritmo");
+    expect(paceText).toContain("30 → 32 WPM");
+    expect(loadTypingPace(store).targets[textPaceKey(WORDS_10)]).toBe(32);
+
+    const events = loadEvents(store).filter((e) => e.drill === "typing.text");
+    expect(events).toHaveLength(10);
+    expect(events.every((e) => e.extra["target"] === 30 && e.extra["onPace"] === true)).toBe(true);
   });
 });
