@@ -6,7 +6,15 @@
 // Loads the pure TypeScript modules under src/typing/mine/ through Vite's
 // runnerImport so extensionless imports work with zero extra dependencies.
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 import { runnerImport } from "vite";
 
@@ -48,7 +56,9 @@ function readCreationDates(repoDir) {
 function loadRepoFiles(repoDir) {
   const commitSha = runGit(repoDir, ["rev-parse", "HEAD"]).trim();
   const createdDates = readCreationDates(repoDir);
-  const tracked = runGit(repoDir, ["ls-files"]).split("\n").filter((p) => p.length > 0);
+  const tracked = runGit(repoDir, ["ls-files"])
+    .split("\n")
+    .filter((p) => p.length > 0);
   const files = [];
 
   for (const relPath of tracked) {

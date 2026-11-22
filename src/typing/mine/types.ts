@@ -87,4 +87,5 @@ export interface MineOutput {
   readonly report: string;
 }
 
-export type ValidationResult = { readonly ok: true } | { readonly ok: false; readonly reason: string };
+export type ValidationResult =
+  { readonly ok: true } | { readonly ok: false; readonly reason: string };

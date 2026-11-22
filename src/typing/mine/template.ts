@@ -27,6 +27,15 @@ function normalizeHeaderLine(line: string): string {
     .join(" ");
 }
 
+function countBraceDelta(line: string): number {
+  let delta = 0;
+  for (const ch of line) {
+    if (ch === "{") delta++;
+    else if (ch === "}") delta--;
+  }
+  return delta;
+}
+
 function extractHeaderLines(lines: readonly string[]): { raw: string; key: string } | null {
   const raw: string[] = [];
   const norm: string[] = [];
@@ -61,10 +70,7 @@ function extractHeaderLines(lines: readonly string[]): { raw: string; key: strin
     if (dbgBraceDepth > 0) {
       raw.push(line);
       norm.push(normalizeHeaderLine(trimmed));
-      for (const ch of trimmed) {
-        if (ch === "{") dbgBraceDepth++;
-        else if (ch === "}") dbgBraceDepth--;
-      }
+      dbgBraceDepth += countBraceDelta(trimmed);
       continue;
     }
 
@@ -85,10 +91,7 @@ function extractHeaderLines(lines: readonly string[]): { raw: string; key: strin
     if (DBG_FN_RE.test(trimmed)) {
       raw.push(line);
       norm.push(normalizeHeaderLine(trimmed));
-      for (const ch of trimmed) {
-        if (ch === "{") dbgBraceDepth++;
-        else if (ch === "}") dbgBraceDepth--;
-      }
+      dbgBraceDepth += countBraceDelta(trimmed);
       continue;
     }
 
@@ -120,9 +123,7 @@ function extractMainSkeleton(lines: readonly string[]): string {
     .slice(1, -1)
     .map((l) => l.trim())
     .filter((l) => FAST_IO_RE.test(l));
-  const hasReturnZero = bodyLines
-    .slice(1, -1)
-    .some((l) => /^return\s+0\s*;$/.test(l.trim()));
+  const hasReturnZero = bodyLines.slice(1, -1).some((l) => /^return\s+0\s*;$/.test(l.trim()));
 
   const out = [headerLine];
   for (const io of fastIo) out.push(`    ${io}`);

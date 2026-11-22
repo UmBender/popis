@@ -1,11 +1,10 @@
 export const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
 
-const ISO_RE =
-  /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}):(\d{2})(?:Z|([+-])(\d{2}):(\d{2}))?)?/;
+const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}):(\d{2})(?:Z|([+-])(\d{2}):(\d{2}))?)?/;
 
 const CONTEST_RE = /(?:^|\/)contest\/(\d+)(?:\/|$)/;
 
-/** Parse an ISO-8601 date or timestamp into UTC milliseconds without `new Date()`. */
+/** Parse an ISO-8601 date or timestamp into UTC milliseconds purely via Date.UTC. */
 export function parseTimestampMs(iso: string): number {
   const m = ISO_RE.exec(iso);
   if (!m) return 0;

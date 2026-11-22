@@ -38,14 +38,10 @@ function diceSimilarity(a: UniqueNode, b: UniqueNode): number {
 }
 
 function findRoot(parent: number[], x: number): number {
-  let root = x;
-  while (parent[root]! !== root) root = parent[root]!;
-  let cur = x;
-  while (parent[cur]! !== root) {
-    const next = parent[cur]!;
-    parent[cur] = root;
-    cur = next;
-  }
+  const p = parent[x]!;
+  if (p === x) return x;
+  const root = findRoot(parent, p);
+  parent[x] = root;
   return root;
 }
 
@@ -152,7 +148,7 @@ export function clusterSnippets(files: readonly RepoFile[]): readonly SnippetClu
       b.cluster.fileCount - a.cluster.fileCount ||
       compareRecency(b.canonical, a.canonical) ||
       compareCodePoints(a.cluster.name, b.cluster.name) ||
-      compareCodePoints(a.cluster.canonicalPath, b.cluster.canonicalPath),
+      compareCodePoints(a.cluster.canonicalCode, b.cluster.canonicalCode),
   );
 
   return ranked.map((r) => r.cluster);

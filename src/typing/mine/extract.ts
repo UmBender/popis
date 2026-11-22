@@ -91,7 +91,8 @@ const SKIP_PY_FUNCTIONS = new Set(["main", "__main__"]);
 const CPP_STRUCT_RE = /^(?:template\s*<[^>]*>\s*)?(?:struct|class)\s+([A-Za-z_]\w*)\b/;
 const CPP_LAMBDA_RE = /^\s*auto\s+([A-Za-z_]\w*)\s*=\s*\[[^\]]*\]\s*\(/;
 const CPP_WHILE_RE = /^\s*while\s*\((.+)\)\s*\{/;
-const CPP_SKIP_TOP_RE = /^(?:#|using\b|typedef\b|namespace\b|enum\b|if\b|for\b|while\b|switch\b|else\b|return\b|do\b)/;
+const CPP_SKIP_TOP_RE =
+  /^(?:#|using\b|typedef\b|namespace\b|enum\b|if\b|for\b|while\b|switch\b|else\b|return\b|do\b)/;
 
 /** Map a struct, class, or function identifier to a short canonical snippet name. */
 export function toShortName(rawName: string): string {
@@ -141,10 +142,19 @@ function findBlockEnd(lines: readonly string[], startLine: number): number {
   return -1;
 }
 
+function sliceBraceBlock(
+  lines: readonly string[],
+  braceLine: number,
+  declStart: number,
+): { readonly end: number; readonly raw: string } | null {
+  const end = findBlockEnd(lines, braceLine);
+  if (end < braceLine) return null;
+  return { end, raw: lines.slice(declStart, end + 1).join("\n") };
+}
+
 function extractCppFnName(line: string): string | null {
   const withoutTemplate = line.replace(/^template\s*<[^>]*>\s*/, "");
   const parenIdx = withoutTemplate.indexOf("(");
-  if (parenIdx <= 0) return null;
   const beforeParen = withoutTemplate.slice(0, parenIdx).trim();
   const match = /\b([A-Za-z_]\w*)$/.exec(beforeParen);
   return match ? match[1]! : null;
@@ -176,6 +186,10 @@ function makeItem(
   };
 }
 
+function pushItem(out: ExtractedItem[], item: ExtractedItem | null): void {
+  if (item) out.push(item);
+}
+
 function extractCppItems(file: RepoFile): ExtractedItem[] {
   const lines = stripComments(file.content, "cpp").replace(/\t/g, "    ").split("\n");
   const out: ExtractedItem[] = [];
@@ -187,93 +201,68 @@ function extractCppItems(file: RepoFile): ExtractedItem[] {
     const trimmed = line.trim();
 
     if (depth === 0) {
-      if (trimmed.length === 0) {
-        templateStart = -1;
-      } else if (/^template\s*</.test(trimmed) && !trimmed.includes("{") && !trimmed.includes(";")) {
+      if (/^template\s*</.test(trimmed) && !trimmed.includes("{") && !trimmed.includes(";")) {
         if (templateStart < 0) templateStart = i;
       } else {
+        const declStart = templateStart >= 0 ? templateStart : i;
+        templateStart = -1;
         const structMatch = CPP_STRUCT_RE.exec(trimmed);
         if (structMatch && !trimmed.endsWith(";")) {
-          const declStart = templateStart >= 0 ? templateStart : i;
-          const end = findBlockEnd(lines, i);
-          templateStart = -1;
-          if (end >= i) {
-            const rawStruct = lines.slice(declStart, end + 1).join("\n");
-            // Skip pure data-only POD structs with no constructor or method.
-            if (rawStruct.includes("(")) {
-              const item = makeItem(file, "cpp", "struct", structMatch[1]!, rawStruct);
-              if (item) out.push(item);
+          const block = sliceBraceBlock(lines, i, declStart);
+          if (block) {
+            if (block.raw.includes("(")) {
+              pushItem(out, makeItem(file, "cpp", "struct", structMatch[1]!, block.raw));
             }
-            i = end;
+            i = block.end;
             continue;
           }
-        } else if (!CPP_SKIP_TOP_RE.test(trimmed) && trimmed.includes("(") && trimmed.includes("{")) {
+        } else if (
+          !CPP_SKIP_TOP_RE.test(trimmed) &&
+          trimmed.includes("(") &&
+          trimmed.includes("{")
+        ) {
           const fnName = extractCppFnName(trimmed);
-          const declStart = templateStart >= 0 ? templateStart : i;
-          templateStart = -1;
-          if (fnName && !SKIP_CPP_FUNCTIONS.has(fnName)) {
-            const end = findBlockEnd(lines, i);
-            if (end >= i) {
-              const item = makeItem(
-                file,
-                "cpp",
-                "function",
-                fnName,
-                lines.slice(declStart, end + 1).join("\n"),
-              );
-              if (item) out.push(item);
-              i = end;
-              continue;
-            }
+          const block =
+            fnName && !SKIP_CPP_FUNCTIONS.has(fnName) ? sliceBraceBlock(lines, i, declStart) : null;
+          if (block) {
+            pushItem(out, makeItem(file, "cpp", "function", fnName!, block.raw));
+            i = block.end;
+            continue;
           }
-        } else {
-          templateStart = -1;
         }
       }
     }
 
     if (depth > 0) {
       const lambdaMatch = CPP_LAMBDA_RE.exec(line);
-      if (lambdaMatch && line.includes("{")) {
-        const end = findBlockEnd(lines, i);
-        if (end >= i) {
-          const item = makeItem(
-            file,
-            "cpp",
-            "lambda",
-            lambdaMatch[1]!,
-            lines.slice(i, end + 1).join("\n"),
-          );
-          if (item) out.push(item);
-        }
+      const lambdaBlock = lambdaMatch && line.includes("{") ? sliceBraceBlock(lines, i, i) : null;
+      if (lambdaBlock) {
+        pushItem(out, makeItem(file, "cpp", "lambda", lambdaMatch![1]!, lambdaBlock.raw));
       }
 
       const whileMatch = CPP_WHILE_RE.exec(line);
-      if (whileMatch) {
-        const end = findBlockEnd(lines, i);
-        if (end >= i) {
-          const cond = whileMatch[1]!;
-          const block = lines.slice(i, end + 1).join("\n");
-          const isBfs =
-            /(?:empty|size)\s*\(\s*\)/.test(cond) &&
-            block.includes(".front()") &&
-            block.includes(".pop()") &&
-            block.includes(".push(");
-          const isBinarySearch =
-            !block.includes(".front()") &&
-            /[<>]=?|!=/.test(cond) &&
-            /(?:\/\s*2|>>\s*1)/.test(block);
-          if (isBfs || isBinarySearch) {
-            const role = isBfs ? "bfs" : "binary_search";
-            const item = makeItem(file, "cpp", "loop", role, block);
-            if (item) out.push(item);
-          }
+      const whileBlock = whileMatch ? sliceBraceBlock(lines, i, i) : null;
+      if (whileBlock) {
+        const cond = whileMatch![1]!;
+        const isBfs =
+          /(?:empty|size)\s*\(\s*\)/.test(cond) &&
+          whileBlock.raw.includes(".front()") &&
+          whileBlock.raw.includes(".pop()") &&
+          whileBlock.raw.includes(".push(");
+        const isBinarySearch =
+          !whileBlock.raw.includes(".front()") &&
+          /[<>]=?|!=/.test(cond) &&
+          /(?:\/\s*2|>>\s*1)/.test(whileBlock.raw);
+        if (isBfs || isBinarySearch) {
+          pushItem(
+            out,
+            makeItem(file, "cpp", "loop", isBfs ? "bfs" : "binary_search", whileBlock.raw),
+          );
         }
       }
     }
 
-    depth += scanBraceDelta(line).delta;
-    if (depth < 0) depth = 0;
+    depth = Math.max(0, depth + scanBraceDelta(line).delta);
   }
 
   return out;
@@ -305,14 +294,10 @@ function extractPyItems(file: RepoFile): ExtractedItem[] {
       const classMatch = /^class\s+([A-Za-z_]\w*)/.exec(trimmed);
       if (classMatch) {
         const end = extractPyBlockEnd(lines, i);
-        const item = makeItem(
-          file,
-          "python",
-          "struct",
-          classMatch[1]!,
-          lines.slice(i, end + 1).join("\n"),
+        pushItem(
+          out,
+          makeItem(file, "python", "struct", classMatch[1]!, lines.slice(i, end + 1).join("\n")),
         );
-        if (item) out.push(item);
         i = end;
         continue;
       }
@@ -320,15 +305,10 @@ function extractPyItems(file: RepoFile): ExtractedItem[] {
       const defMatch = /^def\s+([A-Za-z_]\w*)\s*\(/.exec(trimmed);
       if (defMatch && !SKIP_PY_FUNCTIONS.has(defMatch[1]!)) {
         const end = extractPyBlockEnd(lines, i);
-        const item = makeItem(
-          file,
-          "python",
-          "function",
-          defMatch[1]!,
-          lines.slice(i, end + 1).join("\n"),
+        pushItem(
+          out,
+          makeItem(file, "python", "function", defMatch[1]!, lines.slice(i, end + 1).join("\n")),
         );
-        if (item) out.push(item);
-        i = end;
         continue;
       }
     }
@@ -339,8 +319,7 @@ function extractPyItems(file: RepoFile): ExtractedItem[] {
       const isBfs = block.includes(".popleft()") && block.includes(".append(");
       const isBinarySearch = /(?:\/\/\s*2|>>\s*1)/.test(block);
       if (isBfs || isBinarySearch) {
-        const item = makeItem(file, "python", "loop", isBfs ? "bfs" : "binary_search", block);
-        if (item) out.push(item);
+        pushItem(out, makeItem(file, "python", "loop", isBfs ? "bfs" : "binary_search", block));
       }
     }
   }

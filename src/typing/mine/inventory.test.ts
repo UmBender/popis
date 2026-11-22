@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import { buildInventory } from "./inventory";
 import type { RepoFile } from "./types";
 
-const file = (path: string, content: string, createdAt = "2026-10-01T10:00:00-03:00"): RepoFile => ({
+const file = (
+  path: string,
+  content: string,
+  createdAt = "2026-10-01T10:00:00-03:00",
+): RepoFile => ({
   path,
   content,
   createdAt,
@@ -18,7 +22,8 @@ describe("buildInventory", () => {
       "}",
       "#endif",
     ].join("\n");
-    const aclExpander = "class Expander:\n    def expand(self, source: str) -> str:\n        return source\n";
+    const aclExpander =
+      "class Expander:\n    def expand(self, source: str) -> str:\n        return source\n";
     const ownerCode = "#include <bits/stdc++.h>\nint main() { return 0; }\n";
 
     const result = buildInventory([
@@ -43,11 +48,17 @@ describe("buildInventory", () => {
 
   it("flags files with an origin URL instead of including them", () => {
     const files: RepoFile[] = [
-      file("algols/cp_algo.cpp", "// Source: https://cp-algorithms.com/data_structures/fenwick.html\nstruct BIT {};\n"),
+      file(
+        "algols/cp_algo.cpp",
+        "// Source: https://cp-algorithms.com/data_structures/fenwick.html\nstruct BIT {};\n",
+      ),
       file("algols/kactl_flow.cpp", "// Adapted from KACTL\nstruct Dinic {};\n"),
       file("questions/gh/main.cpp", "// https://github.com/someone/cp-lib\nint main() {}\n"),
       file("algols/from_book.cpp", "// Source: Competitive Programming 4\nint f() { return 1; }\n"),
-      file("contest/180/e.cpp", "// Verify: https://judge.yosupo.jp/problem/point_add_range_sum\nstruct Fenwick {};\n"),
+      file(
+        "contest/180/e.cpp",
+        "// Verify: https://judge.yosupo.jp/problem/point_add_range_sum\nstruct Fenwick {};\n",
+      ),
     ];
 
     const result = buildInventory(files);

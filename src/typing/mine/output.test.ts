@@ -135,7 +135,9 @@ describe("mineLibrary output and report", () => {
 
   it("every written snippet passes the T32 snippet rules", () => {
     const out = mineLibrary(SAMPLE_REPO, { commitSha: "abc1234" });
-    const snippets = out.files.filter((f) => f.filename.endsWith(".cpp") || f.filename.endsWith(".py"));
+    const snippets = out.files.filter(
+      (f) => f.filename.endsWith(".cpp") || f.filename.endsWith(".py"),
+    );
 
     expect(snippets.length).toBeGreaterThanOrEqual(2);
     expect(snippets.map((s) => s.filename)).toContain("template.cpp");
@@ -167,7 +169,9 @@ describe("mineLibrary output and report", () => {
 
     expect(parsed.idioms.length).toBeGreaterThan(0);
     expect(parsed.idioms.length).toBeLessThanOrEqual(100);
-    expect(parsed.idioms.some((e) => e.value.includes("for (int $0 = 0; $0 < $1; $0++)"))).toBe(true);
+    expect(parsed.idioms.some((e) => e.value.includes("for (int $0 = 0; $0 < $1; $0++)"))).toBe(
+      true,
+    );
 
     expect(parsed.constants.length).toBeGreaterThan(0);
     const constNames = parsed.constants.map((e) => e.value);
@@ -195,7 +199,14 @@ describe("mineLibrary output and report", () => {
 
   it("caps written snippets at maxSnippets (default 30) plus template.cpp and profile.json", () => {
     const files: RepoFile[] = [];
-    const containers = ["vector<int>", "deque<int>", "set<int>", "multiset<int>", "queue<int>", "stack<int>"];
+    const containers = [
+      "vector<int>",
+      "deque<int>",
+      "set<int>",
+      "multiset<int>",
+      "queue<int>",
+      "stack<int>",
+    ];
     const ops = ["+=", "-=", "*=", "^=", "|=", "&="];
     for (let i = 0; i < 35; i++) {
       // Structurally distinct bodies with unique numeric literals and control flow

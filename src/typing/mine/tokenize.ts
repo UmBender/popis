@@ -341,7 +341,6 @@ function needsSpace(prev: string, curr: string): boolean {
   if (NO_SPACE_BEFORE.has(curr) || NO_SPACE_AFTER.has(prev)) return false;
   if (curr === "(") return SPACE_BEFORE_PAREN.has(prev) || !/^[A-Za-z0-9_$]$/.test(prev.slice(-1));
   if (curr === "[") return false;
-  if (prev === "{" && curr === "}") return false;
   return true;
 }
 

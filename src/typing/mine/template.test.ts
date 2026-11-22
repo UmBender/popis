@@ -137,7 +137,7 @@ describe("detectTemplate", () => {
       "using namespace std;",
       "",
       "#ifdef LOCAL",
-      'template <typename... T> void _dbg(const char *names, T &&...args) {',
+      "template <typename... T> void _dbg(const char *names, T &&...args) {",
       '    cerr << "[" << names << "] =";',
       "    ((cerr << ' ' << args), ...);",
       "    cerr << endl;",
