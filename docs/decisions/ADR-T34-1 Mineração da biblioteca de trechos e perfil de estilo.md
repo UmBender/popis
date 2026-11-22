@@ -1,7 +1,7 @@
 ---
 id: ADR-T34-1
 title: Mineração da biblioteca de trechos e perfil de estilo
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-21
 task: T34
