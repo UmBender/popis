@@ -69,4 +69,26 @@ describe("gdb command round engine", () => {
     expect(events[0]?.ok).toBe(true);
     expect(events[1]?.ok).toBe(false);
   });
+
+  it("handles idle ticks, no-op transitions after finish, and empty round stats", () => {
+    let round = startGdbRound({ durationMs: 30_000, seed: 5, kinds: [] });
+    expect(gdbRoundStats(round).accuracy).toBe(0);
+    // Tick before starting leaves round untouched.
+    expect(tickGdbRound(round, 5000)).toBe(round);
+
+    round = touchGdbRound(round, 1000);
+    // Second touch is a no-op.
+    expect(touchGdbRound(round, 2000)).toBe(round);
+    // Mid-round tick does not finish yet.
+    expect(tickGdbRound(round, 10_000)).toBe(round);
+    expect(gdbRemainingMs(round, 10_000)).toBe(21_000);
+
+    // Submitting at or past durationMs finishes immediately.
+    round = submitGdbCommand(round, "zzz", 31_000);
+    expect(isGdbRoundFinished(round)).toBe(true);
+    expect(touchGdbRound(round, 32_000)).toBe(round);
+    expect(tickGdbRound(round, 32_000)).toBe(round);
+    expect(submitGdbCommand(round, "next", 32_000)).toBe(round);
+    expect(skipGdbItem(round, 32_000)).toBe(round);
+  });
 });

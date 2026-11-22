@@ -63,8 +63,11 @@ test("every screen keeps panel order and unique h1", async ({ page }) => {
   for (let i = 0; i < count; i++) {
     const r = radios.nth(i);
     const label = (await r.getAttribute("aria-label")) ?? "";
+    const visible = (
+      (await r.locator("xpath=..").locator(".tree-name").textContent()) ?? ""
+    ).trim();
     await r.click();
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(label);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(visible);
     headings.add(label);
 
     const blocks = await page

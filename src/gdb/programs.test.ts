@@ -31,15 +31,18 @@ describe("gdb programs (AC-3)", () => {
     ]) {
       expect(tags.has(required), `missing program category ${required}`).toBe(true);
     }
+
+    expect(() => programById("does-not-exist")).toThrow();
   });
 
   it("every program has unique line numbers for its targets", () => {
     for (const prog of PROGRAMS) {
       const seen = new Set<number>();
       for (const target of prog.targets) {
-        expect(seen.has(target.line), `${prog.id} duplicate target line ${String(target.line)}`).toBe(
-          false,
-        );
+        expect(
+          seen.has(target.line),
+          `${prog.id} duplicate target line ${String(target.line)}`,
+        ).toBe(false);
         seen.add(target.line);
         expect(target.line, `${prog.id}:${target.id} line >= 1`).toBeGreaterThanOrEqual(1);
         expect(target.line, `${prog.id}:${target.id} line <= lines`).toBeLessThanOrEqual(

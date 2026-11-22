@@ -89,6 +89,12 @@ describe("gdb curriculum (AC-6)", () => {
         }
       }
     }
+
+    // Breakpoints set before `run` must not light up the current-line arrow.
+    const breakTranscript = LESSON_TRANSCRIPTS["u2-break"];
+    expect(breakTranscript?.frames[1]?.line).toBeNull();
+    expect(breakTranscript?.frames[1]?.breakpoints).toEqual([11]);
+    expect(breakTranscript?.frames[3]?.line).toBe(11);
   });
 
   it("shared curriculum helpers work with GDB units and lessons", () => {

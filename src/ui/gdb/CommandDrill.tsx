@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../../core/clock";
-import {
-  GDB_CMD_KINDS,
-  GDB_CMD_KIND_LABELS,
-  type GdbCmdKind,
-} from "../../gdb/cmd-drill";
+import { GDB_CMD_KINDS, GDB_CMD_KIND_LABELS, type GdbCmdKind } from "../../gdb/cmd-drill";
 import { COMMAND_TABLE } from "../../gdb/commands";
 import { gdbLessonForCommand } from "../../gdb/curriculum";
 import {
@@ -40,11 +36,18 @@ import { CodeView } from "./CodeView";
 
 const TICK_MS = 100;
 
-const KIND_FAMILIES: readonly { readonly title: string; readonly kinds: readonly GdbCmdKind[] }[] = [
-  { title: "Preparar e parar", kinds: ["iniciar", "break-linha", "break-funcao", "tbreak", "gerir"] },
-  { title: "Andar, olhar e pilha", kinds: ["andar", "olhar", "pilha"] },
-  { title: "Condições, vigias, estado e crash", kinds: ["break-cond", "condition", "ignore", "vigia", "mudar", "crash"] },
-];
+const KIND_FAMILIES: readonly { readonly title: string; readonly kinds: readonly GdbCmdKind[] }[] =
+  [
+    {
+      title: "Preparar e parar",
+      kinds: ["iniciar", "break-linha", "break-funcao", "tbreak", "gerir"],
+    },
+    { title: "Andar, olhar e pilha", kinds: ["andar", "olhar", "pilha"] },
+    {
+      title: "Condições, vigias, estado e crash",
+      kinds: ["break-cond", "condition", "ignore", "vigia", "mudar", "crash"],
+    },
+  ];
 
 type Props = {
   readonly clock: Clock;
@@ -192,7 +195,7 @@ export function CommandDrill({
   const submitCurrent = () => {
     const trimmed = text.trim();
     const cur = latest.current.round;
-    if (trimmed.length === 0 && cur.current.expected.kind !== "repeat") return;
+    if (trimmed.length === 0) return;
     const t = clock.now();
     setNow(t);
     setText("");
@@ -342,9 +345,9 @@ export function CommandDrill({
                   <ul className="vim-worst">
                     {stats.wrongItems.map((item) => (
                       <li key={item.index}>
-                        <span>{item.prompt}</span>{" "}
-                        <span className="muted">você:</span> <code>{item.typed || "(vazio)"}</code>{" "}
-                        <span className="muted">canônico:</span> <code>{item.canonical}</code>
+                        <span>{item.prompt}</span> <span className="muted">você:</span>{" "}
+                        <code>{item.typed}</code> <span className="muted">canônico:</span>{" "}
+                        <code>{item.canonical}</code>
                       </li>
                     ))}
                   </ul>
@@ -456,9 +459,7 @@ export function CommandDrill({
                       : "gdb-feedback gdb-feedback-wrong"
                 }
                 data-testid="gdb-feedback"
-                data-outcome={
-                  round.last.skipped ? "skipped" : round.last.ok ? "correct" : "wrong"
-                }
+                data-outcome={round.last.skipped ? "skipped" : round.last.ok ? "correct" : "wrong"}
               >
                 {round.last.ok ? (
                   <>

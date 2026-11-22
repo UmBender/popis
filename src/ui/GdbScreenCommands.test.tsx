@@ -161,4 +161,57 @@ describe("GdbScreen Commands mode (AC-5)", () => {
     expect(onLearn).toHaveBeenCalledTimes(1);
     expect(typeof onLearn.mock.calls[0]?.[0]).toBe("string");
   });
+
+  it("handles duration change, form submit button, restart shortcut, warning tone and results keyboard", () => {
+    const store = memoryStore({
+      [GDB_KEY]: JSON.stringify({ durationS: 60, kinds: ["gerir"] }),
+    });
+    setup(store);
+
+    // Change duration to 30 s.
+    fireEvent.change(screen.getByRole("combobox", { name: "Duração" }), {
+      target: { value: "30" },
+    });
+    expect(loadGdbSettings(store).durationS).toBe(30);
+
+    // Empty Enter and non-Enter keys do nothing.
+    fireEvent.keyDown(input(), { key: "a" });
+    fireEvent.keyDown(input(), { key: "Enter" });
+    expect(screen.queryByTestId("gdb-feedback")).toBeNull();
+
+    // Submit via the Enviar button (form submit) with a valid command -> 1 acerto (singular).
+    const item0 = generateCommandItem(SEED, 0, ["gerir"]);
+    fireEvent.change(input(), { target: { value: item0.canonical } });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    expect(screen.getByTestId("gdb-score").textContent).toBe("1");
+
+    // Advance into <= 10 s warning zone, then expire at 30 s.
+    advance(25_000);
+    expect(screen.getByTestId("gdb-time").className).toContain("warning");
+    advance(6_000);
+    expect(screen.getByTestId("gdb-final-score").textContent).toBe("1 acerto em 30 s");
+
+    // Clicking Jogar de novo starts a fresh round.
+    fireEvent.click(screen.getByRole("button", { name: "Jogar de novo" }));
+    expect(screen.queryByTestId("result")).toBeNull();
+
+    // Ctrl+Shift+Enter restarts mid-round; Enter and Escape on results work.
+    fireEvent.change(input(), { target: { value: "zzz" } });
+    fireEvent.keyDown(input(), { key: "Enter", ctrlKey: true, shiftKey: true });
+    expect(input().value).toBe("");
+
+    fireEvent.change(input(), { target: { value: "zzz" } });
+    advance(31_000);
+    expect(screen.getByTestId("result")).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Enter" });
+    expect(screen.queryByTestId("result")).toBeNull();
+
+    fireEvent.change(input(), { target: { value: "zzz" } });
+    advance(31_000);
+    expect(screen.getByTestId("result")).toBeTruthy();
+    fireEvent.keyDown(window, { key: "a" });
+    expect(screen.getByTestId("result")).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByTestId("result")).toBeNull();
+  });
 });

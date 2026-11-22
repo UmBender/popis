@@ -13,7 +13,7 @@ import {
 } from "../storage/history";
 import { VIM_SETTINGS_KEY } from "../storage/vim";
 import { App } from "./App";
-import { ITEMS } from "./shell/sections";
+import { folderOf, ITEMS } from "./shell/sections";
 
 // T19: UI coherence across every training screen.
 
@@ -217,10 +217,10 @@ describe("T19 AC-2: unique h1 titles", () => {
     setup();
     const seen = new Set<string>();
     for (const item of ITEMS) {
-      fireEvent.click(radio(item.label));
+      fireEvent.click(radio(item.ariaLabel ?? item.label));
       const h1 = screen.getByRole("heading", { level: 1 });
       expect(h1.textContent).toBe(item.label);
-      seen.add(h1.textContent ?? "");
+      seen.add(`${folderOf(item.id).id}/${h1.textContent ?? ""}`);
     }
     expect(seen.size).toBe(ITEMS.length);
   });

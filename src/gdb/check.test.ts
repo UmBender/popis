@@ -79,6 +79,22 @@ describe("gdb command checker (AC-2)", () => {
       { name: "run redirection spacing", expected: "run < in.txt", typed: "r <in.txt" },
       { name: "gdb ./sol vs gdb sol", expected: "gdb ./sol", typed: "gdb sol" },
       { name: "tbreak alias", expected: "tbreak 12", typed: "tb sol.cpp:12" },
+      { name: "start, kill, quit, finish, repeat", expected: "start", typed: "start" },
+      { name: "kill alias", expected: "kill", typed: "k" },
+      { name: "quit alias", expected: "quit", typed: "exit" },
+      { name: "finish alias", expected: "finish", typed: "fin" },
+      { name: "repeat empty", expected: "", typed: "   " },
+      { name: "list alias", expected: "list 10", typed: "l sol.cpp:10" },
+      { name: "undisplay alias", expected: "undisplay 1", typed: "und 1" },
+      { name: "call alias", expected: "call gcd(12, 8)", typed: "cal gcd(12,8)" },
+      { name: "catch throw alias", expected: "catch throw", typed: "cat t" },
+      { name: "ignore alias", expected: "ignore 1 3", typed: "ig 1 3" },
+      { name: "until bare", expected: "until", typed: "u" },
+      { name: "advance alias", expected: "advance 9", typed: "adv sol.cpp:9" },
+      { name: "print alias", expected: "print a[i]", typed: "p a[i]" },
+      { name: "display alias", expected: "display sum", typed: "disp sum" },
+      { name: "continue alias", expected: "continue 3", typed: "c 3" },
+      { name: "delete alias", expected: "delete 2", typed: "d 2" },
     ];
 
     for (const c of cases) {
@@ -98,7 +114,11 @@ describe("gdb command checker (AC-2)", () => {
       { name: "next instead of step", expected: "step", typed: "n" },
       { name: "wrong line", expected: "break 14", typed: "b 15" },
       { name: "wrong file", expected: "break 14", typed: "b other.cpp:14" },
-      { name: "= instead of == in break if", expected: "break 14 if i == 5", typed: "b 14 if i = 5" },
+      {
+        name: "= instead of == in break if",
+        expected: "break 14 if i == 5",
+        typed: "b 14 if i = 5",
+      },
       {
         name: "= instead of == in condition",
         expected: "condition 1 i == 5",
@@ -128,8 +148,17 @@ describe("gdb command checker (AC-2)", () => {
       { name: "print instead of display", expected: "display sum", typed: "p sum" },
       { name: "info locals instead of info args", expected: "info args", typed: "info locals" },
       { name: "until instead of advance", expected: "advance 20", typed: "until 20" },
+      { name: "advance instead of until", expected: "until 20", typed: "advance 20" },
+      { name: "non-frame command for frame goal", expected: "frame 2", typed: "next" },
+      { name: "out-of-bounds frame", expected: "frame 2", typed: "frame 9" },
+      { name: "wrong step count", expected: "next 3", typed: "next 2" },
+      { name: "wrong break condition", expected: "break 14 if i == 5", typed: "b 14 if i == 6" },
+      { name: "unexpected -l on watch", expected: "watch cur", typed: "watch -l cur" },
+      { name: "wrong watch expression", expected: "watch cur", typed: "watch sum" },
+      { name: "wrong bp id", expected: "delete 2", typed: "delete 1" },
       { name: "ambiguous prefix", expected: "finish", typed: "fi" },
       { name: "empty when non-repeat expected", expected: "next", typed: "" },
+      { name: "completely different command", expected: "start", typed: "kill" },
     ];
 
     for (const c of cases) {

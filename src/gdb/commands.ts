@@ -53,8 +53,7 @@ export type CommandEntry = {
 };
 
 export type ResolveResult =
-  | { readonly ok: true; readonly command: string }
-  | { readonly ok: false; readonly error: string };
+  { readonly ok: true; readonly command: string } | { readonly ok: false; readonly error: string };
 
 export type ParseResult =
   | { readonly ok: true; readonly action: GdbAction }
@@ -63,7 +62,12 @@ export type ParseResult =
 /** Reference table of commands taught and drilled in T25 (one lesson per entry). */
 export const COMMAND_TABLE: readonly CommandEntry[] = [
   { key: "gdb", syntax: "gdb ./sol", aliases: [], text: "abre o executável no gdb" },
-  { key: "run", syntax: "run [< in.txt]", aliases: ["r"], text: "executa o programa desde o início" },
+  {
+    key: "run",
+    syntax: "run [< in.txt]",
+    aliases: ["r"],
+    text: "executa o programa desde o início",
+  },
   { key: "start", syntax: "start", aliases: [], text: "inicia e para na entrada de main" },
   { key: "kill", syntax: "kill", aliases: ["k"], text: "encerra o processo atual sem sair do gdb" },
   { key: "quit", syntax: "quit", aliases: ["q", "exit"], text: "sai do gdb" },
@@ -873,7 +877,9 @@ export function normalizeCondition(raw: string): string | null {
   const orParts = splitTop(tokens, "||");
   const normOr: string[] = [];
   for (const orToks of orParts) {
-    const andParts = splitTop(orToks, "&&");
+    const unwrappedOr = tokenizeExpr(stripOuterParens(formatTokens(orToks)));
+    if (unwrappedOr === null) return null;
+    const andParts = splitTop(unwrappedOr, "&&");
     const normAnd: string[] = [];
     for (const part of andParts) {
       const inner = tokenizeExpr(stripOuterParens(formatTokens(part)));
@@ -981,12 +987,7 @@ function parseInfo(rest: string): ParseResult {
   });
   if (!resolved.ok) return resolved;
   const topic = resolved.command;
-  if (
-    topic === "breakpoints" ||
-    topic === "locals" ||
-    topic === "args" ||
-    topic === "display"
-  ) {
+  if (topic === "breakpoints" || topic === "locals" || topic === "args" || topic === "display") {
     return { ok: true, action: { kind: "info", topic } };
   }
   return { ok: false, error: `Subcomando "info ${topic}" não faz parte deste treino.` };
@@ -1224,7 +1225,10 @@ export function parseCommand(text: string): ParseResult {
       if (subRes.command === "throw") {
         return { ok: true, action: { kind: "catch", event: "throw" } };
       }
-      return { ok: false, error: `Subcomando "catch ${subRes.command}" não faz parte deste treino.` };
+      return {
+        ok: false,
+        error: `Subcomando "catch ${subRes.command}" não faz parte deste treino.`,
+      };
     }
     default:
       return {

@@ -40,12 +40,7 @@ type Props = {
 };
 
 /** GDB Aprender curriculum screen (T25 AC-6, AC-7): 9 ordered units with oracle transcripts and adaptive fading. */
-export function LearnDrill({
-  store,
-  onBack,
-  onPractice,
-  initialLesson = null,
-}: Props): ReactNode {
+export function LearnDrill({ store, onBack, onPractice, initialLesson = null }: Props): ReactNode {
   const [open, setOpen] = useState<string | null>(() =>
     initialLesson !== null && gdbLessonById(initialLesson) !== undefined ? initialLesson : null,
   );
@@ -194,14 +189,9 @@ function LessonView({
 /** Animated real-gdb session transcript: steps command by command with arrow moving on the code. */
 function GdbExample({ lesson }: { readonly lesson: GdbLesson }): ReactNode {
   const prog = useMemo(() => programById(lesson.example.programId), [lesson.example.programId]);
-  const transcript = LESSON_TRANSCRIPTS[lesson.id];
-  const frames: readonly TranscriptFrame[] = useMemo(
-    () =>
-      transcript?.frames ?? [
-        { cmd: null, output: [`Reading symbols from ./${prog.id}...`], line: null, breakpoints: [] },
-      ],
-    [transcript, prog.id],
-  );
+  const frames: readonly TranscriptFrame[] = (
+    LESSON_TRANSCRIPTS[lesson.id] as { readonly frames: readonly TranscriptFrame[] }
+  ).frames;
 
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
@@ -312,9 +302,8 @@ function GdbExercise({
   };
 
   const submit = () => {
-    if (finished) return;
     const trimmed = text.trim();
-    if (trimmed.length === 0 && exercise.expected.kind !== "repeat") return;
+    if (trimmed.length === 0) return;
     const res = checkCommand(trimmed, exercise.expected, exercise.context);
     if (!res.ok) {
       setWrongCount((c) => c + 1);

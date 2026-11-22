@@ -45,7 +45,7 @@ export type GdbUnit = {
 
 function actionOf(cmd: string): GdbAction {
   const res = parseCommand(cmd);
-  if (!res.ok) throw new Error(`invalid lesson command "${cmd}": ${res.error}`);
+  if (!res.ok) throw new Error("invalid lesson command: " + cmd + " (" + res.error + ")");
   return res.action;
 }
 
@@ -113,7 +113,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u1-preparar",
         title: "Compilar com -g -O0 e abrir no gdb",
         explanation:
-          "Compile com `g++ -g -O0 sol.cpp -o sol`: `-g` grava linhas e variáveis no binário, e `-O0` impede otimizações que escondem variáveis ou embaralham linhas. Depois abra o executável no depurador com `gdb ./sol`.",
+          "Compile com g++ -g -O0 sol.cpp -o sol: -g grava linhas e variáveis no binário, e -O0 impede otimizações que escondem variáveis ou embaralham linhas. Depois abra o executável no depurador com gdb ./sol.",
         helpKeys: ["gdb"],
         commands: ["g++ -g -O0 sol.cpp -o sol", "gdb ./sol", "run < in.txt"],
         example: {
@@ -127,19 +127,19 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "sum-loop",
             emptyStop(["$ g++ -g -O0 sol.cpp -o sol"]),
-            "Abra o executável `./sol` no gdb.",
+            "Abra o executável ./sol no gdb.",
             "gdb ./sol",
           ),
           ex(
             "stdin-sum",
             emptyStop(["Reading symbols from ./stdin_sum..."]),
-            "Execute o programa lendo a entrada do arquivo `in.txt`.",
+            "Execute o programa lendo a entrada do arquivo in.txt.",
             "run < in.txt",
           ),
           ex(
             "prefix-sum",
             emptyStop(["$ g++ -g -O0 prefix.cpp -o prefix"]),
-            "Abra o executável `./prefix` no gdb.",
+            "Abra o executável ./prefix no gdb.",
             "gdb ./prefix",
           ),
         ],
@@ -150,7 +150,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u1-preparar",
         title: "Iniciar com run e start",
         explanation:
-          "`run` (ou `r`) executa o programa do início até um breakpoint, erro ou término, e aceita redirecionamento `< in.txt`. `start` cria uma parada temporária em `main` e já começa a execução.",
+          "run (ou r) executa o programa do início até um breakpoint, erro ou término, e aceita redirecionamento < in.txt. start cria uma parada temporária em main e já começa a execução.",
         helpKeys: ["run", "start"],
         commands: ["run", "run < in.txt", "start"],
         example: {
@@ -165,7 +165,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "prefix-sum",
             emptyStop(["Reading symbols from ./prefix..."]),
-            "Inicie o programa parando automaticamente na entrada de `main`.",
+            "Inicie o programa parando automaticamente na entrada de main.",
             "start",
           ),
           ex(
@@ -183,7 +183,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
               ...emptyStop(["Breakpoint 1 at ADDR: file stdin_sum.cpp, line 8."]),
               breakpoints: [{ id: 1, line: 8, enabled: true }],
             },
-            "Execute o programa redirecionando a entrada de `in.txt`.",
+            "Execute o programa redirecionando a entrada de in.txt.",
             "run < in.txt",
           ),
         ],
@@ -194,7 +194,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u1-preparar",
         title: "Encerrar com kill e quit",
         explanation:
-          "`kill` (ou `k`) encerra o processo em depuração mantendo o gdb e seus breakpoints abertos. `quit` (ou `q`) fecha o gdb por completo.",
+          "kill (ou k) encerra o processo em depuração mantendo o gdb e seus breakpoints abertos. quit (ou q) fecha o gdb por completo.",
         helpKeys: ["kill", "quit"],
         commands: ["kill", "quit"],
         example: {
@@ -212,12 +212,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
             "Encerre o processo atual sem sair do gdb.",
             "kill",
           ),
-          ex(
-            "sum-loop",
-            emptyStop(["[Inferior 1 (process N) killed]"]),
-            "Saia do gdb.",
-            "quit",
-          ),
+          ex("sum-loop", emptyStop(["[Inferior 1 (process N) killed]"]), "Saia do gdb.", "quit"),
           ex(
             "prefix-sum",
             stopAt("prefix-sum", 11, ["Breakpoint 1, main () at prefix.cpp:11"]),
@@ -241,7 +236,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u2-breakpoints",
         title: "Parar com break",
         explanation:
-          "`break` (ou `b`) cria um ponto de parada permanente em uma linha (`b 7`), em uma função (`b range_sum`) ou em `arquivo:linha` (`b sol.cpp:7`). Quando o programa chega ali, o gdb pausa antes de executar aquela linha.",
+          "break (ou b) cria um ponto de parada permanente em uma linha (b 7), em uma função (b range_sum) ou em arquivo:linha (b sol.cpp:7). Quando o programa chega ali, o gdb pausa antes de executar aquela linha.",
         helpKeys: ["break"],
         commands: ["break <linha>", "break <função>", "break <arquivo:linha>"],
         example: {
@@ -262,13 +257,13 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "prefix-sum",
             emptyStop(["Reading symbols from ./prefix..."]),
-            "Crie um breakpoint na função `range_sum`.",
+            "Crie um breakpoint na função range_sum.",
             "break range_sum",
           ),
           ex(
             "binary-search",
             emptyStop(["Reading symbols from ./bsearch..."]),
-            "Crie um breakpoint na linha 6 de `bsearch.cpp`.",
+            "Crie um breakpoint na linha 6 de bsearch.cpp.",
             "break bsearch.cpp:6",
           ),
         ],
@@ -279,7 +274,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u2-breakpoints",
         title: "Parada única com tbreak",
         explanation:
-          "`tbreak` (ou `tb`) cria um ponto de parada temporário que se apaga sozinho assim que é atingido. É ideal para pular até uma linha uma única vez sem precisar limpar breakpoints depois.",
+          "tbreak (ou tb) cria um ponto de parada temporário que se apaga sozinho assim que é atingido. É ideal para pular até uma linha uma única vez sem precisar limpar breakpoints depois.",
         helpKeys: ["tbreak"],
         commands: ["tbreak <linha>", "tbreak <função>"],
         example: {
@@ -300,7 +295,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "gcd-rec",
             emptyStop(["Reading symbols from ./gcd..."]),
-            "Crie um breakpoint temporário na função `lcm`.",
+            "Crie um breakpoint temporário na função lcm.",
             "tbreak lcm",
           ),
           ex(
@@ -317,7 +312,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u2-breakpoints",
         title: "Listar paradas com info breakpoints",
         explanation:
-          "`info breakpoints` (ou `i b`) lista todos os breakpoints e watchpoints com seus números, estado (`y`/`n`), condições e quantidade de acertos. Você precisa desses números para editar ou apagar pontos específicos.",
+          "info breakpoints (ou i b) lista todos os breakpoints e watchpoints com seus números, estado (y/n), condições e quantidade de acertos. Você precisa desses números para editar ou apagar pontos específicos.",
         helpKeys: ["info breakpoints"],
         commands: ["info breakpoints", "i b"],
         example: {
@@ -344,7 +339,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "two-pointers",
             stopAt("two-pointers", 7, ["Breakpoint 1, main () at twoptr.cpp:7"]),
-            "Exiba a tabela de breakpoints usando o comando completo ou `i b`.",
+            "Exiba a tabela de breakpoints usando o comando completo ou i b.",
             "info breakpoints",
           ),
         ],
@@ -355,7 +350,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u2-breakpoints",
         title: "Gerir com delete, disable e enable",
         explanation:
-          "`delete N` (ou `d N`) remove o breakpoint N para sempre; sem número, apaga todos. `disable N` pausa o breakpoint N sem perdê-lo, e `enable N` volta a ativá-lo.",
+          "delete N (ou d N) remove o breakpoint N para sempre; sem número, apaga todos. disable N pausa o breakpoint N sem perdê-lo, e enable N volta a ativá-lo.",
         helpKeys: ["delete", "disable", "enable"],
         commands: ["delete <N>", "disable <N>", "enable <N>"],
         example: {
@@ -419,7 +414,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u3-andar",
         title: "Avançar com next e entrar com step",
         explanation:
-          "`next` (ou `n`) executa a linha inteira de uma vez, pulando por cima de chamadas de função. `step` (ou `s`) entra na função chamada para inspecioná-la linha a linha.",
+          "next (ou n) executa a linha inteira de uma vez, pulando por cima de chamadas de função. step (ou s) entra na função chamada para inspecioná-la linha a linha.",
         helpKeys: ["next", "step"],
         commands: ["next", "step"],
         example: {
@@ -434,19 +429,19 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "prefix-sum",
             stopAt("prefix-sum", 13, ["Breakpoint 1, main () at prefix.cpp:13"]),
-            "Execute a linha 13 pulando a chamada de `range_sum`.",
+            "Execute a linha 13 pulando a chamada de range_sum.",
             "next",
           ),
           ex(
             "prefix-sum",
             stopAt("prefix-sum", 13, ["Breakpoint 1, main () at prefix.cpp:13"]),
-            "Entre na chamada da função `range_sum`.",
+            "Entre na chamada da função range_sum.",
             "step",
           ),
           ex(
             "struct-point",
             stopAt("struct-point", 17, ["Breakpoint 1, main () at point.cpp:17"]),
-            "Avance para a linha 18 sem entrar em `dist2`.",
+            "Avance para a linha 18 sem entrar em dist2.",
             "next",
           ),
         ],
@@ -457,7 +452,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u3-andar",
         title: "Seguir com continue e sair com finish",
         explanation:
-          "`continue` (ou `c`) retoma a execução normal até o próximo breakpoint ou fim do programa. `finish` (ou `fin`) roda o resto da função atual e para logo ao voltar ao chamador, imprimindo o valor retornado.",
+          "continue (ou c) retoma a execução normal até o próximo breakpoint ou fim do programa. finish (ou fin) roda o resto da função atual e para logo ao voltar ao chamador, imprimindo o valor retornado.",
         helpKeys: ["continue", "finish"],
         commands: ["continue", "finish"],
         example: {
@@ -477,7 +472,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
                 { index: 1, func: "main", file: "bsearch.cpp", line: 16, isUser: true },
               ],
             }),
-            "Execute até a função `lower_idx` retornar para `main`.",
+            "Execute até a função lower_idx retornar para main.",
             "finish",
           ),
           ex(
@@ -494,7 +489,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
                 { index: 1, func: "lcm", file: "gcd.cpp", line: 7, isUser: true },
               ],
             }),
-            "Rode até a chamada atual de `gcd` retornar.",
+            "Rode até a chamada atual de gcd retornar.",
             "finish",
           ),
         ],
@@ -505,7 +500,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u3-andar",
         title: "Saltar com until e advance",
         explanation:
-          "`until` (ou `u`) sai do laço atual ou avança até uma linha adiante no mesmo frame. `advance <alvo>` corre até qualquer linha ou função sem criar breakpoint permanente, parando também se sair do frame atual.",
+          "until (ou u) sai do laço atual ou avança até uma linha adiante no mesmo frame. advance <alvo> corre até qualquer linha ou função sem criar breakpoint permanente, parando também se sair do frame atual.",
         helpKeys: ["until", "advance"],
         commands: ["until [linha]", "advance <alvo>"],
         example: {
@@ -520,19 +515,19 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "sum-loop",
             stopAt("sum-loop", 7, ["Breakpoint 1, main () at sol.cpp:7"]),
-            "Saia do laço indo até a linha 9 com `until`.",
+            "Saia do laço indo até a linha 9 com until.",
             "until 9",
           ),
           ex(
             "sum-loop",
             stopAt("sum-loop", 5, ["Breakpoint 1, main () at sol.cpp:5"]),
-            "Avance até a linha 9 usando `advance`.",
+            "Avance até a linha 9 usando advance.",
             "advance 9",
           ),
           ex(
             "two-pointers",
             stopAt("two-pointers", 7, ["Breakpoint 1, main () at twoptr.cpp:7"]),
-            "Salte o laço até a linha 14 com `until`.",
+            "Salte o laço até a linha 14 com until.",
             "until 14",
           ),
         ],
@@ -543,7 +538,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u3-andar",
         title: "Contagens e repetir com Enter",
         explanation:
-          "Comandos de passo aceitam contagem: `next 3` avança 3 linhas e `continue 4` pula 3 paradas e só para na 4ª. No gdb interativo, apertar Enter numa linha vazia repete o último comando.",
+          "Comandos de passo aceitam contagem: next 3 avança 3 linhas e continue 4 pula 3 paradas e só para na 4ª. No gdb interativo, apertar Enter numa linha vazia repete o último comando.",
         helpKeys: [],
         commands: ["next <N>", "step <N>", "continue <N>", "Enter (repetir)"],
         example: {
@@ -558,7 +553,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "sum-loop",
             stopAt("sum-loop", 5, ["Breakpoint 1, main () at sol.cpp:5"]),
-            "Avance 3 linhas de uma vez usando contagem no `next`.",
+            "Avance 3 linhas de uma vez usando contagem no next.",
             "next 3",
           ),
           ex(
@@ -570,7 +565,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "sum-loop",
             stopAt("sum-loop", 5, ["Breakpoint 1, main () at sol.cpp:5"]),
-            "Avance 2 passos entrando em chamadas com `step`.",
+            "Avance 2 passos entrando em chamadas com step.",
             "step 2",
           ),
         ],
@@ -590,7 +585,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u4-olhar",
         title: "Inspecionar valores com print",
         explanation:
-          "`print` (ou `p`) avalia qualquer expressão C++ no frame atual e mostra o resultado (`p sum`, `p a[i]`, `p a.x - b.x`). Cada valor fica salvo no histórico `$1`, `$2`, ...",
+          "print (ou p) avalia qualquer expressão C++ no frame atual e mostra o resultado (p sum, p a[i], p a.x - b.x). Cada valor fica salvo no histórico $1, $2, ...",
         helpKeys: ["print"],
         commands: ["print <expr>", "p <expr>"],
         example: {
@@ -607,19 +602,19 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "sum-loop",
             stopAt("sum-loop", 7, ["Breakpoint 1, main () at sol.cpp:7"]),
-            "Imprima o valor atual de `sum`.",
+            "Imprima o valor atual de sum.",
             "print sum",
           ),
           ex(
             "sum-loop",
             stopAt("sum-loop", 7, ["Breakpoint 1, main () at sol.cpp:7"]),
-            "Imprima o elemento `a[i]`.",
+            "Imprima o elemento a[i].",
             "print a[i]",
           ),
           ex(
             "struct-point",
             stopAt("struct-point", 8, ["Breakpoint 1, dist2 (...) at point.cpp:8"]),
-            "Imprima o campo `a.x`.",
+            "Imprima o campo a.x.",
             "print a.x",
           ),
         ],
@@ -630,7 +625,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u4-olhar",
         title: "Acompanhar com display e undisplay",
         explanation:
-          "`display <expr>` imprime a expressão automaticamente toda vez que o programa para, poupando `print` repetido em laços. `undisplay N` remove o item N da lista automática.",
+          "display <expr> imprime a expressão automaticamente toda vez que o programa para, poupando print repetido em laços. undisplay N remove o item N da lista automática.",
         helpKeys: ["display", "undisplay"],
         commands: ["display <expr>", "undisplay <N>"],
         example: {
@@ -646,7 +641,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "sum-loop",
             stopAt("sum-loop", 7, ["Breakpoint 1, main () at sol.cpp:7"]),
-            "Mostre `sum` automaticamente a cada parada.",
+            "Mostre sum automaticamente a cada parada.",
             "display sum",
           ),
           ex(
@@ -660,7 +655,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "two-pointers",
             stopAt("two-pointers", 7, ["Breakpoint 1, main () at twoptr.cpp:7"]),
-            "Acompanhe `cur` automaticamente a cada parada.",
+            "Acompanhe cur automaticamente a cada parada.",
             "display cur",
           ),
         ],
@@ -671,7 +666,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u4-olhar",
         title: "Ver variáveis com info locals e info args",
         explanation:
-          "`info locals` lista todas as variáveis locais do frame atual de uma vez. `info args` mostra todos os parâmetros recebidos pela função selecionada.",
+          "info locals lista todas as variáveis locais do frame atual de uma vez. info args mostra todos os parâmetros recebidos pela função selecionada.",
         helpKeys: ["info locals", "info args"],
         commands: ["info locals", "info args"],
         example: {
@@ -686,19 +681,19 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "binary-search",
             stopAt("binary-search", 6, ["Breakpoint 1, lower_idx (...) at bsearch.cpp:6"]),
-            "Liste todas as variáveis locais de `lower_idx`.",
+            "Liste todas as variáveis locais de lower_idx.",
             "info locals",
           ),
           ex(
             "binary-search",
             stopAt("binary-search", 6, ["Breakpoint 1, lower_idx (...) at bsearch.cpp:6"]),
-            "Liste os parâmetros recebidos por `lower_idx`.",
+            "Liste os parâmetros recebidos por lower_idx.",
             "info args",
           ),
           ex(
             "gcd-rec",
             stopAt("gcd-rec", 3, ["Breakpoint 1, gcd (a=48, b=18) at gcd.cpp:3"]),
-            "Mostre os argumentos desta chamada de `gcd`.",
+            "Mostre os argumentos desta chamada de gcd.",
             "info args",
           ),
         ],
@@ -709,7 +704,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u4-olhar",
         title: "Ler o código com list",
         explanation:
-          "`list` (ou `l`) exibe 10 linhas do código-fonte ao redor da linha atual, de um número (`l 12`) ou de uma função (`l lower_idx`). Ajuda a conferir números de linha sem sair do terminal do gdb.",
+          "list (ou l) exibe 10 linhas do código-fonte ao redor da linha atual, de um número (l 12) ou de uma função (l lower_idx). Ajuda a conferir números de linha sem sair do terminal do gdb.",
         helpKeys: ["list"],
         commands: ["list", "list <linha>", "list <função>"],
         example: {
@@ -729,7 +724,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "binary-search",
             stopAt("binary-search", 6, ["Breakpoint 1, lower_idx (...) at bsearch.cpp:6"]),
-            "Mostre o código da função `lower_idx`.",
+            "Mostre o código da função lower_idx.",
             "list lower_idx",
           ),
           ex(
@@ -755,15 +750,13 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u5-pilha",
         title: "Ler a pilha com backtrace",
         explanation:
-          "`backtrace` (ou `bt`, `where`) mostra a pilha completa de chamadas do frame `#0` (onde o programa parou) até `main`. Em recursões como DFS, cada linha revela os argumentos de cada nível.",
+          "backtrace (ou bt, where) mostra a pilha completa de chamadas do frame #0 (onde o programa parou) até main. Em recursões como DFS, cada linha revela os argumentos de cada nível.",
         helpKeys: ["backtrace"],
         commands: ["backtrace", "bt", "where"],
         example: {
           programId: "dfs-tree",
           setup: ["break 6 if u == 4", "run"],
-          steps: [
-            { cmd: "bt", note: "lista a cadeia dfs(4) <- dfs(2) <- dfs(1) <- main" },
-          ],
+          steps: [{ cmd: "bt", note: "lista a cadeia dfs(4) <- dfs(2) <- dfs(1) <- main" }],
         },
         exercises: [
           ex(
@@ -775,7 +768,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "gcd-rec",
             stopAt("gcd-rec", 3, ["Breakpoint 1, gcd (a=6, b=0) at gcd.cpp:3"]),
-            "Mostre a pilha de chamadas recursivas de `gcd`.",
+            "Mostre a pilha de chamadas recursivas de gcd.",
             "backtrace",
           ),
           ex(
@@ -792,7 +785,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u5-pilha",
         title: "Navegar com frame, up e down",
         explanation:
-          "`frame N` (ou `f N`) pula direto para o frame `#N` da pilha para inspecionar suas variáveis locais. `up [N]` sobe N frames rumo ao chamador e `down [N]` desce rumo ao frame `#0`.",
+          "frame N (ou f N) pula direto para o frame #N da pilha para inspecionar suas variáveis locais. up [N] sobe N frames rumo ao chamador e down [N] desce rumo ao frame #0.",
         helpKeys: ["frame", "up", "down"],
         commands: ["frame <N>", "up [N]", "down [N]"],
         example: {
@@ -817,7 +810,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
               ],
               currentFrame: 0,
             }),
-            "Vá para o frame `#2` da pilha.",
+            "Vá para o frame #2 da pilha.",
             "frame 2",
           ),
           ex(
@@ -831,7 +824,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
               ],
               currentFrame: 1,
             }),
-            "Você está no frame `#1`. Suba 2 frames até `#3` (`main`).",
+            "Você está no frame #1. Suba 2 frames até #3 (main).",
             "up 2",
           ),
           ex(
@@ -845,7 +838,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
               ],
               currentFrame: 3,
             }),
-            "Você está no frame `#3`. Desça 1 frame para `#2`.",
+            "Você está no frame #3. Desça 1 frame para #2.",
             "down",
           ),
         ],
@@ -865,7 +858,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u6-condicoes",
         title: "Parada condicional com break … if",
         explanation:
-          "`break <alvo> if <condição>` só pausa quando a expressão C++ for verdadeira, evitando dezenas de `continue` manuais dentro de um laço. Cuidado para usar `==` (comparação) e nunca `=` (atribuição).",
+          "break <alvo> if <condição> só pausa quando a expressão C++ for verdadeira, evitando dezenas de continue manuais dentro de um laço. Cuidado para usar == (comparação) e nunca = (atribuição).",
         helpKeys: ["break if"],
         commands: ["break <alvo> if <cond>"],
         example: {
@@ -880,19 +873,19 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "sum-loop",
             emptyStop(["Reading symbols from ./sol..."]),
-            "Pare na linha 7 só quando `i == 4`.",
+            "Pare na linha 7 só quando i == 4.",
             "break 7 if i == 4",
           ),
           ex(
             "dfs-tree",
             emptyStop(["Reading symbols from ./dfs..."]),
-            "Pare na função `dfs` só quando `u == 5`.",
+            "Pare na função dfs só quando u == 5.",
             "break dfs if u == 5",
           ),
           ex(
             "two-pointers",
             emptyStop(["Reading symbols from ./twoptr..."]),
-            "Pare na linha 7 só quando `cur > 5`.",
+            "Pare na linha 7 só quando cur > 5.",
             "break 7 if cur > 5",
           ),
         ],
@@ -903,7 +896,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u6-condicoes",
         title: "Trocar condição com condition",
         explanation:
-          "`condition <N> <cond>` adiciona ou substitui a condição de um breakpoint que já existe, sem precisar apagá-lo e recriá-lo. O número N vem de `info breakpoints`.",
+          "condition <N> <cond> adiciona ou substitui a condição de um breakpoint que já existe, sem precisar apagá-lo e recriá-lo. O número N vem de info breakpoints.",
         helpKeys: ["condition"],
         commands: ["condition <N> <cond>"],
         example: {
@@ -918,7 +911,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "sum-loop",
             stopAt("sum-loop", 7, ["Breakpoint 1 at ADDR: file sol.cpp, line 7."]),
-            "Configure o breakpoint 1 para parar só quando `i == 3`.",
+            "Configure o breakpoint 1 para parar só quando i == 3.",
             "condition 1 i == 3",
           ),
           ex(
@@ -929,13 +922,13 @@ export const GDB_UNITS: readonly GdbUnit[] = [
                 { id: 2, line: 11, enabled: true },
               ],
             }),
-            "Configure o breakpoint 2 para parar só quando `i == 4`.",
+            "Configure o breakpoint 2 para parar só quando i == 4.",
             "condition 2 i == 4",
           ),
           ex(
             "two-pointers",
             stopAt("two-pointers", 7, ["Breakpoint 1 at ADDR: file twoptr.cpp, line 7."]),
-            "Faça o breakpoint 1 disparar apenas quando `cur > 6`.",
+            "Faça o breakpoint 1 disparar apenas quando cur > 6.",
             "condition 1 cur > 6",
           ),
         ],
@@ -946,7 +939,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u6-condicoes",
         title: "Pular passagens com ignore",
         explanation:
-          "`ignore <N> <cont>` faz o breakpoint N não parar nas próximas `cont` passagens. É mais rápido do que uma condição quando você só quer pular as primeiras iterações.",
+          "ignore <N> <cont> faz o breakpoint N não parar nas próximas cont passagens. É mais rápido do que uma condição quando você só quer pular as primeiras iterações.",
         helpKeys: ["ignore"],
         commands: ["ignore <N> <cont>"],
         example: {
@@ -979,7 +972,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "sum-loop",
             stopAt("sum-loop", 7, ["Breakpoint 1 at ADDR: file sol.cpp, line 7."]),
-            "Zere a contagem de `ignore` do breakpoint 1 (`ignore 1 0`).",
+            "Zere a contagem de ignore do breakpoint 1 (ignore 1 0).",
             "ignore 1 0",
           ),
         ],
@@ -999,7 +992,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u7-vigias",
         title: "Vigiar escritas com watch",
         explanation:
-          "`watch <expr>` para o programa no instante em que o valor da expressão muda, mostrando o valor antigo e o novo. É a ferramenta certa quando uma variável muda de valor e você não sabe qual linha a alterou.",
+          "watch <expr> para o programa no instante em que o valor da expressão muda, mostrando o valor antigo e o novo. É a ferramenta certa quando uma variável muda de valor e você não sabe qual linha a alterou.",
         helpKeys: ["watch"],
         commands: ["watch <expr>"],
         example: {
@@ -1014,19 +1007,19 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "two-pointers",
             stopAt("two-pointers", 6, ["Breakpoint 1, main () at twoptr.cpp:6"]),
-            "Crie uma vigia que pare quando `best` mudar.",
+            "Crie uma vigia que pare quando best mudar.",
             "watch best",
           ),
           ex(
             "sum-loop",
             stopAt("sum-loop", 6, ["Breakpoint 1, main () at sol.cpp:6"]),
-            "Crie uma vigia de escrita sobre `sum`.",
+            "Crie uma vigia de escrita sobre sum.",
             "watch sum",
           ),
           ex(
             "binary-search",
             stopAt("binary-search", 4, ["Breakpoint 1, lower_idx (...) at bsearch.cpp:4"]),
-            "Pare sempre que `lo` mudar de valor.",
+            "Pare sempre que lo mudar de valor.",
             "watch lo",
           ),
         ],
@@ -1037,7 +1030,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u7-vigias",
         title: "Vigiar leituras e acessos com rwatch e awatch",
         explanation:
-          "`rwatch <expr>` para quando a expressão é lida, e `awatch <expr>` para tanto em leituras quanto em escritas. Úteis para achar onde um valor é consultado ou corrompido.",
+          "rwatch <expr> para quando a expressão é lida, e awatch <expr> para tanto em leituras quanto em escritas. Úteis para achar onde um valor é consultado ou corrompido.",
         helpKeys: ["rwatch", "awatch"],
         commands: ["rwatch <expr>", "awatch <expr>"],
         example: {
@@ -1053,19 +1046,19 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "two-pointers",
             stopAt("two-pointers", 6, ["Breakpoint 1, main () at twoptr.cpp:6"]),
-            "Crie uma vigia de leitura sobre `limit`.",
+            "Crie uma vigia de leitura sobre limit.",
             "rwatch limit",
           ),
           ex(
             "two-pointers",
             stopAt("two-pointers", 6, ["Breakpoint 1, main () at twoptr.cpp:6"]),
-            "Crie uma vigia de acesso (leitura ou escrita) sobre `cur`.",
+            "Crie uma vigia de acesso (leitura ou escrita) sobre cur.",
             "awatch cur",
           ),
           ex(
             "binary-search",
             stopAt("binary-search", 4, ["Breakpoint 1, lower_idx (...) at bsearch.cpp:4"]),
-            "Crie uma vigia de leitura sobre `target`.",
+            "Crie uma vigia de leitura sobre target.",
             "rwatch target",
           ),
         ],
@@ -1076,7 +1069,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u7-vigias",
         title: "Vigiar endereço com watch -l",
         explanation:
-          "`watch -l <expr>` (ou `watch -location`) avalia o endereço da expressão agora e vigia aquela posição fixa de memória. Assim a vigia continua valendo mesmo se o ponteiro `cur` andar para outro nó ou sair de escopo.",
+          "watch -l <expr> (ou watch -location) avalia o endereço da expressão agora e vigia aquela posição fixa de memória. Assim a vigia continua valendo mesmo se o ponteiro cur andar para outro nó ou sair de escopo.",
         helpKeys: ["watch -l"],
         commands: ["watch -l <expr>", "watch -location <expr>"],
         example: {
@@ -1091,19 +1084,19 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "linked-list",
             stopAt("linked-list", 16, ["Breakpoint 1, main () at list.cpp:16"]),
-            "Vigie o endereço de memória de `cur->val` com `-l`.",
+            "Vigie o endereço de memória de cur->val com -l.",
             "watch -l cur->val",
           ),
           ex(
             "linked-list",
             stopAt("linked-list", 7, ["Breakpoint 1, bump (p=ADDR) at list.cpp:7"]),
-            "Vigie diretamente o endereço de `p->val`.",
+            "Vigie diretamente o endereço de p->val.",
             "watch -l p->val",
           ),
           ex(
             "linked-list",
             stopAt("linked-list", 16, ["Breakpoint 1, main () at list.cpp:16"]),
-            "Vigie o endereço de `n2.val` usando `watch -l`.",
+            "Vigie o endereço de n2.val usando watch -l.",
             "watch -l n2.val",
           ),
         ],
@@ -1123,7 +1116,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u8-mudar",
         title: "Alterar variáveis com set var e print",
         explanation:
-          "`set var x = 10` (ou `print x = 10`) altera o valor de uma variável no meio da execução sem recompilar. Usar `set var` em vez de `set` puro evita conflito com opções internas do gdb.",
+          "set var x = 10 (ou print x = 10) altera o valor de uma variável no meio da execução sem recompilar. Usar set var em vez de set puro evita conflito com opções internas do gdb.",
         helpKeys: ["set var"],
         commands: ["set var <v> = <expr>", "print <v> = <expr>"],
         example: {
@@ -1138,19 +1131,19 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "sum-loop",
             stopAt("sum-loop", 7, ["Breakpoint 1, main () at sol.cpp:7"]),
-            "Altere a variável `sum` para `100`.",
+            "Altere a variável sum para 100.",
             "set var sum = 100",
           ),
           ex(
             "binary-search",
             stopAt("binary-search", 6, ["Breakpoint 1, lower_idx (...) at bsearch.cpp:6"]),
-            "Troque o valor de `lo` para `2`.",
+            "Troque o valor de lo para 2.",
             "set var lo = 2",
           ),
           ex(
             "two-pointers",
             stopAt("two-pointers", 7, ["Breakpoint 1, main () at twoptr.cpp:7"]),
-            "Defina `limit` como `10`.",
+            "Defina limit como 10.",
             "set var limit = 10",
           ),
         ],
@@ -1161,7 +1154,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u8-mudar",
         title: "Chamar funções com call",
         explanation:
-          "`call <função(args)>` executa uma função do próprio programa durante a parada e exibe o retorno (quando não é `void`). Útil para testar hipóteses ou rodar funções auxiliares de depuração.",
+          "call <função(args)> executa uma função do próprio programa durante a parada e exibe o retorno (quando não é void). Útil para testar hipóteses ou rodar funções auxiliares de depuração.",
         helpKeys: ["call"],
         commands: ["call <fn(...)>"],
         example: {
@@ -1176,19 +1169,19 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "gcd-rec",
             stopAt("gcd-rec", 12, ["Breakpoint 1, main () at gcd.cpp:12"]),
-            "Chame `gcd(48, 18)` pelo gdb.",
+            "Chame gcd(48, 18) pelo gdb.",
             "call gcd(48, 18)",
           ),
           ex(
             "struct-point",
             stopAt("struct-point", 17, ["Breakpoint 1, main () at point.cpp:17"]),
-            "Chame `dist2(a, b)` diretamente.",
+            "Chame dist2(a, b) diretamente.",
             "call dist2(a, b)",
           ),
           ex(
             "gcd-rec",
             stopAt("gcd-rec", 12, ["Breakpoint 1, main () at gcd.cpp:12"]),
-            "Chame `lcm(12, 8)` durante a parada.",
+            "Chame lcm(12, 8) durante a parada.",
             "call lcm(12, 8)",
           ),
         ],
@@ -1208,7 +1201,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u9-crash",
         title: "Investigar SIGSEGV, SIGFPE e SIGABRT",
         explanation:
-          "Quando o programa recebe `SIGSEGV` (acesso inválido), `SIGFPE` (divisão por zero) ou `SIGABRT` (`assert`), o gdb para automaticamente no ponto da falha. O primeiro passo é rodar `bt` para ver a linha e a pilha de chamadas.",
+          "Quando o programa recebe SIGSEGV (acesso inválido), SIGFPE (divisão por zero) ou SIGABRT (assert), o gdb para automaticamente no ponto da falha. O primeiro passo é rodar bt para ver a linha e a pilha de chamadas.",
         helpKeys: [],
         commands: ["run", "bt", "info args"],
         example: {
@@ -1222,57 +1215,42 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         exercises: [
           ex(
             "segfault-ptr",
-            stopAt(
-              "segfault-ptr",
-              9,
-              ["Program received signal SIGSEGV, Segmentation fault."],
-              {
-                breakpoints: [],
-                signal: "SIGSEGV",
-                frames: [
-                  { index: 0, func: "sum_nodes", file: "segv.cpp", line: 9, isUser: true },
-                  { index: 1, func: "solve", file: "segv.cpp", line: 16, isUser: true },
-                  { index: 2, func: "main", file: "segv.cpp", line: 19, isUser: true },
-                ],
-              },
-            ),
-            "O programa parou em `SIGSEGV`. Veja a pilha de chamadas.",
+            stopAt("segfault-ptr", 9, ["Program received signal SIGSEGV, Segmentation fault."], {
+              breakpoints: [],
+              signal: "SIGSEGV",
+              frames: [
+                { index: 0, func: "sum_nodes", file: "segv.cpp", line: 9, isUser: true },
+                { index: 1, func: "solve", file: "segv.cpp", line: 16, isUser: true },
+                { index: 2, func: "main", file: "segv.cpp", line: 19, isUser: true },
+              ],
+            }),
+            "O programa parou em SIGSEGV. Veja a pilha de chamadas.",
             "bt",
           ),
           ex(
             "divzero-fpe",
-            stopAt(
-              "divzero-fpe",
-              3,
-              ["Program received signal SIGFPE, Arithmetic exception."],
-              {
-                breakpoints: [],
-                signal: "SIGFPE",
-                frames: [
-                  { index: 0, func: "ratio", file: "sigfpe.cpp", line: 3, isUser: true },
-                  { index: 1, func: "compute", file: "sigfpe.cpp", line: 7, isUser: true },
-                ],
-              },
-            ),
-            "O programa parou em `SIGFPE`. Veja os argumentos de `ratio`.",
+            stopAt("divzero-fpe", 3, ["Program received signal SIGFPE, Arithmetic exception."], {
+              breakpoints: [],
+              signal: "SIGFPE",
+              frames: [
+                { index: 0, func: "ratio", file: "sigfpe.cpp", line: 3, isUser: true },
+                { index: 1, func: "compute", file: "sigfpe.cpp", line: 7, isUser: true },
+              ],
+            }),
+            "O programa parou em SIGFPE. Veja os argumentos de ratio.",
             "info args",
           ),
           ex(
             "divzero-fpe",
-            stopAt(
-              "divzero-fpe",
-              3,
-              ["Program received signal SIGFPE, Arithmetic exception."],
-              {
-                breakpoints: [],
-                signal: "SIGFPE",
-                frames: [
-                  { index: 0, func: "ratio", file: "sigfpe.cpp", line: 3, isUser: true },
-                  { index: 1, func: "compute", file: "sigfpe.cpp", line: 7, isUser: true },
-                ],
-              },
-            ),
-            "Veja a pilha de chamadas para achar quem passou `den = 0`.",
+            stopAt("divzero-fpe", 3, ["Program received signal SIGFPE, Arithmetic exception."], {
+              breakpoints: [],
+              signal: "SIGFPE",
+              frames: [
+                { index: 0, func: "ratio", file: "sigfpe.cpp", line: 3, isUser: true },
+                { index: 1, func: "compute", file: "sigfpe.cpp", line: 7, isUser: true },
+              ],
+            }),
+            "Veja a pilha de chamadas para achar quem passou den = 0.",
             "bt",
           ),
         ],
@@ -1283,7 +1261,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u9-crash",
         title: "Subir da biblioteca até o seu código",
         explanation:
-          "Em `SIGABRT` ou falhas dentro da biblioteca padrão, os primeiros frames (`#0`, `#1`, …) pertencem à `libc` ou `libstdc++`. Use `bt` para achar o primeiro frame do seu arquivo e pule para lá com `frame N` ou `up`.",
+          "Em SIGABRT ou falhas dentro da biblioteca padrão, os primeiros frames (#0, #1, …) pertencem à libc ou libstdc++. Use bt para achar o primeiro frame do seu arquivo e pule para lá com frame N ou up.",
         helpKeys: [],
         commands: ["bt", "frame <N>", "up <N>"],
         example: {
@@ -1302,10 +1280,22 @@ export const GDB_UNITS: readonly GdbUnit[] = [
               breakpoints: [],
               signal: "SIGABRT",
               frames: [
-                { index: 0, func: "__pthread_kill_implementation", file: "libc.so.6", line: null, isUser: false },
+                {
+                  index: 0,
+                  func: "__pthread_kill_implementation",
+                  file: "libc.so.6",
+                  line: null,
+                  isUser: false,
+                },
                 { index: 1, func: "raise", file: "libc.so.6", line: null, isUser: false },
                 { index: 2, func: "abort", file: "libc.so.6", line: null, isUser: false },
-                { index: 3, func: "__libc_message_impl.cold", file: "libc.so.6", line: null, isUser: false },
+                {
+                  index: 3,
+                  func: "__libc_message_impl.cold",
+                  file: "libc.so.6",
+                  line: null,
+                  isUser: false,
+                },
                 { index: 4, func: "__assert_fail", file: "libc.so.6", line: null, isUser: false },
                 { index: 5, func: "check_idx", file: "abort.cpp", line: 4, isUser: true },
                 { index: 6, func: "process", file: "abort.cpp", line: 8, isUser: true },
@@ -1313,7 +1303,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
               ],
               currentFrame: 0,
             }),
-            "Você está em `#0` (libc). Vá para o frame `#5` (`check_idx`), no seu código.",
+            "Você está em #0 (libc). Vá para o frame #5 (check_idx), no seu código.",
             "frame 5",
           ),
           ex(
@@ -1322,10 +1312,22 @@ export const GDB_UNITS: readonly GdbUnit[] = [
               breakpoints: [],
               signal: "SIGABRT",
               frames: [
-                { index: 0, func: "__pthread_kill_implementation", file: "libc.so.6", line: null, isUser: false },
+                {
+                  index: 0,
+                  func: "__pthread_kill_implementation",
+                  file: "libc.so.6",
+                  line: null,
+                  isUser: false,
+                },
                 { index: 1, func: "raise", file: "libc.so.6", line: null, isUser: false },
                 { index: 2, func: "abort", file: "libc.so.6", line: null, isUser: false },
-                { index: 3, func: "__libc_message_impl.cold", file: "libc.so.6", line: null, isUser: false },
+                {
+                  index: 3,
+                  func: "__libc_message_impl.cold",
+                  file: "libc.so.6",
+                  line: null,
+                  isUser: false,
+                },
                 { index: 4, func: "__assert_fail", file: "libc.so.6", line: null, isUser: false },
                 { index: 5, func: "check_idx", file: "abort.cpp", line: 4, isUser: true },
                 { index: 6, func: "process", file: "abort.cpp", line: 8, isUser: true },
@@ -1333,7 +1335,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
               ],
               currentFrame: 5,
             }),
-            "Agora em `#5` (`check_idx`), suba 1 frame até `process` (`#6`).",
+            "Agora em #5 (check_idx), suba 1 frame até process (#6).",
             "up",
           ),
           ex(
@@ -1342,10 +1344,22 @@ export const GDB_UNITS: readonly GdbUnit[] = [
               breakpoints: [],
               signal: "SIGABRT",
               frames: [
-                { index: 0, func: "__pthread_kill_implementation", file: "libc.so.6", line: null, isUser: false },
+                {
+                  index: 0,
+                  func: "__pthread_kill_implementation",
+                  file: "libc.so.6",
+                  line: null,
+                  isUser: false,
+                },
                 { index: 1, func: "raise", file: "libc.so.6", line: null, isUser: false },
                 { index: 2, func: "abort", file: "libc.so.6", line: null, isUser: false },
-                { index: 3, func: "__libc_message_impl.cold", file: "libc.so.6", line: null, isUser: false },
+                {
+                  index: 3,
+                  func: "__libc_message_impl.cold",
+                  file: "libc.so.6",
+                  line: null,
+                  isUser: false,
+                },
                 { index: 4, func: "__assert_fail", file: "libc.so.6", line: null, isUser: false },
                 { index: 5, func: "check_idx", file: "abort.cpp", line: 4, isUser: true },
                 { index: 6, func: "process", file: "abort.cpp", line: 8, isUser: true },
@@ -1353,7 +1367,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
               ],
               currentFrame: 6,
             }),
-            "Imprima o parâmetro `x` do frame atual.",
+            "Imprima o parâmetro x do frame atual.",
             "print x",
           ),
         ],
@@ -1364,7 +1378,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
         unitId: "u9-crash",
         title: "Interceptar exceções com catch throw",
         explanation:
-          "`catch throw` para o programa no momento exato em que uma exceção C++ (`std::out_of_range`, `std::bad_alloc` etc.) é lançada, antes de a pilha ser desenrolada. Com `bt`, você vê logo a linha que disparou a exceção.",
+          "catch throw para o programa no momento exato em que uma exceção C++ (std::out_of_range, std::bad_alloc etc.) é lançada, antes de a pilha ser desenrolada. Com bt, você vê logo a linha que disparou a exceção.",
         helpKeys: ["catch throw"],
         commands: ["catch throw"],
         example: {
@@ -1394,7 +1408,7 @@ export const GDB_UNITS: readonly GdbUnit[] = [
           ex(
             "throw-oob",
             emptyStop(["Reading symbols from ./sol..."]),
-            "Intercepte qualquer exceção C++ lançada usando `catch throw`.",
+            "Intercepte qualquer exceção C++ lançada usando catch throw.",
             "catch throw",
           ),
         ],

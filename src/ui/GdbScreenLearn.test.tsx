@@ -115,8 +115,8 @@ describe("GdbScreen Learn mode (AC-6)", () => {
     const ref = screen.getByRole<HTMLDetailsElement>("group", { name: "Comandos" });
     ref.open = true;
     const targetLesson = gdbLessonForCommand("watch")!;
-    const watchItem = Array.from(ref.querySelectorAll("li")).find((li) =>
-      li.querySelector("code")?.textContent?.trim() === "watch",
+    const watchItem = Array.from(ref.querySelectorAll("li")).find(
+      (li) => li.querySelector("code")?.textContent?.trim() === "watch",
     );
     expect(watchItem).toBeTruthy();
     const learnBtn = watchItem!.querySelector("button");
@@ -125,5 +125,62 @@ describe("GdbScreen Learn mode (AC-6)", () => {
 
     expect(screen.getByTestId("shell-path").textContent).toBe("popis/gdb/aprender");
     expect(screen.getByRole("heading", { level: 2, name: targetLesson.title })).toBeTruthy();
+  });
+
+  it("supports example pause/replay, exercise reset, disabled breakpoints, Lições button and already-done state", () => {
+    const store = memoryStore();
+    render(<App clock={clock} store={store} newSeed={() => 11} />);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Aprender (GDB)" }));
+
+    // Open u2-manage-bp (exercise 2 has a disabled breakpoint `○`).
+    const lesson = gdbLessonForCommand("delete")!;
+    fireEvent.click(screen.getByRole("button", { name: lesson.title }));
+
+    // Pause, resume, let example reach end, replay from end, and restart example.
+    fireEvent.click(screen.getByRole("button", { name: "Pausar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tocar" }));
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Tocar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Recomeçar" }));
+
+    // Empty submit and non-Enter key do nothing; wrong submit then reset clears feedback.
+    const box = screen.getByRole<HTMLInputElement>("textbox", { name: "Comando gdb" });
+    fireEvent.keyDown(box, { key: "a" });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    expect(screen.queryByTestId("learn-feedback")).toBeNull();
+
+    submitCmd("zzz");
+    expect(screen.getByTestId("learn-feedback")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Recomeçar exercício" }));
+    expect(screen.queryByTestId("learn-feedback")).toBeNull();
+
+    // Miss once on step 1 then solve via Enviar button -> step 2 (shows disabled bp `○`).
+    submitCmd("zzz");
+    fireEvent.change(box, { target: { value: lesson.exercises[0].canonical } });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    expect(screen.getByTestId("learn-step").textContent).toContain("2");
+    expect(document.body.textContent).toContain("○");
+
+    // Finish step 2 cleanly -> completes lesson.
+    submitCmd(lesson.exercises[1].canonical);
+    expect(screen.getByTestId("learn-done")).toBeTruthy();
+
+    // Return to list via Lições button, then reopen completed lesson to see learn-was-done.
+    fireEvent.click(screen.getByRole("button", { name: "Lições" }));
+    expect(screen.queryByTestId("learn-explanation")).toBeNull();
+    // Enter on a button control is ignored by the list-level Enter shortcut.
+    const volver = screen.getByRole("button", { name: "Voltar" });
+    fireEvent.keyDown(volver, { key: "Enter" });
+    expect(screen.queryByTestId("learn-explanation")).toBeNull();
+    // Open u1-run (which has exact command keys matching COMMAND_TABLE descriptions).
+    const runLesson = gdbLessonForCommand("run")!;
+    fireEvent.click(screen.getByRole("button", { name: runLesson.title }));
+    expect(screen.getByTestId("learn-commands").textContent).toContain("—");
+    fireEvent.click(screen.getByRole("button", { name: "Lições" }));
+    fireEvent.click(screen.getByRole("button", { name: `${lesson.title} — feito` }));
+    expect(screen.getByTestId("learn-was-done")).toBeTruthy();
   });
 });

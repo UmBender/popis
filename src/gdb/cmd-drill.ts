@@ -107,12 +107,7 @@ function mustParse(cmd: string): GdbAction {
   return res.action;
 }
 
-function buildItem(
-  seed: number,
-  index: number,
-  kind: GdbCmdKind,
-  spec: ItemSpec,
-): GdbCommandItem {
+function buildItem(seed: number, index: number, kind: GdbCmdKind, spec: ItemSpec): GdbCommandItem {
   const prog = programById(spec.programId);
   const frameCount = Math.max(1, spec.stop.frames.length);
   const context: CheckContext = {
@@ -922,10 +917,7 @@ function genPilha(rng: ReturnType<typeof createRng>): ItemSpec {
       displays: [],
       frames,
       currentFrame: 3,
-      sessionLines: [
-        "#2  dfs (u=1, parent=0, depth=0) at dfs.cpp:9",
-        "#3  main () at dfs.cpp:19",
-      ],
+      sessionLines: ["#2  dfs (u=1, parent=0, depth=0) at dfs.cpp:9", "#3  main () at dfs.cpp:19"],
     },
     prompt: "Você está no frame #3 (main). Desça 1 frame para o frame #2.",
     canonical: "down",

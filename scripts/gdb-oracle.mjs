@@ -188,16 +188,17 @@ async function checkPrefixes(commandsMod) {
   return { total: prefixes.length, failures };
 }
 
-/** Extracts current source line and breakpoint lines from probe markers. */
-function parseProbeState(probeText, file) {
+/** Extracts current source line (from `frame`) and breakpoint lines (from `info breakpoints`). */
+function parseProbeState(frameText, bpText, file) {
   let line = null;
-  const frameRe = new RegExp(`${file.replace(".", "\\.")}:(\\d+)`);
-  const frameMatch = frameRe.exec(probeText);
+  const escaped = file.replace(".", "\\.");
+  const frameRe = new RegExp(`^#\\d+\\s.*\\b${escaped}:(\\d+)`, "m");
+  const frameMatch = frameRe.exec(frameText);
   if (frameMatch) line = Number(frameMatch[1]);
 
   const bpLines = [];
-  const bpRe = new RegExp(`at ${file.replace(".", "\\.")}:(\\d+)`, "g");
-  for (const m of probeText.matchAll(bpRe)) {
+  const bpRe = new RegExp(`at ${escaped}:(\\d+)`, "g");
+  for (const m of bpText.matchAll(bpRe)) {
     const n = Number(m[1]);
     if (!bpLines.includes(n)) bpLines.push(n);
   }
@@ -207,17 +208,19 @@ function parseProbeState(probeText, file) {
 /** 2. Record (or verify) every lesson example transcript from real gdb 18.1. */
 async function runTranscript(dir, binPath, prog, lesson) {
   const MARK_CMD = "===POPIS_STEP===";
-  const MARK_PROBE = "===POPIS_PROBE===";
+  const MARK_FRAME = "===POPIS_FRAME===";
+  const MARK_BP = "===POPIS_BP===";
   const commands = [...(lesson.example.setup ?? [])];
 
   // Initial state marker before first animated step.
-  commands.push(`printf "${MARK_PROBE}\\n"`, "frame", "info breakpoints");
+  commands.push(`printf "${MARK_FRAME}\\n"`, "frame", `printf "${MARK_BP}\\n"`, "info breakpoints");
   for (const step of lesson.example.steps) {
     commands.push(
       `printf "${MARK_CMD}\\n"`,
       step.cmd,
-      `printf "${MARK_PROBE}\\n"`,
+      `printf "${MARK_FRAME}\\n"`,
       "frame",
+      `printf "${MARK_BP}\\n"`,
       "info breakpoints",
     );
   }
@@ -228,13 +231,19 @@ async function runTranscript(dir, binPath, prog, lesson) {
   const chunks = full.split(MARK_CMD);
   const frames = [];
 
+  const splitProbe = (segment) => {
+    const [rawOut = "", rest = ""] = segment.split(MARK_FRAME);
+    const [frameOut = "", bpOut = ""] = rest.split(MARK_BP);
+    return { rawOut, frameOut, bpOut };
+  };
+
   // Frame 0: state right after setup, before first animated command.
-  const initParts = (chunks[0] ?? "").split(MARK_PROBE);
-  const initState = parseProbeState(initParts[1] ?? "", prog.file);
+  const init = splitProbe(chunks[0] ?? "");
+  const initState = parseProbeState(init.frameOut, init.bpOut, prog.file);
   frames.push({
     cmd: null,
     output: lesson.example.setup?.length
-      ? cleanLines(initParts[0] ?? "").slice(-3)
+      ? cleanLines(init.rawOut).slice(-3)
       : [`Reading symbols from ./${prog.id}...`],
     line: initState.line,
     breakpoints: initState.breakpoints,
@@ -242,9 +251,8 @@ async function runTranscript(dir, binPath, prog, lesson) {
 
   for (let i = 0; i < lesson.example.steps.length; i++) {
     const step = lesson.example.steps[i];
-    const part = chunks[i + 1] ?? "";
-    const [rawOut = "", rawProbe = ""] = part.split(MARK_PROBE);
-    const state = parseProbeState(rawProbe, prog.file);
+    const { rawOut, frameOut, bpOut } = splitProbe(chunks[i + 1] ?? "");
+    const state = parseProbeState(frameOut, bpOut, prog.file);
     frames.push({
       cmd: step.cmd,
       output: cleanLines(rawOut).slice(0, 12),
@@ -314,9 +322,7 @@ async function checkDrillEquivalences(dir, bins, cmdDrillMod) {
         checked += 1;
         const got = await observe(binPath, item.setupCommands, alt, item.oracleProbe);
         if (got.errLines.length > 0) {
-          failures.push(
-            `${kind} seed=${seed} alt "${alt}" stderr: ${got.errLines.join(" | ")}`,
-          );
+          failures.push(`${kind} seed=${seed} alt "${alt}" stderr: ${got.errLines.join(" | ")}`);
           continue;
         }
         if (got.normalized !== base.normalized) {
@@ -393,11 +399,7 @@ async function main() {
     // 3. Drill equivalence check.
     const drillRes = await checkDrillEquivalences(dir, bins, cmdDrillMod);
 
-    const allFailures = [
-      ...prefixRes.failures,
-      ...transcriptFailures,
-      ...drillRes.failures,
-    ];
+    const allFailures = [...prefixRes.failures, ...transcriptFailures, ...drillRes.failures];
     for (const line of allFailures) console.error(`FAIL: ${line}`);
 
     console.log(

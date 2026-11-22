@@ -304,4 +304,93 @@ describe("gdb command parser (AC-1)", () => {
       expect(entry.text.length).toBeGreaterThan(5);
     }
   });
+
+  it("parser handles compound conditions, unary ops, and rejects malformed commands", () => {
+    expect(parseCommand("b 7 if (i > 0 && a[i] != -1) || sum == 0")).toEqual({
+      ok: true,
+      action: {
+        kind: "break",
+        at: { kind: "line", line: 7 },
+        cond: "0 < i && -1 != a[i] || 0 == sum",
+        temporary: false,
+      },
+    });
+    expect(parseCommand("b 7 if (i == 1) && (j == 2)")).toEqual({
+      ok: true,
+      action: {
+        kind: "break",
+        at: { kind: "line", line: 7 },
+        cond: "1 == i && 2 == j",
+        temporary: false,
+      },
+    });
+    expect(parseCommand("b 7 if flag")).toEqual({
+      ok: true,
+      action: {
+        kind: "break",
+        at: { kind: "line", line: 7 },
+        cond: "flag",
+        temporary: false,
+      },
+    });
+    expect(parseCommand("list")).toEqual({ ok: true, action: { kind: "list" } });
+    expect(parseCommand("bt 3")).toEqual({ ok: true, action: { kind: "backtrace", count: 3 } });
+    expect(parseCommand("undisplay")).toEqual({
+      ok: true,
+      action: { kind: "undisplay", ids: [] },
+    });
+    expect(parseCommand("delete")).toEqual({
+      ok: true,
+      action: { kind: "bp-op", op: "delete", ids: [] },
+    });
+
+    const invalid = [
+      "gdb",
+      "gdb a b",
+      "gdb bad$name",
+      "run arg1 arg2",
+      "start 1",
+      "kill 1",
+      "quit 1",
+      "break",
+      "break bad:loc!",
+      "break bad$file:10",
+      "break 10 if @@@",
+      "break 10 if i ==",
+      "break 10 if i == 1 &&",
+      "info",
+      "info threads",
+      "info zzz",
+      "delete abc",
+      "condition 1",
+      "condition 0 i == 1",
+      "condition 1 @@@",
+      "ignore 1",
+      "ignore 1 abc",
+      "next 0",
+      "continue abc",
+      "finish 1",
+      "until bad!loc",
+      "advance",
+      "print",
+      "display",
+      "undisplay abc",
+      "list bad!loc",
+      "bt 0",
+      "frame -1",
+      "up 0",
+      "watch",
+      "set",
+      "set var bad",
+      "set bad",
+      "call",
+      "catch",
+      "catch fork",
+      "catch zzz",
+      "pwd",
+    ];
+    for (const bad of invalid) {
+      expect(parseCommand(bad).ok, bad).toBe(false);
+    }
+  });
 });

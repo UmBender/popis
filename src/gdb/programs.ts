@@ -118,7 +118,12 @@ export const PROGRAMS: readonly GdbProgram[] = [
     targets: [
       { id: "init-bounds", line: 3, label: "início de lo e hi", match: "int lo = 0, hi = n;" },
       { id: "calc-mid", line: 5, label: "cálculo de mid", match: "int mid = lo" },
-      { id: "check-mid", line: 6, label: "comparação a[mid] < target", match: "if (a[mid] < target)" },
+      {
+        id: "check-mid",
+        line: 6,
+        label: "comparação a[mid] < target",
+        match: "if (a[mid] < target)",
+      },
       { id: "ret-lo", line: 12, label: "retorno de lo", match: "return lo;" },
       { id: "call-bs", line: 16, label: "chamada de lower_idx", match: "int pos = lower_idx" },
     ],
@@ -158,7 +163,12 @@ export const PROGRAMS: readonly GdbProgram[] = [
     ],
     targets: [
       { id: "dfs-init", line: 6, label: "início de sub[u]", match: "sub[u] = 1;" },
-      { id: "dfs-recurse", line: 9, label: "chamada recursiva de dfs", match: "dfs(v, u, depth + 1);" },
+      {
+        id: "dfs-recurse",
+        line: 9,
+        label: "chamada recursiva de dfs",
+        match: "dfs(v, u, depth + 1);",
+      },
       { id: "dfs-accum", line: 10, label: "acumulação de sub[u]", match: "sub[u] += sub[v];" },
       { id: "call-dfs", line: 19, label: "chamada inicial de dfs", match: "dfs(1, 0, 0);" },
     ],
@@ -401,7 +411,12 @@ export const PROGRAMS: readonly GdbProgram[] = [
     ],
     targets: [
       { id: "deref-p", line: 9, label: "acesso p->val", match: "total += p->val;" },
-      { id: "call-sum", line: 16, label: "chamada de sum_nodes", match: "return sum_nodes(&a, 2);" },
+      {
+        id: "call-sum",
+        line: 16,
+        label: "chamada de sum_nodes",
+        match: "return sum_nodes(&a, 2);",
+      },
       { id: "call-solve", line: 19, label: "chamada de solve", match: "solve()" },
     ],
   },
@@ -464,7 +479,12 @@ export const PROGRAMS: readonly GdbProgram[] = [
     ],
     targets: [
       { id: "assert-line", line: 4, label: "assert(idx >= 0)", match: "assert(idx >= 0);" },
-      { id: "call-check", line: 8, label: "chamada de check_idx", match: "return check_idx(x - 5);" },
+      {
+        id: "call-check",
+        line: 8,
+        label: "chamada de check_idx",
+        match: "return check_idx(x - 5);",
+      },
       { id: "call-process", line: 11, label: "chamada de process", match: "int res = process(2);" },
     ],
   },
