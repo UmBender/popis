@@ -17,7 +17,13 @@ import {
   type PowerLawFit,
   type RoundPoint,
 } from "./learning";
-import { errorChars, slowestBigrams, type BigramStat, type CharErrorStat } from "./typing-stats";
+import {
+  errorChars,
+  isCodeSymbol,
+  slowestBigrams,
+  type BigramStat,
+  type CharErrorStat,
+} from "./typing-stats";
 
 export type ConfigSeries = {
   readonly key: string;
@@ -145,7 +151,11 @@ export function computeProgress(input: ProgressInput, now: number): DrillProgres
     });
   }
 
-  const codeEvents = input.events.filter((e) => e.drill === "typing.code");
+  const weakEvents = input.events.filter((e) => e.drill === "typing.weak");
+  const codeWeak = weakEvents.filter((e) => isCodeSymbol(e.kc.replace(/^typing\.ngram\./, "")));
+  const textWeak = weakEvents.filter((e) => !isCodeSymbol(e.kc.replace(/^typing\.ngram\./, "")));
+
+  const codeEvents = [...input.events.filter((e) => e.drill === "typing.code"), ...codeWeak];
   if (input.typing.length > 0 || codeEvents.length > 0) {
     result.push({
       id: "typing",
@@ -165,7 +175,7 @@ export function computeProgress(input: ProgressInput, now: number): DrillProgres
     });
   }
 
-  const textEvents = input.events.filter((e) => e.drill === "typing.text");
+  const textEvents = [...input.events.filter((e) => e.drill === "typing.text"), ...textWeak];
   if (input.text.length > 0 || textEvents.length > 0) {
     result.push({
       id: "text",
