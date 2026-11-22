@@ -1,10 +1,11 @@
 ---
 id: T29
 title: Digitação - ritmo-alvo
-status: ready
+status: in-progress
 depends_on: [T24]
 branch: task/T29-typing-target-pace
-adrs: []
+adrs:
+  - "[[ADR-T29-1 Ritmo-alvo adaptativo e cursor fantasma na digitação]]"
 tags: [task]
 ---
 
@@ -56,7 +57,7 @@ perseguir, sem estacionar no ritmo confortável. Ideia D4 de
   - os eventos da T22 ganham `extra.target` e `extra.onPace` em cada
     unidade;
   - um dado corrompido carrega como sem histórico.
-  - Testes: `src/storage/typing-pace.test.ts`, `src/stats/keytrace.test.ts` ("events carry target and onPace").
+  - Testes: `src/storage/typing-pace.test.ts` ("saves and loads pace settings and targets per config", "corrupt data loads as empty history with defaults", "resolves initial target from recent history or 30 WPM"), `src/stats/keytrace.test.ts` ("events carry target and onPace").
 
 ## Out of scope
 
@@ -66,10 +67,11 @@ perseguir, sem estacionar no ritmo confortável. Ideia D4 de
 
 ## Files owned
 
-- `src/typing/pace.ts` (novo) e os testes
-- `src/storage/typing-pace.ts` (novo) e o teste
-- `src/stats/keytrace.ts`
-- `src/ui/TypingScreen.tsx`, `src/ui/TextTypingScreen.tsx`, `src/ui/app.css` e os testes de tela
+- `src/typing/pace.ts` (novo) e os testes (`src/typing/pace.test.ts`, `src/typing/pace.prop.test.ts`)
+- `src/storage/typing-pace.ts` (novo) e o teste (`src/storage/typing-pace.test.ts`)
+- `src/stats/keytrace.ts` e `src/stats/keytrace.test.ts`
+- `src/ui/TypingScreen.tsx`, `src/ui/TextTypingScreen.tsx`, `src/ui/app.css` e os testes de tela (`src/ui/TypingScreen.test.tsx`, `src/ui/TextTypingScreen.test.tsx`)
+- `tests/e2e/typing.spec.ts` e `tests/e2e/text-typing.spec.ts` (fluxo do cursor fantasma e resultado no app real)
 
 ## Subtasks (one commit each)
 
