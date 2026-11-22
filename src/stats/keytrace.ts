@@ -116,6 +116,10 @@ export type CodeMeta = {
   readonly config: string;
   readonly seed: number;
   readonly snippetId: string;
+  /** Full snippet text, used to count typeable characters per line without auto-indent. */
+  readonly text?: string;
+  /** Target WPM active during the round (T29 AC-4). */
+  readonly target?: number;
 };
 
 /** One event per typed line. */
@@ -137,6 +141,8 @@ export type TextMeta = {
   readonly config: string;
   readonly seed: number;
   readonly words: readonly string[];
+  /** Target WPM active during the round (T29 AC-4). */
+  readonly target?: number;
 };
 
 /** One event per typed word. */
