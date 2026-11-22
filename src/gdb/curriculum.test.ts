@@ -137,9 +137,11 @@ describe("gdb curriculum (AC-6, T26 AC-8)", () => {
           expect(frame.line, lesson.id).toBeGreaterThanOrEqual(1);
           expect(frame.line, lesson.id).toBeLessThanOrEqual(prog.lines.length);
         }
-        // Raw memory addresses must be masked as ADDR.
+        // Raw x86-64 memory addresses must be masked as ADDR (while hex integer values like 0xffffffff stay intact).
         for (const out of frame.output) {
-          expect(out, `${lesson.id} unmasked address`).not.toMatch(/0x[0-9a-f]{6,}/i);
+          expect(out, `${lesson.id} unmasked address`).not.toMatch(
+            /\b0x(?:0{4,}(?:40|7f|5[56])|7f[0-9a-f]{8}|5[56][0-9a-f]{8}|40[0-9a-f]{4})/i,
+          );
         }
       }
     }

@@ -88,7 +88,7 @@ test("T26: play a Saída round on desktop and mobile", async ({ page }) => {
   await page.goto("./");
 
   await chooseItem(page, "Saída");
-  await expect(page.getByTestId("shell-path")).toHaveText("popis/gdb/saida");
+  await expect(page.getByTestId("shell-path")).toHaveText("popis/gdb/saída");
   await expect(page.getByRole("heading", { level: 1, name: "Saída" })).toBeVisible();
   await expect(page.getByTestId("gdb-out-code")).toBeVisible();
   await expect(page.getByTestId("gdb-out-command")).toBeVisible();

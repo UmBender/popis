@@ -213,7 +213,7 @@ describe("GdbScreen Learn mode (AC-6)", () => {
     expect(screen.getByTestId("learn-done")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Treinar" }));
-    expect(screen.getByTestId("shell-path").textContent).toBe("popis/gdb/saida");
+    expect(screen.getByTestId("shell-path").textContent).toBe("popis/gdb/saída");
     expect(loadGdbOutSettings(store).kinds).toEqual(lesson.practiceOutputKinds);
   });
 });

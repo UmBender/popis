@@ -127,7 +127,7 @@ describe("GdbScreen Output mode (AC-7)", () => {
     render(<App clock={clock} store={store} newSeed={() => SEED} />);
 
     fireEvent.click(screen.getByRole("radio", { name: "Saída" }));
-    expect(screen.getByTestId("shell-path").textContent).toBe("popis/gdb/saida");
+    expect(screen.getByTestId("shell-path").textContent).toBe("popis/gdb/saída");
     expect(screen.getByRole("heading", { level: 1, name: "Saída" })).toBeTruthy();
 
     // Change level to 2 and persist in popis.gdb-output.
