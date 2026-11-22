@@ -1,10 +1,36 @@
 import { GDB_CMD_KINDS, type GdbCmdKind } from "../gdb/cmd-drill";
+import { GDB_OUT_KINDS, type GdbOutKind, type GdbOutLevel } from "../gdb/out-drill";
 import { GDB_DURATIONS_S } from "../gdb/round";
 import { readJson, tryWriteJson, type KeyValueStore } from "./kv";
 
 export const GDB_KEY = "popis.gdb";
 export const GDB_RESULTS_KEY = "popis.gdb-results";
+export const GDB_OUT_KEY = "popis.gdb-output";
+export const GDB_OUT_RESULTS_KEY = "popis.gdb-output-results";
 export const MAX_GDB_RESULTS = 200;
+
+export type GdbOutSettings = {
+  readonly durationS: number;
+  readonly level: GdbOutLevel;
+  readonly kinds: readonly GdbOutKind[];
+};
+
+export const DEFAULT_GDB_OUT_SETTINGS: GdbOutSettings = {
+  durationS: 60,
+  level: 1,
+  kinds: GDB_OUT_KINDS,
+};
+
+export type GdbOutResult = {
+  readonly version: 1;
+  readonly durationS: number;
+  readonly level: GdbOutLevel;
+  readonly seed: number;
+  readonly correct: number;
+  readonly wrong: number;
+  readonly skipped: number;
+  readonly finishedAt: number;
+};
 
 export type GdbSettings = {
   readonly durationS: number;
@@ -68,4 +94,24 @@ export function loadGdbResults(store: KeyValueStore): GdbCmdResult[] {
 export function appendGdbResult(store: KeyValueStore, result: GdbCmdResult): void {
   const results = [...loadGdbResults(store), result];
   tryWriteJson(store, GDB_RESULTS_KEY, results.slice(-MAX_GDB_RESULTS));
+}
+
+export function parseGdbOutSettings(_value: unknown): GdbOutSettings {
+  throw new Error("todo");
+}
+
+export function loadGdbOutSettings(_store: KeyValueStore): GdbOutSettings {
+  throw new Error("todo");
+}
+
+export function saveGdbOutSettings(_store: KeyValueStore, _settings: GdbOutSettings): void {
+  throw new Error("todo");
+}
+
+export function loadGdbOutResults(_store: KeyValueStore): GdbOutResult[] {
+  throw new Error("todo");
+}
+
+export function appendGdbOutResult(_store: KeyValueStore, _result: GdbOutResult): void {
+  throw new Error("todo");
 }

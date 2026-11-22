@@ -12,7 +12,8 @@ export type ItemId =
   | "vim-motion"
   | "vim-edit"
   | "gdb-learn"
-  | "gdb-commands";
+  | "gdb-commands"
+  | "gdb-output";
 
 export type TreeItem = {
   readonly id: ItemId;
@@ -87,6 +88,7 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
     [
       ["gdb-learn", "Aprender", undefined, "Aprender (GDB)"],
       ["gdb-commands", "Comandos"],
+      ["gdb-output", "Saída"],
     ],
   ],
 ];

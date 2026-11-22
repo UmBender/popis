@@ -105,6 +105,7 @@ const VIM_DRILLS: Partial<Readonly<Record<ItemId, VimDrill>>> = {
 const GDB_DRILLS: Partial<Readonly<Record<ItemId, GdbDrill>>> = {
   "gdb-learn": "learn",
   "gdb-commands": "commands",
+  "gdb-output": "output",
 };
 
 function sessionConfig<M extends Mode>(
@@ -538,6 +539,9 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
           }}
           onPractice={() => {
             choose("gdb-commands");
+          }}
+          onPracticeOutput={() => {
+            choose("gdb-output");
           }}
           initialLesson={gdbLesson}
         />

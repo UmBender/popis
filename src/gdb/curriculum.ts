@@ -1,7 +1,9 @@
 import type { LessonId } from "../learn/curriculum";
 import type { CheckContext } from "./check";
+import type { OutputCheckKind } from "./check-output";
 import type { GdbCmdKind, StopState } from "./cmd-drill";
 import { COMMAND_TABLE, parseCommand, type GdbAction } from "./commands";
+import type { GdbOutKind } from "./out-drill";
 import { programById } from "./programs";
 
 export type GdbExampleStep = {
@@ -15,7 +17,8 @@ export type GdbLessonExample = {
   readonly steps: readonly GdbExampleStep[];
 };
 
-export type GdbLessonExercise = {
+export type GdbCommandExercise = {
+  readonly mode?: "command";
   readonly programId: string;
   readonly stop: StopState;
   readonly prompt: string;
@@ -24,16 +27,37 @@ export type GdbLessonExercise = {
   readonly context: CheckContext;
 };
 
+export type GdbOutputExercise = {
+  readonly mode: "output";
+  readonly programId: string;
+  readonly stop: StopState;
+  readonly prompt: string;
+  readonly command: string;
+  readonly commandKind: OutputCheckKind;
+  readonly canonical: string;
+  readonly reason: string;
+};
+
+export type GdbLessonExercise = GdbCommandExercise | GdbOutputExercise;
+
 export type GdbLesson = {
   readonly id: LessonId;
   readonly unitId: string;
   readonly title: string;
   readonly explanation: string;
   readonly helpKeys: readonly string[];
+  readonly outputHelpKeys?: readonly string[];
   readonly commands: readonly string[];
   readonly example: GdbLessonExample;
   readonly exercises: readonly [GdbLessonExercise, GdbLessonExercise, GdbLessonExercise];
   readonly practiceKinds: readonly GdbCmdKind[];
+  readonly practiceOutputKinds?: readonly GdbOutKind[];
+};
+
+export type OutputRefEntry = {
+  readonly key: string;
+  readonly syntax: string;
+  readonly text: string;
 };
 
 export type GdbUnit = {
@@ -1440,4 +1464,14 @@ export function gdbLessonForCommand(key: string): GdbLesson | undefined {
 
 export function gdbCommandDescription(key: string): string | undefined {
   return COMMAND_DESCRIPTIONS.get(key);
+}
+
+export const OUTPUT_FORMAT_TABLE: readonly OutputRefEntry[] = [];
+
+export function isOutputLesson(_lesson: GdbLesson): boolean {
+  throw new Error("todo");
+}
+
+export function gdbLessonForOutputKey(_key: string): GdbLesson | undefined {
+  throw new Error("todo");
 }

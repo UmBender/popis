@@ -36,11 +36,18 @@ type Props = {
   readonly store: KeyValueStore;
   readonly onBack: () => void;
   readonly onPractice?: () => void;
+  readonly onPracticeOutput?: () => void;
   readonly initialLesson?: string | null;
 };
 
-/** GDB Aprender curriculum screen (T25 AC-6, AC-7): 9 ordered units with oracle transcripts and adaptive fading. */
-export function LearnDrill({ store, onBack, onPractice, initialLesson = null }: Props): ReactNode {
+/** GDB Aprender curriculum screen (T25 AC-6, AC-7; T26 AC-8): ordered units with oracle transcripts and adaptive fading. */
+export function LearnDrill({
+  store,
+  onBack,
+  onPractice,
+  onPracticeOutput: _onPracticeOutput,
+  initialLesson = null,
+}: Props): ReactNode {
   const [open, setOpen] = useState<string | null>(() =>
     initialLesson !== null && gdbLessonById(initialLesson) !== undefined ? initialLesson : null,
   );
@@ -304,6 +311,9 @@ function GdbExercise({
   const submit = () => {
     const trimmed = text.trim();
     if (trimmed.length === 0) return;
+    if (exercise.mode === "output") {
+      throw new Error("todo");
+    }
     const res = checkCommand(trimmed, exercise.expected, exercise.context);
     if (!res.ok) {
       setWrongCount((c) => c + 1);
