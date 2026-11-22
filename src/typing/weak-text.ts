@@ -76,7 +76,7 @@ const CODE_FRAGMENTS: readonly string[] = [
   "a?b:c",
   "f(x)",
   "g(x,y)",
-  "\"ok\"",
+  '"ok"',
   "'a'",
   "#if",
   "@id",
@@ -142,9 +142,7 @@ export function generateWeakLine(ngram: string, seed: number): string {
 
 /** `lineCount` deterministic lines for `ngram`. */
 export function generateWeakLines(ngram: string, seed: number, lineCount: number): string[] {
-  return Array.from({ length: lineCount }, (_, i) =>
-    generateWeakLine(ngram, deriveSeed(seed, i)),
-  );
+  return Array.from({ length: lineCount }, (_, i) => generateWeakLine(ngram, deriveSeed(seed, i)));
 }
 
 /** Space-separated tokens for lines `[startLine, startLine + lineCount)` of `ngram`. */

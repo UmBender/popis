@@ -94,12 +94,16 @@ describe("weak-round", () => {
     expect(() => startWeakRound([], 60)).toThrow(RangeError);
 
     let single = startWeakRound([TARGETS[0] as WeakTarget], 60);
-    single = finishWeakBlock(single, { afterMedianMs: null, accuracy: 0 });
+    single = finishWeakBlock(single, { afterMedianMs: 240, accuracy: 0.96 });
     expect(single.finished).toBe(false);
+    single = finishWeakBlock(single, { afterMedianMs: null, accuracy: 0 });
+    expect(summarizeWeakRound(single)).toEqual([
+      { ngram: "qu", beforeMedianMs: 320, afterMedianMs: 240, blocks: 2, graduated: false },
+    ]);
     single = finishWeakBlock(single, { afterMedianMs: 150, accuracy: 0.98 });
     expect(single.finished).toBe(true);
     expect(summarizeWeakRound(single)).toEqual([
-      { ngram: "qu", beforeMedianMs: 320, afterMedianMs: 150, blocks: 2, graduated: true },
+      { ngram: "qu", beforeMedianMs: 320, afterMedianMs: 150, blocks: 3, graduated: true },
     ]);
 
     // weakEvents tags drill = "typing.weak" and kc = "typing.ngram.<ngram>"

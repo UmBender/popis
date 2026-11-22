@@ -85,10 +85,7 @@ export function shouldGraduate(
 }
 
 /** Records one completed 30s block, graduating the focused n-gram when it meets target pace. */
-export function finishWeakBlock(
-  round: WeakRoundState,
-  result: WeakBlockResult,
-): WeakRoundState {
+export function finishWeakBlock(round: WeakRoundState, result: WeakBlockResult): WeakRoundState {
   if (round.finished) return round;
   const active = round.queue[0] as WeakTarget;
   const graduated = shouldGraduate(result.afterMedianMs, result.accuracy, round.targetWpm);

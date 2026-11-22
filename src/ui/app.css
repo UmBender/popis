@@ -1143,7 +1143,6 @@ th {
 .weak-chip {
   padding: 0.15rem 0.5rem;
   border: 1px solid var(--muted);
-  border-radius: 3px;
   background: var(--surface);
   font-size: 0.9rem;
 }
@@ -1152,6 +1151,11 @@ th {
   border-color: var(--accent);
   background: var(--selection);
   color: var(--selection-text);
+}
+
+.weak-chip-active .muted {
+  color: var(--selection-text);
+  opacity: 0.85;
 }
 
 .weak-chip-graduated {
@@ -1168,7 +1172,6 @@ th {
 
 .weak-highlight {
   background: var(--selection);
-  border-radius: 2px;
 }
 
 .letter-pending.weak-highlight {

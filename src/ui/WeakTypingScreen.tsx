@@ -194,9 +194,9 @@ export function WeakTypingScreen({
         recordEvents(store, events, at);
         const samples = ngramIntervals(events, active.ngram);
         const afterMedianMs = samples.length > 0 ? quartiles(samples)[1] : null;
-        const accuracy = next.keystrokes > 0 ? next.correctKeystrokes / next.keystrokes : 0;
+        const accuracy = next.correctKeystrokes / next.keystrokes;
         const nextRound = finishWeakBlock(run.round, { afterMedianMs, accuracy });
-        const lastBlock = nextRound.blocks[nextRound.blocks.length - 1] ?? null;
+        const lastBlock = nextRound.blocks[nextRound.blocks.length - 1] as WeakBlockSummary;
 
         if (nextRound.finished) {
           show({ ...run, round: nextRound, state: next, trace, linesGenerated, lastBlock });
@@ -222,8 +222,7 @@ export function WeakTypingScreen({
     [clock, newSeed, show, store],
   );
 
-  const running =
-    current !== null && !current.round.finished && current.state.startedAt !== null;
+  const running = current !== null && !current.round.finished && current.state.startedAt !== null;
   useRunning(onRunning, running);
 
   useEffect(() => {
@@ -235,8 +234,8 @@ export function WeakTypingScreen({
     const id = setInterval(() => {
       const t = clock.now();
       setNow(t);
-      const cur = latest.current;
-      if (cur !== null) apply(tick(cur.state, t));
+      const cur = latest.current as ActiveRun;
+      apply(tick(cur.state, t));
     }, TICK_MS);
     return () => {
       clearInterval(id);
@@ -256,7 +255,7 @@ export function WeakTypingScreen({
         <PanelTitle title="Pontos fracos">
           Blocos de 30 s focados nos pares mais lentos e teclas com mais erro.
         </PanelTitle>
-        <div className="weak-empty" data-panel="area" data-testid="weak-empty">
+        <div className="weak-empty" data-panel="options" data-testid="weak-empty">
           <p>
             Ainda não há dados suficientes nos últimos 14 dias para escolher seus pontos fracos.
             Faça algumas rodadas em Texto ou Código para registrar seus intervalos por par de
@@ -278,7 +277,7 @@ export function WeakTypingScreen({
   const { round, state, lastBlock } = current;
   const finished = round.finished;
   const active = currentWeakTarget(round);
-  const focusedNgram = active?.ngram ?? lastBlock?.ngram ?? "";
+  const focusedNgram = active !== null ? active.ngram : (lastBlock as WeakBlockSummary).ngram;
   const blockNumber = Math.min(round.blocks.length + 1, round.maxBlocks);
   const view = wordView(state);
   const typedInCurrent = [...(state.inputs[state.current] ?? "")].length;
@@ -293,8 +292,7 @@ export function WeakTypingScreen({
   );
 
   const resetBlock = (freshSeed: boolean) => {
-    const run = latest.current;
-    if (run === null || run.round.finished) return;
+    const run = latest.current as ActiveRun;
     const curTarget = currentWeakTarget(run.round) as WeakTarget;
     const seed = freshSeed ? newSeed() : run.blockSeed;
     show({
@@ -319,8 +317,8 @@ export function WeakTypingScreen({
 
   const typed = (text: string) => {
     for (const ch of text.replace(/[\r\n]/g, "").normalize("NFC")) {
-      const cur = latest.current;
-      if (cur !== null) apply(typeWordsText(cur.state, ch, clock.now()));
+      const cur = latest.current as ActiveRun;
+      apply(typeWordsText(cur.state, ch, clock.now()));
     }
   };
 
@@ -447,9 +445,7 @@ export function WeakTypingScreen({
                   case "Backspace":
                     e.preventDefault();
                     apply(
-                      e.ctrlKey || e.altKey || e.metaKey
-                        ? clearWord(state)
-                        : backspaceWord(state),
+                      e.ctrlKey || e.altKey || e.metaKey ? clearWord(state) : backspaceWord(state),
                     );
                     break;
                   case "Tab":

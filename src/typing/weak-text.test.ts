@@ -37,7 +37,9 @@ describe("weak-text", () => {
 
   it("includes the n-gram at least twice per line and is deterministic for the same seed", () => {
     expect(generateWeakLines("th", 99, 3)).toEqual(generateWeakLines("th", 99, 3));
-    expect(weakWordsFrom("->", 7, 0, 2)).toEqual(generateWeakLines("->", 7, 2).join(" ").split(" "));
+    expect(weakWordsFrom("->", 7, 0, 2)).toEqual(
+      generateWeakLines("->", 7, 2).join(" ").split(" "),
+    );
     expect(weakWordsFrom("->", 7, 2, 2)).toEqual(
       generateWeakLines("->", 7, 4).slice(2).join(" ").split(" "),
     );

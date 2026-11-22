@@ -158,24 +158,20 @@ export function selectWeakSpots(events: readonly TrainingEvent[], now: number): 
   });
 
   const targets: WeakTarget[] = [
-    ...ngrams.map(
-      (n): WeakTarget => ({
-        ngram: n.ngram,
-        kind: "slow",
-        beforeMedianMs: n.medianMs,
-        errorRate: null,
-        symbol: n.symbol,
-      }),
-    ),
-    ...chars.map(
-      (c): WeakTarget => ({
-        ngram: c.char,
-        kind: "error",
-        beforeMedianMs: c.medianMs,
-        errorRate: c.errorRate,
-        symbol: c.symbol,
-      }),
-    ),
+    ...ngrams.map((n): WeakTarget => ({
+      ngram: n.ngram,
+      kind: "slow",
+      beforeMedianMs: n.medianMs,
+      errorRate: null,
+      symbol: n.symbol,
+    })),
+    ...chars.map((c): WeakTarget => ({
+      ngram: c.char,
+      kind: "error",
+      beforeMedianMs: c.medianMs,
+      errorRate: c.errorRate,
+      symbol: c.symbol,
+    })),
   ];
 
   return { ngrams, errorChars: chars, targets };

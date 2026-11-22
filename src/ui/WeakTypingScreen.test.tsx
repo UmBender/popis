@@ -6,6 +6,8 @@ import type { TrainingEvent } from "../stats/event";
 import { DAY_MS } from "../stats/summary";
 import { loadEvents, recordEvents } from "../storage/events";
 import { memoryStore, type KeyValueStore } from "../storage/history";
+import { appendTextResult } from "../storage/text-typing";
+import { appendTypingResult } from "../storage/typing";
 import { saveTypingPace } from "../storage/typing-pace";
 import { WEAK_BLOCK_MS, WEAK_BLOCKS_PER_ROUND } from "../typing/weak-round";
 import { App } from "./App";
@@ -207,6 +209,7 @@ describe("WeakTypingScreen", () => {
     fireEvent.keyDown(box, { key: "Backspace", ctrlKey: true });
     fireEvent.keyDown(box, { key: "Tab" });
     fireEvent.keyDown(box, { key: "Enter" });
+    fireEvent.input(box, { target: { value: "´" }, isComposing: true });
     fireEvent.compositionEnd(box, { currentTarget: { value: "a" } });
     fireEvent.keyDown(box, { key: "Escape" });
     expect(screen.getByTestId("weak-time").textContent).toBe("30 s");
@@ -220,5 +223,81 @@ describe("WeakTypingScreen", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("derives target WPM from text/code history, appends lookahead words, and formats missing medians", () => {
+    const store = memoryStore();
+    // Only one weak error char ("q") with no interval history, plus text & code WPMs and no saved pace target
+    recordEvents(
+      store,
+      [
+        {
+          at: NOW - DAY_MS,
+          drill: "typing.text",
+          config: "en-30s",
+          kc: "word",
+          ok: false,
+          timeMs: 100,
+          extra: { seed: 1, i: 0, w: "q", iv: [], bad: [["q", "w"]] },
+        },
+      ],
+      NOW,
+    );
+    appendTextResult(store, {
+      version: 1,
+      config: "en-30s",
+      seed: 1,
+      wpm: 50,
+      raw: 52,
+      accuracy: 0.96,
+      chars: { correct: 100, incorrect: 2, extra: 0, missed: 0 },
+      timeMs: 30_000,
+      finishedAt: NOW - 2 * DAY_MS,
+    });
+    appendTypingResult(store, {
+      version: 1,
+      snippetId: "cpp-binary-search",
+      language: "cpp",
+      seed: 2,
+      wpm: 70,
+      accuracy: 0.98,
+      errors: 1,
+      timeMs: 30_000,
+      finishedAt: NOW - DAY_MS,
+    });
+
+    let seed = 1;
+    render(
+      <WeakTypingScreen
+        clock={clock}
+        store={store}
+        newSeed={() => ++seed}
+        onBack={() => {}}
+        onOpenText={() => {}}
+      />,
+    );
+
+    // Median of [50, 70] = 60 WPM
+    expect(screen.getByTestId("weak-target").textContent).toBe("60 WPM");
+
+    // Type 26 words quickly to trigger lookahead word appending
+    const box = screen.getByRole("textbox", { name: "Texto digitado" });
+    const initialCount = screen.getByTestId("weak-words").querySelectorAll(".word").length;
+    for (let i = 0; i < 26; i++) {
+      typeOneChar(box, "x", 10);
+      typeOneChar(box, " ", 10);
+    }
+    expect(screen.getByTestId("weak-words").querySelectorAll(".word").length).toBeGreaterThan(
+      initialCount,
+    );
+
+    // Finish all 5 blocks without typing "q" so afterMedianMs is null ("—") and summary has 1 item ("formado")
+    advance(WEAK_BLOCK_MS + 100);
+    for (let b = 2; b <= WEAK_BLOCKS_PER_ROUND; b++) {
+      typeOneChar(box, "z", 50);
+      advance(WEAK_BLOCK_MS + 100);
+    }
+    expect(screen.getByTestId("result").textContent).toContain("0 de 1 formado");
+    expect(screen.getByTestId("weak-results-table").textContent).toContain("—");
   });
 });

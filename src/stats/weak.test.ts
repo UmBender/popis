@@ -106,7 +106,13 @@ describe("weak selection", () => {
       ),
       // Valid code line ("cpp-binary-search" line 0: `int lo = 0, hi = n - 1, ans = -1;`)
       ...Array.from({ length: 5 }, (_, k) =>
-        codeEv("cpp-binary-search", 0, Array.from({ length: 32 }, () => 250), [], NOW - 2000 - k),
+        codeEv(
+          "cpp-binary-search",
+          0,
+          Array.from({ length: 32 }, () => 250),
+          [],
+          NOW - 2000 - k,
+        ),
       ),
     ];
 
@@ -192,6 +198,7 @@ describe("weak selection", () => {
     expect(ngramIntervals(events, "e")).toEqual([110]);
     expect(ngramIntervals(events, "ef")).toEqual([140, 120]);
     expect(ngramIntervals(events, "efg")).toEqual([160, 140]);
+    expect(ngramIntervals(events, "mno")).toEqual([]);
     expect(ngramIntervals(events, "")).toEqual([]);
   });
 });
