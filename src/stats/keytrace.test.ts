@@ -106,6 +106,28 @@ describe("code trace", () => {
   it("code events of an empty trace are empty", () => {
     expect(codeEvents([], { at: 1, config: "cpp", seed: 1, snippetId: "x" })).toEqual([]);
   });
+
+  it("codeEvents accepts a custom kc for burst idioms", () => {
+    const { trace } = codeRun("ab\nab", [
+      [100, (s) => typeText(s, "a", 100)],
+      [200, (s) => typeText(s, "b", 200)],
+      [300, (s) => pressEnter(s, 300)],
+      [350, (s) => typeText(s, "a", 350)],
+      [400, (s) => typeText(s, "b", 400)],
+    ]);
+
+    const events = codeEvents(trace, {
+      at: 9000,
+      config: "cpp",
+      kc: "typing.idiom.for-loop",
+      seed: 5,
+      snippetId: "burst:cpp:for-loop:5",
+    });
+
+    expect(events).toHaveLength(2);
+    expect(events.every((e) => e.kc === "typing.idiom.for-loop")).toBe(true);
+    expect(events.map((e) => e.timeMs)).toEqual([200, 100]);
+  });
 });
 
 function textRun(

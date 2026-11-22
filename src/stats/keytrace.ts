@@ -121,6 +121,8 @@ export type CodeMeta = {
   readonly at: number;
   /** The language. */
   readonly config: string;
+  /** Knowledge component for the emitted events; defaults to `"line"` (T31 AC-5). */
+  readonly kc?: string;
   readonly seed: number;
   readonly snippetId: string;
   /** Full snippet text, used to count typeable characters per line without auto-indent. */
@@ -155,7 +157,7 @@ export function codeEvents(trace: KeyTrace, meta: CodeMeta): TrainingEvent[] {
       at: meta.at,
       drill: "typing.code",
       config: meta.config,
-      kc: "line",
+      kc: meta.kc ?? "line",
       ok: u.ok,
       timeMs: u.timeMs,
       extra,

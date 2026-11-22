@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
 import { codeEvents, traceCode, type KeyTrace } from "../stats/keytrace";
+import { detectPlateau, weeklyRate } from "../stats/learning";
 import { recordEvents } from "../storage/events";
 import type { KeyValueStore } from "../storage/history";
 import {
@@ -8,9 +9,11 @@ import {
   loadTypingLanguages,
   loadTypingResults,
   saveTypingLanguages,
+  typingResultKind,
   type TypingResult,
 } from "../storage/typing";
 import {
+  burstPaceKey,
   codePaceKey,
   loadTypingPace,
   saveConfigTarget,
@@ -19,12 +22,14 @@ import {
   type TypingPaceStore,
 } from "../storage/typing-pace";
 import {
-  LANGUAGE_LABELS,
-  LANGUAGES,
-  pickSnippet,
-  type Language,
-  type Snippet,
-} from "../typing/corpus";
+  burstSummary,
+  generateBurst,
+  generateCodeSnippet,
+  type BurstSnippet,
+  type BurstSummary,
+  type GeneratedSnippet,
+} from "../typing/codegen";
+import { LANGUAGE_LABELS, LANGUAGES, type Language } from "../typing/corpus";
 import {
   backspace,
   isFinished,
@@ -44,7 +49,6 @@ import {
 } from "../typing/pace";
 import { seconds } from "./format";
 import { matchTrainingKey } from "./keys";
-import { detectPlateau, weeklyRate } from "../stats/learning";
 import { RoundHistory } from "./shell/History";
 import { PanelTitle, useRunning } from "./shell/panel";
 import { Result } from "./shell/Result";
@@ -64,33 +68,56 @@ type Props = {
   readonly onProgress?: () => void;
 };
 
-/** One snippet being typed. `run` changes on every restart, to refocus the box. */
+type ActiveSnippet = GeneratedSnippet | BurstSnippet;
+
+/** One snippet or burst being typed. `run` changes on every restart, to refocus the box. */
 type Run = {
   readonly languages: readonly Language[];
+  readonly burst: boolean;
   readonly seed: number;
-  readonly snippet: Snippet;
+  readonly snippet: ActiveSnippet;
   readonly typing: TypingState;
   /** The keys typed so far, for the events of the run (T22). */
   readonly trace: KeyTrace;
   /** Target-pace result once the run finishes (T29). */
   readonly paceSummary: PaceRoundSummary | null;
+  /** Per-repetition summary once a Rajada run finishes (T31 AC-5). */
+  readonly burstResult: BurstSummary | null;
   readonly run: number;
 };
 
-function newRun(languages: readonly Language[], seed: number, run: number): Run {
-  const snippet = pickSnippet(seed, languages);
+function paceKeyFor(languages: readonly Language[], burst: boolean): string {
+  return burst ? burstPaceKey(languages) : codePaceKey(languages);
+}
+
+function matchingResults(
+  results: readonly TypingResult[],
+  languages: readonly Language[],
+  burst: boolean,
+): TypingResult[] {
+  return results.filter(
+    (r) => languages.includes(r.language) && (typingResultKind(r.snippetId) === "burst") === burst,
+  );
+}
+
+function newRun(languages: readonly Language[], burst: boolean, seed: number, run: number): Run {
+  const snippet: ActiveSnippet = burst
+    ? generateBurst(seed, languages)
+    : generateCodeSnippet(seed, languages);
   return {
     languages,
+    burst,
     seed,
     snippet,
     typing: startTyping(snippet.text),
     trace: [],
     paceSummary: null,
+    burstResult: null,
     run,
   };
 }
 
-/** Code typing test, apart from the game engine (ADR-T10-1). */
+/** Code typing test with generated snippets and Rajada bursts (ADR-T10-1, ADR-T31-1). */
 export function TypingScreen({
   clock,
   store,
@@ -100,7 +127,7 @@ export function TypingScreen({
   onProgress,
 }: Props): ReactNode {
   const [current, setCurrent] = useState<Run>(() =>
-    newRun(loadTypingLanguages(store), newSeed(), 0),
+    newRun(loadTypingLanguages(store), false, newSeed(), 0),
   );
   const [results, setResults] = useState<readonly TypingResult[]>(() => loadTypingResults(store));
   const [pace, setPace] = useState<TypingPaceStore>(() => loadTypingPace(store));
@@ -132,13 +159,14 @@ export function TypingScreen({
     setNow(t);
     const trace = traceCode(run.trace, run.typing, typing, t);
     let paceSummary = run.paceSummary;
+    let burstResult = run.burstResult;
     if (!isFinished(run.typing) && isFinished(typing)) {
       const stats = typingStats(typing);
       const at = clock.wallTime();
-      const paceKey = codePaceKey(run.languages);
-      const priorWpms = loadTypingResults(store)
-        .filter((r) => run.languages.includes(r.language))
-        .map((r) => r.wpm);
+      const paceKey = paceKeyFor(run.languages, run.burst);
+      const priorWpms = matchingResults(loadTypingResults(store), run.languages, run.burst).map(
+        (r) => r.wpm,
+      );
       const curPace = paceRef.current;
       const target = targetForConfig(curPace, paceKey, priorWpms);
       appendTypingResult(store, {
@@ -152,6 +180,7 @@ export function TypingScreen({
       const events = codeEvents(trace, {
         at,
         config: run.snippet.language,
+        ...(run.burst ? { kc: `typing.idiom.${run.snippet.rule}` } : {}),
         seed: run.seed,
         snippetId: run.snippet.id,
         text: run.snippet.text,
@@ -164,21 +193,28 @@ export function TypingScreen({
         stats.accuracy,
         curPace.goal,
       );
+      burstResult = run.burst ? burstSummary(events.map((e) => e.timeMs)) : null;
       const nextPace = saveConfigTarget(store, paceKey, paceSummary.nextTarget);
       paceRef.current = nextPace;
       setPace(nextPace);
       setResults(loadTypingResults(store));
     }
-    show({ ...run, typing, trace, paceSummary });
+    show({ ...run, typing, trace, paceSummary, burstResult });
   };
 
-  const next = (languages = latest.current.languages) => {
-    show(newRun(languages, newSeed(), latest.current.run + 1));
+  const next = (languages = latest.current.languages, burst = latest.current.burst) => {
+    show(newRun(languages, burst, newSeed(), latest.current.run + 1));
   };
 
   const exit = () => {
     const run = latest.current;
-    show({ ...run, typing: startTyping(run.snippet.text), trace: [], paceSummary: null });
+    show({
+      ...run,
+      typing: startTyping(run.snippet.text),
+      trace: [],
+      paceSummary: null,
+      burstResult: null,
+    });
     box.current?.blur();
   };
 
@@ -188,14 +224,18 @@ export function TypingScreen({
       ? checked.filter((l) => l !== language)
       : LANGUAGES.filter((l) => l === language || checked.includes(l));
     saveTypingLanguages(store, languages);
-    next(languages);
+    next(languages, latest.current.burst);
+  };
+
+  const toggleBurst = (nextBurst: boolean) => {
+    next(latest.current.languages, nextBurst);
   };
 
   const typed = (text: string) => {
     apply(typeText(latest.current.typing, text.replaceAll("\r", ""), clock.now()));
   };
 
-  const { snippet, typing, languages, seed } = current;
+  const { snippet, typing, languages, burst, seed } = current;
   const finished = isFinished(typing);
   const running = typing.typed.length > 0 && !finished;
   const markCodes = marks(typing)
@@ -217,12 +257,12 @@ export function TypingScreen({
     typing.startedAt === null
       ? 0
       : Math.floor(Math.max(0, (typing.finishedAt ?? now) - typing.startedAt) / 1000);
-  const historyMatched = results.filter((r) => languages.includes(r.language));
+  const historyMatched = matchingResults(results, languages, burst);
   const historyScores = historyMatched.map((r) => r.wpm);
   const historyPoints = historyMatched.map((r) => ({ at: r.finishedAt, score: r.wpm }));
   const historyRate = weeklyRate(historyPoints, clock.wallTime());
   const historyPlateau = detectPlateau(historyPoints);
-  const activeTarget = targetForConfig(pace, codePaceKey(languages), historyScores);
+  const activeTarget = targetForConfig(pace, paceKeyFor(languages, burst), historyScores);
   const ghostPos =
     pace.enabled && typing.startedAt !== null && !finished
       ? ghostCodePosition(snippet.text, Math.max(0, now - typing.startedAt), activeTarget)
@@ -249,6 +289,16 @@ export function TypingScreen({
               {LANGUAGE_LABELS[language]}
             </label>
           ))}
+          <label className="op">
+            <input
+              type="checkbox"
+              checked={burst}
+              onChange={(e) => {
+                toggleBurst(e.target.checked);
+              }}
+            />
+            Rajada (5×)
+          </label>
         </div>
         <div className="options-row" role="group" aria-label="Ritmo-alvo">
           <label className="op">
@@ -365,6 +415,7 @@ export function TypingScreen({
             snippet={snippet}
             seed={seed}
             paceSummary={current.paceSummary}
+            burstResult={current.burstResult}
             onNext={next}
           />
         )}
@@ -440,17 +491,23 @@ const Line = memo(function Line({
   });
 });
 
+function formatRatio(ratio: number | null): string {
+  return ratio === null ? "—" : `${ratio.toFixed(2).replace(".", ",")}×`;
+}
+
 function TypingResults({
   typing,
   snippet,
   seed,
   paceSummary,
+  burstResult,
   onNext,
 }: {
   readonly typing: TypingState;
-  readonly snippet: Snippet;
+  readonly snippet: ActiveSnippet;
   readonly seed: number;
   readonly paceSummary: PaceRoundSummary | null;
+  readonly burstResult: BurstSummary | null;
   readonly onNext: () => void;
 }): ReactNode {
   const stats = typingStats(typing);
@@ -471,11 +528,27 @@ function TypingResults({
         { label: "tempo", value: seconds(stats.timeMs), testId: "time" },
       ]}
       extra={
-        paceSummary !== null && (
-          <p className="pace-result" data-testid="typing-pace-result">
-            {`${String(Math.round(paceSummary.onPaceShare * 100))}% das linhas no ritmo · alvo ${String(paceSummary.target)} → ${String(paceSummary.nextTarget)} WPM`}
-          </p>
-        )
+        <>
+          {burstResult !== null && (
+            <div className="burst-result" data-testid="burst-result">
+              <ol className="burst-reps" data-testid="burst-reps">
+                {burstResult.timesMs.map((ms, i) => (
+                  <li key={i} data-testid="burst-rep">
+                    <span>{`${String(i + 1)}ª`}</span> {seconds(ms)}
+                  </li>
+                ))}
+              </ol>
+              <p className="burst-ratio" data-testid="burst-ratio">
+                {`última/primeira: ${formatRatio(burstResult.ratio)}`}
+              </p>
+            </div>
+          )}
+          {paceSummary !== null && (
+            <p className="pace-result" data-testid="typing-pace-result">
+              {`${String(Math.round(paceSummary.onPaceShare * 100))}% das linhas no ritmo · alvo ${String(paceSummary.target)} → ${String(paceSummary.nextTarget)} WPM`}
+            </p>
+          )}
+        </>
       }
       seed={
         <>

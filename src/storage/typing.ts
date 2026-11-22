@@ -23,6 +23,15 @@ export type TypingResult = {
 
 export type LanguageSummary = { readonly best: number; readonly recentMean: number } | null;
 
+export type TypingResultKind = "corpus" | "generated" | "burst";
+
+/** Classifies a stored `snippetId` into legacy corpus, generated code or burst (T31 AC-4). */
+export function typingResultKind(snippetId: string): TypingResultKind {
+  if (snippetId.startsWith("burst:")) return "burst";
+  if (snippetId.startsWith("gen:")) return "generated";
+  return "corpus";
+}
+
 /** Parsed JSON at `key`, or undefined when missing, unreadable or corrupt. */
 function readJson(store: KeyValueStore, key: string): unknown {
   try {
