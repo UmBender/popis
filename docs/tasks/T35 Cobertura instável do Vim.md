@@ -1,7 +1,7 @@
 ---
 id: T35
 title: Cobertura instável do Vim
-status: review
+status: done
 depends_on: []
 branch: fix/vim-coverage-flake
 adrs: []
