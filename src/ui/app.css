@@ -1540,6 +1540,8 @@ th {
 
 .vim-preview-desc {
   margin: 0;
+  /* One line reserved even when empty, so the layout never shifts (T36). */
+  min-height: 1lh;
   font-size: var(--text-sm);
   color: var(--muted);
 }
