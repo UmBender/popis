@@ -156,7 +156,8 @@ describe("VimScreen optimal preview — Motion (T21 AC-1..AC-6)", () => {
       expectedBlocks[0]?.description ?? "",
     );
     fireEvent.blur(blocks[0] as HTMLElement);
-    expect(screen.queryByTestId("vim-preview-desc")).toBeNull();
+    // The line stays reserved but empty, so showing it never moves the layout (T36).
+    expect(screen.getByTestId("vim-preview-desc").textContent).toBe("");
 
     // Multi-block solution shows waypoints without covering the target.
     if (expectedBlocks.length > 1) {
