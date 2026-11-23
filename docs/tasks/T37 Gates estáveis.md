@@ -1,7 +1,7 @@
 ---
 id: T37
 title: Gates estáveis
-status: review
+status: done
 depends_on: []
 branch: fix/stable-gates
 adrs: [ADR-T37-1]
