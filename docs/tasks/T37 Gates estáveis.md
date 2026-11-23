@@ -1,7 +1,7 @@
 ---
 id: T37
 title: Gates estáveis
-status: in-progress
+status: review
 depends_on: []
 branch: fix/stable-gates
 adrs: [ADR-T37-1]
@@ -62,3 +62,14 @@ a sorte dos testes de propriedade e o tempo de execução.
 - `AGENTS.md` (uma linha sobre `FC_SEED` no `test:fuzz`)
 
 ## Log
+
+- 2026-11-22: o teste de regressão foi commitado vermelho (seed
+  `undefined`, sem `testTimeout`) e passa com a correção.
+- 2026-11-23: seed conferida nos três modos: `check` usa `20261122/200`;
+  `FC_NUM_RUNS=300` sorteia (`undefined/300`); `FC_SEED=7` usa `7/300`.
+- 2026-11-23: com o notebook **na bateria**, `npm run check` passou
+  (167 arquivos, 4257 testes), e `npm run coverage` passou duas vezes
+  seguidas com tabelas idênticas (99,82% de comandos e 98,74% de ramos),
+  sem nenhum timeout. Antes, nas mesmas condições, falhava em 2 ou 3
+  testes de tempo.
+
