@@ -1,7 +1,7 @@
 ---
 id: T34
 title: Digitação - trechos do repositório de CP
-status: review
+status: done
 depends_on: []
 branch: task/T34-typing-library-mining
 adrs:
