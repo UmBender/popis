@@ -95,11 +95,15 @@ export function OptimalPreview({
           );
         })}
       </div>
-      {active !== undefined && active.description !== null && (
-        <p className="vim-preview-desc" data-testid="vim-preview-desc">
-          <code>{active.text}</code> — {active.description}
-        </p>
-      )}
+      {/* Always present, empty when no block is active: showing a description
+          must not move the blocks under the pointer (T36). */}
+      <p className="vim-preview-desc" data-testid="vim-preview-desc">
+        {active !== undefined && active.description !== null && (
+          <>
+            <code>{active.text}</code> — {active.description}
+          </>
+        )}
+      </p>
     </div>
   );
 }
