@@ -1,7 +1,7 @@
 ---
 id: T26
 title: GDB - memória e saída
-status: review
+status: done
 depends_on: [T25]
 branch: task/T26-gdb-output
 adrs: [ADR-T26-1]
