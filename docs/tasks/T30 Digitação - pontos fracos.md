@@ -1,7 +1,7 @@
 ---
 id: T30
 title: Digitação - pontos fracos
-status: review
+status: done
 depends_on: [T29]
 branch: task/T30-typing-weak-points
 adrs:
