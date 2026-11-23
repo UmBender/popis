@@ -1,7 +1,7 @@
 ---
 id: T36
 title: Clique perdido na prévia do ótimo
-status: in-progress
+status: review
 depends_on: []
 branch: fix/preview-desc-layout-shift
 adrs: []
@@ -52,3 +52,20 @@ com a página rolada.
   `tests/regressions/T36-preview-desc-layout-shift.test.ts`
 
 ## Log
+
+- 2026-11-22: o teste
+  `tests/regressions/T36-preview-desc-layout-shift.test.ts` foi commitado
+  vermelho ("Unable to find an element by:
+  [data-testid=\"vim-preview-desc\"]") e passa com a correção.
+- 2026-11-22: **teste corrigido em commit próprio:**
+  `src/ui/VimScreenPreview.test.tsx` exigia que a descrição sumisse depois
+  do blur (`queryByTestId(...)` nulo). Isso é justamente o deslocamento de
+  layout que perde o clique. Agora o teste exige a linha reservada e
+  vazia; a intenção, nenhuma descrição visível sem bloco ativo, continua
+  coberta.
+- 2026-11-22: o e2e da T21 passou 3 de 3 vezes no Chromium. Antes falhou
+  4 de 4 no merge da T25 e 1 de 3 no trilho de digitação sozinho.
+- 2026-11-22: a altura reservada é `min-height: 1lh`. Uma descrição que
+  quebre em duas linhas, numa tela estreita, ainda empurraria o layout,
+  mas o Vim não aparece no celular.
+
