@@ -1,7 +1,7 @@
 ---
 id: T25
 title: GDB - comandos
-status: review
+status: done
 depends_on: [T20, T22]
 branch: task/T25-gdb-commands
 adrs: [ADR-T25-1]
