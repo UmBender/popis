@@ -1,7 +1,7 @@
 ---
 id: T36
 title: Clique perdido na prévia do ótimo
-status: review
+status: done
 depends_on: []
 branch: fix/preview-desc-layout-shift
 adrs: []
