@@ -1,7 +1,7 @@
 ---
 id: T31
 title: Digitação - código gerado e rajadas
-status: review
+status: done
 depends_on: [T29, T34]
 branch: task/T31-typing-generated-code
 adrs: [ADR-T31-1]
