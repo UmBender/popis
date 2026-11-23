@@ -184,7 +184,9 @@ Fora do `check`:
 - `npm run test:e2e` roda o Playwright, antes de pedir review em tasks que
   mexem em `src/ui/`.
 - `npm run test:fuzz` roda os testes de propriedade com muito mais casos
-  (`FC_NUM_RUNS=20000`).
+  (`FC_NUM_RUNS=20000`) e uma seed nova a cada execução; no `check` e na
+  `coverage` a seed é fixa (ADR-T37-1). Para reproduzir uma falha, use
+  `FC_SEED=<seed>`.
 - `npm run coverage` usa limiares por pasta no `vite.config.ts` (bloco
   `test.coverage.thresholds`). A cobertura só sobe: quando subir, atualize o limiar; baixar exige um ADR.
 

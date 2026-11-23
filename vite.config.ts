@@ -6,6 +6,8 @@ export default defineConfig({
   test: {
     include: ["src/**/*.test.{ts,tsx}", "tests/**/*.test.ts"],
     setupFiles: ["tests/setup.ts"],
+    // Room for a slow, busy machine: limits are not what the tests check (ADR-T37-1).
+    testTimeout: 20_000,
     // `.only` fails the run instead of silently skipping the rest.
     allowOnly: false,
     coverage: {

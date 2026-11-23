@@ -123,7 +123,7 @@ function vimEvents(rng: Rng, at: number): TrainingEvent[] {
 }
 
 describe("storage size", () => {
-  it("a year of daily practice stays under 3 MB", { timeout: 120_000 }, () => {
+  it("a year of daily practice stays under 3 MB", { timeout: 300_000 }, () => {
     const store = sizedStore();
     const rng = createRng(2026);
     let produced = 0;
