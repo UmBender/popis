@@ -1,7 +1,7 @@
 ---
 id: T29
 title: Digitação - ritmo-alvo
-status: review
+status: done
 depends_on: [T24]
 branch: task/T29-typing-target-pace
 adrs:
