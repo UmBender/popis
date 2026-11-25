@@ -31,7 +31,7 @@ test("T40: play a Ler o erro round on desktop and mobile", async ({ page }) => {
   await expectNoHorizontalScroll(page, "compile idle");
 
   // Select line 1 and the first cause button to start the 90 s clock.
-  await page.getByRole("button", { name: "Linha 1" }).click();
+  await page.getByRole("button", { name: "Linha 1", exact: true }).click();
   await page.getByTestId("compile-choices").getByRole("button").first().click();
   await expect(page.getByTestId("compile-feedback")).toBeVisible();
   await expectNoHorizontalScroll(page, "compile feedback");
