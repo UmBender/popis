@@ -123,6 +123,12 @@ maratona vira reflexo, para não ser preciso pensar nisso na hora.
   terminal animado (transcrição conferida pelo oráculo) e 3 exercícios
   com retirada da ajuda. O botão "Treinar" abre o Comandos com os tipos
   da lição marcados.
+
+  A unidade 8 usa como exemplo o `.bashrc` do notebook do time
+  (`~/gempro-notebook/content/contest/.bashrc`, funções `c`, `cs`, `gen`,
+  `rr` e `chk`): o que cada linha faz e por quê. Se a T48 decidir não
+  publicar o notebook, a lição usa uma versão escrita para o popis com
+  as mesmas ideias.
   - Testes: `src/shell/curriculum.test.ts` ("every drill kind is unlocked by exactly one lesson", "every exercise answer passes the checker", "every lesson example has an oracle transcript"), `src/ui/ShellScreenLearn.test.tsx`.
 - **AC-7**: **Árvore e armazenamento:** a pasta "Shell" entra depois de
   "GDB", com "Aprender" e "Comandos" visíveis no celular, e os atalhos
