@@ -20,6 +20,8 @@ const SCREENS: readonly ItemId[] = [
   "gdb-output",
   "shell-learn",
   "shell-commands",
+  "regex-learn",
+  "regex-practice",
   "compile-read",
   "stl",
 ];
@@ -35,14 +37,15 @@ describe("sections", () => {
       ["Vim", ["Aprender", "Movimento", "Edição"]],
       ["GDB", ["Aprender", "Comandos", "Saída"]],
       ["Shell", ["Aprender", "Comandos"]],
+      ["Regex", ["Aprender", "Prática"]],
       ["Maratona", ["Ler o erro", "STL"]],
     ]);
   });
 
-  it("Maratona folder follows Shell with Ler o erro and STL and keeps shortcuts 1-9", () => {
-    const shellIdx = SECTIONS.findIndex((f) => f.id === "shell");
+  it("Maratona folder follows Regex with Ler o erro and STL and keeps shortcuts 1-9", () => {
+    const regexIdx = SECTIONS.findIndex((f) => f.id === "regex");
     const maratonaIdx = SECTIONS.findIndex((f) => f.id === "maratona");
-    expect(maratonaIdx).toBe(shellIdx + 1);
+    expect(maratonaIdx).toBe(regexIdx + 1);
     const maratona = SECTIONS[maratonaIdx];
     expect(maratona?.label).toBe("Maratona");
     expect(maratona?.items.map((i) => [i.id, i.label, i.touch, i.shortcut])).toEqual([
@@ -75,6 +78,19 @@ describe("sections", () => {
     expect(shell?.items.map((i) => [i.id, i.label, i.ariaLabel, i.touch, i.shortcut])).toEqual([
       ["shell-learn", "Aprender", "Aprender (Shell)", true, null],
       ["shell-commands", "Comandos", "Comandos (Shell)", true, null],
+    ]);
+    expect(ITEMS.slice(1, 10).map((i) => i.shortcut)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  });
+
+  it("Regex folder follows Shell, stays visible on touch screens and keeps shortcuts 1-9", () => {
+    const shellIdx = SECTIONS.findIndex((f) => f.id === "shell");
+    const regexIdx = SECTIONS.findIndex((f) => f.id === "regex");
+    expect(regexIdx).toBe(shellIdx + 1);
+    const regex = SECTIONS[regexIdx];
+    expect(regex?.label).toBe("Regex");
+    expect(regex?.items.map((i) => [i.id, i.label, i.ariaLabel, i.touch, i.shortcut])).toEqual([
+      ["regex-learn", "Aprender", "Aprender (Regex)", true, null],
+      ["regex-practice", "Prática", undefined, true, null],
     ]);
     expect(ITEMS.slice(1, 10).map((i) => i.shortcut)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });

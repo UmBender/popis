@@ -13,6 +13,7 @@ export const DRILLS = [
   "shell.cmd",
   "compile.read",
   "stl.out",
+  "regex.practice",
 ] as const;
 
 export type Drill = (typeof DRILLS)[number];

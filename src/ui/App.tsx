@@ -73,6 +73,7 @@ import { GdbScreen, type GdbDrill } from "./GdbScreen";
 import { ShellScreen, type ShellDrill } from "./ShellScreen";
 import { CompileScreen } from "./CompileScreen";
 import { StlScreen } from "./StlScreen";
+import { RegexScreen, type RegexDrill } from "./RegexScreen";
 
 export type AppProps = {
   readonly clock: Clock;
@@ -115,6 +116,11 @@ const GDB_DRILLS: Partial<Readonly<Record<ItemId, GdbDrill>>> = {
 const SHELL_DRILLS: Partial<Readonly<Record<ItemId, ShellDrill>>> = {
   "shell-learn": "learn",
   "shell-commands": "commands",
+};
+
+const REGEX_DRILLS: Partial<Readonly<Record<ItemId, RegexDrill>>> = {
+  "regex-learn": "learn",
+  "regex-practice": "practice",
 };
 
 function sessionConfig<M extends Mode>(
@@ -209,6 +215,7 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
   const [learnLesson, setLearnLesson] = useState<string | null>(null);
   const [gdbLesson, setGdbLesson] = useState<string | null>(null);
   const [shellLesson, setShellLesson] = useState<string | null>(null);
+  const [regexLesson, setRegexLesson] = useState<string | null>(null);
   // Section to focus when jumping to Evolução from an item's history (T23 AC-5).
   const [progressFocus, setProgressFocus] = useState<string | null>(null);
   const isNarrow = useMedia("(max-width: 48rem)", narrow);
@@ -310,6 +317,7 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
     if (id !== "vim-learn") setLearnLesson(null);
     if (id !== "gdb-learn") setGdbLesson(null);
     if (id !== "shell-learn") setShellLesson(null);
+    if (id !== "regex-learn") setRegexLesson(null);
     if (id !== "progress") setProgressFocus(null);
     setItem(id);
     updatePrefs({ item: id });
@@ -579,6 +587,28 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
             choose("shell-commands");
           }}
           initialLesson={shellLesson}
+        />
+      );
+    }
+    const regexDrill = REGEX_DRILLS[item];
+    if (regexDrill !== undefined) {
+      return (
+        <RegexScreen
+          key={item}
+          drill={regexDrill}
+          clock={clock}
+          store={store}
+          newSeed={newSeed}
+          onBack={backToMode}
+          onRunning={setRunning}
+          onLearn={(lessonId) => {
+            setRegexLesson(lessonId ?? null);
+            choose("regex-learn");
+          }}
+          onPractice={() => {
+            choose("regex-practice");
+          }}
+          initialLesson={regexLesson}
         />
       );
     }

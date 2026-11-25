@@ -1,10 +1,10 @@
 ---
 id: T45
 title: Regex - aprender e praticar
-status: ready
+status: review
 depends_on: [T25]
 branch: task/T45-regex
-adrs: []
+adrs: [ADR-T45-1]
 tags: [task]
 ---
 
@@ -80,7 +80,7 @@ trocar texto.
   - Enter aceita quando tudo está certo; "pular" mostra a canônica;
   - o resultado mostra o tempo e as tentativas por item;
   - eventos da T22 com drill `regex.practice`.
-  - Testes: `src/ui/RegexScreen.test.tsx` ("live highlight updates on each key", "Enter is accepted only when every line is right", "syntax error is shown without crashing", "skip shows the canonical regex").
+  - Testes: `src/regex/round.test.ts`, `src/stats/event.test.ts` (`DRILLS` aceita `regex.practice`), `src/ui/RegexScreen.test.tsx` ("live highlight updates on each key", "Enter is accepted only when every line is right", "syntax error is shown without crashing", "skip shows the canonical regex", "result shows time and attempts per item and records T22 events").
 - **AC-6**: **Aprender** (`src/regex/curriculum.ts`):
 
   | Unidade | Lições |
@@ -103,7 +103,7 @@ trocar texto.
   e "Prática" visíveis no celular, e os atalhos 1–9 não mudam. O
   progresso fica em `popis.regex-learn` e as configurações (dialeto) em
   `popis.regex`.
-  - Testes: `src/ui/shell/sections.test.ts`, `src/storage/regex.test.ts`, `tests/e2e/regex.spec.ts` (uma lição e um item da prática, também no mobile).
+  - Testes: `src/ui/shell/sections.test.ts`, `src/storage/regex.test.ts`, `src/storage/regex-learn.test.ts`, `tests/e2e/regex.spec.ts` (uma lição e um item da prática, também no mobile).
 
 ## Out of scope
 
@@ -113,20 +113,56 @@ trocar texto.
 
 ## Files owned
 
-- `src/regex/` (novo), `src/storage/regex.ts`, `src/storage/regex-learn.ts`
+- `src/regex/` (novo), `src/storage/regex.ts`, `src/storage/regex.test.ts`, `src/storage/regex-learn.ts`, `src/storage/regex-learn.test.ts`
 - `src/stats/event.ts`, `src/stats/event.test.ts`
-- `src/ui/RegexScreen.tsx`, `src/ui/regex/` (novo), `src/ui/App.tsx`,
+- `src/ui/RegexScreen.tsx`, `src/ui/RegexScreen.test.tsx`, `src/ui/RegexScreenLearn.test.tsx`, `src/ui/regex/` (novo), `src/ui/App.tsx`,
   `src/ui/shell/sections.ts`, `src/ui/shell/sections.test.ts`, `src/ui/app.css`
 - `scripts/regex-oracle.mjs`, `package.json`, `vite.config.ts`, `playwright.config.ts`
 - `tests/e2e/regex.spec.ts`
 
 ## Subtasks (one commit each)
 
-- [ ] spec: ADR-T45-1 (dialetos Python e ERE, motor por tradução para `RegExp`, oráculo com as ferramentas reais) e testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, `regex:oracle`, coverage, e2e
-- [ ] docs
+- [x] spec: ADR-T45-1 (dialetos Python e ERE, motor por tradução para `RegExp`, oráculo com as ferramentas reais) e testes nomeados
+- [x] tests
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, `regex:oracle`, coverage, e2e
+- [x] docs
 
 ## Log
+
+- 2026-11-25 — Rodada da batch (sem ninguém no teclado). Escopo completo,
+  sem fatia menor: as 9 unidades do Aprender e os 4 tipos de item
+  (`casar`, `extrair`, `trocar`, `ler`) nos dialetos Python `re` (padrão)
+  e `grep -E`.
+- 2026-11-25 — Qualidade: o passo foi retomado de uma sessão interrompida.
+  As mudanças não commitadas foram revisadas: os testes só ganharam casos
+  novos e formatação, sem nenhuma asserção afrouxada. Feito:
+  `prettier --write` em três arquivos; um teste novo ("Enter on a focused
+  lesson button is left to the button and does not open the next
+  lesson"); a remoção de um `return` inalcançável em `apply` da Prática
+  (todos os chamadores já excluem a rodada inalterada, e sem ele o pior
+  caso é um render idêntico); e o limiar novo `src/regex/**` (lines 100,
+  statements 99, functions 100, branches 98) no `vite.config.ts`.
+- 2026-11-25 — Gates: `npm run check` verde (176 arquivos, 4312 testes);
+  `npm run coverage` verde (`src/regex` 99.52/98.26/100/100,
+  `src/ui/regex` 100/98.05/100/100); `npm run test:e2e` com 39 passando,
+  incluindo `regex.spec.ts` no desktop e no mobile; `npm run test:fuzz`
+  verde (34 arquivos, 249 testes).
+- 2026-11-25 — AC-4: `npm run regex:oracle` → python3: 779 checagens
+  (0 falhas); `grep -E`: 60 padrões e 369 linhas (0 falhas); `sed -E`:
+  20 padrões e 58 linhas (0 falhas).
+- 2026-11-25 — AC-7: a pasta Regex entra depois de GDB, porque Shell
+  (T39) ainda não está na `main`. Na integração, ela vai para depois de
+  Shell.
+- 2026-11-25 — Checagem visual: `.batch/visual/t45-regex.spec.ts`
+  (desktop e phone) gerou 6 telas por projeto: lista, lição, prática ao
+  vivo, erro de dialeto, pular e resultado. Elas foram conferidas, e não
+  há nada claramente quebrado.
+- 2026-11-25 — Checagens manuais para o dono: (1) resolver três itens,
+  um por dialeto, incluindo um erro de sintaxe no meio da digitação;
+  (2) durante a rodada, a linha "Nenhuma rodada nesta configuração.
+  Enter começa a primeira." fica visível embaixo dos botões, e o "Enter
+  começa" pode confundir enquanto um item está aberto; (3) uma rodada no
+  celular.
+- 2026-11-25 — Arquivos: todos dentro de *Files owned*.

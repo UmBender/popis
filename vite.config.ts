@@ -23,6 +23,7 @@ export default defineConfig({
         "src/gen/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
         "src/learn/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
         "src/math/**": { lines: 99, statements: 99, functions: 100, branches: 96 },
+        "src/regex/**": { lines: 100, statements: 99, functions: 100, branches: 98 },
         "src/session/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
         "src/shell/**": { lines: 98, statements: 97, functions: 100, branches: 93 },
         "src/stats/**": { lines: 100, statements: 100, functions: 100, branches: 100 },

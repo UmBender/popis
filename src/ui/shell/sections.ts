@@ -17,6 +17,8 @@ export type ItemId =
   | "gdb-output"
   | "shell-learn"
   | "shell-commands"
+  | "regex-learn"
+  | "regex-practice"
   | "compile-read"
   | "stl";
 
@@ -103,6 +105,14 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
     [
       ["shell-learn", "Aprender", undefined, "Aprender (Shell)"],
       ["shell-commands", "Comandos", undefined, "Comandos (Shell)"],
+    ],
+  ],
+  [
+    "regex",
+    "Regex",
+    [
+      ["regex-learn", "Aprender", undefined, "Aprender (Regex)"],
+      ["regex-practice", "Prática"],
     ],
   ],
   [
