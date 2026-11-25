@@ -220,4 +220,54 @@ describe("compile", () => {
       expect(validateReplacement("\\g<1>", "ere", ere.matcher.groupCount).ok).toBe(false);
     }
   });
+
+  it("handles edge cases in classes, escapes, quantifiers, zero-width findAll and replacements", () => {
+    // Character class edge cases.
+    expect(compile("[a\\", "python").ok).toBe(false);
+    expect(compile("[\\u0041]", "python").ok).toBe(false);
+    expect(compile("[\\1]", "python").ok).toBe(false);
+    expect(compile("[z-a]", "python").ok).toBe(false);
+    const ereBackslash = compile("^[\\\\a]+$", "ere");
+    expect(ereBackslash.ok).toBe(true);
+    if (ereBackslash.ok) {
+      expect(ereBackslash.matcher.test("\\a")).toBe(true);
+    }
+
+    // Unsupported (?...), bad braces, dangling {2}, \A/\Z, \t/\n/\r and unknown escapes.
+    expect(compile("(?#note)a", "python").ok).toBe(false);
+    expect(compile("a{abc}", "python").ok).toBe(false);
+    expect(compile("{2}", "python").ok).toBe(false);
+    expect(compile("\\Aabc\\Z", "python").ok).toBe(false);
+    expect(compile("\\t\\n\\r", "python").ok).toBe(true);
+    expect(compile("\\t", "ere").ok).toBe(false);
+    expect(compile("\\a", "python").ok).toBe(false);
+
+    // Zero-width match in findAll does not infinite-loop.
+    const empty = compile("^", "python");
+    expect(empty.ok).toBe(true);
+    if (empty.ok) {
+      expect(empty.matcher.findAll("ab").map((s) => [s.start, s.end])).toEqual([[0, 0]]);
+      expect(empty.matcher.findAll("").map((s) => [s.start, s.end])).toEqual([[0, 0]]);
+    }
+
+    // Replacement escapes and error paths.
+    const py = compile("(\\d+)", "python");
+    expect(py.ok).toBe(true);
+    if (py.ok) {
+      expect(applyReplace(py.matcher, "7", "\\g<0>\\t\\n\\\\")).toEqual({
+        ok: true,
+        output: "7\t\n\\",
+      });
+      expect(applyReplace(py.matcher, "7", "\\")).toMatchObject({ ok: false });
+      expect(applyReplace(py.matcher, "7", "\\g<bad>")).toMatchObject({ ok: false });
+      expect(applyReplace(py.matcher, "7", "\\g<2>")).toMatchObject({ ok: false });
+      expect(applyReplace(py.matcher, "7", "\\q")).toMatchObject({ ok: false });
+    }
+
+    const ere = compile("([0-9]+)", "ere");
+    expect(ere.ok).toBe(true);
+    if (ere.ok) {
+      expect(applyReplace(ere.matcher, "7", "\\&\\\\")).toEqual({ ok: true, output: "&\\" });
+    }
+  });
 });

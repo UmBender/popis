@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../../core/clock";
-import { checkCasar, checkExtrair, checkLer, checkTrocar } from "../../regex/check";
+import {
+  evaluateRegexItem,
+  judgeRegexSubmission,
+  type CasarEval,
+  type ExtrairEval,
+  type LerEval,
+  type TrocarEval,
+} from "../../regex/check";
 import { REGEX_DIALECTS, REGEX_DIALECT_LABELS } from "../../regex/compile";
 import { REGEX_LESSONS, regexLessonForToken } from "../../regex/curriculum";
 import {
@@ -16,7 +23,12 @@ import {
   touchRegexRound,
   type RegexRound,
 } from "../../regex/round";
-import { REGEX_ITEM_KINDS, REGEX_KIND_LABELS, type RegexItem, type RegexItemKind } from "../../regex/types";
+import {
+  REGEX_ITEM_KINDS,
+  REGEX_KIND_LABELS,
+  type RegexItem,
+  type RegexItemKind,
+} from "../../regex/types";
 import { recordEvents } from "../../storage/events";
 import type { KeyValueStore } from "../../storage/history";
 import {
@@ -67,7 +79,7 @@ function newRun(settings: RegexSettings, seed: number, run: number): Run {
 
 const formatSec = (ms: number): string => `${(ms / 1000).toFixed(1)} s`;
 
-function canonicalDisplay(item: RegexItem): string {
+export function canonicalDisplay(item: RegexItem): string {
   if (item.kind === "trocar") {
     return `${item.canonical}  →  ${item.canonicalReplacement === "" ? "(vazio)" : item.canonicalReplacement}`;
   }
@@ -88,10 +100,14 @@ export function PracticeDrill({
   onLearn,
 }: Props): ReactNode {
   const [current, setCurrent] = useState<Run>(() => newRun(loadRegexSettings(store), newSeed(), 0));
-  const [results, setResults] = useState<readonly RegexRoundResult[]>(() => loadRegexResults(store));
+  const [results, setResults] = useState<readonly RegexRoundResult[]>(() =>
+    loadRegexResults(store),
+  );
   const [pattern, setPattern] = useState("");
   const [replacement, setReplacement] = useState("");
-  const [selected, setSelected] = useState<boolean[]>(() => emptySelection(current.round.items[0]!));
+  const [selected, setSelected] = useState<boolean[]>(() =>
+    emptySelection(current.round.items[0]!),
+  );
   const [feedback, setFeedback] = useState<string | null>(null);
   const [now, setNow] = useState(() => clock.now());
 
@@ -113,7 +129,6 @@ export function PracticeDrill({
   const apply = useCallback(
     (round: RegexRound) => {
       const run = latest.current;
-      if (round === run.round) return;
       if (!isRegexRoundFinished(run.round) && isRegexRoundFinished(round)) {
         const stats = regexRoundStats(round);
         const at = clock.wallTime();
@@ -215,23 +230,26 @@ export function PracticeDrill({
   };
 
   const liveInput = useFrameValue({ pattern, replacement });
-  const idle = liveInput.pattern.length === 0;
+  const idle = !round.skippedCurrent && liveInput.pattern.length === 0;
 
   const liveEval = useMemo(() => {
-    if (item.kind === "casar") {
-      return idle ? null : checkCasar(liveInput.pattern, item);
+    if (round.skippedCurrent) {
+      return evaluateRegexItem(item, {
+        pattern: item.kind === "ler" ? item.pattern : item.canonical,
+        replacement: item.kind === "trocar" ? item.canonicalReplacement : "",
+        selected,
+      });
     }
-    if (item.kind === "extrair") {
-      return idle ? null : checkExtrair(liveInput.pattern, item);
-    }
-    if (item.kind === "trocar") {
-      return idle ? null : checkTrocar(liveInput.pattern, liveInput.replacement, item);
-    }
-    return checkLer(selected, item);
-  }, [idle, item, liveInput.pattern, liveInput.replacement, selected]);
+    if (item.kind !== "ler" && idle) return null;
+    return evaluateRegexItem(item, {
+      pattern: liveInput.pattern,
+      replacement: liveInput.replacement,
+      selected,
+    });
+  }, [idle, item, liveInput.pattern, liveInput.replacement, round.skippedCurrent, selected]);
 
   const liveError =
-    liveEval !== null && !liveEval.ok ? liveEval.error : null;
+    !round.skippedCurrent && liveEval !== null && !liveEval.ok ? liveEval.error : null;
 
   const advanceSkip = () => {
     const t = clock.now();
@@ -258,79 +276,12 @@ export function PracticeDrill({
       return;
     }
     const active = cur.items[cur.index]!;
+    if (active.kind !== "ler" && pattern.length === 0) return;
     const t = clock.now();
     setNow(t);
-
-    if (active.kind === "casar") {
-      if (pattern.length === 0) return;
-      const ev = checkCasar(pattern, active);
-      if (!ev.ok) {
-        setFeedback(ev.error);
-        apply(recordRegexAttempt(cur, false, t));
-        return;
-      }
-      if (!ev.allPassed) {
-        setFeedback(
-          `Ainda faltam ${String(ev.totalCount - ev.passedCount)} de ${String(ev.totalCount)} linhas.`,
-        );
-        apply(recordRegexAttempt(cur, false, t));
-        return;
-      }
-      setFeedback(null);
-      apply(recordRegexAttempt(cur, true, t));
-      return;
-    }
-
-    if (active.kind === "extrair") {
-      if (pattern.length === 0) return;
-      const ev = checkExtrair(pattern, active);
-      if (!ev.ok) {
-        setFeedback(ev.error);
-        apply(recordRegexAttempt(cur, false, t));
-        return;
-      }
-      if (!ev.allPassed) {
-        setFeedback(
-          `Grupo 1 certo em ${String(ev.passedCount)} de ${String(ev.totalCount)} linhas.`,
-        );
-        apply(recordRegexAttempt(cur, false, t));
-        return;
-      }
-      setFeedback(null);
-      apply(recordRegexAttempt(cur, true, t));
-      return;
-    }
-
-    if (active.kind === "trocar") {
-      if (pattern.length === 0) return;
-      const ev = checkTrocar(pattern, replacement, active);
-      if (!ev.ok) {
-        setFeedback(ev.error);
-        apply(recordRegexAttempt(cur, false, t));
-        return;
-      }
-      if (!ev.allPassed) {
-        setFeedback(
-          `Troca certa em ${String(ev.passedCount)} de ${String(ev.totalCount)} linhas.`,
-        );
-        apply(recordRegexAttempt(cur, false, t));
-        return;
-      }
-      setFeedback(null);
-      apply(recordRegexAttempt(cur, true, t));
-      return;
-    }
-
-    const ev = checkLer(selected, active);
-    if (!ev.allPassed) {
-      setFeedback(
-        `${String(ev.passedCount)} de ${String(ev.totalCount)} linhas certas. Ajuste e tente de novo.`,
-      );
-      apply(recordRegexAttempt(cur, false, t));
-      return;
-    }
-    setFeedback(null);
-    apply(recordRegexAttempt(cur, true, t));
+    const verdict = judgeRegexSubmission(active, { pattern, replacement, selected });
+    setFeedback(verdict.feedback);
+    apply(recordRegexAttempt(cur, verdict.passed, t));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -371,11 +322,11 @@ export function PracticeDrill({
           .filter((t, i, arr) => arr.findIndex((x) => x.syntax === t.syntax) === i)
           .slice(0, 14)
           .map((token) => {
-            const lesson = regexLessonForToken(token.syntax);
+            const lesson = regexLessonForToken(token.syntax)!;
             return (
               <li key={token.syntax}>
                 <code>{token.syntax}</code> — {token.desc}
-                {lesson !== undefined && onLearn !== undefined && (
+                {onLearn !== undefined && (
                   <>
                     {" "}
                     <button
@@ -578,7 +529,9 @@ export function PracticeDrill({
                         type="text"
                         className="gdb-input"
                         aria-label="Substituição"
-                        placeholder={item.dialect === "python" ? "ex.: \\1 ou \\g<1>" : "ex.: \\1 ou &"}
+                        placeholder={
+                          item.dialect === "python" ? "ex.: \\1 ou \\g<1>" : "ex.: \\1 ou &"
+                        }
                         value={replacement}
                         disabled={round.skippedCurrent}
                         autoComplete="off"
@@ -605,32 +558,20 @@ export function PracticeDrill({
               )}
 
               {item.kind === "casar" && (
-                <CasarLines
-                  item={item}
-                  evaluation={liveEval as ReturnType<typeof checkCasar> | null}
-                  idle={idle}
-                />
+                <CasarLines item={item} evaluation={liveEval as CasarEval | null} idle={idle} />
               )}
               {item.kind === "extrair" && (
-                <ExtrairLines
-                  item={item}
-                  evaluation={liveEval as ReturnType<typeof checkExtrair> | null}
-                  idle={idle}
-                />
+                <ExtrairLines item={item} evaluation={liveEval as ExtrairEval | null} idle={idle} />
               )}
               {item.kind === "trocar" && (
-                <TrocarLines
-                  item={item}
-                  evaluation={liveEval as ReturnType<typeof checkTrocar> | null}
-                  idle={idle}
-                />
+                <TrocarLines item={item} evaluation={liveEval as TrocarEval | null} idle={idle} />
               )}
               {item.kind === "ler" && (
                 <LerLines
                   item={item}
                   selected={selected}
                   revealed={round.skippedCurrent}
-                  evaluation={liveEval as ReturnType<typeof checkLer>}
+                  evaluation={liveEval as LerEval}
                   onToggle={(idx) => {
                     touch();
                     setFeedback(null);

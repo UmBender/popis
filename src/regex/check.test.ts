@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { checkCasar, checkExtrair, checkLer, checkTrocar, editDistance } from "./check";
+import {
+  checkCasar,
+  checkExtrair,
+  checkLer,
+  checkTrocar,
+  editDistance,
+  judgeRegexSubmission,
+} from "./check";
 import type { CasarItem, ExtrairItem, LerItem, TrocarItem } from "./types";
 
 // T45 AC-2: item checking for casar, extrair, trocar and ler, accepting equivalent
@@ -102,6 +109,10 @@ describe("checkExtrair", () => {
       expect(loose.allPassed).toBe(false);
       expect(loose.cases[3]?.ok).toBe(false);
     }
+
+    expect(
+      judgeRegexSubmission(item, { pattern: ": (-?\\d+)", replacement: "", selected: [] }),
+    ).toMatchObject({ passed: false });
   });
 });
 
@@ -133,17 +144,39 @@ describe("checkTrocar", () => {
       ok: true,
       allPassed: true,
     });
-    expect(
-      checkTrocar("(\\d{4})-(\\d{2})-(\\d{2})", "\\g<3>/\\g<2>/\\g<1>", pyItem),
-    ).toMatchObject({
-      ok: true,
-      allPassed: true,
-    });
+    expect(checkTrocar("(\\d{4})-(\\d{2})-(\\d{2})", "\\g<3>/\\g<2>/\\g<1>", pyItem)).toMatchObject(
+      {
+        ok: true,
+        allPassed: true,
+      },
+    );
 
     const ereItem: TrocarItem = { ...pyItem, dialect: "ere" };
-    const badRepl = checkTrocar("([0-9]{4})-([0-9]{2})-([0-9]{2})", "\\g<3>/\\g<2>/\\g<1>", ereItem);
+    const badRepl = checkTrocar(
+      "([0-9]{4})-([0-9]{2})-([0-9]{2})",
+      "\\g<3>/\\g<2>/\\g<1>",
+      ereItem,
+    );
     expect(badRepl.ok).toBe(false);
     if (!badRepl.ok) expect(badRepl.field).toBe("replacement");
+
+    const badPat = checkTrocar("([0-9]{4}", "\\1", ereItem);
+    expect(badPat.ok).toBe(false);
+    if (!badPat.ok) expect(badPat.field).toBe("pattern");
+
+    expect(
+      judgeRegexSubmission(pyItem, { pattern: "nope", replacement: "x", selected: [] }),
+    ).toMatchObject({ passed: false });
+    expect(
+      judgeRegexSubmission(pyItem, {
+        pattern: pyItem.canonical,
+        replacement: pyItem.canonicalReplacement,
+        selected: [],
+      }),
+    ).toEqual({ passed: true, feedback: null });
+    expect(
+      judgeRegexSubmission(DECIMAL_ITEM, { pattern: ".*", replacement: "", selected: [] }),
+    ).toMatchObject({ passed: false });
   });
 });
 

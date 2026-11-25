@@ -80,15 +80,15 @@ export function CasarLines({
   readonly evaluation: CasarEval | null;
   readonly idle: boolean;
 }): ReactNode {
-  const valid = evaluation !== null && evaluation.ok ? evaluation : null;
+  const valid = !idle && evaluation !== null && evaluation.ok ? evaluation : null;
   const posCount = item.positive.length;
   const posRows = item.positive.map((line, i) => ({
     line,
-    ev: valid?.lines[i] ?? null,
+    ev: valid !== null ? valid.lines[i]! : null,
   }));
   const negRows = item.negative.map((line, i) => ({
     line,
-    ev: valid?.lines[posCount + i] ?? null,
+    ev: valid !== null ? valid.lines[posCount + i]! : null,
   }));
 
   return (
@@ -98,8 +98,8 @@ export function CasarLines({
         <ul className="regex-list">
           {posRows.map(({ line, ev }, idx) => (
             <li key={`pos-${String(idx)}`} className="regex-row" data-testid="regex-line">
-              <StatusMark ok={idle || ev === null ? null : ev.ok} />
-              <LineCode text={line} spans={idle || ev?.span == null ? [] : [ev.span]} />
+              <StatusMark ok={ev === null ? null : ev.ok} />
+              <LineCode text={line} spans={ev?.span == null ? [] : [ev.span]} />
             </li>
           ))}
         </ul>
@@ -109,8 +109,8 @@ export function CasarLines({
         <ul className="regex-list">
           {negRows.map(({ line, ev }, idx) => (
             <li key={`neg-${String(idx)}`} className="regex-row" data-testid="regex-line">
-              <StatusMark ok={idle || ev === null ? null : ev.ok} />
-              <LineCode text={line} spans={idle || ev?.span == null ? [] : [ev.span]} />
+              <StatusMark ok={ev === null ? null : ev.ok} />
+              <LineCode text={line} spans={ev?.span == null ? [] : [ev.span]} />
             </li>
           ))}
         </ul>
@@ -128,20 +128,24 @@ export function ExtrairLines({
   readonly evaluation: ExtrairEval | null;
   readonly idle: boolean;
 }): ReactNode {
-  const valid = evaluation !== null && evaluation.ok ? evaluation : null;
+  const valid = !idle && evaluation !== null && evaluation.ok ? evaluation : null;
   return (
     <div className="regex-group">
       <h3 className="regex-group-title">Linhas e grupo 1 esperado</h3>
       <ul className="regex-list">
         {item.cases.map((c, idx) => {
-          const ev = valid?.cases[idx] ?? null;
+          const ev = valid !== null ? valid.cases[idx]! : null;
           return (
-            <li key={`ext-${String(idx)}`} className="regex-row regex-row-wrap" data-testid="regex-line">
-              <StatusMark ok={idle || ev === null ? null : ev.ok} />
-              <LineCode text={c.line} spans={idle || ev?.span == null ? [] : [ev.span]} />
+            <li
+              key={`ext-${String(idx)}`}
+              className="regex-row regex-row-wrap"
+              data-testid="regex-line"
+            >
+              <StatusMark ok={ev === null ? null : ev.ok} />
+              <LineCode text={c.line} spans={ev?.span == null ? [] : [ev.span]} />
               <span className="regex-meta muted">
                 esperado: <code>{c.expected ?? "(não casa)"}</code>
-                {!idle && ev !== null && (
+                {ev !== null && (
                   <>
                     {" · "}grupo 1: <code>{ev.actual ?? "(vazio)"}</code>
                   </>
@@ -164,24 +168,28 @@ export function TrocarLines({
   readonly evaluation: TrocarEval | null;
   readonly idle: boolean;
 }): ReactNode {
-  const valid = evaluation !== null && evaluation.ok ? evaluation : null;
+  const valid = !idle && evaluation !== null && evaluation.ok ? evaluation : null;
   return (
     <div className="regex-group">
       <h3 className="regex-group-title">Antes → depois</h3>
       <ul className="regex-list">
         {item.cases.map((c, idx) => {
-          const ev = valid?.cases[idx] ?? null;
+          const ev = valid !== null ? valid.cases[idx]! : null;
           return (
-            <li key={`sub-${String(idx)}`} className="regex-row regex-row-col" data-testid="regex-line">
+            <li
+              key={`sub-${String(idx)}`}
+              className="regex-row regex-row-col"
+              data-testid="regex-line"
+            >
               <div className="regex-row-head">
-                <StatusMark ok={idle || ev === null ? null : ev.ok} />
-                <LineCode text={c.before} spans={idle || ev === null ? [] : ev.spans} />
+                <StatusMark ok={ev === null ? null : ev.ok} />
+                <LineCode text={c.before} spans={ev === null ? [] : ev.spans} />
               </div>
               <div className="regex-sub-pair muted">
                 <span>
                   esperado: <code>{c.after}</code>
                 </span>
-                {!idle && ev !== null && (
+                {ev !== null && (
                   <span>
                     atual: <code>{ev.actual}</code>
                   </span>
@@ -215,8 +223,8 @@ export function LerLines({
       </div>
       <ul className="regex-list">
         {item.lines.map((line, idx) => {
-          const checked = selected[idx] ?? false;
-          const ev = revealed && evaluation !== null ? (evaluation.lines[idx] ?? null) : null;
+          const checked = selected[idx] === true;
+          const ev = revealed && evaluation !== null ? evaluation.lines[idx]! : null;
           return (
             <li key={`ler-${String(idx)}`} className="regex-row" data-testid="regex-line">
               <label className="regex-ler-label">

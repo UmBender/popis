@@ -65,4 +65,39 @@ describe("regex round", () => {
     expect(events[1]?.ok).toBe(false);
     expect(events[1]?.extra["skipped"]).toBe(true);
   });
+
+  it("handles edge transitions cleanly (idempotent touch, skip before start, finish via skip, post-finish no-ops)", () => {
+    let round = startRegexRound({ seed: 7, dialect: "ere", kinds: ["casar"] });
+    // Advance when not skipped is a no-op.
+    expect(advanceSkippedRegexItem(round, 100)).toBe(round);
+
+    // Touch twice is idempotent.
+    round = touchRegexRound(round, 500);
+    expect(touchRegexRound(round, 900)).toBe(round);
+
+    // Skip all 5 items (including revealing canonical on item 5 before advancing to finish).
+    for (let i = 0; i < REGEX_ROUND_LENGTH; i++) {
+      round = revealSkipRegexItem(round, 1000 + i * 500);
+      expect(isRegexRoundFinished(round)).toBe(false);
+      // Duplicate reveal or attempt while skipped is a no-op.
+      expect(revealSkipRegexItem(round, 1100 + i * 500)).toBe(round);
+      expect(recordRegexAttempt(round, true, 1100 + i * 500)).toBe(round);
+      if (i === 0) {
+        // Mid-round stats sum recorded item times.
+        expect(regexRoundStats(round).skipped).toBe(1);
+      }
+      round = advanceSkippedRegexItem(round, 1200 + i * 500);
+    }
+
+    expect(isRegexRoundFinished(round)).toBe(true);
+    expect(touchRegexRound(round, 9999)).toBe(round);
+    expect(recordRegexAttempt(round, true, 9999)).toBe(round);
+    expect(revealSkipRegexItem(round, 9999)).toBe(round);
+    expect(regexRoundStats(round).skipped).toBe(5);
+
+    // Skip directly on item 0 without touching first.
+    const cold = startRegexRound({ seed: 8, dialect: "python", kinds: ["casar"] });
+    const coldSkipped = revealSkipRegexItem(cold, 2000);
+    expect(coldSkipped.startedAt).toBe(2000);
+  });
 });

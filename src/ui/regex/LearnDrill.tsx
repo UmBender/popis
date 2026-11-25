@@ -6,7 +6,14 @@ import {
   type ExerciseStep,
   type UnitStatus,
 } from "../../learn/curriculum";
-import { checkCasar, checkExtrair, checkLer, checkTrocar } from "../../regex/check";
+import {
+  evaluateRegexItem,
+  judgeRegexSubmission,
+  type CasarEval,
+  type ExtrairEval,
+  type LerEval,
+  type TrocarEval,
+} from "../../regex/check";
 import { applyReplace, compile, REGEX_DIALECT_LABELS } from "../../regex/compile";
 import {
   REGEX_LESSONS,
@@ -14,13 +21,13 @@ import {
   regexLessonById,
   type RegexLesson,
 } from "../../regex/curriculum";
-import type { RegexItem } from "../../regex/types";
 import type { KeyValueStore } from "../../storage/history";
 import { loadRegexSettings, parseRegexSettings, saveRegexSettings } from "../../storage/regex";
 import { completeRegexLesson, loadRegexCompleted } from "../../storage/regex-learn";
 import { PanelTitle } from "../shell/panel";
 import { isControl, isField } from "../shell/Shell";
 import { CasarLines, ExtrairLines, HighlightedText, LerLines, TrocarLines } from "./MatchLines";
+import { canonicalDisplay } from "./PracticeDrill";
 import { useFrameValue } from "./useFrameValue";
 
 /** One regex example step every 1400 ms in the animated example. */
@@ -39,20 +46,8 @@ type Props = {
   readonly initialLesson?: string | null;
 };
 
-function canonicalHint(item: RegexItem): string {
-  if (item.kind === "trocar") {
-    return `${item.canonical}  →  ${item.canonicalReplacement === "" ? "(vazio)" : item.canonicalReplacement}`;
-  }
-  return item.canonical;
-}
-
 /** Regex Aprender curriculum screen (T45 AC-6): 9 ordered units with animated highlight and adaptive fading. */
-export function LearnDrill({
-  store,
-  onBack,
-  onPractice,
-  initialLesson = null,
-}: Props): ReactNode {
+export function LearnDrill({ store, onBack, onPractice, initialLesson = null }: Props): ReactNode {
   const [open, setOpen] = useState<string | null>(() =>
     initialLesson !== null && regexLessonById(initialLesson) !== undefined ? initialLesson : null,
   );
@@ -221,7 +216,7 @@ function RegexExampleView({ lesson }: { readonly lesson: RegexLesson }): ReactNo
     () => compile(step.pattern, example.dialect, example.mode),
     [example.dialect, example.mode, step.pattern],
   );
-  const matcher = compiled.ok ? compiled.matcher : null;
+  const matcher = compiled.ok ? compiled.matcher : /* v8 ignore next */ null;
 
   return (
     <div className="vim-example">
@@ -239,7 +234,7 @@ function RegexExampleView({ lesson }: { readonly lesson: RegexLesson }): ReactNo
         </div>
         <ul className="regex-list" data-testid="regex-example-lines">
           {example.lines.map((line, i) => {
-            const spans = matcher === null ? [] : matcher.findAll(line);
+            const spans = matcher !== null ? matcher.findAll(line) : /* v8 ignore next */ [];
             const replaced =
               matcher !== null && step.replacement !== undefined
                 ? applyReplace(matcher, line, step.replacement)
@@ -247,11 +242,7 @@ function RegexExampleView({ lesson }: { readonly lesson: RegexLesson }): ReactNo
             return (
               <li key={i} className="regex-row regex-row-wrap">
                 <span
-                  className={
-                    spans.length > 0
-                      ? "regex-mark regex-mark-ok"
-                      : "regex-mark muted"
-                  }
+                  className={spans.length > 0 ? "regex-mark regex-mark-ok" : "regex-mark muted"}
                 >
                   {spans.length > 0 ? "✓" : "·"}
                 </span>
@@ -311,9 +302,7 @@ function RegexExerciseView({
   const [wrongCount, setWrongCount] = useState(0);
   const [pattern, setPattern] = useState("");
   const [replacement, setReplacement] = useState("");
-  const [selected, setSelected] = useState<boolean[]>(() =>
-    lesson.exercises[0].kind === "ler" ? lesson.exercises[0].lines.map(() => false) : [],
-  );
+  const [selected, setSelected] = useState<boolean[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [finished, setFinished] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -325,12 +314,11 @@ function RegexExerciseView({
   }, [step, finished, exercise.kind]);
 
   const resetStep = (nextStep: ExerciseStep) => {
-    const nextEx = lesson.exercises[nextStep];
     setStep(nextStep);
     setWrongCount(0);
     setPattern("");
     setReplacement("");
-    setSelected(nextEx.kind === "ler" ? nextEx.lines.map(() => false) : []);
+    setSelected([]);
     setFeedback(null);
     setFinished(false);
   };
@@ -339,17 +327,24 @@ function RegexExerciseView({
   const idle = liveInput.pattern.length === 0;
 
   const liveEval = useMemo(() => {
-    if (exercise.kind === "casar") return idle ? null : checkCasar(liveInput.pattern, exercise);
-    if (exercise.kind === "extrair") return idle ? null : checkExtrair(liveInput.pattern, exercise);
-    if (exercise.kind === "trocar") {
-      return idle ? null : checkTrocar(liveInput.pattern, liveInput.replacement, exercise);
-    }
-    return checkLer(selected, exercise);
+    if (exercise.kind !== "ler" && idle) return null;
+    return evaluateRegexItem(exercise, {
+      pattern: liveInput.pattern,
+      replacement: liveInput.replacement,
+      selected,
+    });
   }, [exercise, idle, liveInput.pattern, liveInput.replacement, selected]);
 
   const liveError = liveEval !== null && !liveEval.ok ? liveEval.error : null;
 
-  const advance = () => {
+  const submit = () => {
+    if (exercise.kind !== "ler" && pattern.length === 0) return;
+    const verdict = judgeRegexSubmission(exercise, { pattern, replacement, selected });
+    if (!verdict.passed) {
+      setWrongCount((c) => c + 1);
+      setFeedback(verdict.feedback);
+      return;
+    }
     const next = nextFadingStep(step, wrongCount === 0);
     if (next === "done") {
       setPattern("");
@@ -360,67 +355,6 @@ function RegexExerciseView({
     } else {
       resetStep(next);
     }
-  };
-
-  const fail = (msg: string) => {
-    setWrongCount((c) => c + 1);
-    setFeedback(msg);
-  };
-
-  const submit = () => {
-    if (exercise.kind === "casar") {
-      if (pattern.length === 0) return;
-      const ev = checkCasar(pattern, exercise);
-      if (!ev.ok) {
-        fail(ev.error);
-        return;
-      }
-      if (!ev.allPassed) {
-        fail(
-          `Ainda faltam ${String(ev.totalCount - ev.passedCount)} de ${String(ev.totalCount)} linhas.`,
-        );
-        return;
-      }
-      advance();
-      return;
-    }
-
-    if (exercise.kind === "extrair") {
-      if (pattern.length === 0) return;
-      const ev = checkExtrair(pattern, exercise);
-      if (!ev.ok) {
-        fail(ev.error);
-        return;
-      }
-      if (!ev.allPassed) {
-        fail(`Grupo 1 certo em ${String(ev.passedCount)} de ${String(ev.totalCount)} linhas.`);
-        return;
-      }
-      advance();
-      return;
-    }
-
-    if (exercise.kind === "trocar") {
-      if (pattern.length === 0) return;
-      const ev = checkTrocar(pattern, replacement, exercise);
-      if (!ev.ok) {
-        fail(ev.error);
-        return;
-      }
-      if (!ev.allPassed) {
-        fail(`Troca certa em ${String(ev.passedCount)} de ${String(ev.totalCount)} linhas.`);
-        return;
-      }
-      advance();
-      return;
-    }
-
-    const ev = checkLer(selected, exercise);
-    if (!ev.allPassed) {
-      fail(`${String(ev.passedCount)} de ${String(ev.totalCount)} linhas certas.`);
-      return;
-    }
-    advance();
   };
 
   const onEnter = (e: React.KeyboardEvent) => {
@@ -439,7 +373,7 @@ function RegexExerciseView({
 
       {step === 0 && (
         <p className="vim-reference" data-testid="learn-reference">
-          Padrão: <code>{canonicalHint(exercise)}</code>
+          Padrão: <code>{canonicalDisplay(exercise)}</code>
         </p>
       )}
       {step === 1 && (
@@ -520,35 +454,25 @@ function RegexExerciseView({
           )}
 
           {exercise.kind === "casar" && (
-            <CasarLines
-              item={exercise}
-              evaluation={liveEval as ReturnType<typeof checkCasar> | null}
-              idle={idle}
-            />
+            <CasarLines item={exercise} evaluation={liveEval as CasarEval | null} idle={idle} />
           )}
           {exercise.kind === "extrair" && (
-            <ExtrairLines
-              item={exercise}
-              evaluation={liveEval as ReturnType<typeof checkExtrair> | null}
-              idle={idle}
-            />
+            <ExtrairLines item={exercise} evaluation={liveEval as ExtrairEval | null} idle={idle} />
           )}
           {exercise.kind === "trocar" && (
-            <TrocarLines
-              item={exercise}
-              evaluation={liveEval as ReturnType<typeof checkTrocar> | null}
-              idle={idle}
-            />
+            <TrocarLines item={exercise} evaluation={liveEval as TrocarEval | null} idle={idle} />
           )}
           {exercise.kind === "ler" && (
             <LerLines
               item={exercise}
               selected={selected}
               revealed={false}
-              evaluation={liveEval as ReturnType<typeof checkLer>}
+              evaluation={liveEval as LerEval}
               onToggle={(idx) => {
                 setFeedback(null);
-                setSelected((prev) => prev.map((v, i) => (i === idx ? !v : v)));
+                setSelected((prev) =>
+                  exercise.lines.map((_, i) => (i === idx ? prev[i] !== true : prev[i] === true)),
+                );
               }}
             />
           )}

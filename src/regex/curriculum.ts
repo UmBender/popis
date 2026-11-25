@@ -1,6 +1,13 @@
 import type { LessonLike, UnitLike } from "../learn/curriculum";
 import { compile, type MatchMode, type RegexDialect } from "./compile";
-import type { CasarItem, ExtrairItem, LerItem, RegexItem, RegexItemKind, TrocarItem } from "./types";
+import type {
+  CasarItem,
+  ExtrairItem,
+  LerItem,
+  RegexItem,
+  RegexItemKind,
+  TrocarItem,
+} from "./types";
 
 export type RegexToken = {
   readonly syntax: string;
@@ -413,7 +420,10 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
           steps: [
             { pattern: "ans=\\d*", note: "\\d* casa também ans= sem nenhum dígito." },
             { pattern: "ans=\\d+", note: "\\d+ exige ao menos um dígito, mas ignora sinais." },
-            { pattern: "ans=[+-]?\\d+", note: "[+-]? torna o sinal opcional com dígitos obrigatórios." },
+            {
+              pattern: "ans=[+-]?\\d+",
+              note: "[+-]? torna o sinal opcional com dígitos obrigatórios.",
+            },
           ],
         },
         exercises: [
@@ -527,8 +537,8 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
           mode: "search",
           lines: ['"a.in" "b.out"', "[WA] [caso 4]"],
           steps: [
-            { pattern: '".+"', note: 'Guloso: vai da primeira aspa até a última da linha.' },
-            { pattern: '".+?"', note: 'Preguiçoso: fecha na primeira aspa seguinte.' },
+            { pattern: '".+"', note: "Guloso: vai da primeira aspa até a última da linha." },
+            { pattern: '".+?"', note: "Preguiçoso: fecha na primeira aspa seguinte." },
             { pattern: "\\[.+?\\]", note: "Mesma ideia para pegar só o primeiro bloco [WA]." },
           ],
         },
@@ -543,7 +553,7 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
               { line: '"ok"', expected: "ok" },
             ],
             '"(.+?)"',
-            "(.+?) ou ([^\"]+) evita engolir até a segunda aspa da linha.",
+            '(.+?) ou ([^"]+) evita engolir até a segunda aspa da linha.',
             '"([^"]+)"',
           ),
           extrairEx(
@@ -706,7 +716,10 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
           mode: "fullmatch",
           lines: ["123", "123a", "a123", "-45"],
           steps: [
-            { pattern: "\\d+", note: "Em fullmatch, \\d+ rejeita 123a e a123 sem precisar de ^ e $." },
+            {
+              pattern: "\\d+",
+              note: "Em fullmatch, \\d+ rejeita 123a e a123 sem precisar de ^ e $.",
+            },
             { pattern: "-?\\d+", note: "Adicionar -? aceita também -45 na linha inteira." },
           ],
         },
@@ -822,8 +835,14 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
           mode: "search",
           lines: ["Case #3: 17", "Case #12: -40", "Case #9: 0"],
           steps: [
-            { pattern: "Case #\\d+: -?\\d+", note: "Casa a linha inteira, mas não isola a resposta." },
-            { pattern: "Case #\\d+: (-?\\d+)", note: "Colocar (-?\\d+) entre parênteses extrai só a resposta no grupo 1." },
+            {
+              pattern: "Case #\\d+: -?\\d+",
+              note: "Casa a linha inteira, mas não isola a resposta.",
+            },
+            {
+              pattern: "Case #\\d+: (-?\\d+)",
+              note: "Colocar (-?\\d+) entre parênteses extrai só a resposta no grupo 1.",
+            },
           ],
         },
         exercises: [
@@ -876,16 +895,17 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
         explanation:
           "Quando você precisa agrupar uma alternância antes do dado que quer extrair, um parêntese comum rouba o índice do grupo 1. Usar (?:...) no Python agrupa sem numerar o grupo. Assim o valor desejado continua acessível diretamente em group(1).",
         dialect: "python",
-        tokens: [
-          { syntax: "(?:...)", desc: "agrupa sem criar grupo de captura (Python re)" },
-        ],
+        tokens: [{ syntax: "(?:...)", desc: "agrupa sem criar grupo de captura (Python re)" }],
         example: {
           dialect: "python",
           mode: "search",
           lines: ["Case 3: 17", "Test 12: 405"],
           steps: [
             { pattern: "(Case|Test) \\d+: (\\d+)", note: "Aqui o grupo 1 seria 'Case', não '17'." },
-            { pattern: "(?:Case|Test) \\d+: (\\d+)", note: "Com (?:...), '17' passa a ser o grupo 1." },
+            {
+              pattern: "(?:Case|Test) \\d+: (\\d+)",
+              note: "Com (?:...), '17' passa a ser o grupo 1.",
+            },
           ],
         },
         exercises: [
@@ -952,7 +972,11 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
           lines: ["n=10 k=25", "ans=7"],
           steps: [
             { pattern: "([a-z]+)=(\\d+)", note: "Grupo 1 pega o nome e grupo 2 pega o número." },
-            { pattern: "([a-z]+)=(\\d+)", replacement: "\\2:\\1", note: "A troca \\2:\\1 inverte todos os pares da linha." },
+            {
+              pattern: "([a-z]+)=(\\d+)",
+              replacement: "\\2:\\1",
+              note: "A troca \\2:\\1 inverte todos os pares da linha.",
+            },
           ],
         },
         exercises: [
@@ -1015,8 +1039,16 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
           mode: "search",
           lines: ["2026-11-25", "10   20    30"],
           steps: [
-            { pattern: "([0-9]{4})-([0-9]{2})-([0-9]{2})", replacement: "\\3/\\2/\\1", note: "Reorganiza AAAA-MM-DD para DD/MM/AAAA." },
-            { pattern: " {2,}", replacement: " ", note: "Colapsa múltiplos espaços em um único espaço." },
+            {
+              pattern: "([0-9]{4})-([0-9]{2})-([0-9]{2})",
+              replacement: "\\3/\\2/\\1",
+              note: "Reorganiza AAAA-MM-DD para DD/MM/AAAA.",
+            },
+            {
+              pattern: " {2,}",
+              replacement: " ",
+              note: "Colapsa múltiplos espaços em um único espaço.",
+            },
           ],
         },
         exercises: [
@@ -1086,7 +1118,10 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
           lines: ["Teste 1: OK", "Teste 2: WA", "", "Teste 3: TLE"],
           steps: [
             { pattern: "OK$", note: "grep -Ev 'OK$' descartaria os aprovados." },
-            { pattern: "^[[:space:]]*$", note: "grep -Ev '^[[:space:]]*$' remove linhas em branco." },
+            {
+              pattern: "^[[:space:]]*$",
+              note: "grep -Ev '^[[:space:]]*$' remove linhas em branco.",
+            },
             { pattern: "(WA|TLE)$", note: "grep -En '(WA|TLE)$' lista e numera só as falhas." },
           ],
         },
@@ -1143,7 +1178,10 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
           lines: ["caso 1: AC", "caso 2: AC", "caso 3: WA", "caso 4: TLE"],
           steps: [
             { pattern: "WA|TLE|RTE", note: "Encontra qualquer veredito de erro no log." },
-            { pattern: "^caso [0-9]+: (WA|TLE|RTE)$", note: "Garante o formato exato do log do stress test." },
+            {
+              pattern: "^caso [0-9]+: (WA|TLE|RTE)$",
+              note: "Garante o formato exato do log do stress test.",
+            },
           ],
         },
         exercises: [
@@ -1209,7 +1247,10 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
           lines: ["var_1 = 42", "9bad = 1", "ok = 7"],
           steps: [
             { pattern: "[[:digit:]]+", note: "[[:digit:]]+ substitui \\d+ no grep -E." },
-            { pattern: "^[[:alpha:]_][[:alnum:]_]*[[:space:]]*=[[:space:]]*[[:digit:]]+$", note: "Reescreve toda a linha só com classes POSIX." },
+            {
+              pattern: "^[[:alpha:]_][[:alnum:]_]*[[:space:]]*=[[:space:]]*[[:digit:]]+$",
+              note: "Reescreve toda a linha só com classes POSIX.",
+            },
           ],
         },
         exercises: [
@@ -1266,7 +1307,10 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
           lines: ["f(1)", "WA", "TLE", "g(2)"],
           steps: [
             { pattern: "(WA|TLE)", note: "Com -E, parênteses e | funcionam direto sem barras." },
-            { pattern: "f\\([0-9]+\\)", note: "Com -E, parênteses literais levam escape \\( e \\)." },
+            {
+              pattern: "f\\([0-9]+\\)",
+              note: "Com -E, parênteses literais levam escape \\( e \\).",
+            },
           ],
         },
         exercises: [
@@ -1323,8 +1367,14 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
           mode: "search",
           lines: ["time=120ms", "time=3s", "mem=64ms"],
           steps: [
-            { pattern: "\\d+(?=ms)", note: "Casa apenas os dígitos que são seguidos de 'ms', sem incluir 'ms'." },
-            { pattern: "[a-z]+(?==\\d)", note: "Casa o nome da chave só quando seguida de '=dígito'." },
+            {
+              pattern: "\\d+(?=ms)",
+              note: "Casa apenas os dígitos que são seguidos de 'ms', sem incluir 'ms'.",
+            },
+            {
+              pattern: "[a-z]+(?==\\d)",
+              note: "Casa o nome da chave só quando seguida de '=dígito'.",
+            },
           ],
         },
         exercises: [
@@ -1375,7 +1425,10 @@ export const REGEX_UNITS: readonly RegexUnit[] = [
           mode: "search",
           lines: ["caso 1: AC", "caso 2: WA", "caso 3: TLE"],
           steps: [
-            { pattern: "^caso \\d+: (?!AC$)", note: "Rejeita linhas cujo veredito seja exatamente AC." },
+            {
+              pattern: "^caso \\d+: (?!AC$)",
+              note: "Rejeita linhas cujo veredito seja exatamente AC.",
+            },
             { pattern: "^(?!#).+$", note: "Casa linhas não vazias que não começam com '#'." },
           ],
         },

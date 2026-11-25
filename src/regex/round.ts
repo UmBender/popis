@@ -59,7 +59,7 @@ export function startRegexRound(config: RegexRoundConfig): RegexRound {
 }
 
 export function isRegexRoundFinished(round: RegexRound): boolean {
-  return round.finishedAt !== null || round.records.length >= round.items.length;
+  return round.finishedAt !== null;
 }
 
 export function touchRegexRound(round: RegexRound, nowMs: number): RegexRound {

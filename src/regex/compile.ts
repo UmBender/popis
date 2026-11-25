@@ -33,8 +33,7 @@ export type CompileResult =
   | { readonly ok: false; readonly error: string };
 
 export type ReplaceResult =
-  | { readonly ok: true; readonly output: string }
-  | { readonly ok: false; readonly error: string };
+  { readonly ok: true; readonly output: string } | { readonly ok: false; readonly error: string };
 
 const POSIX_CLASSES: Readonly<Record<string, string>> = {
   digit: "0-9",
@@ -49,12 +48,12 @@ const POSIX_CLASSES: Readonly<Record<string, string>> = {
 };
 
 const ERE_SHORTHAND_HINTS: Readonly<Record<string, string>> = {
-  d: "`\\d` não existe no `grep -E`; use `[0-9]` ou `[[:digit:]]`",
-  D: "`\\D` não existe no `grep -E`; use `[^0-9]`",
-  w: "`\\w` não existe no `grep -E`; use `[A-Za-z0-9_]` ou `[[:alnum:]_]`",
-  W: "`\\W` não existe no `grep -E`; use `[^A-Za-z0-9_]`",
-  s: "`\\s` não existe no `grep -E`; use `[[:space:]]`",
-  S: "`\\S` não existe no `grep -E`; use `[^[:space:]]`",
+  d: "'\\d' não existe no grep -E; use [0-9] ou [[:digit:]]",
+  D: "'\\D' não existe no grep -E; use [^0-9]",
+  w: "'\\w' não existe no grep -E; use [A-Za-z0-9_] ou [[:alnum:]_]",
+  W: "'\\W' não existe no grep -E; use [^A-Za-z0-9_]",
+  s: "'\\s' não existe no grep -E; use [[:space:]]",
+  S: "'\\S' não existe no grep -E; use [^[:space:]]",
 };
 
 const ESCAPABLE_META = new Set([
@@ -133,12 +132,12 @@ function parseCharClass(pattern: string, start: number, dialect: RegexDialect): 
         if (dialect === "python") {
           return {
             ok: false,
-            error: `Classes POSIX como \`[[:${name}:]]\` são do \`grep -E\`; no Python \`re\` use \`\\d\`, \`\\w\`, \`\\s\` ou faixas como \`[0-9]\``,
+            error: `Classes POSIX como [[:${name}:]] são do grep -E; no Python re use \\d, \\w, \\s ou faixas como [0-9]`,
           };
         }
         const mapped = POSIX_CLASSES[name];
         if (mapped === undefined) {
-          return { ok: false, error: `Classe POSIX desconhecida \`[:${name}:]\`` };
+          return { ok: false, error: `Classe POSIX desconhecida [:${name}:]` };
         }
         out += mapped;
         i = close + 2;
@@ -154,7 +153,7 @@ function parseCharClass(pattern: string, start: number, dialect: RegexDialect): 
       if (dialect === "ere") {
         const hint = ERE_SHORTHAND_HINTS[next];
         if (hint !== undefined) {
-          return { ok: false, error: `${hint} (também fora de \`[...]\`)` };
+          return { ok: false, error: `${hint} (também fora de [...])` };
         }
         // In POSIX ERE, `\` inside `[...]` is a literal backslash.
         out += "\\\\";
@@ -167,7 +166,7 @@ function parseCharClass(pattern: string, start: number, dialect: RegexDialect): 
       if (next >= "1" && next <= "9") {
         return {
           ok: false,
-          error: `Retro-referência \`\\${next}\` no padrão está fora do subconjunto ensinado`,
+          error: `Retro-referência \\${next} no padrão está fora do subconjunto ensinado`,
         };
       }
       out += `\\${next}`;
@@ -214,20 +213,20 @@ function translatePattern(pattern: string, dialect: RegexDialect): TranslateResu
         if (rest.startsWith("(?P<") || rest.startsWith("(?<")) {
           return {
             ok: false,
-            error: "Grupos nomeados estão fora do subconjunto ensinado; use `(...)`",
+            error: "Grupos nomeados estão fora do subconjunto ensinado; use (...)",
           };
         }
         if (/^\(\?[imsxauL-]+[:)]/.test(rest)) {
           return {
             ok: false,
-            error: "Flags inline como `(?i)` estão fora do subconjunto ensinado",
+            error: "Flags inline como (?i) estão fora do subconjunto ensinado",
           };
         }
         if (rest.startsWith("(?:")) {
           if (dialect === "ere") {
             return {
               ok: false,
-              error: "Grupo sem captura `(?:...)` não existe no `grep -E`; use `(...)`",
+              error: "Grupo sem captura (?:...) não existe no grep -E; use (...)",
             };
           }
           out += "(?:";
@@ -240,7 +239,7 @@ function translatePattern(pattern: string, dialect: RegexDialect): TranslateResu
           if (dialect === "ere") {
             return {
               ok: false,
-              error: "Lookahead `(?=...)`/`(?!...)` não existe no `grep -E`; use Python `re`",
+              error: "Lookahead (?=...)/(?!...) não existe no grep -E; use Python re",
             };
           }
           out += rest.slice(0, 3);
@@ -249,7 +248,7 @@ function translatePattern(pattern: string, dialect: RegexDialect): TranslateResu
           prev = "none";
           continue;
         }
-        return { ok: false, error: "Sintaxe `(?...)` não suportada neste subconjunto" };
+        return { ok: false, error: "Sintaxe (?...) não suportada neste subconjunto" };
       }
       out += "(";
       parens.push("group");
@@ -289,8 +288,7 @@ function translatePattern(pattern: string, dialect: RegexDialect): TranslateResu
         if (dialect === "ere") {
           return {
             ok: false,
-            error:
-              "Quantificador preguiçoso (`*?`, `+?`, `??`) não existe no `grep -E`; use Python `re`",
+            error: "Quantificador preguiçoso (*?, +?, ??) não existe no grep -E; use Python re",
           };
         }
         out += "?";
@@ -301,7 +299,7 @@ function translatePattern(pattern: string, dialect: RegexDialect): TranslateResu
       if (prev !== "atom") {
         return {
           ok: false,
-          error: `Quantificador \`${ch}\` sem elemento antes para repetir`,
+          error: `Quantificador '${ch}' sem elemento antes para repetir`,
         };
       }
       out += ch;
@@ -318,13 +316,13 @@ function translatePattern(pattern: string, dialect: RegexDialect): TranslateResu
       if (m === null || (minStr.length === 0 && (!hasComma || maxStr.length === 0))) {
         return {
           ok: false,
-          error: "Chave '{' inválida; use `{n}`, `{n,m}` ou escape com `\\{`",
+          error: "Chave '{' inválida; use {n}, {n,m} ou escape com \\{",
         };
       }
       if (prev !== "atom") {
         return {
           ok: false,
-          error: `Quantificador \`${m[0]}\` sem elemento antes para repetir`,
+          error: `Quantificador '${m[0]}' sem elemento antes para repetir`,
         };
       }
       const min = minStr.length === 0 ? 0 : Number(minStr);
@@ -332,7 +330,7 @@ function translatePattern(pattern: string, dialect: RegexDialect): TranslateResu
       if (max !== null && max < min) {
         return {
           ok: false,
-          error: `Intervalo inválido \`${m[0]}\`: o mínimo não pode ser maior que o máximo`,
+          error: `Intervalo inválido ${m[0]}: o mínimo não pode ser maior que o máximo`,
         };
       }
       out += hasComma
@@ -353,7 +351,7 @@ function translatePattern(pattern: string, dialect: RegexDialect): TranslateResu
       if (next >= "1" && next <= "9") {
         return {
           ok: false,
-          error: `Retro-referência \`\\${next}\` no padrão está fora do subconjunto ensinado; use \`\\1\` só na troca`,
+          error: `Retro-referência \\${next} no padrão está fora do subconjunto ensinado; use \\1 só na troca`,
         };
       }
       if (next === "u" || next === "x" || next === "p" || next === "P" || next === "U") {
@@ -362,7 +360,7 @@ function translatePattern(pattern: string, dialect: RegexDialect): TranslateResu
       if (next === "A" || next === "Z") {
         return {
           ok: false,
-          error: `\`\\${next}\` está fora do subconjunto ensinado; use \`^\` e \`$\``,
+          error: `'\\${next}' está fora do subconjunto ensinado; use ^ e $`,
         };
       }
       const shorthandHint = ERE_SHORTHAND_HINTS[next];
@@ -377,7 +375,7 @@ function translatePattern(pattern: string, dialect: RegexDialect): TranslateResu
         if (dialect === "ere") {
           return {
             ok: false,
-            error: `\`\\${next}\` não faz parte do \`grep -E\`; use Python \`re\` ou delimitadores`,
+            error: `'\\${next}' não faz parte do grep -E; use Python re ou delimitadores`,
           };
         }
         out += `\\${next}`;
@@ -389,7 +387,7 @@ function translatePattern(pattern: string, dialect: RegexDialect): TranslateResu
         if (dialect === "ere") {
           return {
             ok: false,
-            error: `\`\\${next}\` não é padrão no \`grep -E\`; use \`[[:space:]]\` ou Python \`re\``,
+            error: `'\\${next}' não é padrão no grep -E; use [[:space:]] ou Python re`,
           };
         }
         out += `\\${next}`;
@@ -403,7 +401,7 @@ function translatePattern(pattern: string, dialect: RegexDialect): TranslateResu
         prev = "atom";
         continue;
       }
-      return { ok: false, error: `Escape desconhecido \`\\${next}\`` };
+      return { ok: false, error: `Escape desconhecido '\\${next}'` };
     }
 
     out += ch;
@@ -524,7 +522,7 @@ function translateReplacement(
         if (n > groupCount) {
           return {
             ok: false,
-            error: `Grupo \`\\${String(n)}\` não existe neste padrão (há ${String(groupCount)})`,
+            error: `Grupo \\${String(n)} não existe neste padrão (há ${String(groupCount)})`,
           };
         }
         out += `$${next}`;
@@ -535,18 +533,18 @@ function translateReplacement(
         if (dialect === "ere") {
           return {
             ok: false,
-            error: "`\\g<...>` só existe no Python `re.sub`; no `sed -E` use `\\1`",
+            error: "'\\g<...>' só existe no Python re.sub; no sed -E use \\1",
           };
         }
         const m = /^\\g<(\d+)>/.exec(replacement.slice(i));
         if (m === null) {
-          return { ok: false, error: "Use `\\g<1>` com o número do grupo" };
+          return { ok: false, error: "Use \\g<1> com o número do grupo" };
         }
         const n = Number(m[1]);
         if (n > groupCount) {
           return {
             ok: false,
-            error: `Grupo \`\\g<${String(n)}>\` não existe neste padrão (há ${String(groupCount)})`,
+            error: `Grupo \\g<${String(n)}> não existe neste padrão (há ${String(groupCount)})`,
           };
         }
         out += n === 0 ? "$&" : `$${String(n)}`;
@@ -563,7 +561,7 @@ function translateReplacement(
         i += 2;
         continue;
       }
-      return { ok: false, error: `Escape desconhecido \`\\${next}\` na substituição` };
+      return { ok: false, error: `Escape desconhecido '\\${next}' na substituição` };
     }
     out += ch;
     i += 1;

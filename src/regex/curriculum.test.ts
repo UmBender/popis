@@ -24,9 +24,7 @@ function checkCanonical(item: RegexItem): boolean {
   const compiled = compile(item.pattern, item.dialect, item.mode);
   if (!compiled.ok) return false;
   const matches = item.lines.map((l) => compiled.matcher.test(l));
-  return (
-    matches.every((m, i) => m === item.expected[i]) && checkLer(item.expected, item).allPassed
-  );
+  return matches.every((m, i) => m === item.expected[i]) && checkLer(item.expected, item).allPassed;
 }
 
 describe("regex curriculum (AC-6)", () => {

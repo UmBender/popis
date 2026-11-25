@@ -89,6 +89,19 @@ describe("RegexScreen Learn mode (AC-6)", () => {
     expect(screen.getByTestId("shell-path").textContent).toBe("popis/regex/prática");
   });
 
+  it("Enter on a focused lesson button is left to the button and does not open the next lesson", () => {
+    const store = memoryStore();
+    render(<App clock={clock} store={store} newSeed={() => 17} />);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Aprender (Regex)" }));
+    const second = REGEX_UNITS[1]!.lessons[0]!;
+    const button = screen.getByRole("button", { name: second.title });
+
+    fireEvent.keyDown(button, { key: "Enter" });
+
+    expect(screen.queryByTestId("learn-explanation")).toBeNull();
+  });
+
   it("wrong attempt on exercise 1 moves to exercise 2 with token help", () => {
     const store = memoryStore();
     render(<App clock={clock} store={store} newSeed={() => 17} />);
@@ -105,5 +118,90 @@ describe("RegexScreen Learn mode (AC-6)", () => {
     solveExercise(lesson.exercises[0]);
     expect(screen.getByTestId("learn-step").textContent).toContain("2");
     expect(screen.getByTestId("learn-exercise-tokens")).toBeTruthy();
+  });
+
+  it("supports example Play/Pause/Restart, exercise restart, extrair/trocar/ler lessons and unit completion", () => {
+    const store = memoryStore();
+    render(<App clock={clock} store={store} newSeed={() => 17} />);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Aprender (Regex)" }));
+
+    // Complete both lessons of Unit 1 so unit status becomes "concluída".
+    const unit1 = REGEX_UNITS[0]!;
+    for (const lesson of unit1.lessons) {
+      fireEvent.click(screen.getByRole("button", { name: lesson.title }));
+      // Pause, resume, advance to end, then click Tocar and Recomeçar.
+      fireEvent.click(screen.getByRole("button", { name: "Pausar" }));
+      fireEvent.click(screen.getByRole("button", { name: "Tocar" }));
+      act(() => {
+        vi.advanceTimersByTime(6000);
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Tocar" }));
+      fireEvent.click(screen.getByRole("button", { name: "Recomeçar" }));
+
+      // Empty submit is ignored; non-Enter key is ignored; syntax error shows alert without crashing.
+      const box = screen.getByRole<HTMLInputElement>("textbox", { name: "Expressão regular" });
+      fireEvent.keyDown(box, { key: "a" });
+      fireEvent.keyDown(box, { key: "Enter" });
+      fireEvent.change(box, { target: { value: "(unclosed" } });
+      act(() => {
+        vi.advanceTimersByTime(20);
+      });
+      expect(screen.getByTestId("regex-error")).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "Recomeçar exercício" }));
+
+      solveExercise(lesson.exercises[0]);
+      solveExercise(lesson.exercises[2]);
+      expect(screen.getByTestId("learn-done")).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "Lições" }));
+    }
+    expect(screen.getByTestId(`unit-status-${unit1.id}`).textContent).toBe("concluída");
+
+    // Reopening a completed lesson shows "learn-was-done".
+    fireEvent.click(screen.getByRole("button", { name: `${unit1.lessons[0]!.title} — feito` }));
+    expect(screen.getByTestId("learn-was-done")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Lições" }));
+
+    // Exercise an extrair lesson (Unit 5 Capture), a trocar lesson (Unit 6 re.sub), and a ler exercise (Unit 4 Word boundary).
+    const capLesson = REGEX_LESSONS.find((l) => l.id === "u5-capture")!;
+    fireEvent.click(screen.getByRole("button", { name: capLesson.title }));
+    solveExercise(capLesson.exercises[0]);
+    solveExercise(capLesson.exercises[2]);
+    expect(screen.getByTestId("learn-done")).toBeTruthy();
+
+    const subLesson = REGEX_LESSONS.find((l) => l.id === "u6-re-sub")!;
+    fireEvent.click(screen.getByRole("button", { name: subLesson.title }));
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    // Also exercise form submit button click on trocar.
+    const boxSub = screen.getByRole<HTMLInputElement>("textbox", { name: "Expressão regular" });
+    const replSub = screen.getByRole<HTMLInputElement>("textbox", { name: "Substituição" });
+    fireEvent.change(boxSub, { target: { value: subLesson.exercises[0].canonical } });
+    fireEvent.change(replSub, {
+      target: {
+        value:
+          subLesson.exercises[0].kind === "trocar"
+            ? subLesson.exercises[0].canonicalReplacement
+            : "",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    solveExercise(subLesson.exercises[2]);
+    expect(screen.getByTestId("learn-done")).toBeTruthy();
+
+    const wbLesson = REGEX_LESSONS.find((l) => l.id === "u4-word-boundary")!;
+    fireEvent.click(screen.getByRole("button", { name: wbLesson.title }));
+    solveExercise(wbLesson.exercises[0]);
+    // Exercise 3 of u4-word-boundary is a `ler` exercise! Submit wrong first, then right.
+    fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
+    expect(screen.getByTestId("learn-feedback")).toBeTruthy();
+    solveExercise(wbLesson.exercises[2]);
+    expect(screen.getByTestId("learn-done")).toBeTruthy();
+
+    // Press Enter on a button control (ignored by global shortcut) and on body after opening.
+    const voltar = screen.getByRole("button", { name: "Voltar" });
+    fireEvent.keyDown(voltar, { key: "Enter" });
+    fireEvent.click(voltar);
   });
 });

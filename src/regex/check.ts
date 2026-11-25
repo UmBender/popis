@@ -1,5 +1,5 @@
 import { applyReplace, compile, validateReplacement, type MatchSpan } from "./compile";
-import type { CasarItem, ExtrairItem, LerItem, TrocarItem } from "./types";
+import type { CasarItem, ExtrairItem, LerItem, RegexItem, TrocarItem } from "./types";
 
 export type CasarLineEval = {
   readonly line: string;
@@ -71,6 +71,13 @@ export type LerEval = {
   readonly totalCount: number;
 };
 
+export type RegexItemEval = CasarEval | ExtrairEval | TrocarEval | LerEval;
+
+export type RegexSubmission = {
+  readonly passed: boolean;
+  readonly feedback: string | null;
+};
+
 /** Evaluates a pattern against the positive and negative lists of a `casar` item. */
 export function checkCasar(pattern: string, item: CasarItem): CasarEval {
   const compiled = compile(pattern, item.dialect, item.mode);
@@ -106,7 +113,7 @@ export function checkExtrair(pattern: string, item: ExtrairItem): ExtrairEval {
   if (compiled.matcher.groupCount < 1) {
     return {
       ok: false,
-      error: "Use parênteses `(...)` para capturar o trecho no grupo 1",
+      error: "Use parênteses (...) para capturar o trecho no grupo 1",
     };
   }
 
@@ -138,7 +145,7 @@ export function checkTrocar(pattern: string, replacement: string, item: TrocarIt
   const cases: TrocarCaseEval[] = item.cases.map((c) => {
     const spans = compiled.matcher.findAll(c.before);
     const replaced = applyReplace(compiled.matcher, c.before, replacement);
-    const actual = replaced.ok ? replaced.output : c.before;
+    const actual = replaced.ok ? replaced.output : /* v8 ignore next */ c.before;
     return { before: c.before, expected: c.after, actual, spans, ok: actual === c.after };
   });
 
@@ -155,12 +162,12 @@ export function checkTrocar(pattern: string, replacement: string, item: TrocarIt
 /** Evaluates the user's line checkboxes against a `ler` item. */
 export function checkLer(selected: readonly boolean[], item: LerItem): LerEval {
   const compiled = compile(item.pattern, item.dialect, item.mode);
-  const matcher = compiled.ok ? compiled.matcher : null;
+  const matcher = compiled.ok ? compiled.matcher : /* v8 ignore next */ null;
 
   const lines: LerLineEval[] = item.lines.map((line, i) => {
-    const expected = item.expected[i] ?? false;
-    const chosen = selected[i] ?? false;
-    const span = matcher === null ? null : matcher.exec(line);
+    const expected = item.expected[i] === true;
+    const chosen = selected[i] === true;
+    const span = matcher !== null ? matcher.exec(line) : /* v8 ignore next */ null;
     return { line, expected, selected: chosen, span, ok: chosen === expected };
   });
 
@@ -174,6 +181,57 @@ export function checkLer(selected: readonly boolean[], item: LerItem): LerEval {
   };
 }
 
+/** Evaluates any item kind for live highlight or submission (shared by Prática and Aprender). */
+export function evaluateRegexItem(
+  item: RegexItem,
+  input: {
+    readonly pattern: string;
+    readonly replacement: string;
+    readonly selected: readonly boolean[];
+  },
+): RegexItemEval {
+  if (item.kind === "casar") return checkCasar(input.pattern, item);
+  if (item.kind === "extrair") return checkExtrair(input.pattern, item);
+  if (item.kind === "trocar") return checkTrocar(input.pattern, input.replacement, item);
+  return checkLer(input.selected, item);
+}
+
+/** Checks a user submission and produces a Portuguese feedback message when not yet right. */
+export function judgeRegexSubmission(
+  item: RegexItem,
+  input: {
+    readonly pattern: string;
+    readonly replacement: string;
+    readonly selected: readonly boolean[];
+  },
+): RegexSubmission {
+  const ev = evaluateRegexItem(item, input);
+  if (!ev.ok) return { passed: false, feedback: ev.error };
+  if (ev.allPassed) return { passed: true, feedback: null };
+  if (item.kind === "casar") {
+    return {
+      passed: false,
+      feedback: `Ainda faltam ${String(ev.totalCount - ev.passedCount)} de ${String(ev.totalCount)} linhas.`,
+    };
+  }
+  if (item.kind === "extrair") {
+    return {
+      passed: false,
+      feedback: `Grupo 1 certo em ${String(ev.passedCount)} de ${String(ev.totalCount)} linhas.`,
+    };
+  }
+  if (item.kind === "trocar") {
+    return {
+      passed: false,
+      feedback: `Troca certa em ${String(ev.passedCount)} de ${String(ev.totalCount)} linhas.`,
+    };
+  }
+  return {
+    passed: false,
+    feedback: `${String(ev.passedCount)} de ${String(ev.totalCount)} linhas certas. Ajuste e tente de novo.`,
+  };
+}
+
 /** Levenshtein edit distance between two strings. */
 export function editDistance(a: string, b: string): number {
   const m = a.length;
@@ -184,9 +242,9 @@ export function editDistance(a: string, b: string): number {
     curr[0] = i;
     for (let j = 1; j <= n; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      curr[j] = Math.min((prev[j] ?? 0) + 1, (curr[j - 1] ?? 0) + 1, (prev[j - 1] ?? 0) + cost);
+      curr[j] = Math.min(prev[j]! + 1, curr[j - 1]! + 1, prev[j - 1]! + cost);
     }
     prev = curr;
   }
-  return prev[n] ?? 0;
+  return prev[n]!;
 }

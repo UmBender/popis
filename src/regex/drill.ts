@@ -76,7 +76,13 @@ const CASAR_BUILDERS: readonly (readonly [string, CasarBuilder])[] = [
         "search",
         "Número decimal com sinal opcional e ponto obrigatório (linha inteira).",
         [`${String(a)}.${String(b)}`, `-${String(e)}.${String(c)}`, `+${String(d)}.05`],
-        [`${String(a)}a${String(b)}`, `${String(a)}.`, `.${String(b)}`, `${String(a)}.${String(b)}x`, String(a)],
+        [
+          `${String(a)}a${String(b)}`,
+          `${String(a)}.`,
+          `.${String(b)}`,
+          `${String(a)}.${String(b)}x`,
+          String(a),
+        ],
         { python: "^[+-]?\\d+\\.\\d+$", ere: "^[+-]?[0-9]+\\.[0-9]+$" },
         "Escapar o ponto (\\.) evita casar letras no meio do número.",
       );
@@ -134,7 +140,11 @@ const CASAR_BUILDERS: readonly (readonly [string, CasarBuilder])[] = [
         dialect,
         "search",
         "Linha de resposta no formato 'Case #N: V' com inteiros não negativos.",
-        [`Case #${String(n1)}: ${String(v1)}`, `Case #${String(n2)}: ${String(v2)}`, `Case #${String(n3)}: ${String(v3)}`],
+        [
+          `Case #${String(n1)}: ${String(v1)}`,
+          `Case #${String(n2)}: ${String(v2)}`,
+          `Case #${String(n3)}: ${String(v3)}`,
+        ],
         [
           `Case ${String(n1)}: ${String(v1)}`,
           `Case #${String(n1)}: `,
@@ -523,7 +533,9 @@ function makeTrocar(
   dialect: RegexDialect,
   prompt: string,
   cases: readonly { readonly before: string; readonly after: string }[],
-  canonicalByDialect: Readonly<Record<RegexDialect, { readonly pattern: string; readonly replacement: string }>>,
+  canonicalByDialect: Readonly<
+    Record<RegexDialect, { readonly pattern: string; readonly replacement: string }>
+  >,
   explanation: string,
 ): TrocarItem {
   const canon = canonicalByDialect[dialect];
@@ -621,7 +633,10 @@ const TROCAR_BUILDERS: readonly TrocarBuilder[] = [
       "Troque pares 'chave=valor' por 'valor:chave'.",
       [
         { before: `${k1}=${String(v1)}`, after: `${String(v1)}:${k1}` },
-        { before: `${k1}=${String(v1)} ${k2}=${String(v2)}`, after: `${String(v1)}:${k1} ${String(v2)}:${k2}` },
+        {
+          before: `${k1}=${String(v1)} ${k2}=${String(v2)}`,
+          after: `${String(v1)}:${k1} ${String(v2)}:${k2}`,
+        },
         { before: `${k2}:${String(v2)}`, after: `${k2}:${String(v2)}` },
       ],
       {
@@ -642,8 +657,14 @@ const TROCAR_BUILDERS: readonly TrocarBuilder[] = [
       dialect,
       "Troque 'Case #N:' por 'Caso N:' preservando o resto da linha.",
       [
-        { before: `Case #${String(n1)}: ${String(v1)}`, after: `Caso ${String(n1)}: ${String(v1)}` },
-        { before: `Case #${String(n2)}: ${String(v2)}`, after: `Caso ${String(n2)}: ${String(v2)}` },
+        {
+          before: `Case #${String(n1)}: ${String(v1)}`,
+          after: `Caso ${String(n1)}: ${String(v1)}`,
+        },
+        {
+          before: `Case #${String(n2)}: ${String(v2)}`,
+          after: `Caso ${String(n2)}: ${String(v2)}`,
+        },
         { before: `Teste ${String(n1)}: OK`, after: `Teste ${String(n1)}: OK` },
       ],
       {

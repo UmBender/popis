@@ -2049,6 +2049,14 @@ th {
   font-size: var(--text-sm);
 }
 
+.regex-canonical code {
+  white-space: pre;
+  padding: 0 0.25rem;
+  border: 1px solid var(--selection);
+  background: var(--bg);
+  color: var(--accent);
+}
+
 .regex-groups {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
