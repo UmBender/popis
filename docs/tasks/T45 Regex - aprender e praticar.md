@@ -1,10 +1,10 @@
 ---
 id: T45
 title: Regex - aprender e praticar
-status: ready
+status: in-progress
 depends_on: [T25]
 branch: task/T45-regex
-adrs: []
+adrs: [ADR-T45-1]
 tags: [task]
 ---
 
@@ -80,7 +80,7 @@ trocar texto.
   - Enter aceita quando tudo está certo; "pular" mostra a canônica;
   - o resultado mostra o tempo e as tentativas por item;
   - eventos da T22 com drill `regex.practice`.
-  - Testes: `src/ui/RegexScreen.test.tsx` ("live highlight updates on each key", "Enter is accepted only when every line is right", "syntax error is shown without crashing", "skip shows the canonical regex").
+  - Testes: `src/regex/round.test.ts`, `src/stats/event.test.ts` (`DRILLS` aceita `regex.practice`), `src/ui/RegexScreen.test.tsx` ("live highlight updates on each key", "Enter is accepted only when every line is right", "syntax error is shown without crashing", "skip shows the canonical regex", "result shows time and attempts per item and records T22 events").
 - **AC-6**: **Aprender** (`src/regex/curriculum.ts`):
 
   | Unidade | Lições |
@@ -103,7 +103,7 @@ trocar texto.
   e "Prática" visíveis no celular, e os atalhos 1–9 não mudam. O
   progresso fica em `popis.regex-learn` e as configurações (dialeto) em
   `popis.regex`.
-  - Testes: `src/ui/shell/sections.test.ts`, `src/storage/regex.test.ts`, `tests/e2e/regex.spec.ts` (uma lição e um item da prática, também no mobile).
+  - Testes: `src/ui/shell/sections.test.ts`, `src/storage/regex.test.ts`, `src/storage/regex-learn.test.ts`, `tests/e2e/regex.spec.ts` (uma lição e um item da prática, também no mobile).
 
 ## Out of scope
 
@@ -113,9 +113,9 @@ trocar texto.
 
 ## Files owned
 
-- `src/regex/` (novo), `src/storage/regex.ts`, `src/storage/regex-learn.ts`
+- `src/regex/` (novo), `src/storage/regex.ts`, `src/storage/regex.test.ts`, `src/storage/regex-learn.ts`, `src/storage/regex-learn.test.ts`
 - `src/stats/event.ts`, `src/stats/event.test.ts`
-- `src/ui/RegexScreen.tsx`, `src/ui/regex/` (novo), `src/ui/App.tsx`,
+- `src/ui/RegexScreen.tsx`, `src/ui/RegexScreen.test.tsx`, `src/ui/RegexScreenLearn.test.tsx`, `src/ui/regex/` (novo), `src/ui/App.tsx`,
   `src/ui/shell/sections.ts`, `src/ui/shell/sections.test.ts`, `src/ui/app.css`
 - `scripts/regex-oracle.mjs`, `package.json`, `vite.config.ts`, `playwright.config.ts`
 - `tests/e2e/regex.spec.ts`
