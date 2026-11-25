@@ -105,7 +105,10 @@ describe("compile output formatting", () => {
     expect(glibcxxOut).toContain("sol.cpp:6");
     expect(glibcxxOut).not.toContain("0x7ffd");
 
-    const verdict = trimCompilerOutput("Veredito: TLE (tempo limite excedido: 2 s, saída 124)\n", "veredito");
+    const verdict = trimCompilerOutput(
+      "Veredito: TLE (tempo limite excedido: 2 s, saída 124)\n",
+      "veredito",
+    );
     expect(verdict).toBe("Veredito: TLE (tempo limite excedido: 2 s, saída 124)");
   });
 
@@ -114,5 +117,34 @@ describe("compile output formatting", () => {
     expect(outputCitesLine("    #0 ADDR in main sol.cpp:12", 12)).toBe(true);
     expect(outputCitesLine("sol.cpp:12:5: runtime error", 1)).toBe(false);
     expect(outputCitesLine("Veredito: TLE (saída 124)", 5)).toBe(false);
+  });
+
+  it("handles fallback branches and assert binary masking across all groups", () => {
+    expect(maskCompilerOutput("mybin: /tmp/popis-abc/sol.cpp:7: Assertion failed.")).toBe(
+      "sol: sol.cpp:7: Assertion failed.",
+    );
+    expect(trimCompilerOutput("plain compiler note\n\nline two", "compilacao")).toBe(
+      "plain compiler note\nline two",
+    );
+    expect(trimCompilerOutput("sol.cpp:5:2: error: expected ';'\n    5 | }", "compilacao")).toBe(
+      "sol.cpp:5:2: error: expected ';'\n    5 | }",
+    );
+    expect(
+      trimCompilerOutput(
+        [
+          "==N==ERROR: AddressSanitizer: SEGV",
+          "    #0 ADDR in helper other.cpp:4",
+          "    #1 ADDR in main sol.cpp:5",
+          "HINT: ignore",
+          "still ignored",
+        ].join("\n"),
+        "asan",
+      ),
+    ).toBe("==N==ERROR: AddressSanitizer: SEGV\n    #1 ADDR in main sol.cpp:5");
+    expect(trimCompilerOutput("fallback ubsan line", "ubsan")).toBe("fallback ubsan line");
+    expect(trimCompilerOutput("raw glibcxx fallback\n", "glibcxx")).toBe("raw glibcxx fallback");
+    expect(trimCompilerOutput("Backtrace:\n    sol.cpp:4\nError: broken", "glibcxx")).toBe(
+      "Error: broken\nBacktrace:\n    sol.cpp:4",
+    );
   });
 });

@@ -26,15 +26,19 @@ export function maskCompilerOutput(raw: string, tempDir?: string): string {
 function trimGcc(lines: readonly string[]): string {
   const diagRe = /^sol\.cpp:\d+:\d+:\s*(?:fatal error|error|warning):/;
   const firstIdx = lines.findIndex((l) => diagRe.test(l));
-  if (firstIdx === -1) return lines.filter((l) => l.length > 0).slice(0, 10).join("\n");
+  if (firstIdx === -1)
+    return lines
+      .filter((l) => l.length > 0)
+      .slice(0, 10)
+      .join("\n");
 
-  const start = firstIdx > 0 && /^sol\.cpp: In function /.test(lines[firstIdx - 1] ?? "")
-    ? firstIdx - 1
-    : firstIdx;
+  const prev = lines[firstIdx - 1];
+  const start =
+    prev !== undefined && /^sol\.cpp: In function /.test(prev) ? firstIdx - 1 : firstIdx;
   const out: string[] = [];
   let seenFirst = false;
   for (let i = start; i < lines.length && out.length < 10; i++) {
-    const line = lines[i] ?? "";
+    const line = lines[i]!;
     if (diagRe.test(line)) {
       if (seenFirst) break;
       seenFirst = true;
@@ -109,7 +113,7 @@ function trimGlibcxx(lines: readonly string[]): string {
   const errIdx = lines.findIndex((l) => l.startsWith("Error:"));
   if (errIdx !== -1) {
     for (let i = errIdx; i < lines.length; i++) {
-      const l = lines[i] ?? "";
+      const l = lines[i]!;
       if (l.length === 0 || l.startsWith("Objects involved")) break;
       out.push(l);
     }
@@ -119,10 +123,10 @@ function trimGlibcxx(lines: readonly string[]): string {
   if (btIdx !== -1) {
     const frames: string[] = [];
     for (let i = btIdx + 1; i < lines.length && frames.length < 4; i++) {
-      const l = lines[i] ?? "";
+      const l = lines[i]!;
       if (l.length === 0 || l.startsWith("Error:")) break;
       if (l.includes("sol.cpp:")) {
-        const prev = lines[i - 1] ?? "";
+        const prev = lines[i - 1]!;
         if (prev.trim().startsWith("ADDR ")) frames.push(prev);
         frames.push(l);
       }
@@ -152,16 +156,15 @@ export function trimCompilerOutput(masked: string, group: CompileGroup): string 
     case "glibcxx":
       return trimGlibcxx(lines);
     case "veredito":
-      return lines.filter((l) => l.length > 0).slice(0, 10).join("\n");
+      return lines
+        .filter((l) => l.length > 0)
+        .slice(0, 10)
+        .join("\n");
   }
 }
 
 /** Masks and trims real g++ / sanitizer / judge output deterministically. */
-export function formatCompilerOutput(
-  raw: string,
-  group: CompileGroup,
-  tempDir?: string,
-): string {
+export function formatCompilerOutput(raw: string, group: CompileGroup, tempDir?: string): string {
   return trimCompilerOutput(maskCompilerOutput(raw, tempDir), group);
 }
 

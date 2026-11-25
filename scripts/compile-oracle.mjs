@@ -187,9 +187,7 @@ async function main() {
 
     for (const line of failures) console.error(`FAIL: ${line}`);
     const passed = COMPILE_CASE_DEFS.length - failures.length;
-    console.log(
-      `compile oracle: ${String(passed)}/${String(COMPILE_CASE_DEFS.length)} cases ok`,
-    );
+    console.log(`compile oracle: ${String(passed)}/${String(COMPILE_CASE_DEFS.length)} cases ok`);
     if (failures.length > 0) process.exitCode = 1;
   } finally {
     rmSync(dir, { recursive: true, force: true });

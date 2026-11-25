@@ -1,6 +1,11 @@
 import type { TrainingEvent } from "../stats/event";
 import type { CauseId, CompileGroup } from "./causes";
-import { checkCompileAnswer, generateCompileItem, type CompileAnswer, type CompileItem } from "./drill";
+import {
+  checkCompileAnswer,
+  generateCompileItem,
+  type CompileAnswer,
+  type CompileItem,
+} from "./drill";
 
 export const COMPILE_DURATIONS_S = [60, 90, 120] as const;
 

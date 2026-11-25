@@ -51,11 +51,7 @@ describe("compile round engine", () => {
     // Wrong answer keeps the current item in review mode with explanation.
     const item1 = r2.current;
     const wrongCause = item1.choices.find((c) => c.id !== item1.caseData.cause)!;
-    const r3 = submitCompileAnswer(
-      r2,
-      { line: item1.caseData.line, cause: wrongCause.id },
-      9000,
-    );
+    const r3 = submitCompileAnswer(r2, { line: item1.caseData.line, cause: wrongCause.id }, 9000);
     expect(r3.reviewing).not.toBeNull();
     expect(r3.reviewing?.ok).toBe(false);
     expect(r3.reviewing?.explanation).toBe(item1.caseData.explanation);
@@ -122,5 +118,40 @@ describe("compile round engine", () => {
     const finishedOnAdvance = advanceAfterReview(reviewing, 65_000);
     expect(isCompileRoundFinished(finishedOnAdvance)).toBe(true);
     expect(advanceAfterReview(finishedOnAdvance, 70_000)).toBe(finishedOnAdvance);
+
+    // Skipping while reviewing advances to the next item.
+    const skippedReview = skipCompileItem(reviewing, 56_000);
+    expect(skippedReview.reviewing).toBeNull();
+    expect(skippedReview.current.index).toBe(1);
+
+    // Submitting at or past the deadline finishes immediately (both ok and wrong).
+    const okExpired = submitCompileAnswer(
+      started,
+      { line: item0.caseData.line, cause: item0.caseData.cause },
+      61_000,
+    );
+    expect(isCompileRoundFinished(okExpired)).toBe(true);
+    expect(okExpired.results).toHaveLength(1);
+
+    const wrongExpired = submitCompileAnswer(started, { line: 1, cause: wrongCause.id }, 61_000);
+    expect(isCompileRoundFinished(wrongExpired)).toBe(true);
+    expect(wrongExpired.reviewing).toBeNull();
+
+    // Multiple items in the same group aggregate in byGroup.
+    const r2 = submitCompileAnswer(
+      started,
+      { line: item0.caseData.line, cause: item0.caseData.cause },
+      2000,
+    );
+    const item1 = r2.current;
+    const r3 = submitCompileAnswer(
+      r2,
+      { line: item1.caseData.line, cause: item1.caseData.cause },
+      5000,
+    );
+    const stats = compileRoundStats(r3);
+    expect(stats.byGroup).toHaveLength(1);
+    expect(stats.byGroup[0]?.correct).toBe(2);
+    expect(stats.byGroup[0]?.total).toBe(2);
   });
 });

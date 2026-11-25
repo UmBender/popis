@@ -2073,7 +2073,7 @@ th {
 
 .compile-line {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-2);
   width: 100%;
   min-width: max-content;
@@ -2086,6 +2086,11 @@ th {
   text-align: left;
   white-space: pre;
   cursor: pointer;
+}
+
+.compile-line:disabled {
+  opacity: 1;
+  cursor: default;
 }
 
 .compile-line:hover:not(:disabled) {
@@ -2105,8 +2110,9 @@ th {
 
 .compile-line-correct {
   border-left-color: var(--correct);
-  background: var(--bg);
+  background: var(--selection);
   color: var(--correct);
+  font-weight: 700;
 }
 
 .compile-line-wrong {
@@ -2148,8 +2154,7 @@ th {
   font-size: var(--text-sm);
   line-height: 1.45;
   color: var(--warning);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  white-space: pre;
 }
 
 .compile-step {
@@ -2189,12 +2194,21 @@ th {
   color: var(--selection-text);
 }
 
-.compile-choice-correct {
-  border-color: var(--correct);
-  color: var(--correct);
+.compile-choice:disabled {
+  cursor: default;
 }
 
-.compile-choice-wrong {
+.compile-choice-correct,
+.compile-choice-correct:disabled {
+  opacity: 1;
+  border-color: var(--correct);
+  color: var(--correct);
+  font-weight: 700;
+}
+
+.compile-choice-wrong,
+.compile-choice-wrong:disabled {
+  opacity: 1;
   border-color: var(--wrong);
   color: var(--wrong);
 }

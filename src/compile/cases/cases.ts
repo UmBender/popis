@@ -42,7 +42,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "O compilador diz que `m` não foi declarado neste escopo na linha 5. Troque `m` por `n` ou declare a variável antes de usá-la.",
+      "O compilador diz que m não foi declarado neste escopo na linha 5. Troque m por n ou declare a variável antes de usá-la.",
   },
   {
     id: "comp-ponto-e-virgula",
@@ -61,7 +61,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "Em C++, toda definição de `struct` ou `class` precisa terminar com `;` após a chave de fechamento. Coloque `;` no fim da linha 5.",
+      "Em C++, toda definição de struct ou class precisa terminar com ; após a chave de fechamento. Coloque ; no fim da linha 5.",
   },
   {
     id: "comp-chamada-incompativel",
@@ -79,7 +79,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`no matching function for call to 'sort'` indica que `std::sort` espera dois iteradores, não o vetor inteiro. Use `sort(v.begin(), v.end())` ou `ranges::sort(v)`.",
+      "no matching function for call to 'sort' indica que std::sort espera dois iteradores, não o vetor inteiro. Use sort(v.begin(), v.end()) ou ranges::sort(v).",
   },
   {
     id: "comp-escrita-em-const",
@@ -99,7 +99,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`assignment of read-only location` mostra escrita em um parâmetro `const`. Remova `const` da referência ou devolva uma cópia modificada.",
+      "assignment of read-only location mostra escrita em um parâmetro const. Remova const da referência ou devolva uma cópia modificada.",
   },
   {
     id: "comp-redeclaracao",
@@ -117,7 +117,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`redeclaration of 'int ans'` aponta que o mesmo nome já existe no bloco atual. Remova o tipo `int` na linha 5 para apenas atribuir o novo valor.",
+      "redeclaration of 'int ans' aponta que o mesmo nome já existe no bloco atual. Remova o tipo int na linha 5 para apenas atribuir o novo valor.",
   },
 
   // --- aviso (5) ---
@@ -140,7 +140,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`-Wshadow` avisa que `int total` dentro do laço esconde o `total` externo sem alterá-lo. Remova o tipo `int` na linha 6 ou use outro nome.",
+      "-Wshadow avisa que int total dentro do laço esconde o total externo sem alterá-lo. Remova o tipo int na linha 6 ou use outro nome.",
   },
   {
     id: "aviso-nao-inicializada",
@@ -160,7 +160,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`'sum' is used uninitialized` indica leitura de lixo de memória antes da primeira escrita. Inicialize `int sum = 0;` na linha 4.",
+      "'sum' is used uninitialized indica leitura de lixo de memória antes da primeira escrita. Inicialize int sum = 0 na linha 4.",
   },
   {
     id: "aviso-printf-tipo",
@@ -177,7 +177,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`-Wformat` avisa que `%d` espera `int`, mas recebeu `long long`. Troque para `%lld` ou use `cout`.",
+      "-Wformat avisa que %d espera int, mas recebeu long long. Troque para %lld ou use cout.",
   },
   {
     id: "aviso-comparacao-sinal",
@@ -197,7 +197,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`-Wsign-compare` sinaliza a comparação entre `int` com sinal e `size_t` sem sinal retornado por `v.size()`. Converta com `int(v.size())` ou use `ssize(v)`.",
+      "-Wsign-compare sinaliza a comparação entre int com sinal e size_t sem sinal retornado por v.size(). Converta com int(v.size()) ou use ssize(v).",
   },
   {
     id: "aviso-sem-retorno",
@@ -217,7 +217,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`control reaches end of non-void function` avisa que `x == 0` chega ao fim da função sem `return`, gerando UB. Adicione `return 0;` antes da linha 6.",
+      "control reaches end of non-void function avisa que x == 0 chega ao fim da função sem return, gerando UB. Adicione return 0 antes da linha 6.",
   },
 
   // --- asan (5) ---
@@ -239,7 +239,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`heap-buffer-overflow` com `0 bytes after 16-byte region` mostra leitura logo após o fim do vetor alocado na linha 4. Troque `i <= 4` por `i < 4`.",
+      "heap-buffer-overflow com 0 bytes after 16-byte region mostra leitura logo após o fim do vetor alocado na linha 4. Troque i <= 4 por i < 4.",
   },
   {
     id: "asan-stack-oob",
@@ -259,7 +259,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`stack-buffer-overflow` indica acesso além dos limites do array local `a` na pilha. Corrija a condição do laço na linha 7 para `i < 4`.",
+      "stack-buffer-overflow indica acesso além dos limites do array local a na pilha. Corrija a condição do laço na linha 7 para i < 4.",
   },
   {
     id: "asan-uaf",
@@ -277,7 +277,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`heap-use-after-free` mostra leitura na linha 6 de memória já liberada pelo `delete p` na linha 5. Leia `*p` antes de liberar ou não use o ponteiro após `delete`.",
+      "heap-use-after-free mostra leitura na linha 6 de memória já liberada pelo delete p na linha 5. Leia *p antes de liberar ou não use o ponteiro após delete.",
   },
   {
     id: "asan-stack-overflow",
@@ -296,7 +296,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`stack-overflow` com dezenas de frames repetidos em `dfs` revela recursão sem caso-base que esgota a pilha. Adicione uma condição de parada antes da chamada recursiva.",
+      "stack-overflow com dezenas de frames repetidos em dfs revela recursão sem caso-base que esgota a pilha. Adicione uma condição de parada antes da chamada recursiva.",
   },
   {
     id: "asan-global-oob",
@@ -314,7 +314,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`global-buffer-overflow` aponta acesso fora do array global `g`, cujos índices válidos vão de 0 a 3. Use um índice menor que 4 ou aumente o tamanho de `g`.",
+      "global-buffer-overflow aponta acesso fora do array global g, cujos índices válidos vão de 0 a 3. Use um índice menor que 4 ou aumente o tamanho de g.",
   },
 
   // --- ubsan (5) ---
@@ -334,7 +334,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`signed integer overflow` indica que `a + a` passou do limite de `int` (`2^31 - 1`). Use `long long` para armazenar e somar os valores.",
+      "signed integer overflow indica que a + a passou do limite de int (2^31 - 1). Use long long para armazenar e somar os valores.",
   },
   {
     id: "ubsan-div-zero",
@@ -353,7 +353,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`runtime error: division by zero` na linha 6 mostra divisor igual a zero para a entrada `10 0`. Valide `b == 0` antes de dividir.",
+      "runtime error: division by zero na linha 6 mostra divisor igual a zero para a entrada 10 0. Valide b == 0 antes de dividir.",
   },
   {
     id: "ubsan-shift",
@@ -371,7 +371,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`shift exponent 32 is too large for 32-bit type 'int'` indica deslocamento maior ou igual à largura do tipo. Use `1LL << k` em `long long` ou garanta `k < 31`.",
+      "shift exponent 32 is too large for 32-bit type 'int' indica deslocamento maior ou igual à largura do tipo. Use 1LL << k em long long ou garanta k < 31.",
   },
   {
     id: "ubsan-array-oob",
@@ -389,7 +389,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`index 4 out of bounds for type 'int [4]'` aponta acesso ao índice 4 em um array de 4 posições (0 a 3). Limite `idx` ao intervalo `0..3`.",
+      "index 4 out of bounds for type 'int [4]' aponta acesso ao índice 4 em um array de 4 posições (0 a 3). Limite idx ao intervalo de 0 a 3.",
   },
   {
     id: "ubsan-nullptr",
@@ -406,7 +406,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`load of null pointer of type 'int'` mostra desreferência de um ponteiro nulo na linha 5. Verifique `p != nullptr` antes de acessar `*p`.",
+      "load of null pointer of type 'int' mostra desreferência de um ponteiro nulo na linha 5. Verifique p != nullptr antes de acessar *p.",
   },
 
   // --- glibcxx (5) ---
@@ -426,7 +426,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`out-of-bounds index 3, but container only holds 3 elements` acusa acesso fora do tamanho do `vector`. Use índices entre `0` e `v.size() - 1`.",
+      "out-of-bounds index 3, but container only holds 3 elements acusa acesso fora do tamanho do vector. Use índices entre 0 e v.size() - 1.",
   },
   {
     id: "glibcxx-iter-invalido",
@@ -446,7 +446,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`dereference a singular iterator` ocorre porque `push_back` realocou o `vector` e invalidou `it`. Obtenha o iterador depois de inserir ou guarde um índice inteiro.",
+      "dereference a singular iterator ocorre porque push_back realocou o vector e invalidou it. Obtenha o iterador depois de inserir ou guarde um índice inteiro.",
   },
   {
     id: "glibcxx-iter-end",
@@ -465,7 +465,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`past-the-end iterator` indica desreferência de `v.end()`, que aponta uma posição após o último elemento. Use `v.back()` ou `prev(v.end())`.",
+      "past-the-end iterator indica desreferência de v.end(), que aponta uma posição após o último elemento. Use v.back() ou prev(v.end()).",
   },
   {
     id: "glibcxx-comparator",
@@ -487,7 +487,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`irreflexive requirements` aponta que `cmp` passado ao `sort` na linha 6 retorna `true` para elementos iguais (`a <= a`). Troque `<=` por `<`.",
+      "irreflexive requirements aponta que cmp passado ao sort na linha 6 retorna true para elementos iguais (a <= a). Troque <= por <.",
   },
   {
     id: "glibcxx-empty-back",
@@ -505,7 +505,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`access an element in an empty container` indica chamada de `back()` em um `vector` vazio. Teste `!v.empty()` antes de ler o último elemento.",
+      "access an element in an empty container indica chamada de back() em um vector vazio. Teste !v.empty() antes de ler o último elemento.",
   },
 
   // --- veredito (5) ---
@@ -529,7 +529,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "O juiz encerrou por TLE (`saída 124`) porque o `continue` na linha 6 pula `n--` e prende o laço para sempre. Decremente `n` antes do `continue`.",
+      "O juiz encerrou por TLE (saída 124) porque o continue na linha 6 pula n-- e prende o laço para sempre. Decremente n antes do continue.",
   },
   {
     id: "veredito-mle",
@@ -548,7 +548,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`std::bad_alloc` sob limite de memória ocorre porque `10^8` inteiros de 8 bytes consomem ~800 MB. Reduza o estado da DP ou use `int`/compressão de memória.",
+      "std::bad_alloc sob limite de memória ocorre porque 10^8 inteiros de 8 bytes consomem ~800 MB. Reduza o estado da DP ou use int e compressão de memória.",
   },
   {
     id: "veredito-sigsegv",
@@ -565,7 +565,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`SIGSEGV` indica acesso a endereço de memória inválido ao desreferenciar `p == nullptr` na linha 5. Garanta que o ponteiro aponte para um objeto válido.",
+      "SIGSEGV indica acesso a endereço de memória inválido ao desreferenciar p == nullptr na linha 5. Garanta que o ponteiro aponte para um objeto válido.",
   },
   {
     id: "veredito-sigfpe",
@@ -584,7 +584,7 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`SIGFPE` (exceção aritmética) em inteiros quase sempre é divisão ou resto por zero, aqui `a % b` com `b = 0`. Trate `b == 0` antes de calcular o resto.",
+      "SIGFPE (exceção aritmética) em inteiros quase sempre é divisão ou resto por zero, aqui a % b com b = 0. Trate b == 0 antes de calcular o resto.",
   },
   {
     id: "veredito-sigabrt",
@@ -605,6 +605,6 @@ export const COMPILE_CASE_DEFS: readonly CompileCaseDef[] = [
       "}",
     ].join("\n"),
     explanation:
-      "`SIGABRT` com `Assertion 'n > 0' failed` mostra que o `assert` da linha 7 abortou o programa para `n = 0`. Trate o caso `n == 0` em vez de assumi-lo impossível.",
+      "SIGABRT com Assertion 'n > 0' failed mostra que o assert da linha 7 abortou o programa para n = 0. Trate o caso n == 0 em vez de assumi-lo impossível.",
   },
 ];

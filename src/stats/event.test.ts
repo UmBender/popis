@@ -93,7 +93,15 @@ describe("event drills", () => {
       kc: "compile.asan",
       ok: true,
       timeMs: 3200,
-      extra: { seed: 13, i: 0, caseId: "asan-heap-oob", group: "asan", lineOk: true, causeOk: true, skipped: false },
+      extra: {
+        seed: 13,
+        i: 0,
+        caseId: "asan-heap-oob",
+        group: "asan",
+        lineOk: true,
+        causeOk: true,
+        skipped: false,
+      },
     };
 
     expect(eventKey(ev)).toBe(`${String(at)}|compile.read|13|0`);

@@ -75,11 +75,23 @@ export const COMPILE_CAUSES: readonly CompileCause[] = [
   { id: "comparacao-sinal", group: "aviso", label: "Comparação signed vs unsigned" },
   { id: "sem-retorno", group: "aviso", label: "Função sem return em todos os caminhos" },
   // asan
-  { id: "heap-fora-limites", group: "asan", label: "Fora dos limites na heap (heap-buffer-overflow)" },
-  { id: "stack-fora-limites", group: "asan", label: "Fora dos limites na pilha (stack-buffer-overflow)" },
+  {
+    id: "heap-fora-limites",
+    group: "asan",
+    label: "Fora dos limites na heap (heap-buffer-overflow)",
+  },
+  {
+    id: "stack-fora-limites",
+    group: "asan",
+    label: "Fora dos limites na pilha (stack-buffer-overflow)",
+  },
   { id: "uso-apos-liberar", group: "asan", label: "Uso depois de liberar (heap-use-after-free)" },
   { id: "estouro-pilha", group: "asan", label: "Pilha estourada por recursão (stack-overflow)" },
-  { id: "global-fora-limites", group: "asan", label: "Fora dos limites em array global (global-buffer-overflow)" },
+  {
+    id: "global-fora-limites",
+    group: "asan",
+    label: "Fora dos limites em array global (global-buffer-overflow)",
+  },
   // ubsan
   { id: "overflow-sinal", group: "ubsan", label: "Overflow de inteiro com sinal" },
   { id: "divisao-zero", group: "ubsan", label: "Divisão ou resto por zero" },
@@ -88,9 +100,17 @@ export const COMPILE_CAUSES: readonly CompileCause[] = [
   { id: "ponteiro-nulo", group: "ubsan", label: "Desreferência de ponteiro nulo" },
   // glibcxx
   { id: "indice-fora-vetor", group: "glibcxx", label: "Índice fora dos limites do vector" },
-  { id: "iterador-invalido", group: "glibcxx", label: "Iterador invalidado após modificar contêiner" },
+  {
+    id: "iterador-invalido",
+    group: "glibcxx",
+    label: "Iterador invalidado após modificar contêiner",
+  },
   { id: "iterador-fim", group: "glibcxx", label: "Desreferência do iterador end()" },
-  { id: "comparador-invalido", group: "glibcxx", label: "Comparador não é ordem estrita fraca (<=)" },
+  {
+    id: "comparador-invalido",
+    group: "glibcxx",
+    label: "Comparador não é ordem estrita fraca (<=)",
+  },
   { id: "container-vazio", group: "glibcxx", label: "Acesso a elemento em contêiner vazio" },
   // veredito
   { id: "tle-laco-infinito", group: "veredito", label: "TLE — laço infinito ou tempo excedido" },

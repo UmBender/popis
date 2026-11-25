@@ -68,7 +68,9 @@ describe("CompileScreen (AC-4)", () => {
     const choices = screen.getByTestId("compile-choices");
     fireEvent.click(
       within(choices).getByRole("button", {
-        name: new RegExp(item0.choices[item0.correctChoiceIndex - 1]!.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+        name: new RegExp(
+          item0.choices[item0.correctChoiceIndex - 1]!.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        ),
       }),
     );
 
@@ -195,5 +197,83 @@ describe("CompileScreen (AC-4)", () => {
     // Esc exits the active round and restores the tree.
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.getByRole("radiogroup", { name: "Treinos" })).toBeTruthy();
+  });
+
+  it("supports cause-first selection, ArrowUp, keyboard review advance, restart, warning timer, input display and results actions", () => {
+    const store = memoryStore({
+      [COMPILE_KEY]: JSON.stringify({ durationS: 60, groups: ["veredito"] }),
+    });
+    const { onBack, newSeed } = setup(store);
+
+    // Pick cause first, then click the line.
+    const item0 = generateCompileItem(SEED, 0, ["veredito"]);
+    fireEvent.click(
+      within(screen.getByTestId("compile-choices")).getByRole("button", {
+        name: new RegExp(
+          item0.choices[item0.correctChoiceIndex - 1]!.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        ),
+      }),
+    );
+    expect(screen.getByTestId("compile-step").textContent).toContain("Causa selecionada");
+    fireEvent.click(screen.getByRole("button", { name: `Linha ${String(item0.caseData.line)}` }));
+    expect(screen.getByTestId("compile-score").textContent).toBe("1");
+
+    // Walk remaining veredito cases until one with input appears, testing ArrowUp, wrong review via Enter, and warning tone.
+    const codeArea = screen.getByTestId("compile-code");
+    fireEvent.keyDown(codeArea, { key: "ArrowDown" });
+    fireEvent.keyDown(codeArea, { key: "ArrowUp" });
+    fireEvent.keyDown(codeArea, { key: "a", ctrlKey: true });
+    // Ignored key inside select field while running.
+    const durationSelect = screen.getByRole("combobox", { name: "Duração" });
+    fireEvent.keyDown(durationSelect, { key: "1" });
+
+    // Trigger wrong review and advance via keyboard Enter (ignoring unrelated keys).
+    const item1 = generateCompileItem(SEED, 1, ["veredito"]);
+    const wrongChoice = item1.choices.find((c) => c.id !== item1.caseData.cause)!;
+    fireEvent.click(screen.getByRole("button", { name: "Linha 1" }));
+    fireEvent.click(
+      within(screen.getByTestId("compile-choices")).getByRole("button", {
+        name: new RegExp(wrongChoice.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+      }),
+    );
+    fireEvent.keyDown(codeArea, { key: "x" });
+    fireEvent.keyDown(codeArea, { key: "Enter" });
+    expect(screen.queryByRole("button", { name: /Próximo/ })).toBeNull();
+
+    // Advance through items until we observe input bar on a verdict case with input.
+    let sawInput = screen.queryByTestId("compile-input") !== null;
+    for (let i = 0; i < 4 && !sawInput; i++) {
+      fireEvent.keyDown(codeArea, { key: "Enter", ctrlKey: true });
+      if (screen.queryByTestId("compile-input") !== null) sawInput = true;
+    }
+    expect(sawInput).toBe(true);
+
+    // Reach <= 10 s remaining for warning tone, then finish and test Escape and Jogar de novo button.
+    advance(52_000);
+    expect(screen.getByTestId("compile-time").className).toContain("warning");
+
+    // Ctrl+Shift+Enter restarts with a new seed.
+    const seedsBefore = newSeed.mock.calls.length;
+    fireEvent.keyDown(window, { key: "Enter", ctrlKey: true, shiftKey: true });
+    expect(newSeed.mock.calls.length).toBeGreaterThan(seedsBefore);
+
+    // Finish a zero-item round to test empty table/wrong branches and Jogar de novo + Esc.
+    fireEvent.click(screen.getByRole("button", { name: "Linha 1" }));
+    advance(61_000);
+    expect(screen.getByTestId("result")).toBeTruthy();
+    expect(screen.queryByTestId("compile-group-table")).toBeNull();
+    expect(screen.queryByTestId("compile-wrong-list")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Jogar de novo" }));
+    expect(screen.queryByTestId("result")).toBeNull();
+
+    // Finish a second round (so historyScores is non-empty) and exit results with Escape.
+    fireEvent.click(screen.getByRole("button", { name: "Linha 1" }));
+    advance(61_000);
+    expect(screen.getByTestId("result")).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByTestId("result")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 });

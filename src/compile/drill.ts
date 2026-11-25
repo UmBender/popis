@@ -70,10 +70,7 @@ export function generateCompileItem(
     shuffledChoices[3]!,
   ];
   const correctChoiceIndex = (choices.findIndex((c) => c.id === caseData.cause) + 1) as
-    | 1
-    | 2
-    | 3
-    | 4;
+    1 | 2 | 3 | 4;
 
   return {
     index,

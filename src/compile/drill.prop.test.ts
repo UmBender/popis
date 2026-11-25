@@ -73,34 +73,26 @@ describe("compile drill properties (AC-2)", () => {
 
   it("no case repeats before exhausting the filtered pool", () => {
     fc.assert(
-      fc.property(
-        fc.integer({ min: 0, max: 0xffffffff }),
-        groupSubsetArb,
-        (seed, groups) => {
-          const pool = casesForGroups(groups);
-          const seen = new Set<string>();
-          for (let i = 0; i < pool.length; i++) {
-            const item = generateCompileItem(seed, i, groups);
-            expect(seen.has(item.caseData.id)).toBe(false);
-            seen.add(item.caseData.id);
-          }
-          expect(seen.size).toBe(pool.length);
-        },
-      ),
+      fc.property(fc.integer({ min: 0, max: 0xffffffff }), groupSubsetArb, (seed, groups) => {
+        const pool = casesForGroups(groups);
+        const seen = new Set<string>();
+        for (let i = 0; i < pool.length; i++) {
+          const item = generateCompileItem(seed, i, groups);
+          expect(seen.has(item.caseData.id)).toBe(false);
+          seen.add(item.caseData.id);
+        }
+        expect(seen.size).toBe(pool.length);
+      }),
     );
   });
 
   it("same seed produces the same round", () => {
     fc.assert(
-      fc.property(
-        fc.integer({ min: 0, max: 0xffffffff }),
-        groupSubsetArb,
-        (seed, groups) => {
-          const a = Array.from({ length: 6 }, (_, i) => generateCompileItem(seed, i, groups));
-          const b = Array.from({ length: 6 }, (_, i) => generateCompileItem(seed, i, groups));
-          expect(a).toEqual(b);
-        },
-      ),
+      fc.property(fc.integer({ min: 0, max: 0xffffffff }), groupSubsetArb, (seed, groups) => {
+        const a = Array.from({ length: 6 }, (_, i) => generateCompileItem(seed, i, groups));
+        const b = Array.from({ length: 6 }, (_, i) => generateCompileItem(seed, i, groups));
+        expect(a).toEqual(b);
+      }),
     );
   });
 });

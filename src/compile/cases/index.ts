@@ -25,7 +25,7 @@ export type CompileCase = {
 /** All compiler/sanitizer cases with outputs recorded by `npm run compile:oracle -- --write`. */
 export const COMPILE_CASES: readonly CompileCase[] = COMPILE_CASE_DEFS.map((def) => ({
   ...def,
-  output: RECORDED_OUTPUTS[def.id] ?? "",
+  output: RECORDED_OUTPUTS[def.id]!,
 }));
 
 export function casesForGroups(groups: readonly CompileGroup[]): readonly CompileCase[] {

@@ -19,7 +19,10 @@ describe("compile cases (AC-1)", () => {
       const lines = c.code.split("\n");
       expect(c.line, c.id).toBeGreaterThanOrEqual(1);
       expect(c.line, c.id).toBeLessThanOrEqual(lines.length);
-      expect((lines[c.line - 1] ?? "").trim().length, `${c.id} line ${String(c.line)}`).toBeGreaterThan(0);
+      expect(
+        (lines[c.line - 1] ?? "").trim().length,
+        `${c.id} line ${String(c.line)}`,
+      ).toBeGreaterThan(0);
     }
   });
 

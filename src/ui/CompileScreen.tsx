@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from "react";
 import {
   COMPILE_GROUPS,
   COMPILE_GROUP_LABELS,
@@ -165,7 +173,6 @@ export function CompileScreen({
   const pickLine = useCallback(
     (lineNo: number) => {
       const cur = latest.current.round;
-      if (cur.finished || cur.reviewing !== null) return;
       const t = clock.now();
       setNow(t);
       const cause = selectionRef.current.selectedCause;
@@ -175,7 +182,11 @@ export function CompileScreen({
       } else {
         setSelectedLine(lineNo);
         setFocusedLine(lineNo);
-        selectionRef.current = { ...selectionRef.current, selectedLine: lineNo, focusedLine: lineNo };
+        selectionRef.current = {
+          ...selectionRef.current,
+          selectedLine: lineNo,
+          focusedLine: lineNo,
+        };
         apply(touchCompileRound(cur, t));
       }
     },
@@ -185,7 +196,6 @@ export function CompileScreen({
   const pickCause = useCallback(
     (cause: CauseId) => {
       const cur = latest.current.round;
-      if (cur.finished || cur.reviewing !== null) return;
       const t = clock.now();
       setNow(t);
       const line = selectionRef.current.selectedLine;
@@ -203,7 +213,6 @@ export function CompileScreen({
 
   const continueAfterReview = useCallback(() => {
     const cur = latest.current.round;
-    if (cur.reviewing === null) return;
     const t = clock.now();
     setNow(t);
     resetSelection();
@@ -228,7 +237,6 @@ export function CompileScreen({
       preventDefault: () => void;
     }) => {
       const cur = latest.current.round;
-      if (cur.finished) return;
       const action = matchTrainingKey(e);
       if (action === "skip") {
         e.preventDefault();
@@ -558,7 +566,12 @@ export function CompileScreen({
               {stepPrompt}
             </p>
 
-            <div className="compile-choices" data-testid="compile-choices" role="group" aria-label="Causas">
+            <div
+              className="compile-choices"
+              data-testid="compile-choices"
+              role="group"
+              aria-label="Causas"
+            >
               {round.current.choices.map((choice, idx) => {
                 const isCorrect = reviewing !== null && reviewing.expectedCause === choice.id;
                 const isWrong =
@@ -664,8 +677,8 @@ export function CompileScreen({
           </li>
           <li>
             <code>TLE / MLE / RTE</code> — <code>SIGSEGV</code> (memória inválida),{" "}
-            <code>SIGFPE</code> (divisão/resto por zero) e <code>SIGABRT</code> (
-            <code>assert</code> ou <code>bad_alloc</code>).
+            <code>SIGFPE</code> (divisão/resto por zero) e <code>SIGABRT</code> (<code>assert</code>{" "}
+            ou <code>bad_alloc</code>).
           </li>
         </ul>
       </Reference>
