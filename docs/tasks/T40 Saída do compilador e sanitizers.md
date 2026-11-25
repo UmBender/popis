@@ -1,7 +1,7 @@
 ---
 id: T40
 title: Saída do compilador e sanitizers
-status: review
+status: done
 depends_on: [T25]
 branch: task/T40-compiler-output
 adrs: [ADR-T40-1]
