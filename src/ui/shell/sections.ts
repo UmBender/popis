@@ -14,7 +14,8 @@ export type ItemId =
   | "vim-edit"
   | "gdb-learn"
   | "gdb-commands"
-  | "gdb-output";
+  | "gdb-output"
+  | "ref-cpp";
 
 export type TreeItem = {
   readonly id: ItemId;
@@ -93,6 +94,7 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
       ["gdb-output", "Saída"],
     ],
   ],
+  ["referencia", "Referência", [["ref-cpp", "C++"]]],
 ];
 
 let position = 0;
