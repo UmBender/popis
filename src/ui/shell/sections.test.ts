@@ -24,6 +24,7 @@ const SCREENS: readonly ItemId[] = [
   "regex-practice",
   "compile-read",
   "stl",
+  "ref-cpp",
 ];
 
 describe("sections", () => {
@@ -39,6 +40,27 @@ describe("sections", () => {
       ["Shell", ["Aprender", "Comandos"]],
       ["Regex", ["Aprender", "Prática"]],
       ["Maratona", ["Ler o erro", "STL"]],
+      ["Referência", ["C++"]],
+    ]);
+  });
+
+  it("Referência folder closes the tree with C++ on touch screens", () => {
+    const last = SECTIONS[SECTIONS.length - 1];
+    expect(last?.id).toBe("referencia");
+    expect(last?.label).toBe("Referência");
+    expect(last?.items.map((i) => [i.id, i.label, i.touch, i.shortcut])).toEqual([
+      ["ref-cpp", "C++", true, null],
+    ]);
+    expect(ITEMS.slice(1, 10).map((i) => i.id)).toEqual([
+      "arithmetic",
+      "algebra",
+      "factoring",
+      "sums",
+      "division",
+      "estimation",
+      "primes",
+      "review",
+      "data",
     ]);
   });
 

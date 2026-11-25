@@ -26,6 +26,7 @@ export default defineConfig({
         "stl.spec.ts",
         "shell-drill.spec.ts",
         "regex.spec.ts",
+        "ref.spec.ts",
       ],
       use: { ...devices["Pixel 7"], baseURL: `http://localhost:${pagesPort}${pagesBase}` },
     },

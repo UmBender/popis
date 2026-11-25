@@ -1,10 +1,10 @@
 ---
 id: T46
 title: Referência - C++ para CP
-status: ready
+status: review
 depends_on: []
 branch: task/T46-cpp-reference
-adrs: []
+adrs: [ADR-T46-1]
 tags: [task]
 ---
 
@@ -67,15 +67,30 @@ task também cria o leitor de referência que a T47 (Python) usa.
     example, output, pitfalls[], tags[], since?, judge?, link? }`;
   - `since` é a versão mínima da linguagem; `judge` marca "não existe na
     WF".
-  - Testes: `src/ref/model.test.ts` (ids únicos, toda seção existe, todo exemplo tem saída).
+  - `input?` (entrada padrão do exemplo) e a complexidade como texto ou
+    tabela `[operação, custo][]` entram além do spec (ADR-T46-1).
+  - Testes: `src/ref/model.test.ts` ("entry ids are unique within a
+    language", "every entry section exists", "every example has a
+    recorded output", "every recorded output belongs to an entry",
+    "entriesOf and sectionsOf return the language content").
 - **AC-2**: **Busca pura** `src/ref/search.ts`: busca por título, tags e
   assinatura, sem acento e sem diferença de caixa, com o título acima da
   assinatura no ranking. "lower", "lb" e "busca binaria" encontram
   `lower_bound`.
-  - Testes: `src/ref/search.test.ts` (tabela de consultas e o primeiro resultado esperado), `src/ref/search.prop.test.ts` (o resultado é subconjunto; consulta vazia devolve tudo na ordem das seções).
+  - Testes: `src/ref/search.test.ts` ("search finds <consulta> first",
+    tabela de consultas e o primeiro resultado esperado; "search ranks a
+    title match above a signature match"; "search ignores accents and
+    case"; "search requires every term"), `src/ref/search.prop.test.ts`
+    ("search result is a subset in section order of ties", "empty query
+    returns every entry in section order", "search is accent and case
+    insensitive").
 - **AC-3**: **Conteúdo C++** `src/ref/cpp/`, com pelo menos 80 verbetes
   cobrindo as 9 seções acima, cada armadilha em uma frase.
-  - Testes: `src/ref/cpp/content.test.ts` ("every section has entries", "every example has at most 6 lines").
+  - Testes: `src/ref/cpp/content.test.ts` ("cpp has at least 80
+    entries", "every section has entries", "every example has at most 6
+    lines", "every pitfall is one sentence", "every entry links to
+    cppreference", "every container has a complexity table", "judge
+    entries need C++23", "the minimum entries of the note exist").
 - **AC-4**: **Oráculo** `npm run ref:oracle -- cpp`
   (`scripts/ref-oracle.mjs`), fora do `check`. Ele embrulha cada exemplo
   num `main` com o template, compila com `-std=gnu++20 -O2 -Wall`, roda,
@@ -89,15 +104,24 @@ task também cria o leitor de referência que a T47 (Python) usa.
     o exemplo, a saída, as armadilhas e os selos;
   - "copiar" no exemplo, `#lang/id` na URL para abrir um verbete;
   - folha de impressão compacta em duas colunas (para o caderno).
-  - Testes: `src/ui/RefScreen.test.tsx` ("typing filters entries", "/ focuses search", "hash opens the entry", "judge badge is shown"), `tests/e2e/ref.spec.ts` (desktop e mobile).
+  - Testes: `src/ui/RefScreen.test.tsx` ("typing filters entries", "/
+    focuses search", "Escape clears the search", "hash opens the entry",
+    "judge badge is shown", "copy puts the example on the clipboard",
+    "a section link scrolls to the section", "print button prints the
+    sheet", "app opens the reference from the hash"), `tests/e2e/ref.spec.ts`
+    (desktop e mobile: buscar, abrir por hash, sem rolagem horizontal).
 - **AC-6**: **Ligações:** a explicação de um erro na T42 (STL) e na T40
   pode ter `ref: "cpp/lower_bound"`, e o leitor abre nesse verbete. Esta
   task só cria a função `refLink(id)` e o teste dela; os drills passam a
   usar quando existirem.
-  - Testes: `src/ref/link.test.ts`.
+  - Testes: `src/ref/link.test.ts` ("refLink gives the hash of a known
+    entry", "refLink throws on an unknown entry", "parseRefHash reads
+    lang and id", "parseRefHash rejects other hashes").
 - **AC-7**: **Árvore:** a pasta "Referência" entra no fim da árvore, com
   "C++" visível no celular, e os atalhos 1–9 não mudam.
-  - Testes: `src/ui/shell/sections.test.ts`.
+  - Testes: `src/ui/shell/sections.test.ts` ("Referência folder closes
+    the tree with C++ on touch screens", e as listas da árvore e das
+    telas ganham o item `ref-cpp`).
 
 ## Out of scope
 
@@ -107,19 +131,22 @@ task também cria o leitor de referência que a T47 (Python) usa.
 
 ## Files owned
 
-- `src/ref/` (novo): `model.ts`, `search.ts`, `link.ts`, `cpp/` e os testes
-- `src/ui/RefScreen.tsx`, `src/ui/App.tsx`, `src/ui/shell/sections.ts`, `src/ui/app.css`
-- `scripts/ref-oracle.mjs`, `package.json`, `vite.config.ts`
+- `src/ref/` (novo): `model.ts`, `langs.ts`, `search.ts`, `link.ts`,
+  `cpp/` (uma seção por arquivo, `index.ts`, `outputs.ts` gerado) e os testes
+- `src/ui/RefScreen.tsx`, `src/ui/RefScreen.test.tsx`, `src/ui/App.tsx`,
+  `src/ui/shell/sections.ts`, `src/ui/shell/sections.test.ts`, `src/ui/app.css`
+- `scripts/ref-oracle.mjs`, `package.json`, `vite.config.ts`,
+  `playwright.config.ts` (o projeto `mobile` roda `ref.spec.ts`)
 - `tests/e2e/ref.spec.ts`
 
 ## Subtasks (one commit each)
 
-- [ ] spec: ADR-T46-1 (verbetes como dados tipados, exemplos conferidos por oráculo, selo do juiz) e testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, `ref:oracle -- cpp`, coverage, e2e
-- [ ] docs
+- [x] spec: ADR-T46-1 (verbetes como dados tipados, exemplos conferidos por oráculo, selo do juiz) e testes nomeados
+- [x] tests
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, `ref:oracle -- cpp`, coverage, e2e
+- [x] docs
 
 ## Notas para o batch
 
@@ -130,3 +157,51 @@ task também cria o leitor de referência que a T47 (Python) usa.
   marque `judge` à mão e cite a fonte no *Log*.
 
 ## Log
+
+- 2026-11-25 — Implementada no batch (sessão sem ninguém no teclado), na
+  branch `task/T46-cpp-reference`, a partir da `main`.
+- **Conteúdo:** 91 verbetes nas 9 seções completas (io 9, tipos 8,
+  contêineres 14, algoritmos 20, strings 10, bits 7, matemática 9,
+  aleatório 5, extras 9). Não foi preciso cortar para o recorte 1–4.
+- **Oráculo** (`npm run ref:oracle -- cpp`, g++ 16.2.1):
+  `ref:oracle cpp: 91/91 ok (4 judge entries, 0 output mismatches)`.
+  As saídas de `src/ref/cpp/outputs.ts` foram gravadas com `--write`,
+  nenhuma digitada. Os 4 verbetes com `judge` (`print`, `fold_left`,
+  `string_contains`, `views_enumerate`) falham com `-std=gnu++20` e
+  passam com `-std=gnu++23`. Nenhum verbete precisou de `judge` marcado à
+  mão: todos os recursos que o spec chama de "WF ok" são C++20 ou
+  anteriores e existem no g++ 13.2.
+- **Achado do oráculo:** o `bits/stdc++.h` do g++ 16.2 não inclui mais o
+  `<cassert>` (`assert` não declarado). O verbete `assert` inclui o
+  cabeçalho à mão e ganhou essa armadilha.
+- **UNATTENDED CHOICE:** campos além do AC-1: `input?` (entrada padrão do
+  exemplo) e complexidade como texto ou tabela; o `judge` é `true` e o
+  selo fixo "não existe na WF" (`JUDGE_BADGE`). Registrado no ADR-T46-1.
+- **UNATTENDED CHOICE:** o título do painel é o rótulo da árvore ("C++"),
+  porque `coherence.test.tsx` exige que o `h1` seja igual ao rótulo; a
+  palavra "Referência" fica na descrição e no caminho
+  `popis/referência/c++`. A busca e o corpo levam `data-panel="options"`
+  e `data-panel="area"` (ordem de painéis da T18).
+- **Teste corrigido em commit próprio:** `RefScreen.test.tsx` não tinha o
+  `// @vitest-environment jsdom` dos outros testes de `src/ui` e falhava
+  por `history is not defined`, não pelo comportamento
+  (`test(T46): run the reader tests in jsdom`). Nenhuma asserção mudou.
+- **Files owned ampliados** (política do plano): `playwright.config.ts`
+  (o projeto `mobile` roda `ref.spec.ts`), `src/ui/RefScreen.test.tsx`,
+  `src/ui/shell/sections.test.ts` e `src/ref/langs.ts`. Os testes já
+  existentes de `sections.test.ts` ganharam a pasta Referência e o item
+  `ref-cpp` nas listas esperadas (mudança de spec, não afrouxamento).
+- **Gates:** `npm run check` verde (4320 testes); `npm run coverage`
+  verde, com novo limiar `src/ref/**` em 100/100/100/100;
+  `npm run test:fuzz` verde (245); `npm run test:e2e` verde (43, com os 6
+  novos de `ref.spec.ts` em desktop e mobile).
+- **Verificação visual:** `.batch/visual/T46-cpp-reference.spec.ts`
+  (desktop e phone: árvore, topo, busca, hash, selo do juiz, impressão).
+  Corrigidos: blocos de código sem contraste no verbete aberto e a folha
+  de impressão com fundo escuro (`color-scheme: dark`); agora ela sai em
+  duas colunas, texto escuro no papel.
+- **Checagens manuais para o dono:** buscar cinco coisas que você usa em
+  contest; abrir a prévia de impressão do navegador e conferir a folha
+  de duas colunas (tamanho da fonte e quebras); na primeira abertura pela
+  árvore no desktop, a página pode rolar até o item clicado e esconder o
+  título do painel.
