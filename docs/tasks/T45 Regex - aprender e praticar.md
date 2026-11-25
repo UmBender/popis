@@ -1,7 +1,7 @@
 ---
 id: T45
 title: Regex - aprender e praticar
-status: review
+status: done
 depends_on: [T25]
 branch: task/T45-regex
 adrs: [ADR-T45-1]
