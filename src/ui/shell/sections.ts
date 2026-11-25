@@ -14,7 +14,9 @@ export type ItemId =
   | "vim-edit"
   | "gdb-learn"
   | "gdb-commands"
-  | "gdb-output";
+  | "gdb-output"
+  | "regex-learn"
+  | "regex-practice";
 
 export type TreeItem = {
   readonly id: ItemId;
@@ -91,6 +93,14 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
       ["gdb-learn", "Aprender", undefined, "Aprender (GDB)"],
       ["gdb-commands", "Comandos"],
       ["gdb-output", "Saída"],
+    ],
+  ],
+  [
+    "regex",
+    "Regex",
+    [
+      ["regex-learn", "Aprender", undefined, "Aprender (Regex)"],
+      ["regex-practice", "Prática"],
     ],
   ],
 ];
