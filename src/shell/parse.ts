@@ -1,8 +1,7 @@
 export type RedirOp = "<" | ">" | ">>" | "2>" | "2>&1" | "&>";
 
 export type Redirection =
-  | { readonly op: "2>&1" }
-  | { readonly op: Exclude<RedirOp, "2>&1">; readonly target: Word };
+  { readonly op: "2>&1" } | { readonly op: Exclude<RedirOp, "2>&1">; readonly target: Word };
 
 export type WordPart =
   | { readonly type: "text"; readonly value: string }
@@ -52,17 +51,10 @@ export type FuncDefNode = {
   readonly body: ShellNode;
 };
 
-export type ShellNode =
-  | SimpleCommand
-  | PipelineNode
-  | ListNode
-  | ForNode
-  | WhileNode
-  | FuncDefNode;
+export type ShellNode = SimpleCommand | PipelineNode | ListNode | ForNode | WhileNode | FuncDefNode;
 
 export type ParseResult =
-  | { readonly ok: true; readonly node: ShellNode }
-  | { readonly ok: false; readonly error: string };
+  { readonly ok: true; readonly node: ShellNode } | { readonly ok: false; readonly error: string };
 
 const UNSUPPORTED_KEYWORDS = new Set(["case", "if", "until", "select", "[["]);
 const RESERVED_WORDS = new Set([
@@ -182,7 +174,7 @@ class Parser {
         op = ";";
         this.pos += 1;
       } else if (this.peekChar() === "&" && !this.startsWith("&>")) {
-        throw new ParseFailure("o treino não entende execução em segundo plano (`&`)");
+        throw new ParseFailure("o treino não entende execução em segundo plano (&)");
       } else {
         break;
       }
@@ -227,22 +219,22 @@ class Parser {
       throw new ParseFailure("esperado um comando");
     }
     if (this.startsWith("((")) {
-      throw new ParseFailure("o treino não entende `((`");
+      throw new ParseFailure("o treino não entende ((");
     }
     if (this.startsWith("<<<")) {
-      throw new ParseFailure("o treino não entende here-string (`<<<`)");
+      throw new ParseFailure("o treino não entende here-string (<<<)");
     }
     if (this.startsWith("<<")) {
-      throw new ParseFailure("o treino não entende here-doc (`<<`)");
+      throw new ParseFailure("o treino não entende here-doc (<<)");
     }
 
     const kw = this.peekUnquotedWord();
     if (kw !== null) {
       if (stopWords.has(kw)) {
-        throw new ParseFailure(`esperado um comando antes de \`${kw}\``);
+        throw new ParseFailure(`esperado um comando antes de ${kw}`);
       }
       if (UNSUPPORTED_KEYWORDS.has(kw)) {
-        throw new ParseFailure(`o treino não entende \`${kw}\``);
+        throw new ParseFailure(`o treino não entende ${kw}`);
       }
       if (kw === "for") return this.parseFor();
       if (kw === "while") return this.parseWhile();
@@ -267,16 +259,16 @@ class Parser {
     this.pos += 3; // consume "for"
     this.skipSpaces();
     if (this.startsWith("((")) {
-      throw new ParseFailure("o treino não entende `for ((...))` — use `for i in $(seq 1 N)`");
+      throw new ParseFailure("o treino não entende for ((...)) — use for i in $(seq 1 N)");
     }
     const varName = this.peekUnquotedWord();
     if (varName === null || !IDENT_RE.test(varName)) {
-      throw new ParseFailure("esperado nome de variável após `for`");
+      throw new ParseFailure("esperado nome de variável após for");
     }
     this.pos += varName.length;
     this.skipSpaces();
     if (this.peekUnquotedWord() !== "in") {
-      throw new ParseFailure("esperado `in` no laço `for`");
+      throw new ParseFailure("esperado in no laço for");
     }
     this.pos += 2;
 
@@ -284,7 +276,7 @@ class Parser {
     while (true) {
       this.skipSpaces();
       if (this.pos >= this.src.length) {
-        throw new ParseFailure("laço `for` incompleto: faltou `; do ...; done`");
+        throw new ParseFailure("laço for incompleto: faltou ; do ...; done");
       }
       if (this.peekChar() === ";" || this.peekChar() === "\n") {
         this.pos += 1;
@@ -294,19 +286,19 @@ class Parser {
       items.push(this.readWord().word);
     }
     if (items.length === 0) {
-      throw new ParseFailure("esperada a lista de valores após `in` no laço `for`");
+      throw new ParseFailure("esperada a lista de valores após in no laço for");
     }
 
     this.skipSpaces();
     if (this.peekUnquotedWord() !== "do") {
-      throw new ParseFailure("faltou `do` no laço `for`");
+      throw new ParseFailure("faltou do no laço for");
     }
     this.pos += 2;
 
     const body = this.parseList(new Set(["done"]), false);
     this.skipSpaces();
     if (this.peekUnquotedWord() !== "done") {
-      throw new ParseFailure("faltou `done` para fechar o laço `for`");
+      throw new ParseFailure("faltou done para fechar o laço for");
     }
     this.pos += 4;
     return { kind: "for", variable: varName, items, body };
@@ -317,13 +309,13 @@ class Parser {
     const condition = this.parseList(new Set(["do"]), false);
     this.skipSpaces();
     if (this.peekUnquotedWord() !== "do") {
-      throw new ParseFailure("faltou `do` no laço `while`");
+      throw new ParseFailure("faltou do no laço while");
     }
     this.pos += 2;
     const body = this.parseList(new Set(["done"]), false);
     this.skipSpaces();
     if (this.peekUnquotedWord() !== "done") {
-      throw new ParseFailure("faltou `done` para fechar o laço `while`");
+      throw new ParseFailure("faltou done para fechar o laço while");
     }
     this.pos += 4;
     return { kind: "while", condition, body };
@@ -332,13 +324,13 @@ class Parser {
   parseFuncBody(name: string): FuncDefNode {
     this.skipSpaces();
     if (this.peekUnquotedWord() !== "{") {
-      throw new ParseFailure(`faltou \`{\` no corpo da função \`${name}\``);
+      throw new ParseFailure(`faltou { no corpo da função ${name}`);
     }
     this.pos += 1;
     const body = this.parseList(new Set(["}"]), false);
     this.skipSpaces();
     if (this.peekUnquotedWord() !== "}") {
-      throw new ParseFailure(`faltou \`}\` para fechar a função \`${name}\``);
+      throw new ParseFailure(`faltou } para fechar a função ${name}`);
     }
     this.pos += 1;
     return { kind: "funcdef", name, body };
@@ -356,10 +348,10 @@ class Parser {
       if (ch === ")" && stopParen) break;
       if (ch === "&" && !this.startsWith("&>")) break;
       if (this.startsWith("<<<")) {
-        throw new ParseFailure("o treino não entende here-string (`<<<`)");
+        throw new ParseFailure("o treino não entende here-string (<<<)");
       }
       if (this.startsWith("<<")) {
-        throw new ParseFailure("o treino não entende here-doc (`<<`)");
+        throw new ParseFailure("o treino não entende here-doc (<<)");
       }
 
       const kw = this.peekUnquotedWord();
@@ -372,13 +364,13 @@ class Parser {
       }
 
       if (ch === "(" || ch === ")") {
-        throw new ParseFailure(`parêntese inesperado \`${ch}\``);
+        throw new ParseFailure(`parêntese inesperado ${ch}`);
       }
 
       const tok = this.readWord();
       if (words.length === 0 && !tok.quoted && tok.plainText !== null) {
         if (UNSUPPORTED_KEYWORDS.has(tok.plainText)) {
-          throw new ParseFailure(`o treino não entende \`${tok.plainText}\``);
+          throw new ParseFailure(`o treino não entende ${tok.plainText}`);
         }
       }
       words.push(tok.word);
@@ -419,7 +411,7 @@ class Parser {
 
     this.skipSpaces();
     if (this.pos >= this.src.length || isWordStop(this.src, this.pos)) {
-      throw new ParseFailure(`faltou o arquivo de destino após \`${op}\``);
+      throw new ParseFailure(`faltou o arquivo de destino após ${op}`);
     }
     const target = this.readWord().word;
     return { op, target };
@@ -455,13 +447,13 @@ class Parser {
         pushText(parts, this.src[this.pos]!);
         this.pos += 1;
       } else if (ch === "`") {
-        throw new ParseFailure("use `$(...)` no lugar de crases");
+        throw new ParseFailure("use $(...) no lugar de crases");
       } else if (this.startsWith("$(")) {
         this.pos += 2;
         const node = this.parseList(new Set(), true);
         this.skipSpaces();
         if (this.peekChar() !== ")") {
-          throw new ParseFailure("substituição de comando `$(...)` sem fechar `)`");
+          throw new ParseFailure("substituição de comando $(...) sem fechar )");
         }
         this.pos += 1;
         parts.push({ type: "cmdsub", node });
@@ -470,7 +462,7 @@ class Parser {
         const node = this.parseList(new Set(), true);
         this.skipSpaces();
         if (this.peekChar() !== ")") {
-          throw new ParseFailure("substituição de processo `<(...)` sem fechar `)`");
+          throw new ParseFailure("substituição de processo <(...) sem fechar )");
         }
         this.pos += 1;
         parts.push({ type: "procsub", dir: "<", node });
@@ -485,8 +477,7 @@ class Parser {
     if (parts.length === 0) {
       parts.push({ type: "text", value: "" });
     }
-    const plainText =
-      parts.length === 1 && parts[0]?.type === "text" ? parts[0].value : null;
+    const plainText = parts.length === 1 && parts[0]?.type === "text" ? parts[0].value : null;
     return { word: { parts }, quoted, plainText };
   }
 
@@ -509,13 +500,13 @@ class Parser {
           this.pos += 2;
         }
       } else if (ch === "`") {
-        throw new ParseFailure("use `$(...)` no lugar de crases");
+        throw new ParseFailure("use $(...) no lugar de crases");
       } else if (this.startsWith("$(")) {
         this.pos += 2;
         const node = this.parseList(new Set(), true);
         this.skipSpaces();
         if (this.peekChar() !== ")") {
-          throw new ParseFailure("substituição de comando `$(...)` sem fechar `)`");
+          throw new ParseFailure("substituição de comando $(...) sem fechar )");
         }
         this.pos += 1;
         parts.push({ type: "cmdsub", node });
@@ -538,12 +529,12 @@ class Parser {
         this.pos += 1;
       }
       if (this.pos >= this.src.length) {
-        throw new ParseFailure("expansão `${...}` sem fechar `}`");
+        throw new ParseFailure("expansão ${...} sem fechar }");
       }
       const name = this.src.slice(start, this.pos);
       this.pos += 1;
       if (!IDENT_RE.test(name) && !/^\d+$/.test(name)) {
-        throw new ParseFailure(`variável inválida em \`\${${name}}\``);
+        throw new ParseFailure(`variável inválida em \${${name}}`);
       }
       parts.push({ type: "var", name });
       return;
@@ -580,7 +571,7 @@ export function parseShell(input: string): ParseResult {
     parser.skipSpaces();
     if (parser.pos < parser.src.length) {
       const rest = parser.src.slice(parser.pos, parser.pos + 12);
-      return { ok: false, error: `sintaxe inesperada perto de \`${rest}\`` };
+      return { ok: false, error: `sintaxe inesperada perto de ${rest}` };
     }
     return { ok: true, node };
   } catch (err) {

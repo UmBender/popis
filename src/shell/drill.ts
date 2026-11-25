@@ -92,7 +92,7 @@ function buildArquivos(rng: Rng): ItemSpec {
       };
     case 2:
       return {
-        prompt: `Entre na pasta \`${dir}\`.`,
+        prompt: `Entre na pasta ${dir}.`,
         mentionedFiles: [dir],
         cwd: "~/contest",
         files: [`${dir}/`, src, inp],
@@ -114,7 +114,7 @@ function buildArquivos(rng: Rng): ItemSpec {
       };
     case 4:
       return {
-        prompt: `Crie a pasta \`${nested}\` criando pastas intermediárias se ainda não existirem.`,
+        prompt: `Crie a pasta ${nested} criando pastas intermediárias se ainda não existirem.`,
         mentionedFiles: [nested],
         cwd: "~/contest",
         files: [src, inp],
@@ -124,7 +124,7 @@ function buildArquivos(rng: Rng): ItemSpec {
       };
     case 5:
       return {
-        prompt: `Copie \`${src}\` para \`${dst}\`.`,
+        prompt: `Copie ${src} para ${dst}.`,
         mentionedFiles: [src, dst],
         cwd: "~/contest/a",
         files: [src, inp],
@@ -134,7 +134,7 @@ function buildArquivos(rng: Rng): ItemSpec {
       };
     case 6:
       return {
-        prompt: `Renomeie \`${src}\` para \`${dst}\`.`,
+        prompt: `Renomeie ${src} para ${dst}.`,
         mentionedFiles: [src, dst],
         cwd: "~/contest/a",
         files: [src, inp],
@@ -145,7 +145,7 @@ function buildArquivos(rng: Rng): ItemSpec {
     default:
       return rng.int(0, 1) === 0
         ? {
-            prompt: `Mostre o conteúdo completo de \`${inp}\` na tela.`,
+            prompt: `Mostre o conteúdo completo de ${inp} na tela.`,
             mentionedFiles: [inp],
             cwd: "~/contest/a",
             files: [src, inp],
@@ -154,7 +154,7 @@ function buildArquivos(rng: Rng): ItemSpec {
             oracleFixture: "files",
           }
         : {
-            prompt: `Remova o arquivo \`${trash}\` sem pedir confirmação (forçado).`,
+            prompt: `Remova o arquivo ${trash} sem pedir confirmação (forçado).`,
             mentionedFiles: [trash],
             cwd: "~/contest/a",
             files: [src, trash],
@@ -173,7 +173,7 @@ function buildCompilar(rng: Rng): ItemSpec {
   switch (variant) {
     case 0:
       return {
-        prompt: `Compile \`${src}\` para o executável \`${name}\` com otimização \`-O2\` e padrão \`gnu++20\` (flags do juiz).`,
+        prompt: `Compile ${src} para o executável ${name} com otimização -O2 e padrão gnu++20 (flags do juiz).`,
         mentionedFiles: [src, name],
         cwd: "~/contest",
         files: [src, "in1"],
@@ -184,7 +184,7 @@ function buildCompilar(rng: Rng): ItemSpec {
       };
     case 1:
       return {
-        prompt: `Compile \`${src}\` para \`${name}\` com os avisos \`-Wall\`, \`-Wextra\` e \`-Wshadow\`.`,
+        prompt: `Compile ${src} para ${name} com os avisos -Wall, -Wextra e -Wshadow.`,
         mentionedFiles: [src, name],
         cwd: "~/contest",
         files: [src, "in1"],
@@ -195,7 +195,7 @@ function buildCompilar(rng: Rng): ItemSpec {
       };
     case 2:
       return {
-        prompt: `Compile \`${src}\` para \`${name}\` ativando depuração da STL com \`-D_GLIBCXX_DEBUG\` e padrão \`gnu++20\`.`,
+        prompt: `Compile ${src} para ${name} ativando depuração da STL com -D_GLIBCXX_DEBUG e padrão gnu++20.`,
         mentionedFiles: [src, name],
         cwd: "~/contest",
         files: [src, "in1"],
@@ -206,7 +206,7 @@ function buildCompilar(rng: Rng): ItemSpec {
       };
     case 3:
       return {
-        prompt: `Compile \`${src}\` para \`${name}\` com \`-g\` e sanitizers de endereço e comportamento indefinido (\`-fsanitize=address,undefined\`).`,
+        prompt: `Compile ${src} para ${name} com -g e sanitizers de endereço e comportamento indefinido (-fsanitize=address,undefined).`,
         mentionedFiles: [src, name],
         cwd: "~/contest",
         files: [src, "in1"],
@@ -217,7 +217,7 @@ function buildCompilar(rng: Rng): ItemSpec {
       };
     default:
       return {
-        prompt: `Compile \`${src}\` para \`${name}\` com \`-O2\`, \`-std=gnu++20\`, \`-Wall\` e \`-Wextra\`.`,
+        prompt: `Compile ${src} para ${name} com -O2, -std=gnu++20, -Wall e -Wextra.`,
         mentionedFiles: [src, name],
         cwd: "~/contest",
         files: [src, "in1"],
@@ -240,7 +240,7 @@ function buildRodar(rng: Rng): ItemSpec {
   switch (variant) {
     case 0:
       return {
-        prompt: `Rode \`./${bin}\` lendo a entrada de \`${inp}\`.`,
+        prompt: `Rode ./${bin} lendo a entrada de ${inp}.`,
         mentionedFiles: [`./${bin}`, inp],
         cwd: "~/contest",
         files: [bin, `${bin}.cpp`, inp],
@@ -250,7 +250,7 @@ function buildRodar(rng: Rng): ItemSpec {
       };
     case 1:
       return {
-        prompt: `Rode \`./${bin}\` lendo de \`${inp}\` e salvando a saída em \`${out}\`.`,
+        prompt: `Rode ./${bin} lendo de ${inp} e salvando a saída em ${out}.`,
         mentionedFiles: [`./${bin}`, inp, out],
         cwd: "~/contest",
         files: [bin, inp],
@@ -260,7 +260,7 @@ function buildRodar(rng: Rng): ItemSpec {
       };
     case 2:
       return {
-        prompt: `Rode \`./${bin}\` lendo de \`${inp}\` e salvando apenas a saída de erro (stderr) em \`${err}\`.`,
+        prompt: `Rode ./${bin} lendo de ${inp} e salvando apenas a saída de erro (stderr) em ${err}.`,
         mentionedFiles: [`./${bin}`, inp, err],
         cwd: "~/contest",
         files: [bin, inp],
@@ -270,7 +270,7 @@ function buildRodar(rng: Rng): ItemSpec {
       };
     case 3:
       return {
-        prompt: `Rode \`./${bin}\` com \`${inp}\`, mostrando a saída na tela e gravando em \`${out}\` com \`tee\`.`,
+        prompt: `Rode ./${bin} com ${inp}, mostrando a saída na tela e gravando em ${out} com tee.`,
         mentionedFiles: [`./${bin}`, inp, out],
         cwd: "~/contest",
         files: [bin, inp],
@@ -280,7 +280,7 @@ function buildRodar(rng: Rng): ItemSpec {
       };
     case 4:
       return {
-        prompt: `Meça o tempo de execução de \`./${bin}\` lendo \`${inp}\` com \`time\`.`,
+        prompt: `Meça o tempo de execução de ./${bin} lendo ${inp} com time.`,
         mentionedFiles: [`./${bin}`, inp],
         cwd: "~/contest",
         files: [bin, inp],
@@ -290,7 +290,7 @@ function buildRodar(rng: Rng): ItemSpec {
       };
     default:
       return {
-        prompt: `Rode \`./${bin}\` com \`${inp}\` limitando o tempo a ${String(secs)} s com \`timeout\`.`,
+        prompt: `Rode ./${bin} com ${inp} limitando o tempo a ${String(secs)} s com timeout.`,
         mentionedFiles: [`./${bin}`, inp],
         cwd: "~/contest",
         files: [bin, inp],
@@ -310,7 +310,7 @@ function buildComparar(rng: Rng): ItemSpec {
   switch (variant) {
     case 0:
       return {
-        prompt: `Compare \`${out}\` e \`${ans}\` linha a linha com \`diff\`.`,
+        prompt: `Compare ${out} e ${ans} linha a linha com diff.`,
         mentionedFiles: [out, ans],
         cwd: "~/contest",
         files: ["sol", inp, out, ans],
@@ -320,7 +320,7 @@ function buildComparar(rng: Rng): ItemSpec {
       };
     case 1:
       return {
-        prompt: `Compare \`${out}\` e \`${ans}\` ignorando apenas espaços no fim da linha (\`-Z\`).`,
+        prompt: `Compare ${out} e ${ans} ignorando apenas espaços no fim da linha (-Z).`,
         mentionedFiles: [out, ans],
         cwd: "~/contest",
         files: ["sol", inp, out, ans],
@@ -330,7 +330,7 @@ function buildComparar(rng: Rng): ItemSpec {
       };
     case 2:
       return {
-        prompt: `Compare \`${out}\` e \`${ans}\` ignorando todos os espaços em branco (\`-w\`).`,
+        prompt: `Compare ${out} e ${ans} ignorando todos os espaços em branco (-w).`,
         mentionedFiles: [out, ans],
         cwd: "~/contest",
         files: ["sol", inp, out, ans],
@@ -340,7 +340,7 @@ function buildComparar(rng: Rng): ItemSpec {
       };
     case 3:
       return {
-        prompt: `Verifique silenciosamente se \`${out}\` e \`${ans}\` são idênticos byte a byte com \`cmp -s\`.`,
+        prompt: `Verifique silenciosamente se ${out} e ${ans} são idênticos byte a byte com cmp -s.`,
         mentionedFiles: [out, ans],
         cwd: "~/contest",
         files: [out, ans],
@@ -350,7 +350,7 @@ function buildComparar(rng: Rng): ItemSpec {
       };
     default:
       return {
-        prompt: `Compare diretamente as saídas de \`./sol\` e \`./brute\` para \`${inp}\` sem arquivos temporários, usando \`diff <(...) <(...)\`.`,
+        prompt: `Compare diretamente as saídas de ./sol e ./brute para ${inp} sem arquivos temporários, usando diff <(...) <(...).`,
         mentionedFiles: ["./sol", "./brute", inp],
         cwd: "~/contest",
         files: ["sol", "brute", inp],
@@ -369,7 +369,7 @@ function buildStress(rng: Rng): ItemSpec {
   switch (variant) {
     case 0:
       return {
-        prompt: `Faça um laço \`for\` com \`$i\` de 1 a ${String(count)}: gere \`${inp}\` com \`./gen $i\`, rode \`./sol\` em \`out1\` e \`./brute\` em \`out2\`, e pare no primeiro caso em que \`diff out1 out2\` falhar.`,
+        prompt: `Faça um laço for com $i de 1 a ${String(count)}: gere ${inp} com ./gen $i, rode ./sol em out1 e ./brute em out2, e pare no primeiro caso em que diff out1 out2 falhar.`,
         mentionedFiles: ["./gen", "./sol", "./brute", inp, "out1", "out2"],
         cwd: "~/contest/stress",
         files: ["gen", "sol", "brute"],
@@ -381,7 +381,7 @@ function buildStress(rng: Rng): ItemSpec {
       };
     case 1:
       return {
-        prompt: `Repita com \`for\` para \`$i\` de 1 a ${String(count)}: gere \`${inp}\` com \`./gen $i\`, compare \`./sol\` e \`./brute\` em \`out1\` e \`out2\` com \`diff -Z\`, parando ao diferir (\`|| break\`).`,
+        prompt: `Repita com for para $i de 1 a ${String(count)}: gere ${inp} com ./gen $i, compare ./sol e ./brute em out1 e out2 com diff -Z, parando ao diferir (|| break).`,
         mentionedFiles: ["./gen", "./sol", "./brute", inp, "out1", "out2"],
         cwd: "~/contest/stress",
         files: ["gen", "sol", "brute"],
@@ -393,7 +393,7 @@ function buildStress(rng: Rng): ItemSpec {
       };
     default:
       return {
-        prompt: `Rode um laço \`while true\` gerando \`${inp}\` com \`./gen\`, executando \`./sol\` em \`out1\` e \`./brute\` em \`out2\`, e parando quando \`diff out1 out2\` diferir.`,
+        prompt: `Rode um laço while true gerando ${inp} com ./gen, executando ./sol em out1 e ./brute em out2, e parando quando diff out1 out2 diferir.`,
         mentionedFiles: ["./gen", "./sol", "./brute", inp, "out1", "out2"],
         cwd: "~/contest/stress",
         files: ["gen", "sol", "brute"],
@@ -414,7 +414,8 @@ function buildLimites(rng: Rng): ItemSpec {
   switch (variant) {
     case 0:
       return {
-        prompt: "Libere o limite de pilha para ilimitado (`unlimited`) antes de rodar uma DFS funda.",
+        prompt:
+          "Libere o limite de pilha para ilimitado (unlimited) antes de rodar uma DFS funda.",
         mentionedFiles: [],
         cwd: "~/contest",
         files: ["dfs.cpp", "dfs", "in1"],
@@ -425,7 +426,7 @@ function buildLimites(rng: Rng): ItemSpec {
       };
     case 1:
       return {
-        prompt: `Ajuste o limite de pilha para ${String(stackKb)} KB com \`ulimit\`.`,
+        prompt: `Ajuste o limite de pilha para ${String(stackKb)} KB com ulimit.`,
         mentionedFiles: [],
         cwd: "~/contest",
         files: ["dfs.cpp", "dfs", "in1"],
@@ -436,7 +437,7 @@ function buildLimites(rng: Rng): ItemSpec {
       };
     case 2:
       return {
-        prompt: `Limite a memória virtual do processo a ${String(memKb)} KB com \`ulimit\`.`,
+        prompt: `Limite a memória virtual do processo a ${String(memKb)} KB com ulimit.`,
         mentionedFiles: [],
         cwd: "~/contest",
         files: ["sol.cpp", "sol", "in1"],
@@ -447,7 +448,7 @@ function buildLimites(rng: Rng): ItemSpec {
       };
     default:
       return {
-        prompt: "Mostre todos os limites ativos da sessão atual com `ulimit`.",
+        prompt: "Mostre todos os limites ativos da sessão atual com ulimit.",
         mentionedFiles: [],
         cwd: "~/contest",
         files: ["sol.cpp", "sol"],
@@ -467,7 +468,7 @@ function buildTexto(rng: Rng): ItemSpec {
   switch (variant) {
     case 0:
       return {
-        prompt: `Mostre as primeiras ${String(n)} linhas de \`${file}\`.`,
+        prompt: `Mostre as primeiras ${String(n)} linhas de ${file}.`,
         mentionedFiles: [file],
         cwd: "~/contest",
         files: [file, "nums.txt", "words.txt"],
@@ -477,7 +478,7 @@ function buildTexto(rng: Rng): ItemSpec {
       };
     case 1:
       return {
-        prompt: `Mostre as últimas ${String(n)} linhas de \`${file}\`.`,
+        prompt: `Mostre as últimas ${String(n)} linhas de ${file}.`,
         mentionedFiles: [file],
         cwd: "~/contest",
         files: [file, "nums.txt", "words.txt"],
@@ -487,7 +488,7 @@ function buildTexto(rng: Rng): ItemSpec {
       };
     case 2:
       return {
-        prompt: `Conte quantas linhas tem o arquivo \`${file}\`.`,
+        prompt: `Conte quantas linhas tem o arquivo ${file}.`,
         mentionedFiles: [file],
         cwd: "~/contest",
         files: [file, "nums.txt"],
@@ -497,7 +498,7 @@ function buildTexto(rng: Rng): ItemSpec {
       };
     case 3:
       return {
-        prompt: "Ordene `nums.txt` em ordem numérica crescente.",
+        prompt: "Ordene nums.txt em ordem numérica crescente.",
         mentionedFiles: ["nums.txt"],
         cwd: "~/contest",
         files: ["nums.txt", "words.txt"],
@@ -507,7 +508,7 @@ function buildTexto(rng: Rng): ItemSpec {
       };
     case 4:
       return {
-        prompt: "Ordene `words.txt` e conte as ocorrências de cada linha com `uniq -c`.",
+        prompt: "Ordene words.txt e conte as ocorrências de cada linha com uniq -c.",
         mentionedFiles: ["words.txt"],
         cwd: "~/contest",
         files: ["words.txt", "nums.txt"],
@@ -517,7 +518,7 @@ function buildTexto(rng: Rng): ItemSpec {
       };
     default:
       return {
-        prompt: `Procure \`${pat}\` em \`${file}\` mostrando o número da linha.`,
+        prompt: `Procure ${pat} em ${file} mostrando o número da linha.`,
         mentionedFiles: [file],
         cwd: "~/contest",
         files: [file, "nums.txt"],
@@ -534,8 +535,7 @@ function buildSetup(rng: Rng): ItemSpec {
   switch (variant) {
     case 0:
       return {
-        prompt:
-          "Crie o alias `c` para compilar com `g++ -O2 -std=gnu++20 -Wall -Wextra`.",
+        prompt: "Crie o alias c para compilar com g++ -O2 -std=gnu++20 -Wall -Wextra.",
         mentionedFiles: [],
         cwd: "~/contest",
         files: ["a.cpp", ".bashrc"],
@@ -547,7 +547,7 @@ function buildSetup(rng: Rng): ItemSpec {
     case 1:
       return {
         prompt:
-          "Defina a função `c` que compila `\"$1.cpp\"` para `\"$1\"` com `g++ -O2 -std=gnu++20`.",
+          'Defina a função c que compila "$1.cpp" para "$1" com g++ -O2 -std=gnu++20.',
         mentionedFiles: [],
         cwd: "~/contest",
         files: ["a.cpp", "in1"],
@@ -558,7 +558,7 @@ function buildSetup(rng: Rng): ItemSpec {
       };
     default:
       return {
-        prompt: "Recarregue o arquivo `~/.bashrc` na sessão atual do terminal.",
+        prompt: "Recarregue o arquivo ~/.bashrc na sessão atual do terminal.",
         mentionedFiles: ["~/.bashrc"],
         cwd: "~/contest",
         files: ["a.cpp"],

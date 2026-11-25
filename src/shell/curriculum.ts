@@ -496,7 +496,10 @@ export const SHELL_UNITS: readonly ShellUnit[] = [
         explanation:
           "No laço for ou while, o || break interrompe a repetição assim que o diff devolve diferença, preservando exatamente o caso que falhou dentro de in. Depois é só inspecionar o contraexemplo com cat in.",
         helpKeys: ["for", "while"],
-        commands: ["for i in $(seq 1 N); do ... || break; done", "while true; do ... || break; done"],
+        commands: [
+          "for i in $(seq 1 N); do ... || break; done",
+          "while true; do ... || break; done",
+        ],
         example: {
           fixture: "stress",
           steps: [
@@ -558,7 +561,10 @@ export const SHELL_UNITS: readonly ShellUnit[] = [
           fixture: "limits",
           steps: [
             { cmd: "ulimit -s 65536 && ulimit -s", note: "Ajusta o limite da pilha para 64 MB." },
-            { cmd: "ulimit -s unlimited && ulimit -s", note: "Libera o limite da pilha na sessão." },
+            {
+              cmd: "ulimit -s unlimited && ulimit -s",
+              note: "Libera o limite da pilha na sessão.",
+            },
           ],
         },
         exercises: [
@@ -713,14 +719,14 @@ export const SHELL_UNITS: readonly ShellUnit[] = [
             "~/contest",
             ["a.cpp", ".bashrc"],
             ["$ ls -a", ".bashrc  a.cpp"],
-            "Crie o alias c para `g++ -O2 -std=gnu++20 -Wall -Wextra`.",
+            "Crie o alias c para g++ -O2 -std=gnu++20 -Wall -Wextra.",
             "alias c='g++ -O2 -std=gnu++20 -Wall -Wextra'",
           ),
           ex(
             "~/contest",
             ["a.cpp", "in1"],
             ["$ ls", "a.cpp  in1"],
-            "Defina a função c que compila \"$1.cpp\" para \"$1\" com g++ -O2 -std=gnu++20.",
+            'Defina a função c que compila "$1.cpp" para "$1" com g++ -O2 -std=gnu++20.',
             `c() { g++ -O2 -std=gnu++20 "$1.cpp" -o "$1"; }`,
           ),
           ex(
@@ -752,8 +758,8 @@ export const SHELL_UNITS: readonly ShellUnit[] = [
         example: {
           fixture: "shortcuts",
           steps: [
-            { cmd: "echo ok in1", note: "Primeiro comando deixa `in1` como último argumento." },
-            { cmd: "cat !$", note: "!$ expande para o último argumento (`in1`)." },
+            { cmd: "echo ok in1", note: "Primeiro comando deixa in1 como último argumento." },
+            { cmd: "cat !$", note: "!$ expande para o último argumento (in1)." },
             { cmd: "time !!", note: "!! repete o comando anterior já medindo com time." },
           ],
         },

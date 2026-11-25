@@ -57,9 +57,7 @@ export type ShellExpected = {
   readonly options?: CheckOptions;
 };
 
-export type CheckResult =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly reason: string };
+export type CheckResult = { readonly ok: true } | { readonly ok: false; readonly reason: string };
 
 type FlagSpec = {
   readonly longMap: Readonly<Record<string, string>>;
@@ -454,27 +452,23 @@ function hasBreak(node: ShellNode): boolean {
   return false;
 }
 
-function diagnoseMismatch(
-  typed: ShellNode,
-  expected: ShellNode,
-  options?: CheckOptions,
-): string {
-  // Loop missing `|| break`
+function diagnoseMismatch(typed: ShellNode, expected: ShellNode, options?: CheckOptions): string {
+  // Loop missing || break
   if (
     (expected.kind === "for" || expected.kind === "while") &&
     typed.kind === expected.kind &&
     hasBreak(expected.body) &&
     !hasBreak(typed.body)
   ) {
-    return "faltou `|| break` no laço para parar no primeiro caso que difere";
+    return "faltou || break no laço para parar no primeiro caso que difere";
   }
 
-  // Semicolon when `&&` is required
+  // Semicolon when && is required
   if (expected.kind === "list" && typed.kind === "list" && !options?.allowSemicolon) {
     const expHasAnd = expected.rest.some((r) => r.op === "&&");
     const gotHasSemi = typed.rest.some((r) => r.op === ";");
     if (expHasAnd && gotHasSemi) {
-      return "use `&&` no lugar de `;` para só continuar se o comando anterior der certo";
+      return "use && no lugar de ; para só continuar se o comando anterior der certo";
     }
   }
 
@@ -483,28 +477,28 @@ function diagnoseMismatch(
     const gotCmd = wordText(typed.words[0]!);
 
     if (expCmd !== gotCmd) {
-      return `esperado \`${expCmd ?? wordDisplay(expected.words[0]!)}\`, mas você usou \`${gotCmd ?? wordDisplay(typed.words[0]!)}\``;
+      return `esperado ${expCmd ?? wordDisplay(expected.words[0]!)}, mas você usou ${gotCmd ?? wordDisplay(typed.words[0]!)}`;
     }
 
-    // Redirection direction swap (`>` instead of `<`)
+    // Redirection direction swap (> instead of <)
     const expHasIn = expected.redirs.some((r) => r.op === "<");
     const gotHasIn = typed.redirs.some((r) => r.op === "<");
     const expHasOut = expected.redirs.some((r) => r.op === ">");
     const gotHasOut = typed.redirs.some((r) => r.op === ">");
     if (expHasIn && !gotHasIn && gotHasOut && !expHasOut) {
-      return "usou `>` (saída) no lugar de `<` (entrada)";
+      return "usou > (saída) no lugar de < (entrada)";
     }
     if (expHasOut && !gotHasOut && gotHasIn && !expHasIn) {
-      return "usou `<` (entrada) no lugar de `>` (saída)";
+      return "usou < (entrada) no lugar de > (saída)";
     }
 
-    // Wrong `2>&1` order (`2>&1 > file` vs `> file 2>&1`)
+    // Wrong 2>&1 order (2>&1 > file vs > file 2>&1)
     if (
       expected.redirs.some((r) => r.op === "&>") &&
       typed.redirs.some((r) => r.op === "2>&1") &&
       typed.redirs.some((r) => r.op === ">")
     ) {
-      return "coloque `> arquivo` antes de `2>&1` (ou use `&> arquivo`)";
+      return "coloque > arquivo antes de 2>&1 (ou use &> arquivo)";
     }
 
     const expArgs = expected.words.slice(1).map(wordDisplay);
@@ -513,34 +507,34 @@ function diagnoseMismatch(
     if (expCmd === "diff") {
       if (expArgs.includes("-Z") && !gotArgs.includes("-Z")) {
         return gotArgs.includes("-w")
-          ? "use `-Z` (espaço no fim da linha) em vez de `-w` (todos os espaços)"
-          : "faltou `-Z` no diff para ignorar espaço no fim da linha";
+          ? "use -Z (espaço no fim da linha) em vez de -w (todos os espaços)"
+          : "faltou -Z no diff para ignorar espaço no fim da linha";
       }
       if (expArgs.includes("-w") && !gotArgs.includes("-w")) {
-        return "faltou `-w` no diff para ignorar todos os espaços";
+        return "faltou -w no diff para ignorar todos os espaços";
       }
     }
     if (expCmd === "ulimit") {
       if (expArgs.length > gotArgs.length) {
-        return "ulimit precisa de um valor após a flag (ex.: `ulimit -s unlimited` ou KB)";
+        return "ulimit precisa de um valor após a flag (ex.: ulimit -s unlimited ou KB)";
       }
     }
     if (expCmd === "g++") {
       if (expArgs.includes("-O2") && !gotArgs.includes("-O2")) {
-        return "faltou `-O2` para compilar com otimização igual ao juiz";
+        return "faltou -O2 para compilar com otimização igual ao juiz";
       }
       if (expArgs.includes("-D_GLIBCXX_DEBUG") && !gotArgs.includes("-D_GLIBCXX_DEBUG")) {
-        return "faltou `-D_GLIBCXX_DEBUG` para checar limites da STL";
+        return "faltou -D_GLIBCXX_DEBUG para checar limites da STL";
       }
     }
     if (expCmd === "mkdir" && expArgs.includes("-p") && !gotArgs.includes("-p")) {
-      return "faltou `-p` no mkdir para criar pastas intermediárias";
+      return "faltou -p no mkdir para criar pastas intermediárias";
     }
     if (expCmd === "sort" && expArgs.includes("-n") && !gotArgs.includes("-n")) {
-      return "faltou `-n` no sort para ordenar numericamente";
+      return "faltou -n no sort para ordenar numericamente";
     }
     if (expCmd === "timeout") {
-      return "verifique o tempo limite e o executável passado ao `timeout`";
+      return "verifique o tempo limite e o executável passado ao timeout";
     }
   }
 
