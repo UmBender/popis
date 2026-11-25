@@ -7,7 +7,12 @@ const tops = (page: Page) =>
   page.evaluate(() => ({
     page: window.scrollY,
     tree: document.querySelector(".tree")?.getBoundingClientRect().top ?? NaN,
-    index: document.querySelector(".ref-sections")?.getBoundingClientRect().top ?? null,
+    // The index is sticky: it may rise to the top of the panel, but it must
+    // stay wholly inside the window.
+    index: (() => {
+      const r = document.querySelector(".ref-sections")?.getBoundingClientRect();
+      return r === undefined ? null : r.top >= 0 && r.bottom <= window.innerHeight;
+    })(),
   }));
 
 test.describe("regression T49 independent-scroll", () => {
@@ -28,7 +33,7 @@ test.describe("regression T49 independent-scroll", () => {
 
       expect(after.page).toBe(0);
       expect(after.tree).toBe(before.tree);
-      expect(after.index).toBe(before.index);
+      expect(after.index).toBe(before.index); // both true on C++, both null on STL
     });
   }
 
