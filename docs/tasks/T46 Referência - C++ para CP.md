@@ -1,7 +1,7 @@
 ---
 id: T46
 title: Referência - C++ para CP
-status: in-progress
+status: review
 depends_on: []
 branch: task/T46-cpp-reference
 adrs: [ADR-T46-1]
@@ -142,11 +142,11 @@ task também cria o leitor de referência que a T47 (Python) usa.
 ## Subtasks (one commit each)
 
 - [x] spec: ADR-T46-1 (verbetes como dados tipados, exemplos conferidos por oráculo, selo do juiz) e testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, `ref:oracle -- cpp`, coverage, e2e
-- [ ] docs
+- [x] tests
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, `ref:oracle -- cpp`, coverage, e2e
+- [x] docs
 
 ## Notas para o batch
 
@@ -157,3 +157,51 @@ task também cria o leitor de referência que a T47 (Python) usa.
   marque `judge` à mão e cite a fonte no *Log*.
 
 ## Log
+
+- 2026-11-25 — Implementada no batch (sessão sem ninguém no teclado), na
+  branch `task/T46-cpp-reference`, a partir da `main`.
+- **Conteúdo:** 91 verbetes nas 9 seções completas (io 9, tipos 8,
+  contêineres 14, algoritmos 20, strings 10, bits 7, matemática 9,
+  aleatório 5, extras 9). Não foi preciso cortar para o recorte 1–4.
+- **Oráculo** (`npm run ref:oracle -- cpp`, g++ 16.2.1):
+  `ref:oracle cpp: 91/91 ok (4 judge entries, 0 output mismatches)`.
+  As saídas de `src/ref/cpp/outputs.ts` foram gravadas com `--write`,
+  nenhuma digitada. Os 4 verbetes com `judge` (`print`, `fold_left`,
+  `string_contains`, `views_enumerate`) falham com `-std=gnu++20` e
+  passam com `-std=gnu++23`. Nenhum verbete precisou de `judge` marcado à
+  mão: todos os recursos que o spec chama de "WF ok" são C++20 ou
+  anteriores e existem no g++ 13.2.
+- **Achado do oráculo:** o `bits/stdc++.h` do g++ 16.2 não inclui mais o
+  `<cassert>` (`assert` não declarado). O verbete `assert` inclui o
+  cabeçalho à mão e ganhou essa armadilha.
+- **UNATTENDED CHOICE:** campos além do AC-1: `input?` (entrada padrão do
+  exemplo) e complexidade como texto ou tabela; o `judge` é `true` e o
+  selo fixo "não existe na WF" (`JUDGE_BADGE`). Registrado no ADR-T46-1.
+- **UNATTENDED CHOICE:** o título do painel é o rótulo da árvore ("C++"),
+  porque `coherence.test.tsx` exige que o `h1` seja igual ao rótulo; a
+  palavra "Referência" fica na descrição e no caminho
+  `popis/referência/c++`. A busca e o corpo levam `data-panel="options"`
+  e `data-panel="area"` (ordem de painéis da T18).
+- **Teste corrigido em commit próprio:** `RefScreen.test.tsx` não tinha o
+  `// @vitest-environment jsdom` dos outros testes de `src/ui` e falhava
+  por `history is not defined`, não pelo comportamento
+  (`test(T46): run the reader tests in jsdom`). Nenhuma asserção mudou.
+- **Files owned ampliados** (política do plano): `playwright.config.ts`
+  (o projeto `mobile` roda `ref.spec.ts`), `src/ui/RefScreen.test.tsx`,
+  `src/ui/shell/sections.test.ts` e `src/ref/langs.ts`. Os testes já
+  existentes de `sections.test.ts` ganharam a pasta Referência e o item
+  `ref-cpp` nas listas esperadas (mudança de spec, não afrouxamento).
+- **Gates:** `npm run check` verde (4320 testes); `npm run coverage`
+  verde, com novo limiar `src/ref/**` em 100/100/100/100;
+  `npm run test:fuzz` verde (245); `npm run test:e2e` verde (43, com os 6
+  novos de `ref.spec.ts` em desktop e mobile).
+- **Verificação visual:** `.batch/visual/T46-cpp-reference.spec.ts`
+  (desktop e phone: árvore, topo, busca, hash, selo do juiz, impressão).
+  Corrigidos: blocos de código sem contraste no verbete aberto e a folha
+  de impressão com fundo escuro (`color-scheme: dark`); agora ela sai em
+  duas colunas, texto escuro no papel.
+- **Checagens manuais para o dono:** buscar cinco coisas que você usa em
+  contest; abrir a prévia de impressão do navegador e conferir a folha
+  de duas colunas (tamanho da fonte e quebras); na primeira abertura pela
+  árvore no desktop, a página pode rolar até o item clicado e esconder o
+  título do painel.
