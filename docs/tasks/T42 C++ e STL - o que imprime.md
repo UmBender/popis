@@ -1,7 +1,7 @@
 ---
 id: T42
 title: C++ e STL - o que imprime
-status: in-progress
+status: review
 depends_on: []
 branch: task/T42-stl-output
 adrs: [ADR-T42-1]
@@ -67,11 +67,22 @@ divisão e `%` com negativos, `size()` sem sinal, `__builtin_popcount`,
 
 ## Subtasks (one commit each)
 
-- [ ] spec
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, `stl:oracle`, coverage, e2e
-- [ ] docs
+- [x] spec
+- [x] tests
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, `stl:oracle`, coverage, e2e
+- [x] docs
 
 ## Log
+
+- 2026-11-24 — Implementado o treino **STL** na pasta **Maratona** (`ADR-T42-1`), com simulador puro em `src/stl/sim.ts` (semântica do libstdc++, inteiros de 32/64 bits e `size_t` de 64 bits sem UB), verificador token a token em `src/stl/check.ts` (rejeitando `-0`, `-1` para `string::npos`, ordem trocada e `true`/`1` sem `boolalpha`), gerador em `src/stl/drill.ts` com 19 modelos em 4 níveis (todos com até 8 linhas e `kc: stl.<modelo>`), motor de rodada de 120 s em `src/stl/round.ts`, persistência em `src/storage/stl.ts` e tela `src/ui/StlScreen.tsx` usando os componentes da T19 e gravando eventos com `drill: "stl.out"`.
+- 2026-11-24 — UNATTENDED CHOICE: para evitar comportamento indefinido (fora de escopo, T40/T41), `accumulate` com `int` testa truncamento de `vector<double>` com frações binárias exatas (`.5`), wraparound em 32 bits usa `vector<unsigned>` com `UINT_MAX` e `0u`, e `unique` sem `erase` imprime apenas `v.size()` e `it - v.begin()` sem ler a cauda inespecificada (`ADR-T42-1`).
+- 2026-11-24 — Escopo de *Files owned* ampliado minimamente para testes existentes que listam a árvore/drills e para o e2e mobile: `src/ui/shell/sections.test.ts`, `src/stats/event.test.ts`, `src/storage/stl.test.ts`, `src/ui/StlScreen.test.tsx`, `playwright.config.ts`.
+- 2026-11-24 — Checagem visual em desktop e Pixel 7 (`.batch/visual/t42-stl.spec.ts`, capturas em `.batch/visual/shots/{desktop,phone}-t42-01..03.png`): ajustados os rótulos do seletor de nível (`1 · Vetor e ordenação`, `2 · Busca e conjuntos`, `3 · Heap, mapa e pares`, `4 · Bits, sinal e tipos`) para caber sem corte na tela estreita do celular; revalidado com novas capturas.
+- 2026-11-25 — Gates verdes:
+  - `npm run check`: `tsc --noEmit`, `eslint . --max-warnings 0`, `prettier --check .`, `vitest run` (173 arquivos, 4305 testes) e `vite build` verdes.
+  - `npm run coverage`: 99,82% statements, 98,62% branches, 100% functions, 99,91% lines; `src/stl/**` com 99,76% statements, 94,3% branches, 100% functions, 100% lines (limiar adicionado em `vite.config.ts`); `src/ui/StlScreen.tsx` e `src/storage/stl.ts` com 100% em todas as métricas.
+  - `npm run stl:oracle`: `stl oracle (g++ -std=gnu++20 -O2): 950/950 passed (19 models x 50 seeds)` e com `--seeds 100`: `1900/1900 passed (19 models x 100 seeds)` (g++ 16.2.1).
+  - `npm run test:e2e`: 39/39 passando (desktop + mobile), incluindo `tests/e2e/stl.spec.ts` e `tests/e2e/coherence.spec.ts`.
+- 2026-11-25 — Verificação manual para o dono: jogar uma rodada em cada nível (1 a 4).

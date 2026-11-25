@@ -1,7 +1,7 @@
 ---
 id: ADR-T42-1
 title: Simulador STL em TypeScript e oráculo g++
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-24
 task: T42
