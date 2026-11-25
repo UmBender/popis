@@ -82,6 +82,33 @@ describe("event drills", () => {
     expect(loadEvents(store)).toEqual([ev]);
   });
 
+  it("DRILLS accepts compile.read and stores compile events", () => {
+    expect(DRILLS).toContain("compile.read");
+    const store = memoryStore();
+    const at = Date.UTC(2026, 10, 25, 0);
+    const ev: TrainingEvent = {
+      at,
+      drill: "compile.read",
+      config: "90s",
+      kc: "compile.asan",
+      ok: true,
+      timeMs: 3200,
+      extra: {
+        seed: 13,
+        i: 0,
+        caseId: "asan-heap-oob",
+        group: "asan",
+        lineOk: true,
+        causeOk: true,
+        skipped: false,
+      },
+    };
+
+    expect(eventKey(ev)).toBe(`${String(at)}|compile.read|13|0`);
+    expect(recordEvents(store, [ev], at)).toBe(true);
+    expect(loadEvents(store)).toEqual([ev]);
+  });
+
   it("DRILLS accepts stl.out and stores STL output events", () => {
     expect(DRILLS).toContain("stl.out");
     const store = memoryStore();

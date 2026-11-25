@@ -70,6 +70,7 @@ import { TypingScreen } from "./TypingScreen";
 import { chooseVimDrill, VimScreen } from "./VimScreen";
 import { WeakTypingScreen } from "./WeakTypingScreen";
 import { GdbScreen, type GdbDrill } from "./GdbScreen";
+import { CompileScreen } from "./CompileScreen";
 import { StlScreen } from "./StlScreen";
 
 export type AppProps = {
@@ -432,7 +433,9 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
           onStart: () => {
             if (modeOf(item) === null) {
               document
-                .querySelector<HTMLElement>("[data-panel=area] textarea, [data-panel=area] input")
+                .querySelector<HTMLElement>(
+                  "[data-panel=area] textarea, [data-panel=area] input, [data-panel=area] [data-autofocus]",
+                )
                 ?.focus();
             } else if (configErrors(settings, reviewCount).length === 0) {
               start();
@@ -550,6 +553,16 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
       );
     }
     switch (item) {
+      case "compile-read":
+        return (
+          <CompileScreen
+            clock={clock}
+            store={store}
+            newSeed={newSeed}
+            onBack={backToMode}
+            onRunning={setRunning}
+          />
+        );
       case "typing":
         return (
           <TypingScreen

@@ -22,6 +22,7 @@
     "typing:oracle": "node scripts/typing-oracle.mjs",
     "gdb:oracle": "node scripts/gdb-oracle.mjs",
     "stl:oracle": "node scripts/stl-oracle.mjs",
+    "compile:oracle": "node scripts/compile-oracle.mjs",
     "build:pages": "vite build --base=/popis/"
   },
   "dependencies": {

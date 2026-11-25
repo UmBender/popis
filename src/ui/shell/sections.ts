@@ -15,6 +15,7 @@ export type ItemId =
   | "gdb-learn"
   | "gdb-commands"
   | "gdb-output"
+  | "compile-read"
   | "stl";
 
 export type TreeItem = {
@@ -94,7 +95,14 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
       ["gdb-output", "Saída"],
     ],
   ],
-  ["maratona", "Maratona", [["stl", "STL"]]],
+  [
+    "maratona",
+    "Maratona",
+    [
+      ["compile-read", "Ler o erro"],
+      ["stl", "STL"],
+    ],
+  ],
 ];
 
 let position = 0;
