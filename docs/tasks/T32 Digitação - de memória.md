@@ -1,7 +1,7 @@
 ---
 id: T32
 title: Digitação - de memória
-status: todo
+status: ready
 depends_on: [T24, T34]
 branch: task/T32-typing-from-memory
 adrs: []

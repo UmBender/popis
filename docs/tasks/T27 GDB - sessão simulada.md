@@ -1,7 +1,7 @@
 ---
 id: T27
 title: GDB - sessão simulada
-status: todo
+status: ready
 depends_on: [T26]
 branch: task/T27-gdb-session
 adrs: []
