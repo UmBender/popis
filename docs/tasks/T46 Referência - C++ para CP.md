@@ -1,7 +1,7 @@
 ---
 id: T46
 title: Referência - C++ para CP
-status: review
+status: done
 depends_on: []
 branch: task/T46-cpp-reference
 adrs: [ADR-T46-1]
