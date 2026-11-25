@@ -1,6 +1,6 @@
 import type { TrainingEvent } from "../stats/event";
 import type { CauseId, CompileGroup } from "./causes";
-import type { CompileAnswer, CompileItem } from "./drill";
+import { checkCompileAnswer, generateCompileItem, type CompileAnswer, type CompileItem } from "./drill";
 
 export const COMPILE_DURATIONS_S = [60, 90, 120] as const;
 
@@ -56,49 +56,202 @@ export type CompileRoundStats = {
   readonly wrongItems: readonly CompileItemResult[];
 };
 
-export function startCompileRound(_config: CompileRoundConfig): CompileRound {
-  throw new Error("todo");
+export function startCompileRound(config: CompileRoundConfig): CompileRound {
+  return {
+    config,
+    startedAt: null,
+    itemStartedAt: null,
+    finished: false,
+    current: generateCompileItem(config.seed, 0, config.groups),
+    reviewing: null,
+    results: [],
+    last: null,
+  };
 }
 
-export function touchCompileRound(_round: CompileRound, _now: number): CompileRound {
-  throw new Error("todo");
+/** Starts the clock on the first interaction if not already running. */
+export function touchCompileRound(round: CompileRound, now: number): CompileRound {
+  if (round.finished || round.startedAt !== null) return round;
+  return { ...round, startedAt: now, itemStartedAt: now };
 }
 
-export function isCompileRoundFinished(_round: CompileRound): boolean {
-  throw new Error("todo");
+export function isCompileRoundFinished(round: CompileRound): boolean {
+  return round.finished;
 }
 
-export function compileRemainingMs(_round: CompileRound, _now: number): number {
-  throw new Error("todo");
+export function compileRemainingMs(round: CompileRound, now: number): number {
+  if (round.finished) return 0;
+  if (round.startedAt === null) return round.config.durationMs;
+  return Math.max(0, round.config.durationMs - (now - round.startedAt));
 }
 
-export function tickCompileRound(_round: CompileRound, _now: number): CompileRound {
-  throw new Error("todo");
+export function tickCompileRound(round: CompileRound, now: number): CompileRound {
+  if (round.finished || round.startedAt === null) return round;
+  if (now - round.startedAt >= round.config.durationMs) {
+    return { ...round, finished: true, reviewing: null };
+  }
+  return round;
+}
+
+function nextState(round: CompileRound, item: CompileItemResult, now: number): CompileRound {
+  const startedAt = round.startedAt ?? now;
+  const expired = now - startedAt >= round.config.durationMs;
+  const nextIndex = round.current.index + 1;
+  return {
+    ...round,
+    startedAt,
+    itemStartedAt: now,
+    finished: expired,
+    current: expired
+      ? round.current
+      : generateCompileItem(round.config.seed, nextIndex, round.config.groups),
+    reviewing: null,
+    results: [...round.results, item],
+    last: item,
+  };
 }
 
 export function submitCompileAnswer(
-  _round: CompileRound,
-  _answer: CompileAnswer,
-  _now: number,
+  round: CompileRound,
+  answer: CompileAnswer,
+  now: number,
 ): CompileRound {
-  throw new Error("todo");
+  if (round.finished || round.reviewing !== null) return round;
+  const base = touchCompileRound(round, now);
+  const { current } = base;
+  const checked = checkCompileAnswer(current, answer);
+  const timeMs = Math.max(0, now - (base.itemStartedAt ?? now));
+  const result: CompileItemResult = {
+    index: current.index,
+    seed: current.seed,
+    caseId: current.caseData.id,
+    group: current.group,
+    kc: current.kc,
+    expectedLine: current.caseData.line,
+    selectedLine: answer.line,
+    expectedCause: current.caseData.cause,
+    selectedCause: answer.cause,
+    ok: checked.ok,
+    lineOk: checked.lineOk,
+    causeOk: checked.causeOk,
+    skipped: false,
+    explanation: current.caseData.explanation,
+    timeMs,
+  };
+  if (checked.ok) return nextState(base, result, now);
+
+  const startedAt = base.startedAt ?? now;
+  const expired = now - startedAt >= base.config.durationMs;
+  return {
+    ...base,
+    startedAt,
+    finished: expired,
+    reviewing: expired ? null : result,
+    results: [...base.results, result],
+    last: result,
+  };
 }
 
-export function advanceAfterReview(_round: CompileRound, _now: number): CompileRound {
-  throw new Error("todo");
+export function advanceAfterReview(round: CompileRound, now: number): CompileRound {
+  if (round.finished || round.reviewing === null) return round;
+  const startedAt = round.startedAt ?? now;
+  const expired = now - startedAt >= round.config.durationMs;
+  const nextIndex = round.current.index + 1;
+  return {
+    ...round,
+    itemStartedAt: now,
+    finished: expired,
+    current: expired
+      ? round.current
+      : generateCompileItem(round.config.seed, nextIndex, round.config.groups),
+    reviewing: null,
+  };
 }
 
-export function skipCompileItem(_round: CompileRound, _now: number): CompileRound {
-  throw new Error("todo");
+export function skipCompileItem(round: CompileRound, now: number): CompileRound {
+  if (round.finished) return round;
+  if (round.reviewing !== null) return advanceAfterReview(round, now);
+  const base = touchCompileRound(round, now);
+  const { current } = base;
+  const timeMs = Math.max(0, now - (base.itemStartedAt ?? now));
+  const result: CompileItemResult = {
+    index: current.index,
+    seed: current.seed,
+    caseId: current.caseData.id,
+    group: current.group,
+    kc: current.kc,
+    expectedLine: current.caseData.line,
+    selectedLine: null,
+    expectedCause: current.caseData.cause,
+    selectedCause: null,
+    ok: false,
+    lineOk: false,
+    causeOk: false,
+    skipped: true,
+    explanation: current.caseData.explanation,
+    timeMs,
+  };
+  return nextState(base, result, now);
 }
 
-export function compileRoundStats(_round: CompileRound): CompileRoundStats {
-  throw new Error("todo");
+export function compileRoundStats(round: CompileRound): CompileRoundStats {
+  const { results } = round;
+  let correct = 0;
+  let wrong = 0;
+  let skipped = 0;
+  const groups = new Map<CompileGroup, { total: number; correct: number; timeMs: number }>();
+
+  for (const r of results) {
+    if (r.skipped) skipped += 1;
+    else if (r.ok) correct += 1;
+    else wrong += 1;
+    const g = groups.get(r.group) ?? { total: 0, correct: 0, timeMs: 0 };
+    g.total += 1;
+    if (r.ok) g.correct += 1;
+    g.timeMs += r.timeMs;
+    groups.set(r.group, g);
+  }
+
+  const total = results.length;
+  const answered = correct + wrong;
+  const byGroup: CompileGroupStats[] = [...groups.entries()].map(([group, g]) => ({
+    group,
+    total: g.total,
+    correct: g.correct,
+    avgTimeMs: Math.round(g.timeMs / g.total),
+  }));
+
+  return {
+    correct,
+    wrong,
+    skipped,
+    total,
+    accuracy: answered > 0 ? correct / answered : 0,
+    byGroup,
+    wrongItems: results.filter((r) => !r.ok && !r.skipped),
+  };
 }
 
+/** One T22 TrainingEvent per attempted or skipped item in a Ler o erro round (AC-4). */
 export function compileRoundEvents(
-  _round: Pick<CompileRound, "results">,
-  _at: number,
+  round: Pick<CompileRound, "results">,
+  at: number,
 ): TrainingEvent[] {
-  throw new Error("todo");
+  return round.results.map((r) => ({
+    at,
+    drill: "compile.read",
+    config: "read",
+    kc: r.kc,
+    ok: r.ok,
+    timeMs: r.timeMs,
+    extra: {
+      seed: r.seed,
+      i: r.index,
+      caseId: r.caseId,
+      group: r.group,
+      lineOk: r.lineOk,
+      causeOk: r.causeOk,
+      skipped: r.skipped,
+    },
+  }));
 }

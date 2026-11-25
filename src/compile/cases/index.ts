@@ -1,4 +1,6 @@
 import type { CauseId, CompileGroup } from "../causes";
+import { COMPILE_CASE_DEFS } from "./cases";
+import { RECORDED_OUTPUTS } from "./outputs";
 
 export type CompileLimits = {
   /** Wall-clock limit passed to `timeout` (seconds) for TLE verdict cases. */
@@ -20,8 +22,13 @@ export type CompileCase = {
   readonly explanation: string;
 };
 
-export const COMPILE_CASES: readonly CompileCase[] = [];
+/** All compiler/sanitizer cases with outputs recorded by `npm run compile:oracle -- --write`. */
+export const COMPILE_CASES: readonly CompileCase[] = COMPILE_CASE_DEFS.map((def) => ({
+  ...def,
+  output: RECORDED_OUTPUTS[def.id] ?? "",
+}));
 
-export function casesForGroups(_groups: readonly CompileGroup[]): readonly CompileCase[] {
-  throw new Error("todo");
+export function casesForGroups(groups: readonly CompileGroup[]): readonly CompileCase[] {
+  if (groups.length === 0) return COMPILE_CASES;
+  return COMPILE_CASES.filter((c) => groups.includes(c.group));
 }

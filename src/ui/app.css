@@ -2008,3 +2008,249 @@ th {
     width: 100%;
   }
 }
+
+/* Compiler & sanitizer output reading drill (T40, ADR-T40-1). */
+.compile-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.compile-group-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.compile-viewer {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--selection);
+  background: var(--surface);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.compile-file-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--selection);
+  font-size: var(--text-sm);
+}
+
+.compile-group-badge {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.compile-flags {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.compile-code {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1) 0;
+  overflow-x: auto;
+  max-width: 100%;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.compile-code:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.compile-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: max-content;
+  padding: 0.15rem var(--space-2);
+  border: none;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  white-space: pre;
+  cursor: pointer;
+}
+
+.compile-line:hover:not(:disabled) {
+  background: var(--bg);
+}
+
+.compile-line-focused {
+  border-left-color: var(--accent);
+  background: var(--bg);
+}
+
+.compile-line-selected {
+  border-left-color: var(--accent);
+  background: var(--selection);
+  color: var(--selection-text);
+}
+
+.compile-line-correct {
+  border-left-color: var(--correct);
+  background: var(--bg);
+  color: var(--correct);
+}
+
+.compile-line-wrong {
+  border-left-color: var(--wrong);
+  background: var(--bg);
+  color: var(--wrong);
+}
+
+.compile-gutter {
+  color: var(--muted);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.compile-line-selected .compile-gutter {
+  color: var(--selection-text);
+}
+
+.compile-line-correct .compile-gutter {
+  color: var(--correct);
+}
+
+.compile-line-wrong .compile-gutter {
+  color: var(--wrong);
+}
+
+.compile-input-bar {
+  padding: var(--space-1) var(--space-2);
+  border-top: 1px solid var(--selection);
+  font-size: var(--text-sm);
+}
+
+.compile-output {
+  margin: 0;
+  padding: var(--space-2);
+  border-top: 1px solid var(--selection);
+  overflow-x: auto;
+  max-width: 100%;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--warning);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.compile-step {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.compile-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.compile-choice {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--selection);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.compile-choice kbd {
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.compile-choice-selected {
+  border-color: var(--accent);
+  background: var(--selection);
+  color: var(--selection-text);
+}
+
+.compile-choice-correct {
+  border-color: var(--correct);
+  color: var(--correct);
+}
+
+.compile-choice-wrong {
+  border-color: var(--wrong);
+  color: var(--wrong);
+}
+
+.compile-feedback {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.compile-feedback p {
+  margin: 0 0 var(--space-2);
+}
+
+.compile-feedback-ok {
+  color: var(--correct);
+}
+
+.compile-feedback-wrong {
+  padding: var(--space-2);
+  border-left: 3px solid var(--wrong);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.compile-feedback-wrong strong {
+  color: var(--wrong);
+}
+
+.compile-feedback-skip {
+  color: var(--warning);
+}
+
+.compile-group-table {
+  margin-top: var(--space-2);
+}
+
+.compile-wrong-wrap h3 {
+  margin: var(--space-2) 0 var(--space-1);
+  font-size: var(--text-md);
+}
+
+@media (max-width: 48rem) {
+  .compile-choices {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .compile-choice,
+  .compile-next {
+    min-height: 44px;
+  }
+
+  .compile-line {
+    padding: 0.35rem var(--space-2);
+  }
+
+  .compile-next {
+    width: 100%;
+  }
+}
