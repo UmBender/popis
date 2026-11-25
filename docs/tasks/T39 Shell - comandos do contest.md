@@ -1,7 +1,7 @@
 ---
 id: T39
 title: Shell - comandos do contest
-status: in-progress
+status: review
 depends_on: [T25]
 branch: task/T39-shell-commands
 adrs: [ADR-T39-1]
@@ -158,18 +158,19 @@ maratona vira reflexo, para não ser preciso pensar nisso na hora.
 - `scripts/shell-oracle.mjs` (novo), `package.json` (script `shell:oracle`),
   `vite.config.ts` (limiares de `src/shell/**`), `playwright.config.ts`
 - `tests/e2e/shell-drill.spec.ts` (novo; `tests/e2e/shell.spec.ts` pertence à T18)
+- `tests/regressions/T39-no-raw-backticks.test.ts` (novo; regressão visual)
 
 Atenção ao nome: `src/ui/shell/` já é a casca do app (árvore e painel).
 Os componentes do treino ficam em `src/ui/shell-drill/`.
 
 ## Subtasks (one commit each)
 
-- [ ] spec: ADR-T39-1 (subconjunto do bash, verificação por forma normalizada e oráculo por efeito) e testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, `shell:oracle`, coverage, e2e e screenshots
-- [ ] docs: *Log* e status `review`
+- [x] spec: ADR-T39-1 (subconjunto do bash, verificação por forma normalizada e oráculo por efeito) e testes nomeados
+- [x] tests
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, `shell:oracle`, coverage, e2e e screenshots
+- [x] docs: *Log* e status `review`
 
 ## Notas para o batch
 
@@ -180,3 +181,20 @@ Os componentes do treino ficam em `src/ui/shell-drill/`.
   pasta.
 
 ## Log
+
+- 2026-11-25 — Escopo completo entregue (sem recorte): todas as 9 unidades (15 lições) do Aprender reutilizando `src/learn/curriculum.ts`, todos os 8 tipos de treino (`arquivos`, `compilar`, `rodar`, `comparar`, `stress`, `limites`, `texto`, `setup`), parser de subconjunto do bash com formatador ida-e-volta em `src/shell/parse.ts`, verificador normalizado em `src/shell/check.ts`, gerador em `src/shell/drill.ts`, motor de rodada em `src/shell/round.ts` com eventos `shell.cmd` (T22), persistência em `popis.shell`, `popis.shell-results` e `popis.shell-learn` (v2), telas em `src/ui/ShellScreen.tsx` e `src/ui/shell-drill/`, e oráculo isolado em `scripts/shell-oracle.mjs` (`npm run shell:oracle`).
+- 2026-11-25 — Decisão do dono aplicada na unidade 8 (`u8-bashrc`): versão escrita para o popis com as funções `c`, `cs`, `gen`, `rr` e `chk` e crédito "inspirado no .bashrc do GEMPRO Notebook", sem copiar o arquivo do notebook.
+- 2026-11-25 — UNATTENDED CHOICE e desvios registrados (ADR-T39-1):
+  - Os testes Playwright da T39 ficaram em `tests/e2e/shell-drill.spec.ts` (incluído no projeto `mobile` em `playwright.config.ts`) porque `tests/e2e/shell.spec.ts` já existe para o teste de teclado da casca do app (T18, desktop).
+  - Na pasta `Shell` (`src/ui/shell/sections.ts`), `shell-learn` e `shell-commands` usam `ariaLabel` `"Aprender (Shell)"` e `"Comandos (Shell)"`, mantendo rótulos visíveis `"Aprender"` e `"Comandos"` e `<h1>` correspondentes sem colidir com os rádios de Vim e GDB.
+  - Em `src/shell/parse.test.ts`, foi adicionada uma guarda de tipo `if (res.node.kind !== "command") return;` em commit `test(T39)` próprio para satisfazer o `strict` do TypeScript.
+- 2026-11-25 — Bug e regressão encontrados na verificação visual:
+  - Capturadas e inspecionadas 10 capturas Playwright em `.batch/visual/shots/` (`desktop` e `phone` para lista do Aprender, lição da unidade 8 com terminal animado, Comandos, feedback de erro e resultados).
+  - Bug: crases literais de Markdown apareciam renderizadas na UI monoespaçada em enunciados do gerador, em um exercício/notas do currículo e em mensagens de erro do parser/verificador. Adicionado teste de regressão `tests/regressions/T39-no-raw-backticks.test.ts` (commitado vermelho antes da correção em `src/shell/{parse,check,drill,curriculum}.ts`); novas capturas conferidas em `desktop` e `phone` sem crases literais e sem rolagem horizontal.
+- 2026-11-25 — Gates verdes:
+  - `npm run shell:oracle`: `shell:oracle summary: equivalences=39 (failures=0), near-misses=10 (failures=0), transcripts=15 (failures=0)` (GNU bash 5.3.9, g++ 16.2.1, pasta temporária isolada).
+  - `npm run check`: verde (`tsc --noEmit`, `eslint . --max-warnings 0`, `prettier --check .`, `178/178` arquivos / `4296/4296` testes, `vite build`).
+  - `npm run coverage`: verde (`99.71%` statements, `98.35%` branches, `100%` functions, `99.83%` lines; `src/shell/**` `98.14/94.1/100/98.87` com limiar `97/93/100/98` em `vite.config.ts`; `src/ui/shell-drill/**` `100/98.11/100/100`; `src/storage/**` `100/100/100/100`).
+  - `npm run test:fuzz -- src/shell`: verde (`39/39` arquivos / `260/260` testes com `FC_NUM_RUNS=20000`).
+  - `npm run test:e2e`: verde (`39/39` testes em `chromium` e `mobile` sob `/popis/`, incluindo `tests/e2e/shell-drill.spec.ts` nos dois projetos).
+- 2026-11-25 — Verificação manual para o dono: ler as unidades 2, 5 e 8 no Aprender e jogar uma rodada de Comandos no celular.
