@@ -18,6 +18,7 @@ const SCREENS: readonly ItemId[] = [
   "gdb-learn",
   "gdb-commands",
   "gdb-output",
+  "ref-cpp",
 ];
 
 describe("sections", () => {
@@ -30,6 +31,27 @@ describe("sections", () => {
       ["Digitação", ["Código", "Texto", "Pontos fracos"]],
       ["Vim", ["Aprender", "Movimento", "Edição"]],
       ["GDB", ["Aprender", "Comandos", "Saída"]],
+      ["Referência", ["C++"]],
+    ]);
+  });
+
+  it("Referência folder closes the tree with C++ on touch screens", () => {
+    const last = SECTIONS[SECTIONS.length - 1];
+    expect(last?.id).toBe("referencia");
+    expect(last?.label).toBe("Referência");
+    expect(last?.items.map((i) => [i.id, i.label, i.touch, i.shortcut])).toEqual([
+      ["ref-cpp", "C++", true, null],
+    ]);
+    expect(ITEMS.slice(1, 10).map((i) => i.id)).toEqual([
+      "arithmetic",
+      "algebra",
+      "factoring",
+      "sums",
+      "division",
+      "estimation",
+      "primes",
+      "review",
+      "data",
     ]);
   });
 
