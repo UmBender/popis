@@ -21,6 +21,7 @@ describe("shell parser (AC-1)", () => {
       ],
       redirs: [],
     });
+    if (res.node.kind !== "command") return;
     expect(wordText(res.node.words[0]!)).toBe("g++");
     expect(wordDisplay(res.node.words[0]!)).toBe("g++");
   });
