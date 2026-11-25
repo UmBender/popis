@@ -81,4 +81,23 @@ describe("event drills", () => {
     expect(recordEvents(store, [ev], at)).toBe(true);
     expect(loadEvents(store)).toEqual([ev]);
   });
+
+  it("DRILLS accepts stl.out and stores STL output events", () => {
+    expect(DRILLS).toContain("stl.out");
+    const store = memoryStore();
+    const at = Date.UTC(2026, 10, 24, 12);
+    const ev: TrainingEvent = {
+      at,
+      drill: "stl.out",
+      config: "stl-L2",
+      kc: "stl.upper_bound",
+      ok: true,
+      timeMs: 1900,
+      extra: { seed: 13, i: 0, model: "upper_bound", level: 2, skipped: false },
+    };
+
+    expect(eventKey(ev)).toBe(`${String(at)}|stl.out|13|0`);
+    expect(recordEvents(store, [ev], at)).toBe(true);
+    expect(loadEvents(store)).toEqual([ev]);
+  });
 });
