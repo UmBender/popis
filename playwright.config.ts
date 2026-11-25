@@ -19,7 +19,7 @@ export default defineConfig({
     },
     {
       name: "mobile",
-      testMatch: ["mobile.spec.ts", "gdb.spec.ts"],
+      testMatch: ["mobile.spec.ts", "gdb.spec.ts", "shell-drill.spec.ts"],
       use: { ...devices["Pixel 7"], baseURL: `http://localhost:${pagesPort}${pagesBase}` },
     },
   ],

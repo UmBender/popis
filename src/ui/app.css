@@ -2008,3 +2008,57 @@ th {
     width: 100%;
   }
 }
+
+/* Shell commands drill & Aprender curriculum (T39, ADR-T39-1). */
+.shell-drill-viewer {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--selection);
+  background: var(--surface);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.shell-drill-dir-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--selection);
+  font-size: var(--text-sm);
+}
+
+.shell-drill-cwd {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.shell-drill-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shell-drill-file code {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--selection);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.shell-drill-terminal {
+  margin: 0;
+  padding: var(--space-2);
+  overflow-x: auto;
+  max-width: 100%;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
