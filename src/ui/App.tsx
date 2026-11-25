@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
 import type { JsonValue } from "../core/problem";
 import { MODES, type Mode } from "../modes";
@@ -70,6 +70,9 @@ import { TypingScreen } from "./TypingScreen";
 import { chooseVimDrill, VimScreen } from "./VimScreen";
 import { WeakTypingScreen } from "./WeakTypingScreen";
 import { GdbScreen, type GdbDrill } from "./GdbScreen";
+import { parseRefHash } from "../ref/link";
+import type { Lang } from "../ref/model";
+import { RefScreen } from "./RefScreen";
 
 export type AppProps = {
   readonly clock: Clock;
@@ -108,6 +111,15 @@ const GDB_DRILLS: Partial<Readonly<Record<ItemId, GdbDrill>>> = {
   "gdb-commands": "commands",
   "gdb-output": "output",
 };
+
+/** The tree item of each language of the reference (T46, ADR-T46-1). */
+const REF_ITEMS: Readonly<Record<Lang, ItemId>> = { cpp: "ref-cpp" };
+
+/** The reference item a `#<lang>/<id>` hash opens, if any. */
+function hashItem(): ItemId | null {
+  const target = parseRefHash(window.location.hash);
+  return target === null ? null : REF_ITEMS[target.lang];
+}
 
 function sessionConfig<M extends Mode>(
   mode: M,
@@ -193,7 +205,9 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
   const [adaptive, setAdaptive] = useState<AdaptiveSettings>(() => loadAdaptiveSettings(store));
   const [deckRev, setDeckRev] = useState(0);
   const [prefs, setPrefs] = useState<ShellPrefs>(() => loadPrefs(store));
-  const [item, setItem] = useState<ItemId>(() => firstItem(loadPrefs(store), settings.mode));
+  const [item, setItem] = useState<ItemId>(
+    () => hashItem() ?? firstItem(loadPrefs(store), settings.mode),
+  );
   const [screen, setScreen] = useState<Screen>({ name: "menu" });
   // A typing or Vim round is being played: the tree hides.
   const [running, setRunning] = useState(false);
@@ -306,6 +320,22 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
     setRunning(false);
     setScreen({ name: "menu" });
   };
+
+  // A `#<lang>/<id>` link opens the reference on that entry (T46 AC-6).
+  const latestChoose = useRef(choose);
+  useEffect(() => {
+    latestChoose.current = choose;
+  });
+  useEffect(() => {
+    const onHash = () => {
+      const id = hashItem();
+      if (id !== null) latestChoose.current(id);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+    };
+  }, []);
 
   const backToMode = () => {
     choose(settings.mode);
@@ -590,6 +620,8 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
             }}
           />
         );
+      case "ref-cpp":
+        return <RefScreen lang="cpp" />;
       case "data":
         return (
           <div className="screen data">

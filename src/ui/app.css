@@ -2008,3 +2008,235 @@ th {
     width: 100%;
   }
 }
+
+/* T46: the reference reader (ADR-T46-1). */
+.shell-main > .screen.ref {
+  max-width: 120ch;
+}
+
+.ref-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.ref-search {
+  flex: 1 1 20ch;
+  min-width: 0;
+}
+
+.ref-body {
+  display: grid;
+  grid-template-columns: 18ch minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.ref-sections {
+  position: sticky;
+  top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.ref-entries {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ref-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ref-section h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--accent);
+}
+
+.ref-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-left: 2px solid var(--selection);
+  scroll-margin-top: var(--space-3);
+}
+
+.ref-entry[aria-current="true"] {
+  border-left-color: var(--accent);
+  background: var(--surface);
+}
+
+.ref-entry:focus {
+  outline: none;
+}
+
+.ref-entry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.ref-entry-head h3 {
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.ref-entry-head a {
+  color: var(--selection-text);
+  text-decoration: none;
+}
+
+.ref-entry-head a:hover {
+  text-decoration: underline;
+}
+
+.ref-badge {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  border: 1px solid var(--muted);
+  padding: 0 var(--space-1);
+}
+
+.ref-badge.ref-judge {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+.ref-entry pre {
+  margin: 0;
+  overflow-x: auto;
+  font-size: var(--text-sm);
+}
+
+.ref-signature {
+  color: var(--accent);
+}
+
+.ref-code,
+.ref-io {
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface);
+}
+
+.ref-complexity {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.ref-table {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.ref-table td {
+  padding: 0 var(--space-3) 0 0;
+  vertical-align: top;
+}
+
+.ref-example-head {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.ref-entry > .muted,
+.ref-example-head .muted {
+  font-size: var(--text-sm);
+}
+
+.ref-pitfalls {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-4);
+  color: var(--warning);
+  font-size: var(--text-sm);
+}
+
+.ref-link {
+  font-size: var(--text-sm);
+  color: var(--accent);
+}
+
+@media (max-width: 48rem) {
+  .ref-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ref-sections {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+  }
+}
+
+/* The printed sheet: two compact columns of entries, dark text on paper. */
+@media print {
+  .shell:has(.ref) .shell-bar,
+  .shell:has(.ref) .shell-status,
+  .shell:has(.ref) .tree,
+  .shell:has(.ref) .shell-backdrop,
+  .ref .panel-title p,
+  .ref-bar,
+  .ref-sections,
+  .ref-copy,
+  .ref-link {
+    display: none;
+  }
+
+  .shell:has(.ref) .shell-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shell:has(.ref) .shell-main {
+    padding: 0;
+  }
+
+  .shell-main > .screen.ref {
+    max-width: none;
+  }
+
+  .ref,
+  .ref * {
+    color: var(--surface) !important;
+    background: none !important;
+  }
+
+  .ref-body,
+  .ref-section {
+    display: block;
+  }
+
+  .ref-entries {
+    display: block;
+    column-count: 2;
+    column-gap: var(--space-4);
+    font-size: 8pt;
+  }
+
+  .ref-section h2 {
+    break-after: avoid;
+    font-size: 10pt;
+  }
+
+  .ref-entry {
+    break-inside: avoid;
+    padding: 0 0 var(--space-2);
+    border: none;
+  }
+
+  .ref-entry pre {
+    overflow: visible;
+    white-space: pre-wrap;
+    font-size: 7pt;
+  }
+}
