@@ -65,7 +65,9 @@ async function checkModel(dir, level, model, seedsCount, drillMod, checkMod) {
   const chunks = stdout.split(MARKER).slice(1);
   const failures = [];
   if (chunks.length !== items.length) {
-    failures.push(`${model}: expected ${String(items.length)} outputs, got ${String(chunks.length)}`);
+    failures.push(
+      `${model}: expected ${String(items.length)} outputs, got ${String(chunks.length)}`,
+    );
     return { total: items.length, failures };
   }
 
@@ -108,14 +110,7 @@ async function main() {
         while (idx < jobs.length) {
           const job = jobs[idx++];
           try {
-            const res = await checkModel(
-              dir,
-              job.level,
-              job.model,
-              seedsCount,
-              drillMod,
-              checkMod,
-            );
+            const res = await checkModel(dir, job.level, job.model, seedsCount, drillMod, checkMod);
             total += res.total;
             failures.push(...res.failures);
           } catch (err) {

@@ -43,7 +43,10 @@ const STL_CHEATSHEET: readonly (readonly [string, string])[] = [
   ["/ e % com negativos", "/ trunca em direção a zero; a % b tem o sinal de a"],
   ["__builtin_popcount / __lg", "quantidade de bits 1 / piso de log2(x)"],
   ["bitset<N>", "b[0] é o bit menos significativo (direita); impressão é MSB → LSB"],
-  ["accumulate(..., init)", "o tipo de init define o acumulador (0 trunca para int; 0u faz wrap em 32 bits)"],
+  [
+    "accumulate(..., init)",
+    "o tipo de init define o acumulador (0 trunca para int; 0u faz wrap em 32 bits)",
+  ],
 ];
 
 export type StlScreenProps = {
@@ -75,16 +78,8 @@ function newRun(settings: StlSettings, seed: number, run: number): Run {
 const formatSec = (ms: number): string => `${(ms / 1000).toFixed(1)} s`;
 
 /** C++ and STL output prediction drill (T42 AC-5, ADR-T42-1). */
-export function StlScreen({
-  clock,
-  store,
-  newSeed,
-  onBack,
-  onRunning,
-}: StlScreenProps): ReactNode {
-  const [current, setCurrent] = useState<Run>(() =>
-    newRun(loadStlSettings(store), newSeed(), 0),
-  );
+export function StlScreen({ clock, store, newSeed, onBack, onRunning }: StlScreenProps): ReactNode {
+  const [current, setCurrent] = useState<Run>(() => newRun(loadStlSettings(store), newSeed(), 0));
   const [results, setResults] = useState<readonly StlResult[]>(() => loadStlResults(store));
   const [text, setText] = useState("");
   const [now, setNow] = useState(() => clock.now());
@@ -198,9 +193,7 @@ export function StlScreen({
     [results, settings.durationS, settings.level],
   );
 
-  const remainingS = Math.ceil(
-    stlRemainingMs(round, Math.max(now, round.startedAt ?? now)) / 1000,
-  );
+  const remainingS = Math.ceil(stlRemainingMs(round, Math.max(now, round.startedAt ?? now)) / 1000);
   const correctCount = round.results.filter((r) => r.ok).length;
   const stats = useMemo(() => (finished ? stlRoundStats(round) : null), [finished, round]);
   const best = historyScores.length > 0 ? Math.max(...historyScores) : correctCount;

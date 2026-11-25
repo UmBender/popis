@@ -189,7 +189,11 @@ describe("stl simulator (AC-1)", () => {
     expect(simLg(15)).toBe(3);
     expect(() => simLg(0)).toThrow(RangeError);
 
-    const b = simBitset(8, 13, [{ kind: "flip", bit: 1 }, { kind: "set", bit: 4 }, { kind: "reset", bit: 0 }]);
+    const b = simBitset(8, 13, [
+      { kind: "flip", bit: 1 },
+      { kind: "set", bit: 4 },
+      { kind: "reset", bit: 0 },
+    ]);
     // 13 = 00001101 -> flip(1) = 00001111 (15) -> set(4) = 00011111 (31) -> reset(0) = 00011110 (30)
     expect(b.toUlong).toBe(30n);
     expect(b.count).toBe(4);

@@ -35,7 +35,16 @@ describe("stl storage", () => {
       [STL_RESULTS_KEY]: JSON.stringify([
         "bad",
         { version: 2 },
-        { version: 1, level: 9, durationS: 120, seed: 1, correct: 1, wrong: 0, skipped: 0, finishedAt: 1 },
+        {
+          version: 1,
+          level: 9,
+          durationS: 120,
+          seed: 1,
+          correct: 1,
+          wrong: 0,
+          skipped: 0,
+          finishedAt: 1,
+        },
       ]),
     });
     expect(loadStlResults(store)).toEqual([]);

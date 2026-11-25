@@ -89,7 +89,8 @@ export function cppMod(a: number, b: number): number {
 export function simSort(arr: readonly number[], opts: SortOptions = {}): number[] {
   const from = opts.from ?? 0;
   const to = opts.to ?? arr.length;
-  const cmp = opts.desc === true ? (a: number, b: number) => b - a : (a: number, b: number) => a - b;
+  const cmp =
+    opts.desc === true ? (a: number, b: number) => b - a : (a: number, b: number) => a - b;
   const mid = arr.slice(from, to).sort(cmp);
   return [...arr.slice(0, from), ...mid, ...arr.slice(to)];
 }

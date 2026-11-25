@@ -94,13 +94,7 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
       ["gdb-output", "Saída"],
     ],
   ],
-  [
-    "maratona",
-    "Maratona",
-    [
-      ["stl", "STL"],
-    ],
-  ],
+  ["maratona", "Maratona", [["stl", "STL"]]],
 ];
 
 let position = 0;

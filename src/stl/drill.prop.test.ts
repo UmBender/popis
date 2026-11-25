@@ -1,14 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { checkStlAnswer } from "./check";
-import {
-  generateStlItem,
-  STL_LEVEL_MODELS,
-  STL_LEVELS,
-  STL_MODELS,
-  type StlLevel,
-  type StlModel,
-} from "./drill";
+import { generateStlItem, STL_LEVEL_MODELS, STL_LEVELS, STL_MODELS, type StlModel } from "./drill";
 
 // T42 AC-2 property tests: every level uses only its own models, snippets stay <= 8 lines,
 // canonical answer is accepted by the checker, and generation is deterministic by seed.
@@ -61,14 +54,14 @@ describe("stl drill generator properties (AC-2)", () => {
             fc.integer({ min: 0, max: 0x7fffffff }),
             fc.integer({ min: 0, max: 20 }),
             (seed, index) => {
-              const item = generateStlItem(seed, index, level as StlLevel, [model]);
+              const item = generateStlItem(seed, index, level, [model]);
               expect(item.model).toBe(model);
               expect(item.kc).toBe(`stl.${model}`);
               expect(item.lines.length).toBeLessThanOrEqual(8);
               expect(
                 checkStlAnswer(item.canonical, item.canonical, { boolalpha: item.boolalpha }).ok,
               ).toBe(true);
-              expect(generateStlItem(seed, index, level as StlLevel, [model])).toEqual(item);
+              expect(generateStlItem(seed, index, level, [model])).toEqual(item);
             },
           ),
         );

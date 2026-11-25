@@ -156,7 +156,14 @@ describe("StlScreen (AC-5)", () => {
     advance(6_000);
     expect(screen.getByTestId("stl-final-score").textContent).toBe("1 acerto em 30 s");
 
+    // Clicking "Jogar de novo" starts a new round.
+    fireEvent.click(screen.getByRole("button", { name: "Jogar de novo" }));
+    expect(screen.queryByTestId("result")).toBeNull();
+
     // Enter on results starts a new round; Esc on results returns to idle.
+    fireEvent.change(input(), { target: { value: "1" } });
+    advance(31_000);
+    expect(screen.getByTestId("result")).toBeTruthy();
     fireEvent.keyDown(window, { key: "a" });
     expect(screen.getByTestId("result")).toBeTruthy();
     fireEvent.keyDown(window, { key: "Enter" });

@@ -179,7 +179,8 @@ function genVectorReverse(rng: Rng): Snippet {
     ],
     canonical: `${String(rev[0])} ${String(rev[rev.length - 1])}`,
     boolalpha: false,
-    explanation: "reverse inverte toda a sequência: o antigo último vira front() e o primeiro vira back().",
+    explanation:
+      "reverse inverte toda a sequência: o antigo último vira front() e o primeiro vira back().",
   };
 }
 
@@ -234,7 +235,8 @@ function genNextPerm(rng: Rng): Snippet {
       ],
       canonical: res.ok ? "true" : "false",
       boolalpha: true,
-      explanation: "Na última permutação (decrescente), next_permutation volta à primeira e devolve false.",
+      explanation:
+        "Na última permutação (decrescente), next_permutation volta à primeira e devolve false.",
     };
   }
   return {
@@ -245,7 +247,8 @@ function genNextPerm(rng: Rng): Snippet {
     ],
     canonical: `${res.ok ? "1" : "0"} ${res.values.join(" ")}`,
     boolalpha: false,
-    explanation: "next_permutation gera a próxima permutação lexicográfica (ou reinicia em ordem crescente devolvendo 0).",
+    explanation:
+      "next_permutation gera a próxima permutação lexicográfica (ou reinicia em ordem crescente devolvendo 0).",
   };
 }
 
@@ -279,7 +282,8 @@ function genLowerBound(rng: Rng): Snippet {
     ],
     canonical: String(idx),
     boolalpha: false,
-    explanation: "lower_bound devolve o índice do primeiro elemento maior ou igual a x (ou v.size() se não existir).",
+    explanation:
+      "lower_bound devolve o índice do primeiro elemento maior ou igual a x (ou v.size() se não existir).",
   };
 }
 
@@ -327,7 +331,8 @@ function genSetDedup(rng: Rng): Snippet {
       ],
       canonical: `${String(s.length)} ${String(s[0])} ${String(s[s.length - 1])}`,
       boolalpha: false,
-      explanation: "set descarta duplicatas e mantém os elementos ordenados do menor (*begin) ao maior (*rbegin).",
+      explanation:
+        "set descarta duplicatas e mantém os elementos ordenados do menor (*begin) ao maior (*rbegin).",
     };
   }
   return {
@@ -421,7 +426,8 @@ function genPairOrder(rng: Rng): Snippet {
     ],
     canonical: `${String(pick[0])} ${String(pick[1])}`,
     boolalpha: false,
-    explanation: "pair compara primeiro por .first e desempata por .second na mesma direção do comparador.",
+    explanation:
+      "pair compara primeiro por .first e desempata por .second na mesma direção do comparador.",
   };
 }
 
@@ -436,7 +442,8 @@ function genStringConv(rng: Rng): Snippet {
       ],
       canonical: simToString(a) + simToString(b),
       boolalpha: false,
-      explanation: "to_string converte inteiros em texto, então + concatena os dígitos em vez de somar.",
+      explanation:
+        "to_string converte inteiros em texto, então + concatena os dígitos em vez de somar.",
     };
   }
   const base = rng.int(-15, 25);
@@ -448,7 +455,8 @@ function genStringConv(rng: Rng): Snippet {
     lines: [`string s = "${text}";`, `cout << stoi(s) + ${String(k)} << '\\n';`],
     canonical: String(out),
     boolalpha: false,
-    explanation: "stoi converte o prefixo numérico em base 10 e para no primeiro caractere que não é dígito.",
+    explanation:
+      "stoi converte o prefixo numérico em base 10 e para no primeiro caractere que não é dígito.",
   };
 }
 
@@ -465,7 +473,8 @@ function genStringFind(rng: Rng): Snippet {
       lines: [`string s = "${word}";`, `cout << s.find("${sub}") << '\\n';`],
       canonical: String(pos),
       boolalpha: false,
-      explanation: "string::find devolve o índice baseado em 0 da primeira ocorrência da substring.",
+      explanation:
+        "string::find devolve o índice baseado em 0 da primeira ocorrência da substring.",
     };
   }
   const missing = "zz";
@@ -486,14 +495,16 @@ function genStringFind(rng: Rng): Snippet {
       lines: [`string s = "${word}";`, `cout << (s.find("${missing}") > s.size()) << '\\n';`],
       canonical: pos > BigInt(word.length) ? "1" : "0",
       boolalpha: false,
-      explanation: "string::npos é o maior size_t (2^64 - 1), portanto é maior que s.size(), não -1.",
+      explanation:
+        "string::npos é o maior size_t (2^64 - 1), portanto é maior que s.size(), não -1.",
     };
   }
   return {
     lines: [`string s = "${word}";`, `cout << s.find("${missing}") << '\\n';`],
     canonical: String(pos),
     boolalpha: false,
-    explanation: "Sem encontrar, string::find imprime string::npos em 64 bits (18446744073709551615), não -1.",
+    explanation:
+      "Sem encontrar, string::find imprime string::npos em 64 bits (18446744073709551615), não -1.",
   };
 }
 
@@ -506,10 +517,7 @@ function genNegDivMod(rng: Rng): Snippet {
   const a = signCase === 1 ? absA : -absA;
   const b = signCase === 0 ? absB : -absB;
   return {
-    lines: [
-      `int a = ${String(a)}, b = ${String(b)};`,
-      `cout << a / b << ' ' << a % b << '\\n';`,
-    ],
+    lines: [`int a = ${String(a)}, b = ${String(b)};`, `cout << a / b << ' ' << a % b << '\\n';`],
     canonical: `${String(cppDiv(a, b))} ${String(cppMod(a, b))}`,
     boolalpha: false,
     explanation: "Em C++, / trunca em direção a zero e a % b mantém o sinal do dividendo a.",
@@ -534,7 +542,8 @@ function genSizeTTrap(rng: Rng): Snippet {
       ],
       canonical: useAlpha ? (gt ? "true" : "false") : gt ? "1" : "0",
       boolalpha: useAlpha,
-      explanation: "v.size() é size_t (sem sinal), então subtrair além de 0 dá wraparound para perto de 2^64.",
+      explanation:
+        "v.size() é size_t (sem sinal), então subtrair além de 0 dá wraparound para perto de 2^64.",
     };
   }
   if (variant === 2) {
@@ -549,10 +558,7 @@ function genSizeTTrap(rng: Rng): Snippet {
   const vals = simIota(len, 1);
   const k = len + rng.int(1, 4);
   return {
-    lines: [
-      `vector<int> v = ${fmtVec(vals)};`,
-      `cout << ((int)v.size() - ${String(k)}) << '\\n';`,
-    ],
+    lines: [`vector<int> v = ${fmtVec(vals)};`, `cout << ((int)v.size() - ${String(k)}) << '\\n';`],
     canonical: String(len - k),
     boolalpha: false,
     explanation: "Converter v.size() para int antes da subtração evita o wraparound de size_t.",
@@ -563,13 +569,11 @@ function genPopcountLg(rng: Rng): Snippet {
   const x = rng.int(1, 63);
   if (rng.int(0, 1) === 0) {
     return {
-      lines: [
-        `int x = ${String(x)};`,
-        `cout << __builtin_popcount(x) << ' ' << __lg(x) << '\\n';`,
-      ],
+      lines: [`int x = ${String(x)};`, `cout << __builtin_popcount(x) << ' ' << __lg(x) << '\\n';`],
       canonical: `${String(simPopcount(x))} ${String(simLg(x))}`,
       boolalpha: false,
-      explanation: "__builtin_popcount conta bits 1 e __lg devolve o índice do bit mais alto (piso de log2).",
+      explanation:
+        "__builtin_popcount conta bits 1 e __lg devolve o índice do bit mais alto (piso de log2).",
     };
   }
   return {
@@ -593,7 +597,8 @@ function genBitsetOps(rng: Rng): Snippet {
       ],
       canonical: `${String(b.count)} ${String(b.test(bit))}`,
       boolalpha: false,
-      explanation: "Em bitset, b.count() conta bits 1 e b[i] lê o i-ésimo bit a partir da direita (LSB = 0).",
+      explanation:
+        "Em bitset, b.count() conta bits 1 e b[i] lê o i-ésimo bit a partir da direita (LSB = 0).",
     };
   }
   if (variant === 1) {
@@ -617,7 +622,8 @@ function genBitsetOps(rng: Rng): Snippet {
     lines: [`bitset<4> b(${String(x)});`, `cout << b << '\\n';`],
     canonical: b.toString,
     boolalpha: false,
-    explanation: "Imprimir bitset<4> escreve os 4 bits do mais significativo (esquerda) ao menos significativo (direita).",
+    explanation:
+      "Imprimir bitset<4> escreve os 4 bits do mais significativo (esquerda) ao menos significativo (direita).",
   };
 }
 
@@ -636,7 +642,8 @@ function genAccumulateInt(rng: Rng): Snippet {
       ],
       canonical: String(sum),
       boolalpha: false,
-      explanation: "O 0 como terceiro argumento fixa o acumulador em int, truncando cada soma parcial.",
+      explanation:
+        "O 0 como terceiro argumento fixa o acumulador em int, truncando cada soma parcial.",
     };
   }
   if (variant === 1) {
@@ -649,7 +656,8 @@ function genAccumulateInt(rng: Rng): Snippet {
       ],
       canonical: String(sum),
       boolalpha: false,
-      explanation: "Com 0u (unsigned de 32 bits), UINT_MAX + k faz wraparound módulo 2^32 e resulta em k - 1.",
+      explanation:
+        "Com 0u (unsigned de 32 bits), UINT_MAX + k faz wraparound módulo 2^32 e resulta em k - 1.",
     };
   }
   const vals = [rng.int(1, 6), rng.int(1, 6), rng.int(1, 6)];
