@@ -43,14 +43,19 @@ async function compile(dir, name, source, std) {
   const bin = join(dir, `${name}-${std}`);
   writeFileSync(src, source);
   try {
-    const { stderr } = await execFileAsync(
-      "g++",
-      [`-std=${std}`, "-O2", "-Wall", src, "-o", bin],
-      { cwd: dir, timeout: 120_000 },
-    );
+    const { stderr } = await execFileAsync("g++", [`-std=${std}`, "-O2", "-Wall", src, "-o", bin], {
+      cwd: dir,
+      timeout: 120_000,
+    });
     return { ok: true, bin, stderr: stderr.split(dir + "/").join("") };
   } catch (error) {
-    return { ok: false, bin, stderr: String(error.stderr ?? error).split(dir + "/").join("") };
+    return {
+      ok: false,
+      bin,
+      stderr: String(error.stderr ?? error)
+        .split(dir + "/")
+        .join(""),
+    };
   }
 }
 
@@ -78,10 +83,12 @@ async function checkEntry(dir, entry) {
     std = "gnu++23";
   }
   const built = await compile(dir, entry.id, source, std);
-  if (!built.ok) return { problems: [...problems, `does not compile with -std=${std}:\n${built.stderr}`] };
+  if (!built.ok)
+    return { problems: [...problems, `does not compile with -std=${std}:\n${built.stderr}`] };
   if (built.stderr.trim() !== "") problems.push(`warnings with -std=${std}:\n${built.stderr}`);
   const ran = await run(built.bin, entry.input);
-  if (ran.code !== 0) problems.push(`exit ${String(ran.code)} ${String(ran.signal)}: ${ran.stderr}`);
+  if (ran.code !== 0)
+    problems.push(`exit ${String(ran.code)} ${String(ran.signal)}: ${ran.stderr}`);
   if (ran.stdout === "") problems.push("prints nothing");
   return { problems, output: ran.stdout };
 }
@@ -140,9 +147,7 @@ async function main() {
         if (write) outputs.set(entry.id, output);
         else {
           mismatches += 1;
-          problems.push(
-            `output differs\n--- recorded\n${entry.output}--- real\n${output}`,
-          );
+          problems.push(`output differs\n--- recorded\n${entry.output}--- real\n${output}`);
         }
       }
       if (problems.length > 0) {

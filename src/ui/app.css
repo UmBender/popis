@@ -2128,6 +2128,11 @@ th {
   background: var(--surface);
 }
 
+.ref-entry[aria-current="true"] .ref-code,
+.ref-entry[aria-current="true"] .ref-io {
+  background: var(--bg);
+}
+
 .ref-complexity {
   margin: 0;
   font-size: var(--text-sm);
@@ -2197,6 +2202,17 @@ th {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  html:has(.ref) {
+    color-scheme: light;
+  }
+
+  html:has(.ref),
+  html:has(.ref) body,
+  .shell:has(.ref),
+  .shell:has(.ref) .shell-main {
+    background: none !important;
+  }
+
   .shell:has(.ref) .shell-main {
     padding: 0;
   }
@@ -2225,7 +2241,11 @@ th {
 
   .ref-section h2 {
     break-after: avoid;
-    font-size: 10pt;
+    font-size: 11pt;
+  }
+
+  .ref-entry-head h3 {
+    font-size: 9pt;
   }
 
   .ref-entry {

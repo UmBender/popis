@@ -9,11 +9,13 @@ const CPP = entriesOf("cpp");
 const titles = CPP.map((e) => e.title);
 const queryArb = fc.oneof(
   fc.string({ maxLength: 6 }),
-  fc.constantFrom(...titles).chain((t) =>
-    fc
-      .tuple(fc.nat({ max: t.length }), fc.nat({ max: t.length }))
-      .map(([a, b]) => t.slice(Math.min(a, b), Math.max(a, b))),
-  ),
+  fc
+    .constantFrom(...titles)
+    .chain((t) =>
+      fc
+        .tuple(fc.nat({ max: t.length }), fc.nat({ max: t.length }))
+        .map(([a, b]) => t.slice(Math.min(a, b), Math.max(a, b))),
+    ),
 );
 
 describe("search properties", () => {

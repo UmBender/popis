@@ -33,9 +33,11 @@ describe("RefScreen", () => {
     render(<RefScreen lang="cpp" />);
     expect(screen.getAllByRole("article")).toHaveLength(CPP.length);
     const nav = screen.getByRole("navigation", { name: "Seções" });
-    expect(within(nav).getAllByRole("button").map((b) => b.textContent)).toEqual(
-      sectionsOf("cpp").map((s) => s.title),
-    );
+    expect(
+      within(nav)
+        .getAllByRole("button")
+        .map((b) => b.textContent),
+    ).toEqual(sectionsOf("cpp").map((s) => s.title));
     const vector = entry(titleOf("vector"));
     expect(within(vector).getByTestId("ref-signature").textContent).toContain("vector");
     expect(within(vector).getByRole("table", { name: "Complexidade" })).toBeTruthy();

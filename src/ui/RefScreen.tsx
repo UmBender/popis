@@ -207,7 +207,7 @@ function EntryCard({ entry, open, copied, onOpen, onCopy }: CardProps): ReactNod
           <span className="muted">complexidade:</span> {complexity}
         </p>
       )}
-      {Array.isArray(complexity) && (
+      {complexity !== undefined && typeof complexity !== "string" && (
         <table className="ref-table" aria-label="Complexidade">
           <tbody>
             {complexity.map(([op, cost]) => (
