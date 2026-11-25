@@ -39,7 +39,23 @@ Os mesmos templates também passam a ser uma biblioteca do **De memória**
 - O repositório é `GEMPRO-CODE/gempro-notebook`, **público e sem
   licença**. A maior parte dos commits é de um colega de time.
 
-## Decisão pendente do dono
+## Decisão do dono (2026-11-24)
+
+**Opção 1: publicar no site**, com o crédito e o link do repositório.
+Assim:
+
+- `npm run notebook:import -- <pasta>` gera os dados em
+  `src/typing/notebook/data/` e eles são commitados, como a biblioteca da
+  T34. O site do Pages é construído com eles, sem acessar o notebook.
+- A tela e o relatório mostram "Templates do GEMPRO Notebook" com o link
+  para `https://github.com/GEMPRO-CODE/gempro-notebook` e o commit de
+  origem.
+- **Condição para o merge na `main`:** o time concorda com a publicação,
+  de preferência com uma licença no notebook. O dono confirma isso no
+  *Log* antes de a task ir para `done`. Sem a confirmação, a branch fica
+  em `review`.
+
+## Opções que foram consideradas
 
 O popis é publicado no GitHub Pages. Se os templates entrarem no build,
 o código do colega fica público dentro do site, sem licença que permita
@@ -54,10 +70,7 @@ motivo. Opções:
    `.zip`), e os templates ficam no armazenamento local, como no upload
    da T32.
 
-Sugestão: a 3, que serve a qualquer time e não publica nada, com a 1 se o
-time liberar. A task fica `todo` até a decisão.
-
-## Spec (rascunho; o passo de spec fecha conforme a decisão)
+## Spec (rascunho; o passo de spec nomeia os testes que faltam)
 
 - **AC-1**: **Extrator puro** `src/typing/notebook/extract.ts`:
   - a partir dos arquivos (`{ path, content }`), devolve
@@ -93,11 +106,15 @@ time liberar. A task fica `todo` até a decisão.
   aparecem como uma biblioteca escolhível no De memória da T32, com o
   mesmo id, e cada um vira um cartão do FSRS.
   - Testes: `src/ui/` (teste do De memória com a biblioteca do notebook).
-- **AC-5**: **Origem dos dados**, conforme a decisão: o script
-  `npm run notebook:import -- <pasta>` (opções 1 e 2) ou a importação no
-  navegador (opção 3). Nos dois casos, há um relatório com quantos
-  templates entraram por edição e categoria e com os avisos do AC-1.
-  - Testes: definidos no passo de spec.
+- **AC-5**: **Importação** `npm run notebook:import -- <pasta>`
+  (`scripts/notebook-import.mjs`), no molde do `library:mine` da T34:
+  - lê os arquivos rastreados pelo git na pasta e grava os dados em
+    `src/typing/notebook/data/` com o commit de origem;
+  - grava o relatório em `docs/architecture/Templates do notebook.md`
+    (quantos templates por edição e categoria, os avisos do AC-1 e o
+    crédito);
+  - rodar duas vezes no mesmo commit não muda nada.
+  - Testes: `src/typing/notebook/data.test.ts` ("data carries the source commit and repository link", "every core template of the data has code"), `src/ui/NotebookTypingScreen.test.tsx` ("credit line links to the notebook repository").
 
 ## Out of scope
 
@@ -110,12 +127,13 @@ time liberar. A task fica `todo` até a decisão.
 - `src/typing/notebook/` (novo) e os testes
 - `src/ui/NotebookTypingScreen.tsx`, `src/ui/App.tsx`, `src/ui/shell/sections.ts`
 - tela do De memória da T32 (só a escolha de biblioteca)
-- `scripts/notebook-import.mjs` (opções 1 e 2), `package.json`, `.gitignore` (opção 2)
+- `src/typing/notebook/data/` (gerado e commitado), `docs/architecture/Templates do notebook.md` (gerado)
+- `scripts/notebook-import.mjs`, `package.json`
 - `src/stats/event.ts`, `tests/e2e/notebook-typing.spec.ts`
 
 ## Subtasks (one commit each)
 
-- [ ] spec: decisão do dono, ADR-T48-1 (origem dos templates e onde eles ficam) e testes nomeados
+- [ ] spec: ADR-T48-1 (templates do notebook publicados com crédito, gerados por script e commitados) e testes nomeados
 - [ ] tests
 - [ ] models
 - [ ] behaviour
