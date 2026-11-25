@@ -1,10 +1,10 @@
 ---
 id: T42
 title: C++ e STL - o que imprime
-status: ready
+status: in-progress
 depends_on: []
 branch: task/T42-stl-output
-adrs: []
+adrs: [ADR-T42-1]
 tags: [task]
 ---
 
@@ -49,7 +49,7 @@ divisão e `%` com negativos, `size()` sem sinal, `__builtin_popcount`,
   ("`upper_bound` devolve o primeiro **maior** que x"). Usa os
   componentes da T19 e grava eventos com drill `stl.out`. Entra na pasta
   Maratona (criada aqui se a T40 ainda não existir).
-  - Testes: `src/ui/StlScreen.test.tsx`, `src/ui/shell/sections.test.ts`, `tests/e2e/stl.spec.ts`.
+  - Testes: `src/ui/StlScreen.test.tsx`, `src/ui/shell/sections.test.ts`, `src/stats/event.test.ts`, `src/storage/stl.test.ts`, `src/stl/round.test.ts`, `tests/e2e/stl.spec.ts`.
 
 ## Out of scope
 
@@ -58,9 +58,12 @@ divisão e `%` com negativos, `size()` sem sinal, `__builtin_popcount`,
 
 ## Files owned
 
-- `src/stl/` (novo), `src/storage/stl.ts`, `src/stats/event.ts`
-- `src/ui/StlScreen.tsx`, `src/ui/App.tsx`, `src/ui/shell/sections.ts`
-- `scripts/stl-oracle.mjs`, `package.json`, `vite.config.ts`, `tests/e2e/stl.spec.ts`
+- `src/stl/` (novo: `sim.ts`, `check.ts`, `drill.ts`, `round.ts` e testes)
+- `src/storage/stl.ts`, `src/storage/stl.test.ts`
+- `src/stats/event.ts`, `src/stats/event.test.ts`
+- `src/ui/StlScreen.tsx`, `src/ui/StlScreen.test.tsx`, `src/ui/App.tsx`, `src/ui/app.css`
+- `src/ui/shell/sections.ts`, `src/ui/shell/sections.test.ts`
+- `scripts/stl-oracle.mjs`, `package.json`, `vite.config.ts`, `playwright.config.ts`, `tests/e2e/stl.spec.ts`
 
 ## Subtasks (one commit each)
 
