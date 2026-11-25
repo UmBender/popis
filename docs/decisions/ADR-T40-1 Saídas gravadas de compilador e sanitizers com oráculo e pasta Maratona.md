@@ -1,7 +1,7 @@
 ---
 id: ADR-T40-1
 title: Saídas gravadas de compilador e sanitizers com oráculo e pasta Maratona
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-25
 task: T40

@@ -1,7 +1,7 @@
 ---
 id: T40
 title: Saída do compilador e sanitizers
-status: in-progress
+status: review
 depends_on: [T25]
 branch: task/T40-compiler-output
 adrs: [ADR-T40-1]
@@ -107,10 +107,20 @@ costuma assustar.
 ## Subtasks (one commit each)
 
 - [x] spec: ADR-T40-1 (saídas gravadas e conferidas pelo oráculo, pasta Maratona) e testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, `compile:oracle`, coverage, e2e
-- [ ] docs: *Log* e status `review`
+- [x] tests
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, `compile:oracle`, coverage, e2e
+- [x] docs: *Log* e status `review`
 
 ## Log
+
+- 2026-11-25 — Implementação concluída na branch `task/T40-compiler-output` com 30 casos reais (5 por grupo: `compilacao`, `aviso`, `asan`, `ubsan`, `glibcxx`, `veredito`), 30 causas em português (`src/compile/causes.ts`), mascaramento/recorte puro (`src/compile/format.ts`), sorteio sem repetição por ciclo (`src/compile/drill.ts`), motor de rodada de 90 s (`src/compile/round.ts`), persistência em `popis.compile` (`src/storage/compile.ts`), eventos `compile.read` (`src/stats/event.ts`), tela `CompileScreen.tsx` e pasta `Maratona` com `Ler o erro` após `GDB` em `src/ui/shell/sections.ts`.
+- 2026-11-25 — UNATTENDED CHOICE: nos casos `glibcxx`, incluímos `-D_GLIBCXX_DEBUG_BACKTRACE` com `-lstdc++exp` para que a própria `libstdc++` emita o frame `sol.cpp:<linha>` e o oráculo confira a citação de linha (ADR-T40-1).
+- 2026-11-25 — UNATTENDED CHOICE: nos casos `veredito` em que o juiz não emite linha de código (`TLE`, `MLE`, `SIGSEGV`, `SIGFPE`), o oráculo valida o sinal/código de saída e a saída gravada sem fabricar número de linha; quando o `stderr` real cita a linha (`assert` em `SIGABRT`), o oráculo também confere `sol.cpp:<linha>` (ADR-T40-1).
+- 2026-11-25 — UNATTENDED CHOICE: ao errar um item, a tela entra em estado de revisão destacando a linha certa em verde, a linha errada em vermelho e exibindo a explicação com botão `Próximo` (`Enter`) antes de avançar.
+- 2026-11-25 — Ampliação de *Files owned*: adicionado `playwright.config.ts` (registro de `compile.spec.ts` no projeto `mobile`) e arquivos de teste correspondentes (`src/storage/compile.test.ts`, `src/stats/event.test.ts`, `src/ui/CompileScreen.test.tsx`, `src/ui/shell/sections.test.ts`).
+- 2026-11-25 — Correção de teste (`f928941`): em `tests/e2e/compile.spec.ts`, o seletor `getByRole("button", { name: "Linha 1" })` colidiu em strict mode com `Linha 10` em casos de 10+ linhas; corrigido em commit próprio para `{ name: "Linha 1", exact: true }`.
+- 2026-11-25 — Verificação visual (`.batch/visual/t40-compiler-output.spec.ts`, 6 capturas em `desktop` e `phone`): inspecionadas todas as imagens; corrigidos opacidade de botões desabilitados na revisão de erro, alinhamento vertical das linhas no celular, `white-space: pre` na saída do compilador para preservar setas `^~~~` e remoção de crases literais nas explicações; capturas refeitas e conferidas.
+- 2026-11-25 — Gates: `npm run compile:oracle` (`compile oracle: 30/30 cases ok` contra `g++ 16.2.1`); `npm run check` verde (173 arquivos, 4283 testes, `tsc`, `eslint`, `prettier`, `vite build`); `npm run coverage` verde (`All files`: 99,82% stmts / 98,65% branches / 100% funcs / 99,91% lines; `src/compile`: 99,55% / 93,66% / 100% / 100%; `src/ui/CompileScreen.tsx`: 100% / 98,55% / 100% / 100%; `src/storage/compile.ts`: 100%); `npm run test:e2e` verde para `compile.spec.ts` (desktop e mobile) e `coherence.spec.ts` (38/39 na suíte inteira por flake pré-existente em `typing.spec.ts:81`, que passou 4/4 isolado).
+- 2026-11-25 — Checagens manuais para o dono: ler cinco explicações; testar no celular (escolha de linha por toque e rolagem da saída).
