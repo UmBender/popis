@@ -13,12 +13,12 @@ export type ShellLessonTranscript = {
 // Recorded from real GNU bash 5.3 and g++ 16.2 by `npm run shell:oracle -- --write` (ADR-T39-1).
 export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> = {
   "u1-nav": {
-    "fixture": "files",
-    "frames": [
+    fixture: "files",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
+        cmd: null,
+        cwd: "~/contest",
+        files: [
           ".hidden",
           "a.cpp",
           "b.cpp",
@@ -33,14 +33,14 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "sub",
           "tests",
           "tmp",
-          "tmp.out"
+          "tmp.out",
         ],
-        "output": []
+        output: [],
       },
       {
-        "cmd": "ls -la",
-        "cwd": "~/contest",
-        "files": [
+        cmd: "ls -la",
+        cwd: "~/contest",
+        files: [
           ".hidden",
           "a.cpp",
           "b.cpp",
@@ -55,9 +55,9 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "sub",
           "tests",
           "tmp",
-          "tmp.out"
+          "tmp.out",
         ],
-        "output": [
+        output: [
           "total N",
           "drwxr-xr-x. 5 contest contest 340 Nov 25 00:00 .",
           "drwx------. 4 contest contest 80 Nov 25 00:00 ..",
@@ -69,21 +69,19 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "-rw-r--r--. 1 contest contest 2 Nov 25 00:00 in.txt",
           "-rw-r--r--. 1 contest contest 2 Nov 25 00:00 in1",
           "-rw-r--r--. 1 contest contest 2 Nov 25 00:00 in2",
-          "-rw-r--r--. 1 contest contest 4 Nov 25 00:00 old.out"
-        ]
-      },
-      {
-        "cmd": "cd sub",
-        "cwd": "~/contest/sub",
-        "files": [
-          "note.txt"
+          "-rw-r--r--. 1 contest contest 4 Nov 25 00:00 old.out",
         ],
-        "output": []
       },
       {
-        "cmd": "cd -",
-        "cwd": "~/contest",
-        "files": [
+        cmd: "cd sub",
+        cwd: "~/contest/sub",
+        files: ["note.txt"],
+        output: [],
+      },
+      {
+        cmd: "cd -",
+        cwd: "~/contest",
+        files: [
           ".hidden",
           "a.cpp",
           "b.cpp",
@@ -98,43 +96,19 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "sub",
           "tests",
           "tmp",
-          "tmp.out"
+          "tmp.out",
         ],
-        "output": [
-          "/home/contest"
-        ]
-      }
-    ]
+        output: ["/home/contest"],
+      },
+    ],
   },
   "u1-files": {
-    "fixture": "files",
-    "frames": [
+    fixture: "files",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
-          ".hidden",
-          "a.cpp",
-          "b.cpp",
-          "c.cpp",
-          "debug.log",
-          "in.txt",
-          "in1",
-          "in2",
-          "old.out",
-          "out1",
-          "sol.cpp",
-          "sub",
-          "tests",
-          "tmp",
-          "tmp.out"
-        ],
-        "output": []
-      },
-      {
-        "cmd": "mkdir -p work/day1",
-        "cwd": "~/contest",
-        "files": [
+        cmd: null,
+        cwd: "~/contest",
+        files: [
           ".hidden",
           "a.cpp",
           "b.cpp",
@@ -150,14 +124,13 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "tests",
           "tmp",
           "tmp.out",
-          "work"
         ],
-        "output": []
+        output: [],
       },
       {
-        "cmd": "cp a.cpp work/day1/sol.cpp",
-        "cwd": "~/contest",
-        "files": [
+        cmd: "mkdir -p work/day1",
+        cwd: "~/contest",
+        files: [
           ".hidden",
           "a.cpp",
           "b.cpp",
@@ -173,14 +146,14 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "tests",
           "tmp",
           "tmp.out",
-          "work"
+          "work",
         ],
-        "output": []
+        output: [],
       },
       {
-        "cmd": "cat in1",
-        "cwd": "~/contest",
-        "files": [
+        cmd: "cp a.cpp work/day1/sol.cpp",
+        cwd: "~/contest",
+        files: [
           ".hidden",
           "a.cpp",
           "b.cpp",
@@ -196,16 +169,14 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "tests",
           "tmp",
           "tmp.out",
-          "work"
+          "work",
         ],
-        "output": [
-          "5"
-        ]
+        output: [],
       },
       {
-        "cmd": "rm -f tmp.out",
-        "cwd": "~/contest",
-        "files": [
+        cmd: "cat in1",
+        cwd: "~/contest",
+        files: [
           ".hidden",
           "a.cpp",
           "b.cpp",
@@ -220,230 +191,140 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "sub",
           "tests",
           "tmp",
-          "work"
+          "tmp.out",
+          "work",
         ],
-        "output": []
-      }
-    ]
+        output: ["5"],
+      },
+      {
+        cmd: "rm -f tmp.out",
+        cwd: "~/contest",
+        files: [
+          ".hidden",
+          "a.cpp",
+          "b.cpp",
+          "c.cpp",
+          "debug.log",
+          "in.txt",
+          "in1",
+          "in2",
+          "old.out",
+          "out1",
+          "sol.cpp",
+          "sub",
+          "tests",
+          "tmp",
+          "work",
+        ],
+        output: [],
+      },
+    ],
   },
   "u2-judge": {
-    "fixture": "compile",
-    "frames": [
+    fixture: "compile",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
-          "a.cpp",
-          "b.cpp",
-          "c.cpp",
-          "in1",
-          "sol.cpp"
-        ],
-        "output": []
+        cmd: null,
+        cwd: "~/contest",
+        files: ["a.cpp", "b.cpp", "c.cpp", "in1", "sol.cpp"],
+        output: [],
       },
       {
-        "cmd": "g++ -O2 -std=gnu++20 -Wall -Wextra -Wshadow a.cpp -o a",
-        "cwd": "~/contest",
-        "files": [
-          "a",
-          "a.cpp",
-          "b.cpp",
-          "c.cpp",
-          "in1",
-          "sol.cpp"
-        ],
-        "output": []
+        cmd: "g++ -O2 -std=gnu++20 -Wall -Wextra -Wshadow a.cpp -o a",
+        cwd: "~/contest",
+        files: ["a", "a.cpp", "b.cpp", "c.cpp", "in1", "sol.cpp"],
+        output: [],
       },
       {
-        "cmd": "./a < in1",
-        "cwd": "~/contest",
-        "files": [
-          "a",
-          "a.cpp",
-          "b.cpp",
-          "c.cpp",
-          "in1",
-          "sol.cpp"
-        ],
-        "output": [
-          "42 opt",
-          "dbg: x=21"
-        ]
-      }
-    ]
+        cmd: "./a < in1",
+        cwd: "~/contest",
+        files: ["a", "a.cpp", "b.cpp", "c.cpp", "in1", "sol.cpp"],
+        output: ["42 opt", "dbg: x=21"],
+      },
+    ],
   },
   "u2-sanitizers": {
-    "fixture": "compile",
-    "frames": [
+    fixture: "compile",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
-          "a.cpp",
-          "b.cpp",
-          "c.cpp",
-          "in1",
-          "sol.cpp"
-        ],
-        "output": []
+        cmd: null,
+        cwd: "~/contest",
+        files: ["a.cpp", "b.cpp", "c.cpp", "in1", "sol.cpp"],
+        output: [],
       },
       {
-        "cmd": "g++ -g -fsanitize=address,undefined a.cpp -o a",
-        "cwd": "~/contest",
-        "files": [
-          "a",
-          "a.cpp",
-          "b.cpp",
-          "c.cpp",
-          "in1",
-          "sol.cpp"
-        ],
-        "output": []
+        cmd: "g++ -g -fsanitize=address,undefined a.cpp -o a",
+        cwd: "~/contest",
+        files: ["a", "a.cpp", "b.cpp", "c.cpp", "in1", "sol.cpp"],
+        output: [],
       },
       {
-        "cmd": "g++ -std=gnu++20 -D_GLIBCXX_DEBUG a.cpp -o a",
-        "cwd": "~/contest",
-        "files": [
-          "a",
-          "a.cpp",
-          "b.cpp",
-          "c.cpp",
-          "in1",
-          "sol.cpp"
-        ],
-        "output": []
-      }
-    ]
+        cmd: "g++ -std=gnu++20 -D_GLIBCXX_DEBUG a.cpp -o a",
+        cwd: "~/contest",
+        files: ["a", "a.cpp", "b.cpp", "c.cpp", "in1", "sol.cpp"],
+        output: [],
+      },
+    ],
   },
   "u3-redir": {
-    "fixture": "run",
-    "frames": [
+    fixture: "run",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
-          "a",
-          "b",
-          "in.txt",
-          "in1",
-          "in2",
-          "sol"
-        ],
-        "output": []
+        cmd: null,
+        cwd: "~/contest",
+        files: ["a", "b", "in.txt", "in1", "in2", "sol"],
+        output: [],
       },
       {
-        "cmd": "./a < in1 > out1",
-        "cwd": "~/contest",
-        "files": [
-          "a",
-          "b",
-          "in.txt",
-          "in1",
-          "in2",
-          "out1",
-          "sol"
-        ],
-        "output": [
-          "dbg: x=5"
-        ]
+        cmd: "./a < in1 > out1",
+        cwd: "~/contest",
+        files: ["a", "b", "in.txt", "in1", "in2", "out1", "sol"],
+        output: ["dbg: x=5"],
       },
       {
-        "cmd": "./a < in1 2> err.log",
-        "cwd": "~/contest",
-        "files": [
-          "a",
-          "b",
-          "err.log",
-          "in.txt",
-          "in1",
-          "in2",
-          "out1",
-          "sol"
-        ],
-        "output": [
-          "10 opt"
-        ]
+        cmd: "./a < in1 2> err.log",
+        cwd: "~/contest",
+        files: ["a", "b", "err.log", "in.txt", "in1", "in2", "out1", "sol"],
+        output: ["10 opt"],
       },
       {
-        "cmd": "./a < in1 | tee out1",
-        "cwd": "~/contest",
-        "files": [
-          "a",
-          "b",
-          "err.log",
-          "in.txt",
-          "in1",
-          "in2",
-          "out1",
-          "sol"
-        ],
-        "output": [
-          "dbg: x=5",
-          "10 opt"
-        ]
-      }
-    ]
+        cmd: "./a < in1 | tee out1",
+        cwd: "~/contest",
+        files: ["a", "b", "err.log", "in.txt", "in1", "in2", "out1", "sol"],
+        output: ["dbg: x=5", "10 opt"],
+      },
+    ],
   },
   "u3-time": {
-    "fixture": "run",
-    "frames": [
+    fixture: "run",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
-          "a",
-          "b",
-          "in.txt",
-          "in1",
-          "in2",
-          "sol"
-        ],
-        "output": []
+        cmd: null,
+        cwd: "~/contest",
+        files: ["a", "b", "in.txt", "in1", "in2", "sol"],
+        output: [],
       },
       {
-        "cmd": "time ./a < in1",
-        "cwd": "~/contest",
-        "files": [
-          "a",
-          "b",
-          "in.txt",
-          "in1",
-          "in2",
-          "sol"
-        ],
-        "output": [
-          "10 opt",
-          "dbg: x=5",
-          "real\t0m0.00Xs",
-          "user\t0m0.00Xs",
-          "sys\t0m0.00Xs"
-        ]
+        cmd: "time ./a < in1",
+        cwd: "~/contest",
+        files: ["a", "b", "in.txt", "in1", "in2", "sol"],
+        output: ["10 opt", "dbg: x=5", "real\t0m0.00Xs", "user\t0m0.00Xs", "sys\t0m0.00Xs"],
       },
       {
-        "cmd": "timeout 2 ./a < in1",
-        "cwd": "~/contest",
-        "files": [
-          "a",
-          "b",
-          "in.txt",
-          "in1",
-          "in2",
-          "sol"
-        ],
-        "output": [
-          "10 opt",
-          "dbg: x=5"
-        ]
-      }
-    ]
+        cmd: "timeout 2 ./a < in1",
+        cwd: "~/contest",
+        files: ["a", "b", "in.txt", "in1", "in2", "sol"],
+        output: ["10 opt", "dbg: x=5"],
+      },
+    ],
   },
   "u4-diff": {
-    "fixture": "compare",
-    "frames": [
+    fixture: "compare",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
+        cmd: null,
+        cwd: "~/contest",
+        files: [
           "a",
           "ans1",
           "ans2",
@@ -456,14 +337,14 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "out1",
           "out2",
           "out_inner",
-          "sol"
+          "sol",
         ],
-        "output": []
+        output: [],
       },
       {
-        "cmd": "diff out1 ans1",
-        "cwd": "~/contest",
-        "files": [
+        cmd: "diff out1 ans1",
+        cwd: "~/contest",
+        files: [
           "a",
           "ans1",
           "ans2",
@@ -476,19 +357,14 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "out1",
           "out2",
           "out_inner",
-          "sol"
+          "sol",
         ],
-        "output": [
-          "1c1",
-          "< 25",
-          "---",
-          "> 25"
-        ]
+        output: ["1c1", "< 25", "---", "> 25"],
       },
       {
-        "cmd": "diff -Z out1 ans1",
-        "cwd": "~/contest",
-        "files": [
+        cmd: "diff -Z out1 ans1",
+        cwd: "~/contest",
+        files: [
           "a",
           "ans1",
           "ans2",
@@ -501,14 +377,14 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "out1",
           "out2",
           "out_inner",
-          "sol"
+          "sol",
         ],
-        "output": []
+        output: [],
       },
       {
-        "cmd": "cmp -s out1 out1",
-        "cwd": "~/contest",
-        "files": [
+        cmd: "cmp -s out1 out1",
+        cwd: "~/contest",
+        files: [
           "a",
           "ans1",
           "ans2",
@@ -521,19 +397,19 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "out1",
           "out2",
           "out_inner",
-          "sol"
+          "sol",
         ],
-        "output": []
-      }
-    ]
+        output: [],
+      },
+    ],
   },
   "u4-procsub": {
-    "fixture": "compare",
-    "frames": [
+    fixture: "compare",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
+        cmd: null,
+        cwd: "~/contest",
+        files: [
           "a",
           "ans1",
           "ans2",
@@ -546,14 +422,14 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "out1",
           "out2",
           "out_inner",
-          "sol"
+          "sol",
         ],
-        "output": []
+        output: [],
       },
       {
-        "cmd": "diff <(./sol < in1) <(./brute < in1)",
-        "cwd": "~/contest",
-        "files": [
+        cmd: "diff <(./sol < in1) <(./brute < in1)",
+        cwd: "~/contest",
+        files: [
           "a",
           "ans1",
           "ans2",
@@ -566,379 +442,208 @@ export const SHELL_TRANSCRIPTS: Readonly<Record<string, ShellLessonTranscript>> 
           "out1",
           "out2",
           "out_inner",
-          "sol"
+          "sol",
         ],
-        "output": []
-      }
-    ]
+        output: [],
+      },
+    ],
   },
   "u5-gen": {
-    "fixture": "stress",
-    "frames": [
+    fixture: "stress",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
-          "brute",
-          "gen",
-          "sol"
-        ],
-        "output": []
+        cmd: null,
+        cwd: "~/contest",
+        files: ["brute", "gen", "sol"],
+        output: [],
       },
       {
-        "cmd": "seq 1 3",
-        "cwd": "~/contest",
-        "files": [
-          "brute",
-          "gen",
-          "sol"
-        ],
-        "output": [
-          "1",
-          "2",
-          "3"
-        ]
+        cmd: "seq 1 3",
+        cwd: "~/contest",
+        files: ["brute", "gen", "sol"],
+        output: ["1", "2", "3"],
       },
       {
-        "cmd": "./gen 7 > in && cat in",
-        "cwd": "~/contest",
-        "files": [
-          "brute",
-          "gen",
-          "in",
-          "sol"
-        ],
-        "output": [
-          "7"
-        ]
+        cmd: "./gen 7 > in && cat in",
+        cwd: "~/contest",
+        files: ["brute", "gen", "in", "sol"],
+        output: ["7"],
       },
       {
-        "cmd": "./sol < in > out1 && ./brute < in > out2 && diff out1 out2",
-        "cwd": "~/contest",
-        "files": [
-          "brute",
-          "gen",
-          "in",
-          "out1",
-          "out2",
-          "sol"
-        ],
-        "output": [
-          "1c1",
-          "< 50",
-          "---",
-          "> 49"
-        ]
-      }
-    ]
+        cmd: "./sol < in > out1 && ./brute < in > out2 && diff out1 out2",
+        cwd: "~/contest",
+        files: ["brute", "gen", "in", "out1", "out2", "sol"],
+        output: ["1c1", "< 50", "---", "> 49"],
+      },
+    ],
   },
   "u5-loop": {
-    "fixture": "stress",
-    "frames": [
+    fixture: "stress",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
-          "brute",
-          "gen",
-          "sol"
-        ],
-        "output": []
+        cmd: null,
+        cwd: "~/contest",
+        files: ["brute", "gen", "sol"],
+        output: [],
       },
       {
-        "cmd": "for i in $(seq 1 10); do ./gen $i > in && ./sol < in > out1 && ./brute < in > out2 && diff out1 out2 || break; done",
-        "cwd": "~/contest",
-        "files": [
-          "brute",
-          "gen",
-          "in",
-          "out1",
-          "out2",
-          "sol"
-        ],
-        "output": [
-          "1c1",
-          "< 50",
-          "---",
-          "> 49"
-        ]
+        cmd: "for i in $(seq 1 10); do ./gen $i > in && ./sol < in > out1 && ./brute < in > out2 && diff out1 out2 || break; done",
+        cwd: "~/contest",
+        files: ["brute", "gen", "in", "out1", "out2", "sol"],
+        output: ["1c1", "< 50", "---", "> 49"],
       },
       {
-        "cmd": "cat in",
-        "cwd": "~/contest",
-        "files": [
-          "brute",
-          "gen",
-          "in",
-          "out1",
-          "out2",
-          "sol"
-        ],
-        "output": [
-          "7"
-        ]
-      }
-    ]
+        cmd: "cat in",
+        cwd: "~/contest",
+        files: ["brute", "gen", "in", "out1", "out2", "sol"],
+        output: ["7"],
+      },
+    ],
   },
   "u6-limits": {
-    "fixture": "limits",
-    "frames": [
+    fixture: "limits",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
-          "in1"
-        ],
-        "output": []
+        cmd: null,
+        cwd: "~/contest",
+        files: ["in1"],
+        output: [],
       },
       {
-        "cmd": "ulimit -s 65536 && ulimit -s",
-        "cwd": "~/contest",
-        "files": [
-          "in1"
-        ],
-        "output": [
-          "65536"
-        ]
+        cmd: "ulimit -s 65536 && ulimit -s",
+        cwd: "~/contest",
+        files: ["in1"],
+        output: ["65536"],
       },
       {
-        "cmd": "ulimit -s unlimited && ulimit -s",
-        "cwd": "~/contest",
-        "files": [
-          "in1"
-        ],
-        "output": [
-          "bash: line 6: ulimit: stack size: cannot modify limit: Operation not permitted"
-        ]
-      }
-    ]
+        cmd: "ulimit -s unlimited && ulimit -s",
+        cwd: "~/contest",
+        files: ["in1"],
+        output: ["bash: line 6: ulimit: stack size: cannot modify limit: Operation not permitted"],
+      },
+    ],
   },
   "u7-slice": {
-    "fixture": "text",
-    "frames": [
+    fixture: "text",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
-          "data.txt",
-          "log.txt",
-          "nums.txt",
-          "out1",
-          "words.txt"
-        ],
-        "output": []
+        cmd: null,
+        cwd: "~/contest",
+        files: ["data.txt", "log.txt", "nums.txt", "out1", "words.txt"],
+        output: [],
       },
       {
-        "cmd": "head -n 3 out1",
-        "cwd": "~/contest",
-        "files": [
-          "data.txt",
-          "log.txt",
-          "nums.txt",
-          "out1",
-          "words.txt"
-        ],
-        "output": [
-          "line 1",
-          "line 2",
-          "line 3"
-        ]
+        cmd: "head -n 3 out1",
+        cwd: "~/contest",
+        files: ["data.txt", "log.txt", "nums.txt", "out1", "words.txt"],
+        output: ["line 1", "line 2", "line 3"],
       },
       {
-        "cmd": "tail -n 2 out1",
-        "cwd": "~/contest",
-        "files": [
-          "data.txt",
-          "log.txt",
-          "nums.txt",
-          "out1",
-          "words.txt"
-        ],
-        "output": [
-          "line 14",
-          "line 15"
-        ]
+        cmd: "tail -n 2 out1",
+        cwd: "~/contest",
+        files: ["data.txt", "log.txt", "nums.txt", "out1", "words.txt"],
+        output: ["line 14", "line 15"],
       },
       {
-        "cmd": "wc -l out1",
-        "cwd": "~/contest",
-        "files": [
-          "data.txt",
-          "log.txt",
-          "nums.txt",
-          "out1",
-          "words.txt"
-        ],
-        "output": [
-          "15 out1"
-        ]
-      }
-    ]
+        cmd: "wc -l out1",
+        cwd: "~/contest",
+        files: ["data.txt", "log.txt", "nums.txt", "out1", "words.txt"],
+        output: ["15 out1"],
+      },
+    ],
   },
   "u7-filter": {
-    "fixture": "text",
-    "frames": [
+    fixture: "text",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
-          "data.txt",
-          "log.txt",
-          "nums.txt",
-          "out1",
-          "words.txt"
-        ],
-        "output": []
+        cmd: null,
+        cwd: "~/contest",
+        files: ["data.txt", "log.txt", "nums.txt", "out1", "words.txt"],
+        output: [],
       },
       {
-        "cmd": "sort -n nums.txt",
-        "cwd": "~/contest",
-        "files": [
-          "data.txt",
-          "log.txt",
-          "nums.txt",
-          "out1",
-          "words.txt"
-        ],
-        "output": [
-          "1",
-          "2",
-          "3",
-          "10",
-          "20"
-        ]
+        cmd: "sort -n nums.txt",
+        cwd: "~/contest",
+        files: ["data.txt", "log.txt", "nums.txt", "out1", "words.txt"],
+        output: ["1", "2", "3", "10", "20"],
       },
       {
-        "cmd": "sort words.txt | uniq -c",
-        "cwd": "~/contest",
-        "files": [
-          "data.txt",
-          "log.txt",
-          "nums.txt",
-          "out1",
-          "words.txt"
-        ],
-        "output": [
-          "      2 ac",
-          "      1 tle",
-          "      3 wa"
-        ]
+        cmd: "sort words.txt | uniq -c",
+        cwd: "~/contest",
+        files: ["data.txt", "log.txt", "nums.txt", "out1", "words.txt"],
+        output: ["      2 ac", "      1 tle", "      3 wa"],
       },
       {
-        "cmd": "grep -n ERR log.txt",
-        "cwd": "~/contest",
-        "files": [
-          "data.txt",
-          "log.txt",
-          "nums.txt",
-          "out1",
-          "words.txt"
-        ],
-        "output": [
-          "2:ERR seed 4",
-          "5:ERR seed 9"
-        ]
-      }
-    ]
+        cmd: "grep -n ERR log.txt",
+        cwd: "~/contest",
+        files: ["data.txt", "log.txt", "nums.txt", "out1", "words.txt"],
+        output: ["2:ERR seed 4", "5:ERR seed 9"],
+      },
+    ],
   },
   "u8-bashrc": {
-    "fixture": "setup",
-    "frames": [
+    fixture: "setup",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
-          "a.cpp",
-          "in1"
-        ],
-        "output": []
+        cmd: null,
+        cwd: "~/contest",
+        files: ["a.cpp", "in1"],
+        output: [],
       },
       {
-        "cmd": "cat ~/.bashrc",
-        "cwd": "~/contest",
-        "files": [
-          "a.cpp",
-          "in1"
-        ],
-        "output": [
+        cmd: "cat ~/.bashrc",
+        cwd: "~/contest",
+        files: ["a.cpp", "in1"],
+        output: [
           "# Contest setup (inspirado no .bashrc do GEMPRO Notebook)",
-          "c()   { g++ -O2 -std=gnu++20 -Wall -Wextra -Wshadow \"$1.cpp\" -o \"$1\"; }",
-          "cs()  { g++ -g -std=gnu++20 -fsanitize=address,undefined -D_GLIBCXX_DEBUG \"$1.cpp\" -o \"$1\"; }",
-          "gen() { g++ -O2 -std=gnu++20 \"$1.cpp\" -o \"$1\"; }",
-          "rr()  { for f in in*; do echo \"=== $f ===\"; \"./$1\" < \"$f\"; done; }",
-          "chk() { for i in $(seq 1 \"${4:-50}\"); do \"./$1\" \"$i\" > in && \"./$2\" < in > o1 && \"./$3\" < in > o2 && diff -Z o1 o2 || { echo \"WA seed $i\"; break; }; done; }"
-        ]
+          'c()   { g++ -O2 -std=gnu++20 -Wall -Wextra -Wshadow "$1.cpp" -o "$1"; }',
+          'cs()  { g++ -g -std=gnu++20 -fsanitize=address,undefined -D_GLIBCXX_DEBUG "$1.cpp" -o "$1"; }',
+          'gen() { g++ -O2 -std=gnu++20 "$1.cpp" -o "$1"; }',
+          'rr()  { for f in in*; do echo "=== $f ==="; "./$1" < "$f"; done; }',
+          'chk() { for i in $(seq 1 "${4:-50}"); do "./$1" "$i" > in && "./$2" < in > o1 && "./$3" < in > o2 && diff -Z o1 o2 || { echo "WA seed $i"; break; }; done; }',
+        ],
       },
       {
-        "cmd": "source ~/.bashrc",
-        "cwd": "~/contest",
-        "files": [
-          "a.cpp",
-          "in1"
-        ],
-        "output": []
+        cmd: "source ~/.bashrc",
+        cwd: "~/contest",
+        files: ["a.cpp", "in1"],
+        output: [],
       },
       {
-        "cmd": "c a && ./a < in1",
-        "cwd": "~/contest",
-        "files": [
-          "a",
-          "a.cpp",
-          "in1"
-        ],
-        "output": [
-          "42 opt",
-          "dbg: x=21"
-        ]
-      }
-    ]
+        cmd: "c a && ./a < in1",
+        cwd: "~/contest",
+        files: ["a", "a.cpp", "in1"],
+        output: ["42 opt", "dbg: x=21"],
+      },
+    ],
   },
   "u9-shortcuts": {
-    "fixture": "shortcuts",
-    "frames": [
+    fixture: "shortcuts",
+    frames: [
       {
-        "cmd": null,
-        "cwd": "~/contest",
-        "files": [
-          "in1"
-        ],
-        "output": []
+        cmd: null,
+        cwd: "~/contest",
+        files: ["in1"],
+        output: [],
       },
       {
-        "cmd": "echo ok in1",
-        "cwd": "~/contest",
-        "files": [
-          "in1"
-        ],
-        "output": [
-          "ok in1"
-        ]
+        cmd: "echo ok in1",
+        cwd: "~/contest",
+        files: ["in1"],
+        output: ["ok in1"],
       },
       {
-        "cmd": "cat !$",
-        "cwd": "~/contest",
-        "files": [
-          "in1"
-        ],
-        "output": [
-          "cat in1",
-          "42"
-        ]
+        cmd: "cat !$",
+        cwd: "~/contest",
+        files: ["in1"],
+        output: ["cat in1", "42"],
       },
       {
-        "cmd": "time !!",
-        "cwd": "~/contest",
-        "files": [
-          "in1"
-        ],
-        "output": [
-          "time cat in1",
-          "42",
-          "real\t0m0.00Xs",
-          "user\t0m0.00Xs",
-          "sys\t0m0.00Xs"
-        ]
-      }
-    ]
-  }
+        cmd: "time !!",
+        cwd: "~/contest",
+        files: ["in1"],
+        output: ["time cat in1", "42", "real\t0m0.00Xs", "user\t0m0.00Xs", "sys\t0m0.00Xs"],
+      },
+    ],
+  },
 };

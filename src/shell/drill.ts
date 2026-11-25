@@ -414,8 +414,7 @@ function buildLimites(rng: Rng): ItemSpec {
   switch (variant) {
     case 0:
       return {
-        prompt:
-          "Libere o limite de pilha para ilimitado (unlimited) antes de rodar uma DFS funda.",
+        prompt: "Libere o limite de pilha para ilimitado (unlimited) antes de rodar uma DFS funda.",
         mentionedFiles: [],
         cwd: "~/contest",
         files: ["dfs.cpp", "dfs", "in1"],
@@ -546,8 +545,7 @@ function buildSetup(rng: Rng): ItemSpec {
       };
     case 1:
       return {
-        prompt:
-          'Defina a função c que compila "$1.cpp" para "$1" com g++ -O2 -std=gnu++20.',
+        prompt: 'Defina a função c que compila "$1.cpp" para "$1" com g++ -O2 -std=gnu++20.',
         mentionedFiles: [],
         cwd: "~/contest",
         files: ["a.cpp", "in1"],

@@ -63,7 +63,9 @@ const wordWithSubArb: fc.Arbitrary<Word> = fc.oneof(
   },
   {
     weight: 2,
-    arbitrary: leafCommandArb.map((node): Word => ({ parts: [{ type: "procsub", dir: "<", node }] })),
+    arbitrary: leafCommandArb.map((node): Word => ({
+      parts: [{ type: "procsub", dir: "<", node }],
+    })),
   },
 );
 

@@ -189,10 +189,7 @@ function setupFixture(workDir, workHome, binDir, fixture) {
       join(workDir, "log.txt"),
       "ok 1\nERR seed 4\nok 2\nWA case 7\nERR seed 9\nok 3\n",
     );
-    writeFileSync(
-      join(workDir, "data.txt"),
-      `${lines}ERR case 1\nWA case 2\nseed 7\n`,
-    );
+    writeFileSync(join(workDir, "data.txt"), `${lines}ERR case 1\nWA case 2\nseed 7\n`);
   } else if (fixture === "setup") {
     writeFileSync(join(workDir, "a.cpp"), CPP_A);
     writeFileSync(join(workDir, "in1"), "21\n");
@@ -230,7 +227,12 @@ function snapshotFiles(dir) {
         walk(full);
       } else {
         const buf = readFileSync(full);
-        const isElf = buf.length >= 4 && buf[0] === 0x7f && buf[1] === 0x45 && buf[2] === 0x4c && buf[3] === 0x46;
+        const isElf =
+          buf.length >= 4 &&
+          buf[0] === 0x7f &&
+          buf[1] === 0x45 &&
+          buf[2] === 0x4c &&
+          buf[3] === 0x46;
         entries.push([rel, isElf ? "<elf>" : buf.toString("utf8")]);
       }
     }
@@ -326,7 +328,13 @@ async function checkDrillEquivalences(root, binDir, drillMod) {
   for (const kind of SHELL_DRILL_KINDS) {
     for (const seed of SEEDS) {
       const item = generateShellItem(seed, 0, [kind]);
-      const base = await runInBash(root, binDir, item.oracleFixture, item.canonical, item.oracleProbe);
+      const base = await runInBash(
+        root,
+        binDir,
+        item.oracleFixture,
+        item.canonical,
+        item.oracleProbe,
+      );
       for (const alt of item.alternatives) {
         checked += 1;
         const got = await runInBash(root, binDir, item.oracleFixture, alt, item.oracleProbe);
@@ -352,7 +360,9 @@ async function checkNearMisses(root, binDir, nearMissMod) {
     const base = await runInBash(root, binDir, c.fixture, c.canonical, c.probe);
     const miss = await runInBash(root, binDir, c.fixture, c.nearMiss, c.probe);
     if (sameEffect(base, miss)) {
-      failures.push(`near-miss ${c.id} ("${c.nearMiss}") produced the SAME effect as "${c.canonical}"`);
+      failures.push(
+        `near-miss ${c.id} ("${c.nearMiss}") produced the SAME effect as "${c.canonical}"`,
+      );
     }
   }
   return { checked: NEAR_MISS_CASES.length, failures };
@@ -544,7 +554,9 @@ async function main() {
 
     if (writeMode) {
       writeFileSync(TRANSCRIPTS_FILE, renderTranscriptsTs(recorded));
-      console.log(`Wrote ${Object.keys(recorded).length} lesson transcripts to src/shell/cases/transcripts.ts`);
+      console.log(
+        `Wrote ${Object.keys(recorded).length} lesson transcripts to src/shell/cases/transcripts.ts`,
+      );
     }
 
     console.log(

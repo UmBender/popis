@@ -129,6 +129,26 @@ describe("shell parser (AC-1)", () => {
       ["diff <(./a", /\)/i],
       ["./a >", /arquivo|destino/i],
       ["| ls", /comando/i],
+      ["(( i++ ))", /não entende/i],
+      ["<<< hi", /here-string/i],
+      ["<< EOF", /here-doc/i],
+      ["for ((i=0; i<3; i++)); do echo $i; done", /for/i],
+      ["for 123 in a; do echo a; done", /variável/i],
+      ["for i a b; do echo $i; done", /in/i],
+      ["for i in ; do echo $i; done", /lista/i],
+      ["for i in a b", /incompleto/i],
+      ["for i in a; echo $i; done", /do/i],
+      ["for i in a; do done", /comando/i],
+      ["while true; echo ok; done", /do/i],
+      ["c() echo hi", /\{/i],
+      ["echo )", /parêntese/i],
+      ["echo \\", /barra/i],
+      [`echo "hi\\`, /aspas/i],
+      [`echo "\`ls\`"`, /\$\(/i],
+      [`echo "$(seq 3`, /\)/i],
+      ["echo ${foo", /\}/i],
+      ["echo ${1a}", /inválida/i],
+      ["echo a ; )", /sintaxe|comando|parêntese/i],
     ];
     for (const [input, pattern] of cases) {
       let res: ParseResult;
@@ -141,6 +161,22 @@ describe("shell parser (AC-1)", () => {
       if (!res.ok) {
         expect(res.error, input).toMatch(pattern);
       }
+    }
+  });
+
+  it("handles escapes, empty quotes, double-quoted substitutions, literal $ and single-quote formatting", () => {
+    const escaped = parseShell(`echo a\\ b "" '' "x\\"y\\\\z\\$w\\q" "$(seq 2)" "$" "it's ok"`);
+    expect(escaped.ok).toBe(true);
+    if (!escaped.ok) return;
+    const formatted = formatShell(escaped.node);
+    expect(formatted).toContain(`"it's ok"`);
+    const reparsed = parseShell(formatted);
+    expect(reparsed).toEqual(escaped);
+
+    const multiDigit = parseShell(`echo "\${10}a"`);
+    expect(multiDigit.ok).toBe(true);
+    if (multiDigit.ok) {
+      expect(formatShell(multiDigit.node)).toContain("${10}");
     }
   });
 });

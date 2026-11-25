@@ -2,11 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { Clock } from "../../core/clock";
 import { SHELL_COMMAND_TABLE } from "../../shell/check";
 import { shellLessonForCommand } from "../../shell/curriculum";
-import {
-  SHELL_DRILL_KINDS,
-  SHELL_DRILL_KIND_LABELS,
-  type ShellDrillKind,
-} from "../../shell/drill";
+import { SHELL_DRILL_KINDS, SHELL_DRILL_KIND_LABELS, type ShellDrillKind } from "../../shell/drill";
 import {
   isShellRoundFinished,
   SHELL_DURATIONS_S,
@@ -87,9 +83,7 @@ export function CommandDrill({
   onRunning,
   onLearn,
 }: Props): ReactNode {
-  const [current, setCurrent] = useState<Run>(() =>
-    newRun(loadShellSettings(store), newSeed(), 0),
-  );
+  const [current, setCurrent] = useState<Run>(() => newRun(loadShellSettings(store), newSeed(), 0));
   const [results, setResults] = useState<readonly ShellCmdResult[]>(() => loadShellResults(store));
   const [text, setText] = useState("");
   const [now, setNow] = useState(() => clock.now());

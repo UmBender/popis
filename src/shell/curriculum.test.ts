@@ -41,9 +41,9 @@ describe("shell curriculum (AC-6)", () => {
 
     // Unit 9 (Atalhos) is lesson-only.
     const unit9 = SHELL_UNITS[8]!;
-    expect(unit9.lessons.every((l) => l.unlocksKind === undefined && l.practiceKinds.length === 0)).toBe(
-      true,
-    );
+    expect(
+      unit9.lessons.every((l) => l.unlocksKind === undefined && l.practiceKinds.length === 0),
+    ).toBe(true);
 
     // Every reference command links to a lesson.
     for (const entry of SHELL_COMMAND_TABLE) {
@@ -72,7 +72,9 @@ describe("shell curriculum (AC-6)", () => {
     }
 
     // Unit 8 credits GEMPRO Notebook per owner decision.
-    const unit8Text = SHELL_UNITS[7]!.lessons.map((l) => `${l.explanation} ${l.note ?? ""}`).join(" ");
+    const unit8Text = SHELL_UNITS[7]!.lessons
+      .map((l) => `${l.explanation} ${l.note ?? ""}`)
+      .join(" ");
     expect(unit8Text).toContain("GEMPRO Notebook");
   });
 

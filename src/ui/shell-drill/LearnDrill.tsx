@@ -39,12 +39,7 @@ type Props = {
 };
 
 /** Shell Aprender curriculum screen (T39 AC-6, ADR-T39-1): 9 ordered units with oracle transcripts and adaptive fading. */
-export function LearnDrill({
-  store,
-  onBack,
-  onPractice,
-  initialLesson = null,
-}: Props): ReactNode {
+export function LearnDrill({ store, onBack, onPractice, initialLesson = null }: Props): ReactNode {
   const [open, setOpen] = useState<string | null>(() =>
     initialLesson !== null && shellLessonById(initialLesson) !== undefined ? initialLesson : null,
   );

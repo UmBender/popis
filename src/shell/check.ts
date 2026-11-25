@@ -177,14 +177,16 @@ function normalizeRedirs(redirs: readonly Redirection[], options?: CheckOptions)
   const hasOrderSensitiveDup = merged.some((r) => r.op === "2>&1");
   if (hasOrderSensitiveDup) {
     // Only `<` is completely independent of `2>&1`; keep stdout/stderr redirs in order.
-    const inputs = merged
-      .filter((r) => r.op === "<")
-      .sort((a, b) => redirKey(a).localeCompare(redirKey(b)));
+    const inputs = merged.filter((r) => r.op === "<").sort(compareRedir);
     const rest = merged.filter((r) => r.op !== "<");
     return [...inputs, ...rest];
   }
 
-  return [...merged].sort((a, b) => redirKey(a).localeCompare(redirKey(b)));
+  return [...merged].sort(compareRedir);
+}
+
+function compareRedir(a: Redirection, b: Redirection): number {
+  return redirKey(a).localeCompare(redirKey(b));
 }
 
 function redirKey(r: Redirection): string {

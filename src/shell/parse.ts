@@ -575,10 +575,10 @@ export function parseShell(input: string): ParseResult {
     }
     return { ok: true, node };
   } catch (err) {
-    if (err instanceof ParseFailure) {
-      return { ok: false, error: err.message };
-    }
-    return { ok: false, error: "erro de sintaxe no comando" };
+    return {
+      ok: false,
+      error: err instanceof ParseFailure ? err.message : "erro de sintaxe no comando",
+    };
   }
 }
 
