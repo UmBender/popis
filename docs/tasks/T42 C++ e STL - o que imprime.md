@@ -1,7 +1,7 @@
 ---
 id: T42
 title: C++ e STL - o que imprime
-status: review
+status: done
 depends_on: []
 branch: task/T42-stl-output
 adrs: [ADR-T42-1]
