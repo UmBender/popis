@@ -1,6 +1,6 @@
 import type { JsonValue } from "../core/problem";
 
-/** The drills that leave events (ADR-T22-1, ADR-T25-1, ADR-T26-1, ADR-T30-1). */
+/** The drills that leave events (ADR-T22-1, ADR-T25-1, ADR-T26-1, ADR-T30-1, ADR-T40-1). */
 export const DRILLS = [
   "calc",
   "vim.motion",
@@ -10,6 +10,7 @@ export const DRILLS = [
   "typing.weak",
   "gdb.cmd",
   "gdb.out",
+  "compile.read",
 ] as const;
 
 export type Drill = (typeof DRILLS)[number];
