@@ -1,7 +1,7 @@
 ---
 id: T39
 title: Shell - comandos do contest
-status: review
+status: done
 depends_on: [T25]
 branch: task/T39-shell-commands
 adrs: [ADR-T39-1]
