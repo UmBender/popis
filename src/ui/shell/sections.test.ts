@@ -18,6 +18,8 @@ const SCREENS: readonly ItemId[] = [
   "gdb-learn",
   "gdb-commands",
   "gdb-output",
+  "shell-learn",
+  "shell-commands",
   "compile-read",
   "stl",
 ];
@@ -32,14 +34,15 @@ describe("sections", () => {
       ["Digitação", ["Código", "Texto", "Pontos fracos"]],
       ["Vim", ["Aprender", "Movimento", "Edição"]],
       ["GDB", ["Aprender", "Comandos", "Saída"]],
+      ["Shell", ["Aprender", "Comandos"]],
       ["Maratona", ["Ler o erro", "STL"]],
     ]);
   });
 
-  it("Maratona folder follows GDB with Ler o erro and STL and keeps shortcuts 1-9", () => {
-    const gdbIdx = SECTIONS.findIndex((f) => f.id === "gdb");
+  it("Maratona folder follows Shell with Ler o erro and STL and keeps shortcuts 1-9", () => {
+    const shellIdx = SECTIONS.findIndex((f) => f.id === "shell");
     const maratonaIdx = SECTIONS.findIndex((f) => f.id === "maratona");
-    expect(maratonaIdx).toBe(gdbIdx + 1);
+    expect(maratonaIdx).toBe(shellIdx + 1);
     const maratona = SECTIONS[maratonaIdx];
     expect(maratona?.label).toBe("Maratona");
     expect(maratona?.items.map((i) => [i.id, i.label, i.touch, i.shortcut])).toEqual([
@@ -59,6 +62,19 @@ describe("sections", () => {
       ["gdb-learn", "Aprender", true, null],
       ["gdb-commands", "Comandos", true, null],
       ["gdb-output", "Saída", true, null],
+    ]);
+    expect(ITEMS.slice(1, 10).map((i) => i.shortcut)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  });
+
+  it("Shell folder follows GDB, stays visible on touch and keeps shortcuts 1-9", () => {
+    const gdbIdx = SECTIONS.findIndex((f) => f.id === "gdb");
+    const shellIdx = SECTIONS.findIndex((f) => f.id === "shell");
+    expect(shellIdx).toBe(gdbIdx + 1);
+    const shell = SECTIONS[shellIdx];
+    expect(shell?.label).toBe("Shell");
+    expect(shell?.items.map((i) => [i.id, i.label, i.ariaLabel, i.touch, i.shortcut])).toEqual([
+      ["shell-learn", "Aprender", "Aprender (Shell)", true, null],
+      ["shell-commands", "Comandos", "Comandos (Shell)", true, null],
     ]);
     expect(ITEMS.slice(1, 10).map((i) => i.shortcut)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });

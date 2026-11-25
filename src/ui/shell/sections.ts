@@ -15,6 +15,8 @@ export type ItemId =
   | "gdb-learn"
   | "gdb-commands"
   | "gdb-output"
+  | "shell-learn"
+  | "shell-commands"
   | "compile-read"
   | "stl";
 
@@ -93,6 +95,14 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
       ["gdb-learn", "Aprender", undefined, "Aprender (GDB)"],
       ["gdb-commands", "Comandos"],
       ["gdb-output", "Saída"],
+    ],
+  ],
+  [
+    "shell",
+    "Shell",
+    [
+      ["shell-learn", "Aprender", undefined, "Aprender (Shell)"],
+      ["shell-commands", "Comandos", undefined, "Comandos (Shell)"],
     ],
   ],
   [

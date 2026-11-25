@@ -23,6 +23,7 @@
     "gdb:oracle": "node scripts/gdb-oracle.mjs",
     "stl:oracle": "node scripts/stl-oracle.mjs",
     "compile:oracle": "node scripts/compile-oracle.mjs",
+    "shell:oracle": "node scripts/shell-oracle.mjs",
     "build:pages": "vite build --base=/popis/"
   },
   "dependencies": {

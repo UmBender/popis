@@ -82,6 +82,25 @@ describe("event drills", () => {
     expect(loadEvents(store)).toEqual([ev]);
   });
 
+  it("DRILLS accepts shell.cmd and stores shell command events", () => {
+    expect(DRILLS).toContain("shell.cmd");
+    const store = memoryStore();
+    const at = Date.UTC(2026, 10, 25, 4);
+    const ev: TrainingEvent = {
+      at,
+      drill: "shell.cmd",
+      config: "cmd",
+      kc: "shell.compilar",
+      ok: true,
+      timeMs: 1450,
+      extra: { seed: 19, i: 0, kind: "compilar", skipped: false },
+    };
+
+    expect(eventKey(ev)).toBe(`${String(at)}|shell.cmd|19|0`);
+    expect(recordEvents(store, [ev], at)).toBe(true);
+    expect(loadEvents(store)).toEqual([ev]);
+  });
+
   it("DRILLS accepts compile.read and stores compile events", () => {
     expect(DRILLS).toContain("compile.read");
     const store = memoryStore();
