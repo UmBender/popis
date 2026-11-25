@@ -81,4 +81,23 @@ describe("event drills", () => {
     expect(recordEvents(store, [ev], at)).toBe(true);
     expect(loadEvents(store)).toEqual([ev]);
   });
+
+  it("DRILLS accepts regex.practice and stores regex practice events", () => {
+    expect(DRILLS).toContain("regex.practice");
+    const store = memoryStore();
+    const at = Date.UTC(2026, 10, 25, 3);
+    const ev: TrainingEvent = {
+      at,
+      drill: "regex.practice",
+      config: "python",
+      kc: "regex.casar",
+      ok: true,
+      timeMs: 4200,
+      extra: { seed: 19, i: 0, kind: "casar", dialect: "python", attempts: 2, skipped: false },
+    };
+
+    expect(eventKey(ev)).toBe(`${String(at)}|regex.practice|19|0`);
+    expect(recordEvents(store, [ev], at)).toBe(true);
+    expect(loadEvents(store)).toEqual([ev]);
+  });
 });

@@ -18,6 +18,8 @@ const SCREENS: readonly ItemId[] = [
   "gdb-learn",
   "gdb-commands",
   "gdb-output",
+  "regex-learn",
+  "regex-practice",
 ];
 
 describe("sections", () => {
@@ -30,7 +32,21 @@ describe("sections", () => {
       ["Digitação", ["Código", "Texto", "Pontos fracos"]],
       ["Vim", ["Aprender", "Movimento", "Edição"]],
       ["GDB", ["Aprender", "Comandos", "Saída"]],
+      ["Regex", ["Aprender", "Prática"]],
     ]);
+  });
+
+  it("Regex folder follows GDB, stays visible on touch screens and keeps shortcuts 1-9", () => {
+    const gdbIdx = SECTIONS.findIndex((f) => f.id === "gdb");
+    const regexIdx = SECTIONS.findIndex((f) => f.id === "regex");
+    expect(regexIdx).toBe(gdbIdx + 1);
+    const regex = SECTIONS[regexIdx];
+    expect(regex?.label).toBe("Regex");
+    expect(regex?.items.map((i) => [i.id, i.label, i.ariaLabel, i.touch, i.shortcut])).toEqual([
+      ["regex-learn", "Aprender", "Aprender (Regex)", true, null],
+      ["regex-practice", "Prática", undefined, true, null],
+    ]);
+    expect(ITEMS.slice(1, 10).map((i) => i.shortcut)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
 
   it("GDB folder follows Vim and keeps shortcuts 1-9", () => {
