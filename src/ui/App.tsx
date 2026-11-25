@@ -70,6 +70,7 @@ import { TypingScreen } from "./TypingScreen";
 import { chooseVimDrill, VimScreen } from "./VimScreen";
 import { WeakTypingScreen } from "./WeakTypingScreen";
 import { GdbScreen, type GdbDrill } from "./GdbScreen";
+import { ShellScreen, type ShellDrill } from "./ShellScreen";
 
 export type AppProps = {
   readonly clock: Clock;
@@ -107,6 +108,11 @@ const GDB_DRILLS: Partial<Readonly<Record<ItemId, GdbDrill>>> = {
   "gdb-learn": "learn",
   "gdb-commands": "commands",
   "gdb-output": "output",
+};
+
+const SHELL_DRILLS: Partial<Readonly<Record<ItemId, ShellDrill>>> = {
+  "shell-learn": "learn",
+  "shell-commands": "commands",
 };
 
 function sessionConfig<M extends Mode>(
@@ -200,6 +206,7 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
   // Lesson to open when jumping to Aprender from a "Comandos" panel (T20 AC-5, T25 AC-6).
   const [learnLesson, setLearnLesson] = useState<string | null>(null);
   const [gdbLesson, setGdbLesson] = useState<string | null>(null);
+  const [shellLesson, setShellLesson] = useState<string | null>(null);
   // Section to focus when jumping to Evolução from an item's history (T23 AC-5).
   const [progressFocus, setProgressFocus] = useState<string | null>(null);
   const isNarrow = useMedia("(max-width: 48rem)", narrow);
@@ -300,6 +307,7 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
     if (drill !== undefined) chooseVimDrill(store, drill);
     if (id !== "vim-learn") setLearnLesson(null);
     if (id !== "gdb-learn") setGdbLesson(null);
+    if (id !== "shell-learn") setShellLesson(null);
     if (id !== "progress") setProgressFocus(null);
     setItem(id);
     updatePrefs({ item: id });
@@ -545,6 +553,28 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
             choose("gdb-output");
           }}
           initialLesson={gdbLesson}
+        />
+      );
+    }
+    const shellDrill = SHELL_DRILLS[item];
+    if (shellDrill !== undefined) {
+      return (
+        <ShellScreen
+          key={item}
+          drill={shellDrill}
+          clock={clock}
+          store={store}
+          newSeed={newSeed}
+          onBack={backToMode}
+          onRunning={setRunning}
+          onLearn={(lessonId) => {
+            setShellLesson(lessonId ?? null);
+            choose("shell-learn");
+          }}
+          onPractice={() => {
+            choose("shell-commands");
+          }}
+          initialLesson={shellLesson}
         />
       );
     }
