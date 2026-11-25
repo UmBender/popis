@@ -1,6 +1,6 @@
-import type { RegexDialect } from "../regex/compile";
+import { REGEX_DIALECTS, type RegexDialect } from "../regex/compile";
 import { REGEX_ITEM_KINDS, type RegexItemKind } from "../regex/types";
-import type { KeyValueStore } from "./kv";
+import { readJson, tryWriteJson, type KeyValueStore } from "./kv";
 
 export const REGEX_KEY = "popis.regex";
 export const REGEX_RESULTS_KEY = "popis.regex-results";
@@ -27,22 +27,47 @@ export type RegexRoundResult = {
   readonly finishedAt: number;
 };
 
-export function parseRegexSettings(_value: unknown): RegexSettings {
-  throw new Error("todo");
+const isDialect = (value: unknown): value is RegexDialect =>
+  REGEX_DIALECTS.includes(value as RegexDialect);
+
+/** Regex Prática settings from parsed JSON; invalid fields fall back to defaults. */
+export function parseRegexSettings(value: unknown): RegexSettings {
+  const raw = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+  const wanted = Array.isArray(raw["kinds"]) ? raw["kinds"] : [];
+  const kinds = REGEX_ITEM_KINDS.filter((kind) => wanted.includes(kind));
+  return {
+    dialect: isDialect(raw["dialect"]) ? raw["dialect"] : DEFAULT_REGEX_SETTINGS.dialect,
+    kinds: kinds.length > 0 ? kinds : REGEX_ITEM_KINDS,
+  };
 }
 
-export function loadRegexSettings(_store: KeyValueStore): RegexSettings {
-  throw new Error("todo");
+export function loadRegexSettings(store: KeyValueStore): RegexSettings {
+  return parseRegexSettings(readJson(store, REGEX_KEY));
 }
 
-export function saveRegexSettings(_store: KeyValueStore, _settings: RegexSettings): void {
-  throw new Error("todo");
+export function saveRegexSettings(store: KeyValueStore, settings: RegexSettings): void {
+  tryWriteJson(store, REGEX_KEY, settings);
 }
 
-export function loadRegexResults(_store: KeyValueStore): RegexRoundResult[] {
-  throw new Error("todo");
+const RESULT_NUMBERS = ["seed", "correct", "skipped", "attempts", "timeMs", "finishedAt"] as const;
+
+function isRegexRoundResult(value: unknown): value is RegexRoundResult {
+  if (typeof value !== "object" || value === null) return false;
+  const r = value as Record<string, unknown>;
+  return (
+    r["version"] === 1 &&
+    isDialect(r["dialect"]) &&
+    RESULT_NUMBERS.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]))
+  );
 }
 
-export function appendRegexResult(_store: KeyValueStore, _result: RegexRoundResult): void {
-  throw new Error("todo");
+export function loadRegexResults(store: KeyValueStore): RegexRoundResult[] {
+  const value = readJson(store, REGEX_RESULTS_KEY);
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRegexRoundResult);
+}
+
+export function appendRegexResult(store: KeyValueStore, result: RegexRoundResult): void {
+  const results = [...loadRegexResults(store), result];
+  tryWriteJson(store, REGEX_RESULTS_KEY, results.slice(-MAX_REGEX_RESULTS));
 }
