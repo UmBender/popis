@@ -10,6 +10,7 @@ export const DRILLS = [
   "typing.weak",
   "gdb.cmd",
   "gdb.out",
+  "stl.out",
 ] as const;
 
 export type Drill = (typeof DRILLS)[number];

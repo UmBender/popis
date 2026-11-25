@@ -70,6 +70,7 @@ import { TypingScreen } from "./TypingScreen";
 import { chooseVimDrill, VimScreen } from "./VimScreen";
 import { WeakTypingScreen } from "./WeakTypingScreen";
 import { GdbScreen, type GdbDrill } from "./GdbScreen";
+import { StlScreen } from "./StlScreen";
 
 export type AppProps = {
   readonly clock: Clock;
@@ -636,6 +637,16 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
               setLearnLesson(lessonId);
               choose("vim-learn");
             }}
+          />
+        );
+      case "stl":
+        return (
+          <StlScreen
+            clock={clock}
+            store={store}
+            newSeed={newSeed}
+            onBack={backToMode}
+            onRunning={setRunning}
           />
         );
       default: {
