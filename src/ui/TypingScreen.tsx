@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
-import { codeEvents, traceCode, type KeyTrace } from "../stats/keytrace";
+import { codeEvents, codePaceUnits, traceCode, type KeyTrace } from "../stats/keytrace";
 import { detectPlateau, weeklyRate } from "../stats/learning";
 import { recordEvents } from "../storage/events";
 import type { KeyValueStore } from "../storage/history";
@@ -188,7 +188,7 @@ export function TypingScreen({
       });
       recordEvents(store, events, at);
       paceSummary = evaluatePaceRound(
-        events.map((e) => e.extra["onPace"] === true),
+        codePaceUnits(trace, run.snippet.text),
         target,
         stats.accuracy,
         curPace.goal,

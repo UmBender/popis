@@ -1,5 +1,5 @@
 import type { TypingState } from "../typing/engine";
-import { codeLineLengths, isUnitOnPace } from "../typing/pace";
+import { codeLineLengths, isUnitOnPace, type PaceRoundUnit } from "../typing/pace";
 import type { WordsState } from "../typing/words-engine";
 import type { EventExtra, TrainingEvent } from "./event";
 
@@ -201,4 +201,18 @@ export function textEvents(trace: KeyTrace, meta: TextMeta): TrainingEvent[] {
       extra,
     };
   });
+}
+
+/** One pace unit per typed word: right, complete, characters and time (ADR-T52-1). */
+export function textPaceUnits(trace: KeyTrace, words: readonly string[]): PaceRoundUnit[] {
+  void trace;
+  void words;
+  throw new Error("todo");
+}
+
+/** One pace unit per typed line, counting typeable characters of `text` (ADR-T52-1). */
+export function codePaceUnits(trace: KeyTrace, text: string): PaceRoundUnit[] {
+  void trace;
+  void text;
+  throw new Error("todo");
 }

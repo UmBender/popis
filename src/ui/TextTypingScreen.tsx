@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Clock } from "../core/clock";
-import { textEvents, traceText, type KeyTrace } from "../stats/keytrace";
+import { textEvents, textPaceUnits, traceText, type KeyTrace } from "../stats/keytrace";
 import { recordEvents } from "../storage/events";
 import type { KeyValueStore } from "../storage/history";
 import {
@@ -170,7 +170,7 @@ export function TextTypingScreen({
         const events = textEvents(trace, { at, config, seed: run.seed, words: next.words, target });
         recordEvents(store, events, at);
         paceSummary = evaluatePaceRound(
-          events.map((e) => e.extra["onPace"] === true),
+          textPaceUnits(trace, next.words),
           target,
           stats.accuracy,
           curPace.goal,

@@ -16,6 +16,8 @@ export const DEFAULT_INITIAL_TARGET_WPM = 30;
 export const MIN_TARGET_WPM = 4;
 /** Number of recent rounds whose median sets the initial target. */
 export const INITIAL_HISTORY_WINDOW = 10;
+/** A rising target this far below the round's goal speed jumps to it (ADR-T52-1). */
+export const CATCH_UP_GAP_WPM = 10;
 
 const EPS = 1e-9;
 
@@ -23,6 +25,12 @@ export type PaceUnit = {
   readonly ok: boolean;
   readonly chars: number;
   readonly timeMs: number;
+};
+
+/** One word or line of a finished round, as the target rule counts it (ADR-T52-1). */
+export type PaceRoundUnit = PaceUnit & {
+  /** False for the last word cut by the end of a timed round. */
+  readonly complete: boolean;
 };
 
 export type PaceAdjustmentInput = {
@@ -99,21 +107,31 @@ export function nextTargetWpm({
   return target;
 }
 
-/** Summarises a finished round's unit on-pace flags and computes the next target WPM. */
+/**
+ * Highest whole WPM that at least `goal` of the right, complete units
+ * reached, or null when no unit counts or that speed is unbounded.
+ */
+export function goalSpeedWpm(units: readonly PaceRoundUnit[], goal: number): number | null {
+  void units;
+  void goal;
+  throw new Error("todo");
+}
+
+/**
+ * Summarises a finished round over its right, complete units and computes
+ * the next target WPM, catching up when far below the goal speed (ADR-T52-1).
+ */
 export function evaluatePaceRound(
-  onPaceUnits: readonly boolean[],
+  units: readonly PaceRoundUnit[],
   target: number,
   accuracy: number,
   goal = DEFAULT_PACE_GOAL,
 ): PaceRoundSummary {
-  const totalUnits = onPaceUnits.length;
-  if (totalUnits === 0) {
-    return { target, nextTarget: target, onPaceCount: 0, totalUnits: 0, onPaceShare: 0 };
-  }
-  const onPaceCount = onPaceUnits.filter(Boolean).length;
-  const onPaceShare = onPaceCount / totalUnits;
-  const nextTarget = nextTargetWpm({ target, onPaceShare, accuracy, goal });
-  return { target, nextTarget, onPaceCount, totalUnits, onPaceShare };
+  void units;
+  void target;
+  void accuracy;
+  void goal;
+  throw new Error("todo");
 }
 
 /** Typeable characters advanced in `elapsedMs` at `targetWpm` (`targetWpm * 5 / 60` chars/s). */
