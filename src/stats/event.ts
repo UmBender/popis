@@ -12,6 +12,7 @@ export const DRILLS = [
   "gdb.out",
   "shell.cmd",
   "compile.read",
+  "wa.hunt",
   "stl.out",
   "icpc.score",
   "regex.practice",

@@ -23,6 +23,7 @@ export default defineConfig({
         "mobile.spec.ts",
         "gdb.spec.ts",
         "compile.spec.ts",
+        "wa.spec.ts",
         "stl.spec.ts",
         "icpc.spec.ts",
         "shell-drill.spec.ts",

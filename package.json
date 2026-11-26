@@ -23,6 +23,7 @@
     "gdb:oracle": "node scripts/gdb-oracle.mjs",
     "stl:oracle": "node scripts/stl-oracle.mjs",
     "compile:oracle": "node scripts/compile-oracle.mjs",
+    "wa:oracle": "node scripts/wa-oracle.mjs",
     "shell:oracle": "node scripts/shell-oracle.mjs",
     "regex:oracle": "node scripts/regex-oracle.mjs",
     "ref:oracle": "node scripts/ref-oracle.mjs",

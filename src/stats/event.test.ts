@@ -190,4 +190,31 @@ describe("event drills", () => {
     expect(recordEvents(store, [ev], at)).toBe(true);
     expect(loadEvents(store)).toEqual([ev]);
   });
+
+  it("DRILLS accepts wa.hunt and stores wa hunt events", () => {
+    expect(DRILLS).toContain("wa.hunt");
+    const store = memoryStore();
+    const at = Date.UTC(2026, 10, 26, 5);
+    const ev: TrainingEvent = {
+      at,
+      drill: "wa.hunt",
+      config: "hunt",
+      kc: "wa.overflow",
+      ok: true,
+      timeMs: 8500,
+      extra: {
+        seed: 23,
+        i: 0,
+        caseId: "overflow-sum-int",
+        class: "overflow",
+        lineOk: true,
+        classOk: true,
+        skipped: false,
+      },
+    };
+
+    expect(eventKey(ev)).toBe(`${String(at)}|wa.hunt|23|0`);
+    expect(recordEvents(store, [ev], at)).toBe(true);
+    expect(loadEvents(store)).toEqual([ev]);
+  });
 });

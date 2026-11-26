@@ -23,6 +23,7 @@ const SCREENS: readonly ItemId[] = [
   "regex-learn",
   "regex-practice",
   "compile-read",
+  "wa-hunt",
   "stl",
   "icpc",
   "guide",
@@ -42,7 +43,7 @@ describe("sections", () => {
       ["GDB", ["Aprender", "Comandos", "Saída"]],
       ["Shell", ["Aprender", "Comandos"]],
       ["Regex", ["Aprender", "Prática"]],
-      ["Maratona", ["Ler o erro", "STL", "Placar", "Guia"]],
+      ["Maratona", ["Ler o erro", "Caça ao WA", "STL", "Placar", "Guia"]],
       ["Referência", ["C++", "Python"]],
     ]);
   });
@@ -68,7 +69,7 @@ describe("sections", () => {
     ]);
   });
 
-  it("Maratona folder follows Regex with Ler o erro, STL, Placar and Guia and keeps shortcuts 1-9", () => {
+  it("Maratona folder places Caça ao WA right after Ler o erro, then STL, Placar and Guia, and keeps shortcuts 1-9", () => {
     const regexIdx = SECTIONS.findIndex((f) => f.id === "regex");
     const maratonaIdx = SECTIONS.findIndex((f) => f.id === "maratona");
     expect(maratonaIdx).toBe(regexIdx + 1);
@@ -76,6 +77,7 @@ describe("sections", () => {
     expect(maratona?.label).toBe("Maratona");
     expect(maratona?.items.map((i) => [i.id, i.label, i.touch, i.shortcut])).toEqual([
       ["compile-read", "Ler o erro", true, null],
+      ["wa-hunt", "Caça ao WA", true, null],
       ["stl", "STL", true, null],
       ["icpc", "Placar", true, null],
       ["guide", "Guia", true, null],

@@ -20,6 +20,7 @@ export type ItemId =
   | "regex-learn"
   | "regex-practice"
   | "compile-read"
+  | "wa-hunt"
   | "stl"
   | "icpc"
   | "guide"
@@ -124,6 +125,7 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
     "Maratona",
     [
       ["compile-read", "Ler o erro"],
+      ["wa-hunt", "Caça ao WA"],
       ["stl", "STL"],
       ["icpc", "Placar"],
       ["guide", "Guia"],
