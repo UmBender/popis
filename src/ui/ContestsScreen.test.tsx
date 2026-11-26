@@ -110,7 +110,7 @@ describe("ContestsScreen", () => {
     const { fetchData } = await renderScreen();
 
     expect(fetchData).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}contests.json`, expect.anything());
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Contests");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Contests");
     expect(screen.getByText("atualizado há 15 min")).toBeTruthy();
 
     const running = screen.getByRole("region", { name: "Acontecendo agora" });
@@ -165,7 +165,7 @@ describe("ContestsScreen", () => {
       sites: ["codeforces", "codechef", "leetcode"],
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Baixar .ics", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Baixar .ics" }));
     expect(save).toHaveBeenCalledTimes(1);
     const [name, ics] = save.mock.calls[0] as [string, string];
     expect(name).toBe("contests.ics");
@@ -204,7 +204,7 @@ describe("ContestsScreen", () => {
     );
     await flush();
 
-    fireEvent.click(screen.getByRole("button", { name: "Baixar .ics", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Baixar .ics" }));
     Reflect.deleteProperty(URL, "createObjectURL");
     Reflect.deleteProperty(URL, "revokeObjectURL");
 
