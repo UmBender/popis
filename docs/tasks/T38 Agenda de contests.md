@@ -1,10 +1,10 @@
 ---
 id: T38
 title: Agenda de contests
-status: ready
+status: in-progress
 depends_on: []
 branch: task/T38-contest-calendar
-adrs: []
+adrs: ["[[ADR-T38-1 Dados de contests buscados no build a cada 6 h]]"]
 tags: [task]
 ---
 
@@ -81,7 +81,7 @@ Só o Codeforces aceita o navegador, por isso a busca acontece no build.
   `schedule` (a cada 6 h) e `workflow_dispatch`, e roda
   `npm run contests:fetch` antes do `build:pages`. O deploy por push
   continua igual.
-  - Testes: `tests/workflow.test.ts` (o arquivo tem o `cron`, o `workflow_dispatch` e o passo de fetch antes do build).
+  - Testes: `tests/workflow.test.ts` (o arquivo tem o `cron`, o `workflow_dispatch` e o passo de fetch antes do build) e `tests/pages.test.ts` (atualizado conforme ADR-T38-1).
 - **AC-6**: **Tela Contests** (`src/ui/ContestsScreen.tsx`):
   - lê `contests.json` do próprio site (`import.meta.env.BASE_URL`);
   - mostra "Acontecendo agora" e os próximos 14 dias agrupados por dia,
@@ -97,7 +97,7 @@ Só o Codeforces aceita o navegador, por isso a busca acontece no build.
     tela diz como gerá-lo;
   - funciona no celular. Os sites aparecem como texto, nas cores de token
     que já existem, sem token novo.
-  - Testes: `src/ui/ContestsScreen.test.tsx` (com relógio falso e `fetch` falso: agrupamento, contagem regressiva que avança, filtro salvo, aviso de dados velhos e de fonte com erro, estado sem arquivo).
+  - Testes: `src/ui/ContestsScreen.test.tsx` (com relógio falso e `fetch` falso: agrupamento, contagem regressiva que avança, filtro salvo, aviso de dados velhos e de fonte com erro, estado sem arquivo) e `src/contests/prefs.test.ts` (persistência de `popis.contests`).
 - **AC-7**: **Árvore:** a pasta "Agenda", com o item "Contests", entra
   no fim da árvore, visível no celular. Os atalhos 1–9 não mudam.
   - Testes: `src/ui/shell/sections.test.ts`, `tests/e2e/contests.spec.ts` (com `contests.json` interceptado por `page.route`, no desktop e no celular).
@@ -111,10 +111,11 @@ Só o Codeforces aceita o navegador, por isso a busca acontece no build.
 ## Files owned
 
 - `src/contests/` (novo) e os testes, `src/contests/fixtures/`
-- `scripts/contests-fetch.mjs` (novo), `package.json` (script `contests:fetch`), `.gitignore` (`public/contests.json`)
-- `.github/workflows/pages.yml`, `tests/workflow.test.ts` (novo)
-- `src/ui/ContestsScreen.tsx` (novo), `src/ui/App.tsx`, `src/ui/shell/sections.ts`, `src/ui/app.css`
-- `tests/e2e/contests.spec.ts` (novo)
+- `scripts/contests-fetch.mjs` (novo), `package.json` (script `contests:fetch`), `.gitignore` (`public/contests.json`), `.prettierignore` (`public/contests.json`, para o arquivo gerado no passo de qualidade não quebrar `format:check`)
+- `.github/workflows/pages.yml`, `tests/workflow.test.ts` (novo), `tests/pages.test.ts` (atualizado para incluir `npm run contests:fetch` na sequência do workflow, conforme ADR-T38-1)
+- `src/ui/ContestsScreen.tsx` (novo), `src/ui/ContestsScreen.test.tsx` (novo), `src/ui/App.tsx`, `src/ui/shell/sections.ts`, `src/ui/shell/sections.test.ts`, `src/ui/app.css`
+- `tests/e2e/contests.spec.ts` (novo), `playwright.config.ts` (incluir `contests.spec.ts` no projeto `mobile` para AC-7)
+- `vite.config.ts` (limiar de cobertura de `src/contests/**`)
 
 ## Subtasks (one commit each)
 
