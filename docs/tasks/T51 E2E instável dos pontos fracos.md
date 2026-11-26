@@ -1,7 +1,7 @@
 ---
 id: T51
 title: E2E instável dos pontos fracos
-status: ready
+status: in-progress
 depends_on: []
 branch: fix/weak-spots-e2e-flake
 adrs: []
@@ -31,30 +31,31 @@ Rodado sozinho, passou 3 vezes seguidas. O teste digita o bloco 1 a
 de 60 wpm, 200 ms) e o foco passar para `->`. Na falha, a mediana medida
 do `qu` foi 292 ms, então ele não graduou e o `->` nunca virou foco.
 
-**Hipóteses a conferir:**
-- as palavras da rodada vêm de uma seed nova a cada execução, e algumas
-  sequências têm poucos `qu`, de modo que a mediana pega intervalos de
-  outras teclas;
-- ou o tempo do evento de tecla não segue o relógio falso do Playwright
-  sob carga (`page.clock.runFor` intercalado com `keyboard.type`).
+**Causa (confirmada em 2026-11-25):** `page.clock.install()` instala um
+relógio falso que **continua andando com o tempo real**. O `runFor(100)`
+soma 100 ms ao tempo real que já passou entre as teclas. Sob carga (todos
+os e2e em paralelo), cada tecla leva mais ~190 ms reais, e a mediana sobe
+para ~290 ms. Com 200 ms reais de atraso por tecla, a falha se repete
+sempre (471 ms). O defeito está no teste, não no app: o app mede certo o
+tempo que lhe é dado.
 
 ## Spec
 
-- **AC-1**: a causa é identificada e registrada no *Log*, e o teste fica
-  determinístico (seed fixa da rodada, ou medição só nas ocorrências do
-  n-grama em foco), sem afrouxar a asserção do `->`.
-  - Testes: `tests/e2e/regression-T51-weak-spots-flake.spec.ts`, que reproduz a falha de forma determinística (por exemplo, com a seed que a provoca), além do teste original sem mudança de asserção.
+- **AC-1**: o roteiro da rodada (sementes do histórico, relógio e
+  digitação) fica num helper comum, `tests/e2e/weak-spots.ts`, que pausa o
+  relógio falso. Assim, só o `runFor` faz o tempo andar, e o atraso real
+  entre as teclas não entra na medição. A asserção do `->` não muda.
+  - Testes: `tests/e2e/regression-T51-weak-spots-flake.spec.ts` ("real lag between keys does not leak into the measured intervals", com 200 ms reais antes de cada tecla), além do teste original de `typing.spec.ts` sem mudança de asserção.
 - **AC-2**: 20 execuções seguidas do teste original passam
   (`npx playwright test typing.spec.ts -g "weak spots" --repeat-each 20`).
 
 ## Files owned
 
-- `tests/e2e/typing.spec.ts`, `tests/e2e/regression-T51-weak-spots-flake.spec.ts` (novo)
-- `src/ui/WeakTypingScreen.tsx` e `src/typing/weak-*.ts`, se a causa estiver no app
+- `tests/e2e/typing.spec.ts`, `tests/e2e/weak-spots.ts` (novo), `tests/e2e/regression-T51-weak-spots-flake.spec.ts` (novo)
 
 ## Subtasks (one commit each)
 
-- [ ] spec
+- [x] spec
 - [ ] tests (regressão vermelha)
 - [ ] fix
 - [ ] docs
