@@ -1,7 +1,7 @@
 ---
 id: T41
 title: Caça ao WA
-status: todo
+status: ready
 depends_on: [T40]
 branch: task/T41-wa-hunt
 adrs: []
