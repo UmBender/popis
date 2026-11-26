@@ -1,7 +1,7 @@
 ---
 id: T43
 title: Placar e penalidade do ICPC
-status: in-progress
+status: review
 depends_on: []
 branch: task/T43-icpc-scoreboard
 adrs: [ADR-T43-1]
@@ -58,11 +58,25 @@ prova, ler o placar rápido ajuda a escolher o próximo problema.
 
 ## Subtasks (one commit each)
 
-- [ ] spec
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality
-- [ ] docs
+- [x] spec
+- [x] tests
+- [x] models
+- [x] behaviour
+- [x] quality
+- [x] docs
 
 ## Log
+
+- 2026-11-26 — Spec e `ADR-T43-1` escritos. *Files owned* ampliado minimamente para testes e configurações de gate correspondentes (`src/storage/icpc.test.ts`, `src/stats/event.test.ts`, `src/ui/IcpcScreen.test.tsx`, `src/ui/shell/sections.test.ts`, `playwright.config.ts`, `vite.config.ts`).
+- 2026-11-26 — Implementado o item **Placar** na pasta **Maratona** logo após **STL** (`Ler o erro → STL → Placar`, visível no celular, atalhos 1–9 inalterados):
+  - `src/icpc/score.ts`: motor puro `computeScoreboard` e `compareStandings` com penalidade `acMinute + 20 * rejected` (configurável), rejeições após o 1º AC e em problemas não resolvidos ignoradas, `CE` sem penalidade por padrão (regra WF) com flag `compileErrorCounts`, ordenação por `solved` desc, `penalty` asc e `lastAcMinute` asc, e rank de competição compartilhado (`1, 1, 3`) com desempate estável por nome.
+  - `src/icpc/drill.ts` e `src/icpc/check.ts`: gerador determinístico para os quatro tipos (`icpc.penalidade`, `icpc.posicao`, `icpc.ultrapassar`, `icpc.escolher`), com minutos sempre em `0..300`, resposta única garantida (`posicao` sem empate na classificação final; `ultrapassar` provado em `m` e `m + 1`; `escolher` com máximo estrito via multiplicação cruzada inteira) e verificador aceitando formas equivalentes (`min` opcional, `2º`/`2o`/`#2`, letra maiúscula/minúscula) e rejeitando quase-acertos.
+  - `src/icpc/round.ts`, `src/storage/icpc.ts` e `src/stats/event.ts`: motor de rodada de `60 | 90 | 120` s (padrão `90` s), persistência em `popis.icpc` e `popis.icpc-results`, e registro de eventos T22 com `drill: "icpc.score"` e `kc: "icpc.<tipo>"`.
+  - `src/ui/IcpcScreen.tsx` e `src/ui/app.css`: placar estilo BOCA/DOMjudge com balões SVG usando apenas tokens existentes de `src/ui/theme.css` (`--accent`, `--correct`, `--warning`, `--wrong`, `--selection-text`, `--text`, `--muted`, `--selection`), opção de duração, filtro de tipo e flag `CE conta penalidade`, teclado numérico/texto adaptativo (`inputMode`), atalhos uniformes e componentes da T19 (`PanelTitle`, `RoundBar`, `Result`, `RoundHistory`, `Reference`).
+- 2026-11-26 — UNATTENDED CHOICE (`ADR-T43-1`): para garantir independência total da ordem do log sem segundos/IDs em `{ team, problem, minute, verdict }`, rejeições no mesmo minuto do primeiro AC (`minute <= acMinute`) contam como anteriores ao AC e `minute > acMinute` são ignoradas como posteriores; os balões de `A` a `H` mapeiam diretamente para os 8 tokens existentes de `src/ui/theme.css` sem criar cores novas.
+- 2026-11-26 — **Verificação visual** (Playwright em desktop 1280×900 e celular 412×915 para os 4 tipos): encurtado o rótulo `"Escolher problema"` para `"Escolher"` (evitando truncamento no `<select>` no celular), ocultada a contagem pré-filtrada `tentativas/min` nas células da linha resumo de `penalidade` (mostrando balão + `AC` para não entregar o filtro de CE/pós-AC antes do cálculo), adicionado resumo do problema alvo abaixo da tabela em `ultrapassar` e compactada a tabela no mobile (ocultando balões dentro de `<td>` e mantendo-os nos cabeçalhos `<th>`).
+- 2026-11-26 — **Gates verdes:**
+  - `npm run check`: `tsc --noEmit`, `eslint . --max-warnings 0`, `prettier --check .`, `vitest run` (215 arquivos, 4608 testes passando) e `vite build` verdes.
+  - `npm run coverage`: todos os limiares verdes; `src/icpc/**` em 99,29% statements, 95,90% branches, 100% functions e 100% lines (`score.ts` e `check.ts` em 100/100/100/100); `src/storage/icpc.ts` em 100/100/100/100; `src/ui/IcpcScreen.tsx` em 100% lines/statements/functions e 99,2% branches; novo limiar `src/icpc/**` (`100/99/100/95`) registrado em `vite.config.ts`.
+  - `npm run test:e2e`: 61/61 passando (desktop + mobile), incluindo `tests/e2e/icpc.spec.ts` (zero scroll horizontal em ambos) e `tests/e2e/coherence.spec.ts`.
+- 2026-11-26 — **Checagens manuais para o dono:** conferir a legibilidade do placar no celular (especialmente com 5 problemas) e revisar o painel de referência de regras.

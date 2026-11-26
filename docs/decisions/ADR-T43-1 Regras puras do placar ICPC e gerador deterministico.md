@@ -1,7 +1,7 @@
 ---
 id: ADR-T43-1
 title: Regras puras do placar ICPC e gerador determinístico
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-26
 task: T43
