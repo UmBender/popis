@@ -1,7 +1,7 @@
 ---
 id: T51
 title: E2E instável dos pontos fracos
-status: in-progress
+status: review
 depends_on: []
 branch: fix/weak-spots-e2e-flake
 adrs: []
@@ -56,8 +56,30 @@ tempo que lhe é dado.
 ## Subtasks (one commit each)
 
 - [x] spec
-- [ ] tests (regressão vermelha)
-- [ ] fix
-- [ ] docs
+- [x] tests (regressão vermelha)
+- [x] fix
+- [x] docs
 
 ## Log
+
+- 2026-11-25 — **Bug:** o e2e de Pontos fracos às vezes não chegava ao
+  `->`. **Causas (duas):**
+  1. o `page.clock.install()` deixa o relógio falso andar com o tempo
+     real, e o atraso real entre as teclas (máquina carregada) entrava na
+     mediana. Reproduzido sempre com 200 ms reais por tecla (471 ms);
+  2. depois de pausar o relógio, o teste ainda falhava 3 vezes em 20. As
+     palavras vêm de uma seed nova a cada execução, e o teste digitava só
+     as duas primeiras, que às vezes não tinham o n-grama do foco (por
+     exemplo `["asked", "roof"]`). A medição ficava vazia e o `qu` não
+     graduava.
+
+  **Correção** (só no teste; o app mede certo o que recebe): o roteiro foi
+  para `tests/e2e/weak-spots.ts`, que pausa o relógio com `pauseAt`, espera
+  o foco da caixa de texto e digita até entrarem duas palavras com o
+  n-grama do foco. As asserções do teste original não mudaram. O teste de
+  regressão ganhou um limite de 120 s, porque 200 ms reais por tecla passam
+  dos 30 s padrão. **Teste:**
+  `tests/e2e/regression-T51-weak-spots-flake.spec.ts`.
+- 2026-11-25 — `--repeat-each 20` com 4 workers: 40 de 40 passaram.
+  `npm run check` (4537) e `npm run test:e2e` (59) verdes.
+
