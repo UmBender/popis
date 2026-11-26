@@ -1,7 +1,7 @@
 ---
 id: T50
 title: Referência - C++ avançado, GNU e pb_ds
-status: in-progress
+status: review
 depends_on: [T46]
 branch: task/T50-cpp-reference-advanced
 adrs: []
@@ -160,11 +160,84 @@ novas.
 
 ## Subtasks (one commit each)
 
-- [ ] spec
-- [ ] tests
-- [ ] models (pulado: o modelo da T46/T47 já cobre as novas seções e verbetes)
-- [ ] behaviour: verbetes e `ref:oracle -- cpp --write`
-- [ ] quality: `npm run check`, `ref:oracle -- cpp`, coverage, fuzz, e2e e verificação visual
-- [ ] docs
+- [x] spec
+- [x] tests
+- [x] models (pulado: o modelo da T46/T47 já cobre as novas seções e verbetes sem mudança em `src/ref/model.ts`)
+- [x] behaviour: verbetes e `ref:oracle -- cpp --write`
+- [x] quality: `npm run check`, `ref:oracle -- cpp`, coverage, e2e e verificação visual
+- [x] docs
 
 ## Log
+
+- 2026-11-25 — Implementada no batch (sessão sem ninguém no teclado), na
+  branch `task/T50-cpp-reference-advanced`, a partir de
+  `task/T47-python-reference`.
+- **Passo 4 (models) pulado:** `src/ref/model.ts` já suporta novas seções e
+  verbetes sem alterações de tipo.
+- **Conteúdo:** 152 verbetes nas 11 seções (`io` 9, `types` 8, `containers`
+  26, `algorithms` 36, `strings` 15, `bits` 13, `math` 13, `random` 5,
+  `pb_ds` 9, `gnu` 7, `extras` 11) — 61 verbetes novos além dos 91 da T46
+  (mínimo 45 / total 136). `pb_ds` e `Extensões GNU` ficaram imediatamente
+  antes de `Extras`, e `ordered_set` e `gp_hash_table` migraram para `pb_ds`
+  mantendo os mesmos `id`s (`#cpp/ordered_set`, `#cpp/gp_hash_table`).
+- **Itens úteis extras acrescentados além da lista mínima:**
+  `builtin_overflow` (`__builtin_mul_overflow` / `__builtin_add_overflow` em
+  `gnu.ts`), `span` (`std::span` em `containers.ts`), `views_zip`
+  (`views::zip`, C++23 com `judge: true`, em `extras.ts`), além de separar
+  `gp_hash_table_hash` (splitmix64 contra anti-hash, preservando o verbete
+  base `gp_hash_table`) e separar `exchange` de `tie_tuple_cmp`.
+- **Oráculo (`scripts/ref-oracle.mjs`, g++ 16.2.1):**
+  `npm run ref:oracle -- cpp`: `ref:oracle cpp: 152/152 ok (5 judge entries,
+  0 output mismatches)` (e `npm run ref:oracle -- cpp --only z_function`:
+  `1/1 ok` após trocar `"aba#ababa"` por `"ana#anana"`). Saídas gravadas via
+  `--write` em `src/ref/cpp/outputs.ts`. Os 5 verbetes com `judge` (`print`,
+  `fold_left`, `string_contains`, `views_enumerate`, `views_zip`) falham com
+  `-std=gnu++20` e passam com `-std=gnu++23`. Conferido que os recursos
+  C++17/C++20 e extensões GNU dos 61 verbetes novos existem no g++ 13.2 da
+  WF (`-std=gnu++20`); nenhum precisou de `judge` marcado à mão.
+- **Achados do oráculo e dos testes:**
+  - `__gcd(-12, 18)` devolve `+6` por causa do resto alternado de Euclides;
+    o exemplo de `gcd_vs_builtin_gcd` foi ajustado para `(-12, -18)` para
+    demonstrar o retorno negativo `-6` contra `6` do `std::gcd`.
+  - Três exemplos de uma linha (`kmp`, `z_function`, `print_int128`) geraram
+    `-Wmisleading-indentation` no `-Wall` e foram ajustados com blocos /
+    quebras limpas.
+  - Em `z_function`, a literal `"aba#ababa"` disparou `tests/colors.test.ts`
+    porque `#ababa` casava com a regex de cor hexadecimal; alterada para
+    `"ana#anana"`, mantendo a mesma saída (`0\n2\n`).
+- **UNATTENDED CHOICE:** em `src/ref/search.test.ts`, a consulta `"popcount"`
+  foi atualizada de `"popcount"` (`__builtin_popcount`) para `"std_popcount"`
+  (`popcount (C++20)`) por mudança explícita do AC-3 da T50, acrescentando
+  `"__builtin_popcount"` → `"popcount"` para manter cobertura do verbete da
+  T46.
+- **UNATTENDED CHOICE:** os links dos verbetes de `pb_ds` e `Extensões GNU`
+  mantiveram a convenção da T46 de apontar para `en.cppreference.com/w/cpp/`,
+  coerente com o rótulo `cppreference` no `RefScreen` e com o teste
+  `"every entry links to cppreference"` sem enfraquecê-lo.
+- **UNATTENDED CHOICE:** `"ordered"` retorna `ordered_set` em primeiro (no
+  topo da nova seção `pb_ds`), seguido imediatamente de `ordered_map` e
+  `ordered_multiset`; `"ordered map"` e `"ordered multiset"` retornam os
+  verbetes correspondentes.
+- **Files owned ampliados** (política do plano): `src/ref/model.test.ts`
+  (lista esperada de seções de C++ atualizada com `pb_ds` e `gnu` antes de
+  `extras`).
+- **Gates:**
+  - `npm run check`: verde (208 arquivos, 4537 testes, typecheck, lint,
+    prettier e build).
+  - `npm run coverage`: verde (208 arquivos, 4537 testes; `src/ref/**` em
+    100/100/100/100, todos os limiares verdes).
+  - `npm run test:e2e`: verde (58 testes em desktop e mobile, incluindo
+    `tests/e2e/ref.spec.ts` e `tests/e2e/regression-T49-independent-scroll.spec.ts`).
+  - Observação de fuzz (fora do escopo da T50): durante uma execução de
+    `npm run test:fuzz`, `src/shell/parse.prop.test.ts` (T39) falhou em uma
+    seed aleatória nova; não foi alterado por estar fora dos arquivos da T50.
+- **Verificação visual:** `.batch/visual/T50-cpp-reference-advanced.spec.ts`
+  (desktop e phone: índice com `pb_ds` e `Extensões GNU`, navegação às novas
+  seções, buscas `kmp`, `ordered` e `rope`, folha de impressão em duas
+  colunas). Corrigido: linhas longas em `kmp`, `z_function`,
+  `inclusive_exclusive_scan`, `from_chars_to_chars`, `clamp` e
+  `ordered_multiset` que cortavam horizontalmente na largura desktop foram
+  encurtadas e regravadas pelo oráculo; na conferência seguinte o `kmp`
+  coube inteiro sem corte.
+- **Checagens manuais para o dono:** buscar `"kmp"`, `"rope"` e `"ordered"`;
+  ler a seção `pb_ds`.
