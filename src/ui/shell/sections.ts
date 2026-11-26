@@ -21,7 +21,8 @@ export type ItemId =
   | "regex-practice"
   | "compile-read"
   | "stl"
-  | "ref-cpp";
+  | "ref-cpp"
+  | "ref-py";
 
 export type TreeItem = {
   readonly id: ItemId;
@@ -124,7 +125,14 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
       ["stl", "STL"],
     ],
   ],
-  ["referencia", "Referência", [["ref-cpp", "C++"]]],
+  [
+    "referencia",
+    "Referência",
+    [
+      ["ref-cpp", "C++"],
+      ["ref-py", "Python"],
+    ],
+  ],
 ];
 
 let position = 0;

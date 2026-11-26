@@ -1,5 +1,5 @@
-/** A language of the reference (ADR-T46-1); T47 adds "python". */
-export type Lang = "cpp";
+/** A language of the reference (ADR-T46-1, ADR-T47-1). */
+export type Lang = "cpp" | "py";
 
 /** One row of a complexity table: the operation and its cost. */
 export type ComplexityRow = readonly [operation: string, cost: string];
@@ -34,6 +34,8 @@ export type Entry = {
   readonly since?: string;
   /** Does not exist at the ICPC World Finals judge. */
   readonly judge?: true;
+  /** Equivalent entry in another language, e.g. "cpp/priority_queue" (ADR-T47-1). */
+  readonly pair?: string;
   readonly link?: string;
 };
 

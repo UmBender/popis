@@ -197,4 +197,48 @@ describe("RefScreen", () => {
     expect(screen.getByTestId("shell-path").textContent).toBe("popis/referência/c++");
     expect(entry(titleOf("map")).getAttribute("aria-current")).toBe("true");
   });
+
+  it("reader shows Python target, docs link and entries", () => {
+    const py = entriesOf("py");
+    const pyTitle = (id: string) => py.find((e) => e.id === id)?.title ?? id;
+    render(<RefScreen lang="py" />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Python");
+    expect(screen.getByTestId("ref-screen").textContent).toContain("PyPy3 7.3.15");
+    expect(screen.getByTestId("ref-screen").textContent).toContain("Python 3.9");
+    expect(screen.getAllByRole("article")).toHaveLength(py.length);
+    const listCard = entry(pyTitle("list"));
+    expect(within(listCard).getByRole("table", { name: "Complexidade" })).toBeTruthy();
+    expect(
+      within(listCard).getByRole("link", { name: "docs.python.org" }).getAttribute("href"),
+    ).toMatch(/^https:\/\/docs\.python\.org\/3\.9\//);
+    const matchCard = entry(pyTitle("match_case"));
+    expect(within(matchCard).getByText("não existe na WF")).toBeTruthy();
+    expect(within(matchCard).getByText("Python 3.10")).toBeTruthy();
+  });
+
+  it("pair link shows target language and navigates across references", () => {
+    const py = entriesOf("py");
+    const pyTitle = (id: string) => py.find((e) => e.id === id)?.title ?? id;
+
+    history.replaceState(null, "", "/#py/heapq_max_tuples");
+    render(<App clock={manualClock()} store={memoryStore()} newSeed={() => 5} />);
+    expect(screen.getByTestId("shell-path").textContent).toBe("popis/referência/python");
+    const pyHeap = entry(pyTitle("heapq_max_tuples"));
+    expect(pyHeap.getAttribute("aria-current")).toBe("true");
+    const toCpp = within(pyHeap).getByRole("link", { name: "em C++" });
+    expect(toCpp.getAttribute("href")).toBe("#cpp/priority_queue");
+
+    // Search in Python, then jump via pair hash to C++: query resets and C++ entry opens.
+    fireEvent.change(search(), { target: { value: "heap" } });
+    act(() => {
+      history.replaceState(null, "", "/#cpp/priority_queue");
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    expect(screen.getByTestId("shell-path").textContent).toBe("popis/referência/c++");
+    expect((search() as HTMLInputElement).value).toBe("");
+    const cppPq = entry(titleOf("priority_queue"));
+    expect(cppPq.getAttribute("aria-current")).toBe("true");
+    const toPy = within(cppPq).getByRole("link", { name: "em Python" });
+    expect(toPy.getAttribute("href")).toBe("#py/heapq_max_tuples");
+  });
 });
