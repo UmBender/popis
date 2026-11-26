@@ -1,7 +1,7 @@
 ---
 id: T44
 title: Guia da prova
-status: review
+status: done
 depends_on: [T39]
 branch: task/T44-contest-guide
 adrs: [ADR-T44-1]
