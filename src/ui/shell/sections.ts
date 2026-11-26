@@ -21,6 +21,7 @@ export type ItemId =
   | "regex-practice"
   | "compile-read"
   | "stl"
+  | "icpc"
   | "guide"
   | "ref-cpp"
   | "ref-py";
@@ -124,6 +125,7 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
     [
       ["compile-read", "Ler o erro"],
       ["stl", "STL"],
+      ["icpc", "Placar"],
       ["guide", "Guia"],
     ],
   ],

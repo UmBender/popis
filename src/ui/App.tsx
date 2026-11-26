@@ -74,6 +74,7 @@ import { ShellScreen, type ShellDrill } from "./ShellScreen";
 import { CompileScreen } from "./CompileScreen";
 import { StlScreen } from "./StlScreen";
 import { GuideScreen } from "./GuideScreen";
+import { IcpcScreen } from "./IcpcScreen";
 import { RegexScreen, type RegexDrill } from "./RegexScreen";
 import type { GuideLearnItem, GuideLink } from "../guide/content";
 import { parseRefHash } from "../ref/link";
@@ -771,6 +772,16 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
         };
         return <GuideScreen store={store} onOpenLink={openGuideLink} />;
       }
+      case "icpc":
+        return (
+          <IcpcScreen
+            clock={clock}
+            store={store}
+            newSeed={newSeed}
+            onBack={backToMode}
+            onRunning={setRunning}
+          />
+        );
       default: {
         const autoDrill: AutoLevelDrill | null =
           settings.mode === "arithmetic" ||
