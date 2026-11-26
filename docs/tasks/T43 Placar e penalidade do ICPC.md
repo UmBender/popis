@@ -1,7 +1,7 @@
 ---
 id: T43
 title: Placar e penalidade do ICPC
-status: review
+status: done
 depends_on: []
 branch: task/T43-icpc-scoreboard
 adrs: [ADR-T43-1]
