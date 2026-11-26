@@ -72,6 +72,7 @@ import { WeakTypingScreen } from "./WeakTypingScreen";
 import { GdbScreen, type GdbDrill } from "./GdbScreen";
 import { ShellScreen, type ShellDrill } from "./ShellScreen";
 import { CompileScreen } from "./CompileScreen";
+import { WaScreen } from "./WaScreen";
 import { StlScreen } from "./StlScreen";
 import { RegexScreen, type RegexDrill } from "./RegexScreen";
 import { parseRefHash } from "../ref/link";
@@ -646,6 +647,16 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
       case "compile-read":
         return (
           <CompileScreen
+            clock={clock}
+            store={store}
+            newSeed={newSeed}
+            onBack={backToMode}
+            onRunning={setRunning}
+          />
+        );
+      case "wa-hunt":
+        return (
+          <WaScreen
             clock={clock}
             store={store}
             newSeed={newSeed}
