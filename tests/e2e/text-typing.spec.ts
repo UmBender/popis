@@ -24,7 +24,7 @@ test("typing a 10-word test in the real app", async ({ page }) => {
   await expect(page.getByTestId("text-accuracy")).toHaveText("100%");
   await expect(page.getByTestId("text-wpm")).toHaveText(/^\d+$/);
   await expect(page.getByTestId("text-summary")).toContainText("melhor");
-  await expect(page.getByTestId("text-pace-result")).toContainText("das palavras no ritmo");
+  await expect(page.getByTestId("text-pace-result")).toContainText("das palavras certas no ritmo");
   await expect(page.getByTestId("text-pace-result")).toContainText("→");
 });
 
