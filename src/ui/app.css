@@ -2811,3 +2811,215 @@ th {
     font-size: 7pt;
   }
 }
+
+/* Contest calendar (T38, ADR-T38-1). */
+.shell-main > .screen.contests {
+  max-width: 84ch;
+}
+
+.contests-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.contests-sites {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.contests-sites .op {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.contests-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.contests-updated {
+  font-size: var(--text-sm);
+}
+
+.contests-warning {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--warning);
+  background: var(--surface);
+  color: var(--warning);
+  font-size: var(--text-sm);
+}
+
+.contests-missing {
+  padding: var(--space-3);
+  border: 1px solid var(--selection);
+  background: var(--surface);
+}
+
+.contests-missing p {
+  margin: 0 0 var(--space-1);
+}
+
+.contests-missing p:last-child {
+  margin-bottom: 0;
+}
+
+.contests-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.contests-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.contests-section h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.contests-day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.contests-day h3 {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.contests-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.contest-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--selection);
+}
+
+.contest-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  flex: 1 1 24rem;
+}
+
+.contest-site {
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.contest-site[data-site="codeforces"] {
+  color: var(--accent);
+}
+
+.contest-site[data-site="atcoder"] {
+  color: var(--correct);
+}
+
+.contest-site[data-site="codechef"] {
+  color: var(--warning);
+}
+
+.contest-site[data-site="leetcode"] {
+  color: var(--selection-text);
+}
+
+.contest-name {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.contest-name:hover,
+.contest-name:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.contest-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.contest-time {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.contest-countdown {
+  color: var(--accent);
+}
+
+.contest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.contest-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--selection);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.contest-action:hover,
+.contest-action:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@media (max-width: 48rem) {
+  .contests-controls label.op,
+  .contests-controls button,
+  .contest-action {
+    min-height: 44px;
+  }
+
+  .contest-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .contest-main {
+    flex-basis: auto;
+  }
+}

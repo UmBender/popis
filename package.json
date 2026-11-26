@@ -26,6 +26,7 @@
     "shell:oracle": "node scripts/shell-oracle.mjs",
     "regex:oracle": "node scripts/regex-oracle.mjs",
     "ref:oracle": "node scripts/ref-oracle.mjs",
+    "contests:fetch": "node scripts/contests-fetch.mjs",
     "build:pages": "vite build --base=/popis/"
   },
   "dependencies": {

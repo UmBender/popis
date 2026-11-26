@@ -134,6 +134,7 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
       ["ref-py", "Python"],
     ],
   ],
+  ["agenda", "Agenda", [["contests", "Contests"]]],
 ];
 
 let position = 0;

@@ -76,6 +76,7 @@ import { StlScreen } from "./StlScreen";
 import { RegexScreen, type RegexDrill } from "./RegexScreen";
 import { parseRefHash } from "../ref/link";
 import type { Lang } from "../ref/model";
+import { ContestsScreen } from "./ContestsScreen";
 import { RefScreen } from "./RefScreen";
 
 export type AppProps = {
@@ -698,6 +699,8 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
         return <RefScreen key="cpp" lang="cpp" />;
       case "ref-py":
         return <RefScreen key="py" lang="py" />;
+      case "contests":
+        return <ContestsScreen clock={clock} store={store} />;
       case "data":
         return (
           <div className="screen data">
