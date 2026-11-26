@@ -70,9 +70,7 @@ describe("WaScreen (AC-4)", () => {
     expect(screen.getByTestId("wa-sample").textContent).toContain(item0.caseData.sample_input.trim());
 
     // Answer item 0 correctly via two clicks: line then class.
-    fireEvent.click(
-      screen.getByRole("button", { name: `Linha ${String(item0.caseData.line)}`, exact: true }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: `Linha ${String(item0.caseData.line)}` }));
     expect(screen.getByTestId("wa-step").textContent).toContain(
       `Linha ${String(item0.caseData.line)}`,
     );
@@ -105,7 +103,7 @@ describe("WaScreen (AC-4)", () => {
     // Answer item 1 wrongly: highlights correct line/class and reveals counterexample + explanation.
     const wrongLine = item1.caseData.line === 1 ? 2 : item1.caseData.line - 1;
     const wrongChoice = item1.choices.find((c) => c.id !== item1.caseData.class)!;
-    fireEvent.click(screen.getByRole("button", { name: `Linha ${String(wrongLine)}`, exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: `Linha ${String(wrongLine)}` }));
     fireEvent.click(
       within(screen.getByTestId("wa-choices")).getByRole("button", {
         name: new RegExp(escapeRe(wrongChoice.label)),
@@ -117,13 +115,11 @@ describe("WaScreen (AC-4)", () => {
     expect(feedback1.textContent).toContain(item1.caseData.explanation);
     expect(
       screen
-        .getByRole("button", { name: `Linha ${String(item1.caseData.line)}`, exact: true })
+        .getByRole("button", { name: `Linha ${String(item1.caseData.line)}` })
         .getAttribute("data-correct"),
     ).toBe("true");
     expect(
-      screen
-        .getByRole("button", { name: `Linha ${String(wrongLine)}`, exact: true })
-        .getAttribute("data-wrong"),
+      screen.getByRole("button", { name: `Linha ${String(wrongLine)}` }).getAttribute("data-wrong"),
     ).toBe("true");
     expect(screen.getByTestId("wa-breaking-input").textContent).toBe(
       item1.caseData.breaking_input.trimEnd(),
@@ -160,9 +156,7 @@ describe("WaScreen (AC-4)", () => {
     const item1 = generateWaItem(SEED, 1, activeClasses);
     fireEvent.keyDown(window, { key: String(item1.correctChoiceIndex) });
     expect(screen.getByTestId("wa-step").textContent).toContain("Classe selecionada");
-    fireEvent.click(
-      screen.getByRole("button", { name: `Linha ${String(item1.caseData.line)}`, exact: true }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: `Linha ${String(item1.caseData.line)}` }));
     expect(screen.getByTestId("wa-score").textContent).toBe("2");
     fireEvent.keyDown(window, { key: " " });
 
@@ -174,7 +168,7 @@ describe("WaScreen (AC-4)", () => {
     // Case 4: wrong answer + advance.
     const item3 = generateWaItem(SEED, 3, activeClasses);
     const wrongChoice = item3.choices.find((c) => c.id !== item3.caseData.class)!;
-    fireEvent.click(screen.getByRole("button", { name: "Linha 1", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Linha 1" }));
     fireEvent.click(
       within(screen.getByTestId("wa-choices")).getByRole("button", {
         name: new RegExp(escapeRe(wrongChoice.label)),
@@ -185,9 +179,7 @@ describe("WaScreen (AC-4)", () => {
 
     // Case 5: answer and advance via "Ver resultado" button to finish the round.
     const item4 = generateWaItem(SEED, 4, activeClasses);
-    fireEvent.click(
-      screen.getByRole("button", { name: `Linha ${String(item4.caseData.line)}`, exact: true }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: `Linha ${String(item4.caseData.line)}` }));
     fireEvent.keyDown(window, { key: String(item4.correctChoiceIndex) });
     fireEvent.click(screen.getByRole("button", { name: /Ver resultado/ }));
 
@@ -211,7 +203,7 @@ describe("WaScreen (AC-4)", () => {
 
     // Ctrl+Shift+Enter restarts with a new seed, Esc exits active round, Ctrl+a ignored.
     const seedsBefore = newSeed.mock.calls.length;
-    fireEvent.click(screen.getByRole("button", { name: "Linha 1", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Linha 1" }));
     fireEvent.keyDown(window, { key: "a", ctrlKey: true });
     fireEvent.keyDown(window, { key: "Enter", ctrlKey: true, shiftKey: true });
     expect(newSeed.mock.calls.length).toBeGreaterThan(seedsBefore);
@@ -254,7 +246,7 @@ describe("WaScreen (AC-4)", () => {
     expect(store.getItem(WA_KEY)).toBeTruthy();
 
     // Start round by picking line 1, then Esc restores tree.
-    fireEvent.click(screen.getByRole("button", { name: "Linha 1", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Linha 1" }));
     expect(screen.queryByRole("radiogroup", { name: "Treinos" })).toBeNull();
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.getByRole("radiogroup", { name: "Treinos" })).toBeTruthy();
