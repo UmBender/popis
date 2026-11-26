@@ -1,7 +1,7 @@
 ---
 id: T50
 title: Referência - C++ avançado, GNU e pb_ds
-status: review
+status: done
 depends_on: [T46]
 branch: task/T50-cpp-reference-advanced
 adrs: []
