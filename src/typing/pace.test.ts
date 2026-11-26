@@ -64,18 +64,17 @@ describe("on-pace unit check and round evaluation", () => {
   });
 
   it("evaluatePaceRound summarises on-pace share and next target", () => {
-    // 9 right words at 60 WPM and 1 at 20 WPM: 90% on pace against 30.
-    const fast = { ok: true, complete: true, chars: 5, timeMs: 1000 };
+    // 9 right words at 36 WPM and 1 at 20 WPM: 90% on pace against 30,
+    // and the goal speed (36) is not far enough above 30 to jump.
+    const fast = { ok: true, complete: true, chars: 5, timeMs: (5 * 12_000) / 36 };
     const slow = { ok: true, complete: true, chars: 5, timeMs: 3000 };
-    expect(evaluatePaceRound([...Array.from({ length: 9 }, () => fast), slow], 30, 0.98)).toEqual(
-      {
-        target: 30,
-        nextTarget: 32,
-        onPaceCount: 9,
-        totalUnits: 10,
-        onPaceShare: 0.9,
-      },
-    );
+    expect(evaluatePaceRound([...Array.from({ length: 9 }, () => fast), slow], 30, 0.98)).toEqual({
+      target: 30,
+      nextTarget: 32,
+      onPaceCount: 9,
+      totalUnits: 10,
+      onPaceShare: 0.9,
+    });
   });
 
   it("evaluatePaceRound ignores wrong and incomplete units", () => {
