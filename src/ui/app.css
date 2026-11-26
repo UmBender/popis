@@ -2811,3 +2811,216 @@ th {
     font-size: 7pt;
   }
 }
+
+/* Contest guide (T44): checklists with links on screen, one-page A4 sheet on print. */
+
+.guide-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.guide-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.guide-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--selection);
+}
+
+.guide-section h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--accent);
+}
+
+.guide-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.guide-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+}
+
+.guide-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  flex: 1 1 28ch;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.guide-check::before {
+  left: 0;
+  top: 0;
+}
+
+.guide-check > input[type="checkbox"] {
+  flex: 0 0 3ch;
+}
+
+.guide-check > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.guide-check:has(> input[type="checkbox"]:checked) > span {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.guide-link {
+  flex: 0 0 auto;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+@media (max-width: 48rem) {
+  .guide-item {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .guide-check {
+    flex: none;
+    width: 100%;
+  }
+
+  .guide-link {
+    margin-left: calc(3ch + var(--space-2));
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  .shell:has(.guide) .shell-bar,
+  .shell:has(.guide) .shell-status,
+  .shell:has(.guide) .tree,
+  .shell:has(.guide) .shell-backdrop,
+  .guide .panel-title p,
+  .guide-bar,
+  .guide-link {
+    display: none;
+  }
+
+  html:has(.guide) {
+    color-scheme: light;
+  }
+
+  html:has(.guide),
+  html:has(.guide) body,
+  .shell:has(.guide),
+  .shell:has(.guide) .shell-main {
+    background: none !important;
+  }
+
+  .shell:has(.guide) {
+    display: block;
+    min-height: 0;
+  }
+
+  .shell:has(.guide) .shell-body {
+    display: block;
+  }
+
+  .shell:has(.guide) .shell-main {
+    padding: 0;
+  }
+
+  .shell-main > .screen.guide {
+    max-width: none;
+    gap: 5pt;
+  }
+
+  .guide,
+  .guide * {
+    color: var(--surface) !important;
+    background: none !important;
+  }
+
+  .guide .guide-check:has(> input[type="checkbox"]:checked) > span {
+    text-decoration: none;
+  }
+
+  .guide .panel-title h1 {
+    font-size: 13pt;
+    line-height: 1.15;
+    margin: 0;
+    padding-bottom: 3pt;
+    border-bottom: 1pt solid var(--surface);
+  }
+
+  .guide-sections {
+    display: block;
+    column-count: 2;
+    column-gap: 14pt;
+    font-size: 10pt;
+    line-height: 1.3;
+  }
+
+  .guide-section {
+    display: block;
+    break-inside: avoid;
+    margin: 0 0 7pt;
+    padding: 0;
+    border: none;
+  }
+
+  .guide-section h2 {
+    font-size: 10pt;
+    line-height: 1.2;
+    margin: 0 0 3pt;
+    padding-bottom: 1.5pt;
+    border-bottom: 0.5pt solid var(--surface);
+    break-after: avoid;
+  }
+
+  .guide-list {
+    gap: 2.5pt;
+  }
+
+  .guide-item {
+    display: block;
+  }
+
+  .guide-check {
+    gap: 5pt;
+  }
+
+  .guide .guide-check::before,
+  .guide .guide-check:has(> input[type="checkbox"]:checked)::before {
+    content: none;
+  }
+
+  .guide .guide-check > input[type="checkbox"] {
+    width: 7.5pt;
+    height: 7.5pt;
+    flex: 0 0 7.5pt;
+    margin-top: 2pt;
+    border: 1pt solid var(--surface);
+    background: none !important;
+  }
+}

@@ -73,7 +73,9 @@ import { GdbScreen, type GdbDrill } from "./GdbScreen";
 import { ShellScreen, type ShellDrill } from "./ShellScreen";
 import { CompileScreen } from "./CompileScreen";
 import { StlScreen } from "./StlScreen";
+import { GuideScreen } from "./GuideScreen";
 import { RegexScreen, type RegexDrill } from "./RegexScreen";
+import type { GuideLearnItem, GuideLink } from "../guide/content";
 import { parseRefHash } from "../ref/link";
 import type { Lang } from "../ref/model";
 import { RefScreen } from "./RefScreen";
@@ -756,6 +758,19 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
             onRunning={setRunning}
           />
         );
+      case "guide": {
+        const lessonSetters: Readonly<Record<GuideLearnItem, (id: string | null) => void>> = {
+          "vim-learn": setLearnLesson,
+          "gdb-learn": setGdbLesson,
+          "shell-learn": setShellLesson,
+          "regex-learn": setRegexLesson,
+        };
+        const openGuideLink = (link: GuideLink) => {
+          if (link.kind === "lesson") lessonSetters[link.item](link.lesson);
+          choose(link.item);
+        };
+        return <GuideScreen store={store} onOpenLink={openGuideLink} />;
+      }
       default: {
         const autoDrill: AutoLevelDrill | null =
           settings.mode === "arithmetic" ||
