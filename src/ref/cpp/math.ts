@@ -171,7 +171,8 @@ cout << midpoint(l, r) << ' ' << midpoint(1, 2) << ' ' << midpoint(2, 1) << '\n'
     title: "clamp",
     signature: "clamp(x, lo, hi)",
     complexity: "O(1)",
-    example: c`cout << clamp(-5, 0, 10) << ' ' << clamp(7, 0, 10) << ' ' << clamp(99, 0, 10) << '\n';`,
+    example: c`cout << clamp(-5, 0, 10) << ' ' << clamp(7, 0, 10) << ' ';
+cout << clamp(99, 0, 10) << '\n';`,
     pitfalls: [
       "Se lo > hi o comportamento é indefinido.",
       "Os três argumentos precisam ter exatamente o mesmo tipo (por exemplo, todos long long).",

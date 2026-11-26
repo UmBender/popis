@@ -62,7 +62,7 @@ using namespace __gnu_pbds;
 using oms = tree<pair<int, int>, null_type, less<pair<int, int>>, rb_tree_tag, tree_order_statistics_node_update>;
 oms s; int id = 0; for (int x : {5, 2, 5, 8}) s.insert({x, id++});
 s.erase(s.lower_bound({5, 0}));
-cout << s.size() << ' ' << s.find_by_order(1)->first << ' ' << s.order_of_key({5, 0}) << '\n';`,
+cout << s.find_by_order(1)->first << ' ' << s.order_of_key({5, 0}) << '\n';`,
     pitfalls: [
       "Usar less_equal<T> quebra find e erase e inverte lower_bound com upper_bound, então use pares (valor, id).",
       "Antes de apagar com s.erase(it), confira se it != s.end() e it->first == x.",

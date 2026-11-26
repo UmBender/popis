@@ -190,11 +190,11 @@ cout << (it - t.begin()) << ' ' << (it2 - t.begin()) << '\n';`,
     signature: "pi[i] = maior borda própria de s[0..i]  // O(n + m) garantido",
     complexity: "O(n + m) no pior caso",
     example: c`string p = "aba", t = "ababa", s = p + '#' + t;
-vector<int> pi(s.size());
-for (int i = 1, j = 0; i < (int)s.size(); i++) {
+int n = s.size(); vector<int> pi(n);
+for (int i = 1, j = 0; i < n; i++) {
   while (j && s[i] != s[j]) j = pi[j - 1];
   pi[i] = j += (s[i] == s[j]); }
-for (int i = 4; i < (int)s.size(); i++) { if (pi[i] == 3) cout << i - 6 << ' '; } cout << '\n';`,
+for (int i = 4; i < n; i++) if (pi[i] == 3) cout << i - 6 << '\n';`,
     pitfalls: [
       "O separador '#' não pode aparecer no padrão nem no texto, senão um casamento pode atravessar a fronteira.",
       "Para um casamento terminado em i na string p + '#' + t, o início no texto t é i - 2 * |p|.",
@@ -215,12 +215,12 @@ for (int i = 4; i < (int)s.size(); i++) { if (pi[i] == 3) cout << i - 6 << ' '; 
     title: "Função Z",
     signature: "z[i] = LCP de s com o sufixo s[i..]  // O(n + m) garantido",
     complexity: "O(n + m) no pior caso",
-    example: c`string s = "aba#ababa"; int n = s.size(); vector<int> z(n);
+    example: c`string s = "ana#anana"; int n = s.size(); vector<int> z(n);
 for (int i = 1, l = 0, r = 0; i < n; i++) {
   if (i < r) z[i] = min(r - i, z[i - l]);
   while (i + z[i] < n && s[z[i]] == s[i + z[i]]) z[i]++;
   if (i + z[i] > r) l = i, r = i + z[i]; }
-for (int i = 4; i < n; i++) { if (z[i] == 3) cout << i - 4 << ' '; } cout << '\n';`,
+for (int i = 4; i < n; i++) if (z[i] == 3) cout << i - 4 << '\n';`,
     pitfalls: [
       "z[0] fica 0 nesta forma, então comece o laço em i = 1 e trate o prefixo inteiro à parte se precisar.",
       "Ao concatenar p + '#' + t, cada posição i > |p| com z[i] == |p| marca o início de um casamento em i - |p| - 1.",
@@ -254,7 +254,8 @@ cout << sub << ' ' << sub.size() << '\n';`,
 auto [p, e1] = to_chars(buf, buf + 32, 123456789LL);
 long long x = 0;
 auto [q, e2] = from_chars(buf, p, x);
-cout << string(buf, p) << ' ' << x << ' ' << (e1 == errc{} && e2 == errc{} && q == p) << '\n';`,
+bool ok = e1 == errc{} && e2 == errc{} && q == p;
+cout << string(buf, p) << ' ' << x << ' ' << ok << '\n';`,
     pitfalls: [
       "Não pula espaços iniciais nem aceita '+' na frente, e devolve erro em ec em vez de lançar exceção.",
       "to_chars não coloca '\\0' no final do buffer, então use o ponteiro p devolvido como limite.",

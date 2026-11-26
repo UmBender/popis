@@ -455,7 +455,8 @@ cout << '\n';`,
     example: c`vector<int> v = {2, 3, 5}, inc(3), exc(3);
 inclusive_scan(v.begin(), v.end(), inc.begin());
 exclusive_scan(v.begin(), v.end(), exc.begin(), 0);
-cout << inc[0] << ' ' << inc[1] << ' ' << inc[2] << " | " << exc[0] << ' ' << exc[1] << ' ' << exc[2] << '\n';`,
+cout << inc[0] << ' ' << inc[1] << ' ' << inc[2] << '\n';
+cout << exc[0] << ' ' << exc[1] << ' ' << exc[2] << '\n';`,
     pitfalls: [
       "Em exclusive_scan o elemento i soma tudo antes de i (com exc[0] = init), e o tipo da soma segue o de init (use 0LL para evitar overflow).",
       "Em inclusive_scan com operação binária, o valor inicial é o quinto argumento, depois do operador.",
