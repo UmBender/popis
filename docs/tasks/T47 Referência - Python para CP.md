@@ -1,7 +1,7 @@
 ---
 id: T47
 title: Referência - Python para CP
-status: in-progress
+status: review
 depends_on: [T46]
 branch: task/T47-python-reference
 adrs: [ADR-T47-1]
@@ -120,11 +120,11 @@ PyPy.
 ## Subtasks (one commit each)
 
 - [x] spec: ADR-T47-1 e critérios com testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, `ref:oracle -- py`, coverage, e2e, visual
-- [ ] docs
+- [x] tests
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, `ref:oracle -- py`, coverage, e2e, visual
+- [x] docs
 
 ## Notas para o batch
 
@@ -134,3 +134,54 @@ PyPy.
   numa versão 3.9.
 
 ## Log
+
+- 2026-11-25 — Implementada no batch, na branch `task/T47-python-reference`,
+  a partir da `main`.
+- **Conteúdo:** 85 verbetes nas 9 seções completas (io 8, perf 9,
+  recursion 5, structures 13, sorting 6, iter_func 11, numbers 15,
+  strings 9, pitfalls 9). Não foi preciso cortar para o recorte 1–6.
+- **Pares C++ × Python:** 48 pares bidirecionais verificados por
+  `src/ref/pairs.test.ts`, incluindo `priority_queue`/`priority_queue_min`,
+  `deque`, `lower_bound`/`upper_bound`, `sort`/`sort_lambda`/`stable_sort`,
+  `mod_negative`, `int128`, `vector`/`vector_2d`, `unordered_map`,
+  `gcd`/`lcm`/`powmod`/`modinv`/`isqrt`/`ceil_div`, `substr`/`find`/
+  `stoi_stoll`, `popcount`/`bit_width`, `lambda_rec` e `views_enumerate`.
+- **Oráculo (`scripts/ref-oracle.mjs`):**
+  - `npm run ref:oracle -- py` (PyPy 8.0.0 / Python 3.11.16 | Python
+    3.14.10): `ref:oracle py: 85/85 ok (5 judge entries, 0 output
+    mismatches)`. Saídas gravadas em `src/ref/py/outputs.ts` com `--write`.
+  - `npm run ref:oracle -- cpp` (g++ 16.2.1): `ref:oracle cpp: 91/91 ok
+    (4 judge entries, 0 output mismatches)`.
+  - Os 5 verbetes com `judge` (`match_case`, `pairwise`, `bisect_key`,
+    `int_bit_count`, `zip_strict`) são Python 3.10+, falham no verificador
+    3.9 (`ast.parse(..., feature_version=(3, 9))` para `match_case` e
+    `findPost39Apis` em `src/ref/py/compat.ts` para os demais) e produzem
+    saída idêntica em `pypy3` e `python3`. Recursos do 3.9 (`math.lcm`,
+    `math.gcd` com vários argumentos, `functools.cache`, `str.removeprefix`)
+    seguem liberados para a WF.
+  - Achados do oráculo: arquivos temporários precisaram do prefixo
+    `entry_` para que `decimal.py` não sombreasse o módulo `decimal` da
+    stdlib em `sys.path[0]`; no verbete `is_vs_eq`, o exemplo usa listas
+    em vez de inteiros porque o PyPy compara identidade de `int` por valor.
+- **UNATTENDED CHOICE:** identificador `py` (`Lang = "cpp" | "py"`,
+  `ref-py`, `#py/<id>`), metadados `LANG_TARGET` e `LANG_DOCS` em
+  `src/ref/langs.ts`, `pair?: string` em `Entry` com `key={lang}` no
+  `RefScreen` e verificador puro `src/ref/py/compat.ts` reutilizado pelo
+  oráculo (registrado no `ADR-T47-1`).
+- **Files owned ampliados** (política do plano): `src/ref/model.ts`,
+  `src/ref/model.test.ts`, `src/ref/langs.ts`, `src/ref/link.test.ts`,
+  `src/ui/RefScreen.tsx`, `src/ui/RefScreen.test.tsx`, `src/ui/app.css` e
+  `src/ui/shell/sections.test.ts`.
+- **Gates:** `npm run check` verde (208 arquivos, 4517 testes, typecheck,
+  lint, prettier e build); `npm run coverage` verde (`src/ref/**` e
+  `RefScreen.tsx` em 100/100/100/100); `npm run test:e2e` verde (58
+  testes em desktop e mobile, incluindo os novos casos T47 e
+  `regression-T49-independent-scroll`).
+- **Verificação visual:** `.batch/visual/T47-python-reference.spec.ts`
+  (desktop e phone: árvore/gaveta, topo Python, busca `bisect`, selo
+  `não existe na WF`, navegação pelo link `em C++`, impressão em duas
+  colunas). Corrigido: links de seção de duas linhas em `.ref-sections`
+  ficavam centralizados; adicionada regra `.ref-sections button {
+  text-align: left; }`.
+- **Checagens manuais para o dono:** buscar 5 coisas em Python na
+  referência; seguir um link de par C++ ↔ Python nos dois sentidos.
