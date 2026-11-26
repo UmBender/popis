@@ -29,6 +29,7 @@ const SCREENS: readonly ItemId[] = [
   "guide",
   "ref-cpp",
   "ref-py",
+  "contests",
 ];
 
 describe("sections", () => {
@@ -45,14 +46,18 @@ describe("sections", () => {
       ["Regex", ["Aprender", "Prática"]],
       ["Maratona", ["Ler o erro", "Caça ao WA", "STL", "Placar", "Guia"]],
       ["Referência", ["C++", "Python"]],
+      ["Agenda", ["Contests"]],
     ]);
   });
 
-  it("Referência folder closes the tree with C++ and Python on touch screens", () => {
-    const last = SECTIONS[SECTIONS.length - 1];
-    expect(last?.id).toBe("referencia");
-    expect(last?.label).toBe("Referência");
-    expect(last?.items.map((i) => [i.id, i.label, i.touch, i.shortcut])).toEqual([
+  it("Referência folder follows Maratona with C++ and Python on touch screens", () => {
+    const maratonaIdx = SECTIONS.findIndex((f) => f.id === "maratona");
+    const refIdx = SECTIONS.findIndex((f) => f.id === "referencia");
+    expect(refIdx).toBe(maratonaIdx + 1);
+    const ref = SECTIONS[refIdx];
+    expect(ref?.id).toBe("referencia");
+    expect(ref?.label).toBe("Referência");
+    expect(ref?.items.map((i) => [i.id, i.label, i.touch, i.shortcut])).toEqual([
       ["ref-cpp", "C++", true, null],
       ["ref-py", "Python", true, null],
     ]);
@@ -67,6 +72,16 @@ describe("sections", () => {
       "review",
       "data",
     ]);
+  });
+
+  it("Agenda folder closes the tree with Contests on touch screens and keeps shortcuts 1-9", () => {
+    const last = SECTIONS[SECTIONS.length - 1];
+    expect(last?.id).toBe("agenda");
+    expect(last?.label).toBe("Agenda");
+    expect(last?.items.map((i) => [i.id, i.label, i.touch, i.shortcut])).toEqual([
+      ["contests", "Contests", true, null],
+    ]);
+    expect(ITEMS.slice(1, 10).map((i) => i.shortcut)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
 
   it("Maratona folder places Caça ao WA right after Ler o erro, then STL, Placar and Guia, and keeps shortcuts 1-9", () => {

@@ -30,6 +30,7 @@ export default defineConfig({
         "regex.spec.ts",
         "ref.spec.ts",
         "guide.spec.ts",
+        "contests.spec.ts",
       ],
       use: { ...devices["Pixel 7"], baseURL: `http://localhost:${pagesPort}${pagesBase}` },
     },

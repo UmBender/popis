@@ -9,6 +9,7 @@ dist-pages/
 coverage/
 test-results/
 playwright-report/
+public/contests.json
 
 # Unattended batch runs (skill batch-tasks): plan, state, logs
 /.batch/

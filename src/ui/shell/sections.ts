@@ -25,7 +25,8 @@ export type ItemId =
   | "icpc"
   | "guide"
   | "ref-cpp"
-  | "ref-py";
+  | "ref-py"
+  | "contests";
 
 export type TreeItem = {
   readonly id: ItemId;
@@ -139,6 +140,7 @@ const TABLE: readonly (readonly [id: string, label: string, rows: readonly Row[]
       ["ref-py", "Python"],
     ],
   ],
+  ["agenda", "Agenda", [["contests", "Contests"]]],
 ];
 
 let position = 0;
