@@ -7,6 +7,8 @@ import { playWeakSpotsRound } from "./weak-spots";
 
 test.describe("regression T51 weak-spots-flake", () => {
   test("real lag between keys does not leak into the measured intervals", async ({ page }) => {
+    // 200 ms of real time before every key takes longer than the default 30 s.
+    test.setTimeout(120_000);
     await playWeakSpotsRound(page, { realDelayMs: 200 });
 
     await expect(page.getByTestId("result")).toBeVisible();

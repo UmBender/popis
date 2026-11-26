@@ -43,7 +43,10 @@ export async function playWeakSpotsRound(page: Page, { realDelayMs = 0 } = {}) {
       }),
     },
   );
+  // Paused: only runFor moves time, so real lag between keys (a busy
+  // machine) never reaches the measured intervals (T51).
   await page.clock.install({ time: now });
+  await page.clock.pauseAt(now);
   await page.goto("/");
   await page.getByRole("radio", { name: "Pontos fracos" }).check();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Pontos fracos");
@@ -54,11 +57,18 @@ export async function playWeakSpotsRound(page: Page, { realDelayMs = 0 } = {}) {
 
   for (let block = 1; block <= 5; block++) {
     const stepMs = block === 1 ? 100 : 250;
+    // The screen focuses its input in an effect: type only once it has.
+    await expect(page.getByRole("textbox", { name: "Texto digitado" })).toBeFocused();
+    const focus = (await page.getByTestId("weak-focus").textContent()) ?? "";
     const words = await page
       .getByTestId("weak-words")
       .locator(".word")
-      .evaluateAll((els) => els.slice(0, 2).map((el) => el.textContent ?? ""));
+      .evaluateAll((els) => els.slice(0, 20).map((el) => el.textContent ?? ""));
+    // The words come from a fresh seed, and the first ones may lack the
+    // focused n-gram; keep typing until two words with it are in (T51).
+    let withFocus = 0;
     for (const word of words) {
+      if (withFocus >= 2) break;
       for (const ch of word) {
         await page.clock.runFor(stepMs);
         if (realDelayMs > 0) await page.waitForTimeout(realDelayMs);
@@ -66,7 +76,9 @@ export async function playWeakSpotsRound(page: Page, { realDelayMs = 0 } = {}) {
       }
       await page.clock.runFor(stepMs);
       await page.keyboard.press("Space");
+      if (word.includes(focus)) withFocus += 1;
     }
+    expect(withFocus).toBe(2);
     await page.clock.runFor(31_000);
   }
 }
