@@ -3,9 +3,11 @@ import { ALGORITHMS } from "./algorithms";
 import { BITS } from "./bits";
 import { CONTAINERS } from "./containers";
 import { EXTRAS } from "./extras";
+import { GNU } from "./gnu";
 import { IO } from "./io";
 import { MATH } from "./math";
 import { CPP_OUTPUTS } from "./outputs";
+import { PB_DS } from "./pb_ds";
 import { RANDOM } from "./random";
 import { STRINGS } from "./strings";
 import { TYPES } from "./types";
@@ -20,6 +22,8 @@ const TABLE: readonly (readonly [id: string, title: string, drafts: readonly Ent
   ["bits", "Bits", BITS],
   ["math", "Matemática", MATH],
   ["random", "Aleatório e tempo", RANDOM],
+  ["pb_ds", "pb_ds", PB_DS],
+  ["gnu", "Extensões GNU", GNU],
   ["extras", "Extras", EXTRAS],
 ];
 

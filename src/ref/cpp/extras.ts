@@ -3,45 +3,8 @@ import type { EntryDraft } from "../model";
 const c = String.raw;
 const REF = "https://en.cppreference.com/w/cpp/";
 
-/** Section 9: GCC extensions, debugging aids and the newer standard library. */
+/** Section 11: debugging aids, pragmas and the newer standard library. */
 export const EXTRAS: readonly EntryDraft[] = [
-  {
-    id: "ordered_set",
-    title: "ordered_set (pb_ds)",
-    signature: "tree<T, null_type, less<T>, rb_tree_tag, tree_order_statistics_node_update>",
-    complexity: [
-      ["insert / erase / find", "O(log n)"],
-      ["find_by_order(k)", "O(log n)"],
-      ["order_of_key(x)", "O(log n)"],
-    ],
-    example: c`#include <ext/pb_ds/assoc_container.hpp>
-using namespace __gnu_pbds;
-tree<int, null_type, less<int>, rb_tree_tag, tree_order_statistics_node_update> s;
-for (int x : {5, 1, 9}) s.insert(x);
-cout << *s.find_by_order(1) << ' ' << s.order_of_key(9) << '\n';`,
-    pitfalls: [
-      "Com less<T> ele não guarda repetidos, então para um multiconjunto use pares (valor, índice).",
-      "Só existe no GCC, que é o compilador da maratona.",
-    ],
-    tags: ["ordered set", "pb_ds", "k-ésimo", "order statistics"],
-    link: `${REF}container/set`,
-  },
-  {
-    id: "gp_hash_table",
-    title: "gp_hash_table (pb_ds)",
-    signature: "gp_hash_table<K, V> m;",
-    complexity: "O(1) médio, em geral mais rápido que o unordered_map",
-    example: c`#include <ext/pb_ds/assoc_container.hpp>
-using namespace __gnu_pbds;
-gp_hash_table<int, int> m;
-m[3] = 7;
-cout << m[3] << ' ' << (m.find(4) == m.end()) << '\n';`,
-    pitfalls: [
-      "Também sofre com testes contra o hash padrão, então passe um hash próprio como no unordered_map.",
-    ],
-    tags: ["hash", "tabela hash", "pb_ds", "dicionário"],
-    link: `${REF}container/unordered_map`,
-  },
   {
     id: "pragma_optimize",
     title: "#pragma GCC optimize",
@@ -148,5 +111,66 @@ cout << '\n';`,
     judge: true,
     pair: "py/zip_enumerate",
     link: `${REF}ranges/enumerate_view`,
+  },
+  {
+    id: "dbg_macro",
+    title: "Macro dbg com #x e cerr",
+    signature: c`#define dbg(x) cerr << #x << " = " << (x) << '\n'`,
+    example: c`#define dbg(x) cerr << #x << " = " << (x) << '\n'
+int ans = 42;
+dbg(ans);
+cout << ans << '\n';`,
+    pitfalls: [
+      "O cerr não conta na saída padrão julgada pelo juiz, mas imprimir demais nele ainda gasta tempo e pode dar TLE.",
+      "Envolva com #ifdef LOCAL para zerar o custo na submissão compilando localmente com -DLOCAL.",
+    ],
+    tags: ["dbg", "debug", "cerr", "macro", "depuração", "local"],
+    link: `${REF}io/cerr`,
+  },
+  {
+    id: "fsanitize",
+    title: "-fsanitize=address,undefined",
+    signature: "g++ -std=gnu++20 -O2 -g -fsanitize=address,undefined sol.cpp",
+    example: c`vector<int> v = {10, 20, 30};
+int ok = 0;
+for (int i = 0; i < (int)v.size(); i++) ok += v[i];
+cout << ok << '\n';`,
+    pitfalls: [
+      "Pega acesso fora dos limites, use-after-free, overflow com sinal e shift inválido, mas deixa o binário mais lento e usa mais memória.",
+      "Acrescente -fno-sanitize-recover=all para abortar logo no primeiro erro de comportamento indefinido.",
+    ],
+    tags: ["fsanitize", "asan", "ubsan", "sanitizer", "debug", "depuração", "ub"],
+    link: `${REF}language/ub`,
+  },
+  {
+    id: "pretty_function",
+    title: "__PRETTY_FUNCTION__",
+    signature: "cout << __PRETTY_FUNCTION__ << '\\n';",
+    example: c`auto tipo = []<class T>(T) { cout << __PRETTY_FUNCTION__ << '\n'; };
+tipo(42);
+tipo(3.14);`,
+    pitfalls: [
+      "Mostra a assinatura completa da função com os tipos deduzidos de templates e lambdas genéricas no GCC e Clang.",
+      "Útil para descobrir o tipo real de um auto ou de um iterador durante a depuração.",
+    ],
+    tags: ["__pretty_function__", "tipo", "dedução", "auto", "debug", "depuração"],
+    since: "C++20",
+    link: `${REF}language/function`,
+  },
+  {
+    id: "views_zip",
+    title: "views::zip",
+    signature: "for (auto [x, y] : views::zip(a, b))",
+    example: c`vector<int> a = {1, 2}, b = {10, 20};
+for (auto [x, y] : views::zip(a, b)) cout << x + y << ' ';
+cout << '\n';`,
+    pitfalls: [
+      "Não existe na WF (C++20), então percorra os dois vetores por índice.",
+      "Para no tamanho do menor intervalo quando os vetores têm tamanhos diferentes.",
+    ],
+    tags: ["zip", "views", "ranges", "c++23", "iterar dois vetores"],
+    since: "C++23",
+    judge: true,
+    link: `${REF}ranges/zip_view`,
   },
 ];
