@@ -49,9 +49,9 @@ describe("GuideScreen (AC-2)", () => {
     view.unmount();
 
     render(<GuideScreen store={store} onOpenLink={onOpenLink} />);
-    expect(screen.getByRole<HTMLInputElement>("checkbox", { name: first?.text ?? "" }).checked).toBe(
-      true,
-    );
+    expect(
+      screen.getByRole<HTMLInputElement>("checkbox", { name: first?.text ?? "" }).checked,
+    ).toBe(true);
     expect(
       screen.getByRole<HTMLInputElement>("checkbox", { name: second?.text ?? "" }).checked,
     ).toBe(true);
@@ -95,7 +95,9 @@ describe("GuideScreen (AC-2)", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Guia" }));
     fireEvent.click(screen.getByRole("button", { name: "Shell: .bashrc" }));
     expect(screen.getByTestId("shell-path").textContent).toBe("popis/shell/aprender");
-    expect(screen.getByText(/Atalhos e funções no ~\/\.bashrc/)).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /Atalhos e funções no ~\/\.bashrc/ }),
+    ).toBeTruthy();
 
     fireEvent.click(screen.getByRole("radio", { name: "Guia" }));
     fireEvent.click(screen.getByRole("button", { name: "GDB: sinais" }));

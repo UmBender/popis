@@ -56,7 +56,9 @@ test("T44: open Guia from Maratona, persist checks, reset with Nova prova and fo
   await openGuide(page, mobile);
   await page.getByRole("button", { name: "Shell: .bashrc" }).click();
   await expect(page.getByTestId("shell-path")).toHaveText("popis/shell/aprender");
-  await expect(page.getByText(/Atalhos e funções no ~\/\.bashrc/)).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 2, name: /Atalhos e funções no ~\/\.bashrc/ }),
+  ).toBeVisible();
   await expectNoHorizontalScroll(page, "guide link destination");
 });
 
