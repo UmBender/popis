@@ -120,7 +120,8 @@ async function checkPyEntry(dir, entry, compat) {
   const after39 = compat.isAfter39(entry.since);
 
   if (entry.judge === true) {
-    if (!after39) problems.push(`judge entry must declare since > Python 3.9 (got ${String(entry.since)})`);
+    if (!after39)
+      problems.push(`judge entry must declare since > Python 3.9 (got ${String(entry.since)})`);
     if (syntax39.ok && apiHits.length === 0)
       problems.push("judge entry passes Python 3.9 syntax and post-3.9 API check");
   } else {
@@ -139,12 +140,16 @@ async function checkPyEntry(dir, entry, compat) {
     ["python3", cpy],
   ]) {
     if (res.code !== 0)
-      problems.push(`${label} exit ${String(res.code)} ${String(res.signal)}: ${res.stderr.trim()}`);
+      problems.push(
+        `${label} exit ${String(res.code)} ${String(res.signal)}: ${res.stderr.trim()}`,
+      );
     if (res.stderr.trim() !== "") problems.push(`${label} stderr:\n${res.stderr.trim()}`);
     if (res.stdout === "") problems.push(`${label} prints nothing`);
   }
   if (pypy.code === 0 && cpy.code === 0 && pypy.stdout !== cpy.stdout) {
-    problems.push(`pypy3 and python3 outputs differ\n--- pypy3\n${pypy.stdout}--- python3\n${cpy.stdout}`);
+    problems.push(
+      `pypy3 and python3 outputs differ\n--- pypy3\n${pypy.stdout}--- python3\n${cpy.stdout}`,
+    );
   }
   return { problems, output: pypy.code === 0 && cpy.code === 0 ? pypy.stdout : undefined };
 }
@@ -246,7 +251,10 @@ async function main() {
         ` (${String(judged)} judge entries, ${String(mismatches)} output mismatches)`,
     );
     if (write) {
-      writeFileSync(target.outputsFile, formatOutputs(lang, target.exportName, target.all, outputs));
+      writeFileSync(
+        target.outputsFile,
+        formatOutputs(lang, target.exportName, target.all, outputs),
+      );
       await execFileAsync(PRETTIER, ["--write", target.outputsFile], { cwd: ROOT });
       console.log(`wrote ${target.outputsFile}`);
     }

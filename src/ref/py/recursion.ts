@@ -25,7 +25,8 @@ print(sys.getrecursionlimit(), fact_mod(10))`,
   {
     id: "threading_stack_size",
     title: "threading.stack_size com thread",
-    signature: "threading.stack_size(1 << 27);  t = threading.Thread(target=solve); t.start(); t.join()",
+    signature:
+      "threading.stack_size(1 << 27);  t = threading.Thread(target=solve); t.start(); t.join()",
     complexity: "aumenta a pilha do SO para a thread",
     example: p`import sys, threading
 sys.setrecursionlimit(100_000)

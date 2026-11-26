@@ -81,7 +81,10 @@ describe("reference model", () => {
 
     for (const lang of LANGS) {
       const sections = sectionsOf(lang);
-      expect(sections.map((s) => s.id), lang).toEqual(expected[lang]);
+      expect(
+        sections.map((s) => s.id),
+        lang,
+      ).toEqual(expected[lang]);
       // Entries come grouped by section, in section order.
       const order = entriesOf(lang).map((e) => sections.findIndex((s) => s.id === e.section));
       expect(order, lang).toEqual([...order].sort((a, b) => a - b));

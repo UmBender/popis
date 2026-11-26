@@ -11,7 +11,8 @@ export const POST_39_APIS: readonly Post39Api[] = [
   {
     name: "bisect key=",
     since: "Python 3.10",
-    pattern: /\b(?:bisect|bisect_left|bisect_right|insort|insort_left|insort_right)\([^)]*\bkey\s*=/,
+    pattern:
+      /\b(?:bisect|bisect_left|bisect_right|insort|insort_left|insort_right)\([^)]*\bkey\s*=/,
   },
   { name: "int.bit_count", since: "Python 3.10", pattern: /\.bit_count\s*\(/ },
   { name: "zip strict=", since: "Python 3.10", pattern: /\bzip\([^)]*\bstrict\s*=/ },
