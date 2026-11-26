@@ -1,7 +1,7 @@
 ---
 id: ADR-T44-1
 title: Guia da prova em dados tipados e folha A4
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-26
 task: T44
@@ -48,12 +48,13 @@ Caça ao WA (T41) e Placar (T43).
    canônica. O botão **Nova prova** limpa o conjunto salvo.
 4. **Folha de impressão A4 (`@media print` em `src/ui/app.css`):**
    oculta barra superior, árvore, linha de status, descrição, botões e
-   links; usa layout compacto em duas colunas com `@page { size: A4; margin: 10mm; }`,
-   texto em `var(--surface)` sobre papel branco (`background: none`,
-   `color-scheme: light`, sem novos literais de cor) e renderiza todas
-   as caixas de seleção como quadrados vazios desenhados por borda,
-   independentemente do estado marcado na tela, para que a folha
-   impressa sirva limpa no caderno do time.
+   links; usa layout compacto em duas colunas a `10pt` com
+   `@page { size: A4; margin: 10mm; }`, texto em `var(--surface)` sobre
+   papel branco (`background: none`, `color-scheme: light`, sem novos
+   literais de cor) e renderiza todas as caixas de seleção como
+   quadrados vazios desenhados por borda, independentemente do estado
+   marcado na tela, para que a folha impressa sirva limpa no caderno do
+   time.
 
 ## Alternatives considered
 
