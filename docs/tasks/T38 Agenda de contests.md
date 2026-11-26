@@ -1,7 +1,7 @@
 ---
 id: T38
 title: Agenda de contests
-status: in-progress
+status: review
 depends_on: []
 branch: task/T38-contest-calendar
 adrs: ["[[ADR-T38-1 Dados de contests buscados no build a cada 6 h]]"]
@@ -119,12 +119,12 @@ Só o Codeforces aceita o navegador, por isso a busca acontece no build.
 
 ## Subtasks (one commit each)
 
-- [ ] spec: ADR-T38-1 (dados buscados no build a cada 6 h, sem chave, com reaproveitamento por fonte) e testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, coverage, e2e, `npm run contests:fetch` e screenshots
-- [ ] docs: *Log* e status `review`
+- [x] spec: ADR-T38-1 (dados buscados no build a cada 6 h, sem chave, com reaproveitamento por fonte) e testes nomeados
+- [x] tests
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, coverage, e2e, `npm run contests:fetch` e screenshots
+- [x] docs: *Log* e status `review`
 
 ## Notas para o batch
 
@@ -136,3 +136,11 @@ Só o Codeforces aceita o navegador, por isso a busca acontece no build.
   e registre no *Log*.
 
 ## Log
+
+- 2026-11-26 — Spec e ADR-T38-1 escritos (emendando ADR-T11-1). Adicionados a *Files owned*: `src/ui/ContestsScreen.test.tsx`, `src/ui/shell/sections.test.ts` (já nomeados nos ACs), `tests/pages.test.ts` (sequência do workflow atualizada por ADR-T38-1), `playwright.config.ts` (incluir `contests.spec.ts` no projeto `mobile`), `vite.config.ts` (limiar de cobertura de `src/contests/**`) e `.prettierignore` (ignorar `public/contests.json` gerado no fetch).
+- 2026-11-26 — Fixtures reais gravadas das 4 fontes (Codeforces, AtCoder, CodeChef e LeetCode) e reduzidas em `src/contests/fixtures/`. No momento da captura, o CodeChef retornou `present_contests: []` e `future_contests: []` (janela entre Starters 266 e o próximo); a fixture de sucesso usa registros reais do mesmo retorno no esquema de `present_contests`/`future_contests`, e há teste dedicado para o retorno vazio.
+- 2026-11-26 — Correções de teste em commits `test(T38)` separados antes da implementação: `177f75c` trocou matchers inexistentes de jest-dom/Playwright em `ContestsScreen.test.tsx` por asserções padrão de Vitest/Testing Library; `627de73` trocou `page.clock.install({ time })` por `page.clock.setFixedTime(NOW)` em `tests/e2e/contests.spec.ts` para evitar avanço real de milissegundos durante a navegação.
+- 2026-11-26 — UNATTENDED CHOICE: o parser do Codeforces inclui `phase: "CODING"` além de `"BEFORE"` e o do AtCoder lê `#contest-table-action` e `#contest-table-daily` quando presentes (além da tabela obrigatória `#contest-table-upcoming`), para contests em andamento e Weekday Contests aparecerem na agenda.
+- 2026-11-26 — UNATTENDED CHOICE: cada contest oferece botão `.ics` individual ao lado de "Google Agenda", além do botão "Baixar .ics" para todos os filtrados; cores dos rótulos dos sites usam tokens existentes (`--accent`, `--correct`, `--warning`, `--selection-text`) e o filtro no celular usa grade 2×2 sem borda de `<fieldset>` (coerência T19).
+- 2026-11-26 — Busca ao vivo (`npm run contests:fetch`): `16 contests (codeforces: 5, atcoder: 10, codechef: 0, leetcode: 1)`, `errors: []`, gravado em `public/contests.json` (git-ignored) e copiado para `dist/contests.json` no build.
+- 2026-11-26 — Gates verdes: `npm run check` (216 arquivos, 4635 testes, `tsc`, `eslint`, `prettier`, `vite build`), `npm run coverage` (`src/contests/**` com limiar 100/99/100/98 e todos os limiares do repo mantidos), `npm run test:e2e` (61/61 desktop e mobile), `npm run test:fuzz -- -t "agenda properties"` (20 000 casos × 3 propriedades) e conferência visual por screenshots (1280×800 e 390×844). Verificação manual pendente ao dono após merge: primeiro deploy agendado, horários no fuso local e abertura do link no Google Agenda.

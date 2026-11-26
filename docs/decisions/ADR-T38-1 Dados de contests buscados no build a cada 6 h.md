@@ -1,7 +1,7 @@
 ---
 id: ADR-T38-1
 title: Dados de contests buscados no build a cada 6 h
-status: proposed
+status: accepted
 kind: decision
 date: 2026-11-26
 task: T38
