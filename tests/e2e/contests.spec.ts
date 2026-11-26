@@ -60,7 +60,7 @@ test("T38: open Contests from the Agenda folder, filter sites and download .ics"
   page,
 }) => {
   const mobile = test.info().project.name === "mobile";
-  await page.clock.install({ time: NOW });
+  await page.clock.setFixedTime(NOW);
   await page.route("**/contests.json", async (route) => {
     await route.fulfill({
       status: 200,
