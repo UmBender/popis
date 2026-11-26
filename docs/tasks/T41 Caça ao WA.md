@@ -1,7 +1,7 @@
 ---
 id: T41
 title: Caça ao WA
-status: in-progress
+status: review
 depends_on: [T40]
 branch: task/T41-wa-hunt
 adrs: [ADR-T41-1]
@@ -104,10 +104,20 @@ correção. Os bugs são os que mais custam penalidade na maratona.
 ## Subtasks (one commit each)
 
 - [x] spec: ADR-T41-1 e critérios de aceitação com testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, `wa:oracle`, coverage, e2e
-- [ ] docs
+- [x] tests
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, `wa:oracle`, coverage, e2e
+- [x] docs
 
 ## Log
+
+- 2026-11-26 — Implementação concluída na branch `task/T41-wa-hunt` com 32 casos reais em C++20 (4 por classe em `overflow`, `limite`, `multitest`, `borda`, `precisao`, `desempenho`, `stl`, `leitura`), 32 forças brutas independentes em `src/wa/cases/brute/`, saídas verificadas e gravadas em `src/wa/cases/outputs.ts` via `scripts/wa-oracle.mjs`, diff puro linha a linha (`src/wa/diff.ts`), sorteio sem repetição por ciclo com 4 classes nas opções (`src/wa/drill.ts`), motor de rodada sem limite de tempo de 5 casos com cronômetro progressivo e revisão pós-resposta (`src/wa/round.ts`), persistência em `popis.wa` / `popis.wa-results` (`src/storage/wa.ts`), eventos `wa.hunt` (`src/stats/event.ts`), seletores compartilhados `CodeLinePicker` e `ChoiceGrid` extraídos da T40 (`src/ui/maratona/LineChoicePicker.tsx`) mantendo todos os testes da T40 intactos, tela `src/ui/WaScreen.tsx` e item **Caça ao WA** logo após **Ler o erro** na pasta **Maratona** (`src/ui/shell/sections.ts`).
+- 2026-11-26 — UNATTENDED CHOICE: cada força bruta vive como arquivo `.cpp` puro em `src/wa/cases/brute/<id>.cpp`, lido apenas por `scripts/wa-oracle.mjs`, mantendo a força bruta fora do pacote web e da cobertura TypeScript (ADR-T41-1).
+- 2026-11-26 — UNATTENDED CHOICE: após qualquer resposta (certa ou errada), a tela entra em estado de revisão exibindo a `breaking_input`, a saída errada contra a certa, o diff da correção e a explicação antes de avançar (`Próximo` / `Ver resultado` via clique ou `Enter`), atendendo AC-4 em todos os 5 casos da rodada (ADR-T41-1).
+- 2026-11-26 — UNATTENDED CHOICE: nos 4 casos de `desempenho` (`desempenho-vec-copy`, `desempenho-memset-loop`, `desempenho-map-vs-vector`, `desempenho-string-concat`), usamos entradas pequenas (1 linha) que excedem 2 s em `code` e rodam abaixo de 0,5 s em `fixed` com `g++ -std=c++20 -O2` (corte em 5 s); em `stl-non-strict-cmp`, usamos `std::set` com comparador `<=` para produzir WA determinístico sem depender de leitura fora dos limites da heap.
+- 2026-11-26 — Ampliação de *Files owned*: incluídos `src/ui/maratona/LineChoicePicker.tsx`, `src/ui/CompileScreen.tsx` (extração dos seletores sem mudar comportamento nem testes da T40), `src/ui/app.css`, `playwright.config.ts` (projeto `mobile`), arquivos de teste correspondentes (`src/storage/wa.test.ts`, `src/stats/event.test.ts`, `src/ui/WaScreen.test.tsx`, `src/ui/shell/sections.test.ts`) e `docs/decisions/ADR-T41-1 Caça ao WA com oráculo de juiz e seletores compartilhados.md`.
+- 2026-11-26 — Correção de teste (`d8ab6e5`): em `src/ui/WaScreen.test.tsx`, removida a opção `exact: true` (exclusiva do Playwright) das consultas `getByRole` do Testing Library, que já exigem correspondência exata em strings e falhavam no `tsc --noEmit`.
+- 2026-11-26 — Verificação visual (6 capturas em desktop 1280x800 e celular 390x844 nos estados inicial, revisão pós-resposta e resultado): corrigido o contraste de `<kbd>Enter</kbd>` no botão `Próximo` da revisão e usado espaço não separável em `formatSec` para evitar quebra entre número e `s` no celular; capturas refeitas e conferidas.
+- 2026-11-26 — Gates: `npm run wa:oracle` (`wa oracle: 32/32 cases ok (200 random brute-force tests each)` contra `g++ 16.2.1 -std=c++20 -O2`: 26 WA, 4 TLE com `code` entre 2,78 s e 5,00 s contra `fixed` entre 3 ms e 141 ms, e 2 RTE `SIGSEGV`); `npm run check` verde (214 arquivos, 4554 testes, `tsc`, `eslint`, `prettier`, `vite build`); `npm run coverage` verde com limiar adicionado para `src/wa/**` (`All files`: 99,73% stmts / 98,17% branches / 100% funcs / 99,86% lines; `src/wa`: 100% / 96,20% / 100% / 100%; `src/wa/cases`: 100%; `src/storage/wa.ts`: 100%; `src/ui/maratona/LineChoicePicker.tsx`: 100%; `src/ui/WaScreen.tsx`: 100% / 96,19% / 100% / 100%); `npm run test:e2e` verde (`61 passed`, incluindo `wa.spec.ts`, `compile.spec.ts` e `coherence.spec.ts` em desktop e mobile).
+- 2026-11-26 — Checagens manuais para o dono: ler uma amostra dos 32 casos para avaliar o realismo dos enunciados e explicações.
