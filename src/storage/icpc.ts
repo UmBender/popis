@@ -1,5 +1,6 @@
-import type { IcpcKindFilter } from "../icpc/drill";
-import type { KeyValueStore } from "./kv";
+import { ICPC_KINDS, type IcpcKindFilter } from "../icpc/drill";
+import { ICPC_DURATIONS_S } from "../icpc/round";
+import { readJson, tryWriteJson, type KeyValueStore } from "./kv";
 
 export const ICPC_KEY = "popis.icpc";
 export const ICPC_RESULTS_KEY = "popis.icpc-results";
@@ -29,22 +30,53 @@ export type IcpcResult = {
   readonly finishedAt: number;
 };
 
-export function parseIcpcSettings(_value: unknown): IcpcSettings {
-  throw new Error("todo");
+const isDuration = (value: unknown): value is number =>
+  ICPC_DURATIONS_S.includes(value as (typeof ICPC_DURATIONS_S)[number]);
+
+const isKindFilter = (value: unknown): value is IcpcKindFilter =>
+  value === "all" || ICPC_KINDS.includes(value as (typeof ICPC_KINDS)[number]);
+
+/** ICPC scoreboard drill settings from parsed JSON; invalid fields fall back to defaults. */
+export function parseIcpcSettings(value: unknown): IcpcSettings {
+  const raw = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+  return {
+    durationS: isDuration(raw["durationS"]) ? raw["durationS"] : DEFAULT_ICPC_SETTINGS.durationS,
+    kind: isKindFilter(raw["kind"]) ? raw["kind"] : DEFAULT_ICPC_SETTINGS.kind,
+    compileErrorCounts:
+      typeof raw["compileErrorCounts"] === "boolean"
+        ? raw["compileErrorCounts"]
+        : DEFAULT_ICPC_SETTINGS.compileErrorCounts,
+  };
 }
 
-export function loadIcpcSettings(_store: KeyValueStore): IcpcSettings {
-  throw new Error("todo");
+export function loadIcpcSettings(store: KeyValueStore): IcpcSettings {
+  return parseIcpcSettings(readJson(store, ICPC_KEY));
 }
 
-export function saveIcpcSettings(_store: KeyValueStore, _settings: IcpcSettings): void {
-  throw new Error("todo");
+export function saveIcpcSettings(store: KeyValueStore, settings: IcpcSettings): void {
+  tryWriteJson(store, ICPC_KEY, settings);
 }
 
-export function loadIcpcResults(_store: KeyValueStore): IcpcResult[] {
-  throw new Error("todo");
+const RESULT_NUMBERS = ["durationS", "seed", "correct", "wrong", "skipped", "finishedAt"];
+
+function isIcpcResult(value: unknown): value is IcpcResult {
+  if (typeof value !== "object" || value === null) return false;
+  const r = value as Record<string, unknown>;
+  return (
+    r["version"] === 1 &&
+    isKindFilter(r["kind"]) &&
+    typeof r["compileErrorCounts"] === "boolean" &&
+    RESULT_NUMBERS.every((k) => typeof r[k] === "number" && Number.isFinite(r[k]))
+  );
 }
 
-export function appendIcpcResult(_store: KeyValueStore, _result: IcpcResult): void {
-  throw new Error("todo");
+export function loadIcpcResults(store: KeyValueStore): IcpcResult[] {
+  const value = readJson(store, ICPC_RESULTS_KEY);
+  if (!Array.isArray(value)) return [];
+  return value.filter(isIcpcResult);
+}
+
+export function appendIcpcResult(store: KeyValueStore, result: IcpcResult): void {
+  const results = [...loadIcpcResults(store), result];
+  tryWriteJson(store, ICPC_RESULTS_KEY, results.slice(-MAX_ICPC_RESULTS));
 }

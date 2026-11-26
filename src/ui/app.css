@@ -2811,3 +2811,290 @@ th {
     font-size: 7pt;
   }
 }
+
+/* ICPC / Maratona SBC scoreboard drill (T43, ADR-T43-1). */
+.icpc-ce-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.icpc-board-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--selection);
+  background: var(--surface);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.icpc-board-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--selection);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.icpc-board-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.icpc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.icpc-table th,
+.icpc-table td {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--selection);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.icpc-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.icpc-table th {
+  color: var(--muted);
+  font-weight: 600;
+  background: var(--bg);
+}
+
+.icpc-table th.icpc-col-team,
+.icpc-table td.icpc-col-team {
+  text-align: left;
+}
+
+.icpc-prob-head {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  color: var(--text);
+}
+
+.icpc-balloon {
+  display: inline-block;
+  width: 0.85rem;
+  height: 1rem;
+  flex-shrink: 0;
+  vertical-align: -0.15rem;
+}
+
+.icpc-balloon-A {
+  color: var(--accent);
+}
+
+.icpc-balloon-B {
+  color: var(--correct);
+}
+
+.icpc-balloon-C {
+  color: var(--warning);
+}
+
+.icpc-balloon-D {
+  color: var(--wrong);
+}
+
+.icpc-balloon-E {
+  color: var(--selection-text);
+}
+
+.icpc-balloon-F {
+  color: var(--text);
+}
+
+.icpc-balloon-G {
+  color: var(--muted);
+}
+
+.icpc-balloon-H {
+  color: var(--selection);
+}
+
+.icpc-row-focus {
+  background: var(--selection);
+  color: var(--selection-text);
+}
+
+.icpc-row-rival {
+  background: var(--bg);
+}
+
+.icpc-tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0 0.3rem;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.75em;
+}
+
+.icpc-row-focus .icpc-tag {
+  border-color: var(--selection-text);
+  color: var(--selection-text);
+}
+
+.icpc-tag-rival {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.icpc-cell-ac {
+  color: var(--correct);
+  font-weight: 700;
+}
+
+.icpc-cell-ac-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+}
+
+.icpc-cell-rej {
+  color: var(--wrong);
+}
+
+.icpc-cell-empty {
+  color: var(--muted);
+}
+
+.icpc-cell-target {
+  outline: 1px dashed var(--accent);
+  outline-offset: -2px;
+}
+
+.icpc-sub-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-top: 1px solid var(--selection);
+  background: var(--bg);
+  font-size: var(--text-sm);
+}
+
+.icpc-verdict {
+  display: inline-block;
+  padding: 0 0.35rem;
+  border: 1px solid var(--muted);
+  font-weight: 700;
+}
+
+.icpc-verdict-ac {
+  border-color: var(--correct);
+  color: var(--correct);
+}
+
+.icpc-verdict-ce {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.icpc-verdict-rej {
+  border-color: var(--wrong);
+  color: var(--wrong);
+}
+
+.icpc-sub-log {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-top: 1px solid var(--selection);
+  font-size: var(--text-sm);
+}
+
+.icpc-prob-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--selection);
+  background: var(--bg);
+}
+
+.icpc-prob-log-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+.icpc-prob-log-runs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.icpc-run-chip {
+  font-variant-numeric: tabular-nums;
+  padding: 0 0.25rem;
+  border: 1px solid var(--selection);
+  font-size: 0.85em;
+}
+
+.icpc-choose-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+.icpc-choose-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: var(--space-2);
+  border: 1px solid var(--selection);
+  background: var(--bg);
+  font-variant-numeric: tabular-nums;
+}
+
+.icpc-choose-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
+.icpc-choose-ac {
+  color: var(--correct);
+  font-weight: 700;
+}
+
+.icpc-choose-att {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 48rem) {
+  .icpc-table {
+    font-size: 0.82rem;
+  }
+
+  .icpc-table th,
+  .icpc-table td {
+    padding: 0.25rem 0.35rem;
+  }
+
+  .icpc-choose-grid {
+    grid-template-columns: repeat(auto-fit, minmax(5.2rem, 1fr));
+  }
+}

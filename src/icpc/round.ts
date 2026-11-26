@@ -1,5 +1,6 @@
 import type { TrainingEvent } from "../stats/event";
-import type { IcpcItem, IcpcKind, IcpcKindFilter } from "./drill";
+import { checkIcpcAnswer } from "./check";
+import { generateIcpcItem, type IcpcItem, type IcpcKind, type IcpcKindFilter } from "./drill";
 
 export const ICPC_DURATIONS_S = [60, 90, 120] as const;
 
@@ -53,41 +54,169 @@ export type IcpcRoundStats = {
   readonly wrongItems: readonly IcpcItemResult[];
 };
 
-export function startIcpcRound(_config: IcpcRoundConfig): IcpcRound {
-  throw new Error("todo");
+function makeItem(config: IcpcRoundConfig, index: number): IcpcItem {
+  return generateIcpcItem(config.seed, index, {
+    kind: config.kind,
+    compileErrorCounts: config.compileErrorCounts,
+  });
 }
 
-export function touchIcpcRound(_round: IcpcRound, _now: number): IcpcRound {
-  throw new Error("todo");
+export function startIcpcRound(config: IcpcRoundConfig): IcpcRound {
+  return {
+    config,
+    startedAt: null,
+    itemStartedAt: null,
+    finished: false,
+    current: makeItem(config, 0),
+    results: [],
+    last: null,
+  };
 }
 
-export function isIcpcRoundFinished(_round: IcpcRound): boolean {
-  throw new Error("todo");
+/** Starts the clock on the first keystroke if not already running. */
+export function touchIcpcRound(round: IcpcRound, now: number): IcpcRound {
+  if (round.finished || round.startedAt !== null) return round;
+  return { ...round, startedAt: now, itemStartedAt: now };
 }
 
-export function icpcRemainingMs(_round: IcpcRound, _now: number): number {
-  throw new Error("todo");
+export function isIcpcRoundFinished(round: IcpcRound): boolean {
+  return round.finished;
 }
 
-export function tickIcpcRound(_round: IcpcRound, _now: number): IcpcRound {
-  throw new Error("todo");
+export function icpcRemainingMs(round: IcpcRound, now: number): number {
+  if (round.finished) return 0;
+  if (round.startedAt === null) return round.config.durationMs;
+  return Math.max(0, round.config.durationMs - (now - round.startedAt));
 }
 
-export function submitIcpcAnswer(_round: IcpcRound, _text: string, _now: number): IcpcRound {
-  throw new Error("todo");
+export function tickIcpcRound(round: IcpcRound, now: number): IcpcRound {
+  if (round.finished || round.startedAt === null) return round;
+  if (now - round.startedAt >= round.config.durationMs) {
+    return { ...round, finished: true };
+  }
+  return round;
 }
 
-export function skipIcpcItem(_round: IcpcRound, _now: number): IcpcRound {
-  throw new Error("todo");
+function advance(round: IcpcRound, item: IcpcItemResult, now: number): IcpcRound {
+  const startedAt = round.startedAt ?? now;
+  const expired = now - startedAt >= round.config.durationMs;
+  const nextIndex = round.current.index + 1;
+  return {
+    ...round,
+    startedAt,
+    itemStartedAt: now,
+    finished: expired,
+    current: expired ? round.current : makeItem(round.config, nextIndex),
+    results: [...round.results, item],
+    last: item,
+  };
 }
 
-export function icpcRoundStats(_round: IcpcRound): IcpcRoundStats {
-  throw new Error("todo");
+export function submitIcpcAnswer(round: IcpcRound, text: string, now: number): IcpcRound {
+  if (round.finished) return round;
+  const base = touchIcpcRound(round, now);
+  const { current } = base;
+  const checked = checkIcpcAnswer(current.kind, text, current.canonical);
+  const timeMs = Math.max(0, now - (base.itemStartedAt ?? now));
+  const result: IcpcItemResult = {
+    index: current.index,
+    seed: current.seed,
+    kind: current.kind,
+    kc: current.kc,
+    compileErrorCounts: current.compileErrorCounts,
+    prompt: current.prompt,
+    canonical: current.canonical,
+    typed: text.trim(),
+    ok: checked.ok,
+    skipped: false,
+    reason: checked.ok ? "" : checked.reason,
+    explanation: current.explanation,
+    timeMs,
+  };
+  return advance(base, result, now);
 }
 
+export function skipIcpcItem(round: IcpcRound, now: number): IcpcRound {
+  if (round.finished) return round;
+  const base = touchIcpcRound(round, now);
+  const { current } = base;
+  const timeMs = Math.max(0, now - (base.itemStartedAt ?? now));
+  const result: IcpcItemResult = {
+    index: current.index,
+    seed: current.seed,
+    kind: current.kind,
+    kc: current.kc,
+    compileErrorCounts: current.compileErrorCounts,
+    prompt: current.prompt,
+    canonical: current.canonical,
+    typed: "",
+    ok: false,
+    skipped: true,
+    reason: "Item pulado.",
+    explanation: current.explanation,
+    timeMs,
+  };
+  return advance(base, result, now);
+}
+
+export function icpcRoundStats(round: IcpcRound): IcpcRoundStats {
+  const { results } = round;
+  let correct = 0;
+  let wrong = 0;
+  let skipped = 0;
+  const groups = new Map<IcpcKind, { total: number; correct: number; timeMs: number }>();
+
+  for (const r of results) {
+    if (r.skipped) skipped += 1;
+    else if (r.ok) correct += 1;
+    else wrong += 1;
+    const g = groups.get(r.kind) ?? { total: 0, correct: 0, timeMs: 0 };
+    g.total += 1;
+    if (r.ok) g.correct += 1;
+    g.timeMs += r.timeMs;
+    groups.set(r.kind, g);
+  }
+
+  const total = results.length;
+  const answered = correct + wrong;
+  const byKind: IcpcKindStats[] = [...groups.entries()].map(([kind, g]) => ({
+    kind,
+    total: g.total,
+    correct: g.correct,
+    avgTimeMs: Math.round(g.timeMs / g.total),
+  }));
+
+  return {
+    correct,
+    wrong,
+    skipped,
+    total,
+    accuracy: answered > 0 ? correct / answered : 0,
+    byKind,
+    wrongItems: results.filter((r) => !r.ok && !r.skipped),
+  };
+}
+
+/** One T22 TrainingEvent per attempted or skipped item in an ICPC scoreboard round (T43 AC-3). */
 export function icpcRoundEvents(
-  _round: Pick<IcpcRound, "results" | "config">,
-  _at: number,
+  round: Pick<IcpcRound, "results" | "config">,
+  at: number,
 ): TrainingEvent[] {
-  throw new Error("todo");
+  const durS = Math.round(round.config.durationMs / 1000);
+  const config = `${String(durS)}s-${round.config.kind}${round.config.compileErrorCounts ? "-ce" : ""}`;
+  return round.results.map((r) => ({
+    at,
+    drill: "icpc.score",
+    config,
+    kc: r.kc,
+    ok: r.ok,
+    timeMs: r.timeMs,
+    extra: {
+      seed: r.seed,
+      i: r.index,
+      kind: r.kind,
+      compileErrorCounts: r.compileErrorCounts,
+      skipped: r.skipped,
+    },
+  }));
 }
