@@ -1,7 +1,7 @@
 ---
 id: T49
 title: Rolagem independente dos painéis
-status: in-progress
+status: review
 depends_on: []
 branch: fix/independent-scroll
 adrs: []
@@ -50,11 +50,27 @@ continua sendo uma gaveta.
 ## Subtasks (one commit each)
 
 - [x] spec
-- [ ] tests (regressão vermelha)
-- [ ] fix
-- [ ] docs: *Log* e status `review`
+- [x] tests (regressão vermelha)
+- [x] fix
+- [x] docs: *Log* e status `review`
 
 Passos de modelos e qualidade separados não se aplicam: é uma correção só
 de CSS, e o `npm run check` roda no commit da correção.
 
 ## Log
+
+- 2026-11-25 — **Bug:** rolar o painel rolava a página inteira, e a árvore
+  (1248 px numa janela de 720 px) ia junto. **Causa:** `.shell` usava
+  `min-height: 100dvh`, então o documento crescia com o conteúdo e a única
+  rolagem era a da janela. **Correção:** no desktop (acima de 48rem, só na
+  tela), `.shell` tem a altura da janela, e `.tree` e `.shell-main` rolam
+  com `overflow-y: auto`. O índice da Referência continua `sticky` e ganhou
+  `max-height` com rolagem própria. O celular (gaveta) e a impressão não
+  mudam. **Teste:** `tests/e2e/regression-T49-independent-scroll.spec.ts`.
+- 2026-11-25 — **Teste corrigido antes da correção:** a primeira versão
+  exigia que o índice ficasse no mesmo pixel. Como ele é `sticky`, sobe até
+  o topo do painel e para ali, então agora o teste exige que ele continue
+  inteiro dentro da janela (commit próprio, antes do `fix`).
+- 2026-11-25 — `npm run check` (4487 testes) e `npm run test:e2e` (54)
+  verdes.
+
