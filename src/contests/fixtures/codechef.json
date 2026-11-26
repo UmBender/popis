@@ -1,0 +1,44 @@
+{
+  "status": "success",
+  "message": "All contests list",
+  "present_contests": [
+    {
+      "contest_id": "79983",
+      "contest_code": "START266",
+      "contest_name": "Starters 266 (Rated till 5 Star)",
+      "contest_start_date": "25 Nov 2026  20:00:00",
+      "contest_end_date": "25 Nov 2026  22:00:00",
+      "contest_start_date_iso": "2026-11-25T20:00:00+05:30",
+      "contest_end_date_iso": "2026-11-25T22:00:00+05:30",
+      "contest_duration": "120",
+      "distinct_users": 11870
+    }
+  ],
+  "future_contests": [
+    {
+      "contest_id": "82517",
+      "contest_code": "DSAMONDAY030",
+      "contest_name": "Monday Munch - DSA Challenge 030 (Rated)",
+      "contest_start_date": "30 Nov 2026  19:00:00",
+      "contest_end_date": "30 Nov 2026  22:00:00",
+      "contest_start_date_iso": "2026-11-30T19:00:00+05:30",
+      "contest_end_date_iso": "2026-11-30T22:00:00+05:30",
+      "contest_duration": "180",
+      "distinct_users": 3152
+    }
+  ],
+  "practice_contests": [],
+  "past_contests": [
+    {
+      "contest_id": "79978",
+      "contest_code": "START265",
+      "contest_name": "Starters 265 (Rated for 6 Star)",
+      "contest_start_date": "18 Nov 2026  20:00:00",
+      "contest_end_date": "18 Nov 2026  22:00:00",
+      "contest_start_date_iso": "2026-11-18T20:00:00+05:30",
+      "contest_end_date_iso": "2026-11-18T22:00:00+05:30",
+      "contest_duration": "120",
+      "distinct_users": 12842
+    }
+  ]
+}

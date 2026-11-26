@@ -30,8 +30,14 @@ describe("pages", () => {
     expect(text).toMatch(/^on:\n {2}push:\n {4}branches: \[main\]\n {2}workflow_dispatch:/m);
   });
 
-  it("pages workflow installs, checks and builds in that order", () => {
-    expect(runs(workflow())).toEqual(["npm ci", "npm run check", "npm run build:pages"]);
+  it("pages workflow installs, checks, fetches contests and builds in that order", () => {
+    // ADR-T38-1 amends ADR-T11-1 by fetching contests.json before build:pages.
+    expect(runs(workflow())).toEqual([
+      "npm ci",
+      "npm run check",
+      "npm run contests:fetch",
+      "npm run build:pages",
+    ]);
   });
 
   it("pages workflow uploads dist and deploys it", () => {
