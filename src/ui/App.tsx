@@ -73,6 +73,7 @@ import { GdbScreen, type GdbDrill } from "./GdbScreen";
 import { ShellScreen, type ShellDrill } from "./ShellScreen";
 import { CompileScreen } from "./CompileScreen";
 import { StlScreen } from "./StlScreen";
+import { IcpcScreen } from "./IcpcScreen";
 import { RegexScreen, type RegexDrill } from "./RegexScreen";
 import { parseRefHash } from "../ref/link";
 import type { Lang } from "../ref/model";
@@ -749,6 +750,16 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
       case "stl":
         return (
           <StlScreen
+            clock={clock}
+            store={store}
+            newSeed={newSeed}
+            onBack={backToMode}
+            onRunning={setRunning}
+          />
+        );
+      case "icpc":
+        return (
+          <IcpcScreen
             clock={clock}
             store={store}
             newSeed={newSeed}
