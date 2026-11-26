@@ -2,7 +2,7 @@
 id: T28
 title: GDB - revisão e treino do dia
 status: todo
-depends_on: [T27]
+depends_on: [T53]
 branch: task/T28-gdb-adaptive
 adrs: []
 tags: [task]
@@ -53,9 +53,10 @@ Ligar os treinos de GDB ao treino adaptativo da T24 (ADR-T24-1):
 
 ## Notas para o batch
 
-- **Ordem:** depende da T27 só para incluir as sessões. Se a T27 demorar
-  ou for adiada, esta task pode vir antes dela, sem o tipo
-  `gdb-session`. Nesse caso, corrija `depends_on` para `[T26]` e tire
-  as menções a sessão antes de começar.
+- **Ordem:** depende da T53 (a sessão simulada, que saiu da T27 em
+  2026-11-26) só para incluir as sessões. Se a T53 demorar ou for
+  adiada, esta task pode vir antes dela, sem o tipo `gdb-session`. Nesse
+  caso, corrija `depends_on` para `[T26]` e tire as menções a sessão
+  antes de começar.
 
 ## Log
