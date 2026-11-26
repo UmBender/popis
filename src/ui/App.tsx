@@ -126,8 +126,8 @@ const REGEX_DRILLS: Partial<Readonly<Record<ItemId, RegexDrill>>> = {
   "regex-practice": "practice",
 };
 
-/** The tree item of each language of the reference (T46, ADR-T46-1). */
-const REF_ITEMS: Readonly<Record<Lang, ItemId>> = { cpp: "ref-cpp" };
+/** The tree item of each language of the reference (T46, T47, ADR-T46-1, ADR-T47-1). */
+const REF_ITEMS: Readonly<Record<Lang, ItemId>> = { cpp: "ref-cpp", py: "ref-py" };
 
 /** The reference item a `#<lang>/<id>` hash opens, if any. */
 function hashItem(): ItemId | null {
@@ -695,7 +695,9 @@ export function App({ clock, store, newSeed, narrow }: AppProps): ReactNode {
           />
         );
       case "ref-cpp":
-        return <RefScreen lang="cpp" />;
+        return <RefScreen key="cpp" lang="cpp" />;
+      case "ref-py":
+        return <RefScreen key="py" lang="py" />;
       case "data":
         return (
           <div className="screen data">
