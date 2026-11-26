@@ -64,9 +64,9 @@ describe("IcpcScreen (AC-3)", () => {
     const item0 = generateIcpcItem(SEED, 0, { kind: "penalidade", compileErrorCounts: false });
     expect(screen.getByTestId("icpc-time").textContent).toBe("90 s");
     expect(screen.getByTestId("icpc-board")).toBeTruthy();
-    expect(screen.getByTestId("icpc-board").querySelectorAll(".icpc-balloon").length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      screen.getByTestId("icpc-board").querySelectorAll(".icpc-balloon").length,
+    ).toBeGreaterThan(0);
     expect(input().inputMode).toBe("numeric");
 
     submit(` ${item0.canonical} `);

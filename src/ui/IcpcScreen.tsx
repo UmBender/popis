@@ -1,12 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
-import {
-  ICPC_KIND_LABELS,
-  ICPC_KINDS,
-  type IcpcItem,
-  type IcpcKind,
-  type IcpcKindFilter,
-} from "../icpc/drill";
+import { ICPC_KIND_LABELS, ICPC_KINDS, type IcpcItem, type IcpcKind } from "../icpc/drill";
 import {
   ICPC_DURATIONS_S,
   icpcRemainingMs,
@@ -41,7 +35,10 @@ import { RoundBar } from "./shell/RoundBar";
 const TICK_MS = 100;
 
 const ICPC_RULES: readonly (readonly [string, string])[] = [
-  ["Problemas resolvidos", "primeiro critério de classificação (quem resolveu mais fica na frente)"],
+  [
+    "Problemas resolvidos",
+    "primeiro critério de classificação (quem resolveu mais fica na frente)",
+  ],
   ["Penalidade", "soma de (minuto do 1º AC + 20 × rejeições antes do AC) só nos problemas com AC"],
   ["Não resolvido", "rejeições em problema sem AC nunca somam penalidade"],
   ["Após o AC", "submissões depois do primeiro AC no mesmo problema são ignoradas"],
@@ -94,7 +91,15 @@ function Balloon({ problem }: { readonly problem: string }): ReactNode {
       viewBox="0 0 16 20"
       aria-hidden="true"
     >
-      <ellipse cx="8" cy="7.5" rx="6" ry="6.5" fill="currentColor" stroke="var(--text)" strokeWidth="0.8" />
+      <ellipse
+        cx="8"
+        cy="7.5"
+        rx="6"
+        ry="6.5"
+        fill="currentColor"
+        stroke="var(--text)"
+        strokeWidth="0.8"
+      />
       <polygon points="6.5,13.8 9.5,13.8 8,15.8" fill="currentColor" />
       <path d="M8 15.8 C7 17.3, 9 18.4, 8 19.8" fill="none" stroke="currentColor" strokeWidth="1" />
     </svg>
@@ -110,20 +115,27 @@ function verdictClass(verdict: Verdict): string {
 function ProblemCellView({
   cell,
   highlight,
+  hideAttempts,
 }: {
   readonly cell: ProblemCell;
   readonly highlight?: boolean;
+  readonly hideAttempts?: boolean;
 }): ReactNode {
   const cls = highlight === true ? "icpc-cell-target" : undefined;
   if (cell.solved && cell.acMinute !== null) {
     return (
-      <td className={cls === undefined ? "icpc-cell-ac" : `icpc-cell-ac ${cls}`}>
+      <td className="icpc-cell-ac">
         <span className="icpc-cell-ac-inner">
           <Balloon problem={cell.problem} />
-          <span>{`${String(cell.attempts)}/${String(cell.acMinute)}`}</span>
+          <span>
+            {hideAttempts === true ? "AC" : `${String(cell.attempts)}/${String(cell.acMinute)}`}
+          </span>
         </span>
       </td>
     );
+  }
+  if (hideAttempts === true) {
+    return <td className="icpc-cell-empty">—</td>;
   }
   if (cell.rejected > 0) {
     return (
@@ -173,11 +185,7 @@ function ScoreboardTable({
           {rows.map((row) => {
             const isFocus = row.team === focusTeam;
             const isRival = row.team === rivalTeam;
-            const rowClass = isFocus
-              ? "icpc-row-focus"
-              : isRival
-                ? "icpc-row-rival"
-                : undefined;
+            const rowClass = isFocus ? "icpc-row-focus" : isRival ? "icpc-row-rival" : undefined;
             return (
               <tr key={row.team} className={rowClass}>
                 <td>{hidePenalty === true ? "—" : `${String(row.rank)}º`}</td>
@@ -193,6 +201,7 @@ function ScoreboardTable({
                     key={p}
                     cell={row.problems[p]!}
                     highlight={isFocus && p === targetProblem}
+                    hideAttempts={hidePenalty}
                   />
                 ))}
               </tr>
@@ -246,7 +255,7 @@ function BoardView({ item }: { readonly item: IcpcItem }): ReactNode {
         <div className="icpc-board-card" data-testid="icpc-board">
           <div className="icpc-board-head">
             <span>{headerText}</span>
-            <span>formato: tentativas/min</span>
+            <span>log de submissões abaixo</span>
           </div>
           <ScoreboardTable
             rows={[item.standing]}
@@ -286,7 +295,15 @@ function BoardView({ item }: { readonly item: IcpcItem }): ReactNode {
         </div>
       );
 
-    case "ultrapassar":
+    case "ultrapassar": {
+      const chaserRow = item.board.find((r) => r.team === item.chaser)!;
+      const targetCell = chaserRow.problems[item.targetProblem]!;
+      const rejText =
+        targetCell.rejected === 0
+          ? "sem rejeições anteriores"
+          : targetCell.rejected === 1
+            ? "1 rejeição anterior"
+            : `${String(targetCell.rejected)} rejeições anteriores`;
       return (
         <div className="icpc-board-card" data-testid="icpc-board">
           <div className="icpc-board-head">
@@ -300,8 +317,16 @@ function BoardView({ item }: { readonly item: IcpcItem }): ReactNode {
             rivalTeam={item.rival}
             targetProblem={item.targetProblem}
           />
+          <div className="icpc-sub-banner" data-testid="icpc-target-summary">
+            <span className="icpc-prob-head">
+              <Balloon problem={item.targetProblem} />
+              <span>{`Problema ${item.targetProblem}`}</span>
+            </span>
+            <span>{`${item.chaser}: ${rejText}`}</span>
+          </div>
         </div>
       );
+    }
 
     case "escolher":
       return (
@@ -455,7 +480,9 @@ export function IcpcScreen({
     [results, settings.durationS, settings.kind, settings.compileErrorCounts],
   );
 
-  const remainingS = Math.ceil(icpcRemainingMs(round, Math.max(now, round.startedAt ?? now)) / 1000);
+  const remainingS = Math.ceil(
+    icpcRemainingMs(round, Math.max(now, round.startedAt ?? now)) / 1000,
+  );
   const correctCount = round.results.filter((r) => r.ok).length;
   const stats = useMemo(() => (finished ? icpcRoundStats(round) : null), [finished, round]);
   const best = historyScores.length > 0 ? Math.max(...historyScores) : correctCount;
@@ -493,7 +520,7 @@ export function IcpcScreen({
             id="icpc-kind"
             value={settings.kind}
             onChange={(e) => {
-              change({ kind: e.target.value as IcpcKindFilter });
+              change({ kind: e.target.value });
             }}
           >
             <option value="all">Todos</option>

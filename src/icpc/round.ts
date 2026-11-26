@@ -97,8 +97,12 @@ export function tickIcpcRound(round: IcpcRound, now: number): IcpcRound {
   return round;
 }
 
-function advance(round: IcpcRound, item: IcpcItemResult, now: number): IcpcRound {
-  const startedAt = round.startedAt ?? now;
+function advance(
+  round: IcpcRound,
+  startedAt: number,
+  item: IcpcItemResult,
+  now: number,
+): IcpcRound {
   const expired = now - startedAt >= round.config.durationMs;
   const nextIndex = round.current.index + 1;
   return {
@@ -114,10 +118,11 @@ function advance(round: IcpcRound, item: IcpcItemResult, now: number): IcpcRound
 
 export function submitIcpcAnswer(round: IcpcRound, text: string, now: number): IcpcRound {
   if (round.finished) return round;
-  const base = touchIcpcRound(round, now);
-  const { current } = base;
+  const startedAt = round.startedAt ?? now;
+  const itemStartedAt = round.itemStartedAt ?? now;
+  const { current } = round;
   const checked = checkIcpcAnswer(current.kind, text, current.canonical);
-  const timeMs = Math.max(0, now - (base.itemStartedAt ?? now));
+  const timeMs = Math.max(0, now - itemStartedAt);
   const result: IcpcItemResult = {
     index: current.index,
     seed: current.seed,
@@ -133,14 +138,15 @@ export function submitIcpcAnswer(round: IcpcRound, text: string, now: number): I
     explanation: current.explanation,
     timeMs,
   };
-  return advance(base, result, now);
+  return advance(round, startedAt, result, now);
 }
 
 export function skipIcpcItem(round: IcpcRound, now: number): IcpcRound {
   if (round.finished) return round;
-  const base = touchIcpcRound(round, now);
-  const { current } = base;
-  const timeMs = Math.max(0, now - (base.itemStartedAt ?? now));
+  const startedAt = round.startedAt ?? now;
+  const itemStartedAt = round.itemStartedAt ?? now;
+  const { current } = round;
+  const timeMs = Math.max(0, now - itemStartedAt);
   const result: IcpcItemResult = {
     index: current.index,
     seed: current.seed,
@@ -156,7 +162,7 @@ export function skipIcpcItem(round: IcpcRound, now: number): IcpcRound {
     explanation: current.explanation,
     timeMs,
   };
-  return advance(base, result, now);
+  return advance(round, startedAt, result, now);
 }
 
 export function icpcRoundStats(round: IcpcRound): IcpcRoundStats {

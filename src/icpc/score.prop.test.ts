@@ -83,10 +83,7 @@ describe("computeScoreboard properties (AC-1)", () => {
         (log, team, problem, minute, compileErrorCounts) => {
           const opts = { compileErrorCounts, teams: TEAMS, problems: PROBLEMS };
           const before = computeScoreboard(log, opts);
-          const after = computeScoreboard(
-            [...log, { team, problem, minute, verdict: "AC" }],
-            opts,
-          );
+          const after = computeScoreboard([...log, { team, problem, minute, verdict: "AC" }], opts);
 
           const prevIdx = before.findIndex((r) => r.team === team);
           const nextIdx = after.findIndex((r) => r.team === team);

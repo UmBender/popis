@@ -93,7 +93,7 @@ function scoreProblem(
 
   const solved = acMinute !== null;
   const attempts = solved ? rejected + 1 : rejected;
-  const penalty = solved ? acMinute + penaltyPerReject * rejected : 0;
+  const penalty = acMinute !== null ? acMinute + penaltyPerReject * rejected : 0;
 
   return {
     problem,
@@ -152,7 +152,8 @@ export function computeScoreboard(
       if (cell.solved && cell.acMinute !== null) {
         solved += 1;
         penalty += cell.penalty;
-        lastAcMinute = lastAcMinute === null ? cell.acMinute : Math.max(lastAcMinute, cell.acMinute);
+        lastAcMinute =
+          lastAcMinute === null ? cell.acMinute : Math.max(lastAcMinute, cell.acMinute);
       }
     }
 
@@ -162,7 +163,7 @@ export function computeScoreboard(
   raw.sort((a, b) => {
     const cmp = compareStandings(a, b);
     if (cmp !== 0) return cmp;
-    return a.team < b.team ? -1 : a.team > b.team ? 1 : 0;
+    return a.team < b.team ? -1 : 1;
   });
 
   const standings: TeamStanding[] = [];

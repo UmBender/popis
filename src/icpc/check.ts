@@ -1,19 +1,14 @@
 import type { IcpcKind } from "./drill";
 
 export type IcpcCheckResult =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly reason: string };
+  { readonly ok: true } | { readonly ok: false; readonly reason: string };
 
 const MINUTE_RE = /^(\d+)(?:\s*min)?$/i;
 const RANK_RE = /^#?(\d+)[ºo°]?$/i;
 const LETTER_RE = /^[a-z]$/i;
 
 /** Checks an answer for one of the four ICPC scoreboard drill kinds (T43 AC-2). */
-export function checkIcpcAnswer(
-  kind: IcpcKind,
-  typed: string,
-  canonical: string,
-): IcpcCheckResult {
+export function checkIcpcAnswer(kind: IcpcKind, typed: string, canonical: string): IcpcCheckResult {
   const trimmed = typed.trim();
 
   switch (kind) {
@@ -26,7 +21,7 @@ export function checkIcpcAnswer(
       if (match === null) {
         return { ok: false, reason: "Digite apenas um número inteiro não negativo." };
       }
-      const value = Number.parseInt(match[1] ?? "", 10);
+      const value = Number.parseInt(match[1]!, 10);
       const expected = Number.parseInt(canonical, 10);
       if (value === expected) return { ok: true };
       return {
@@ -43,7 +38,7 @@ export function checkIcpcAnswer(
       if (match === null) {
         return { ok: false, reason: "Digite uma posição inteira positiva (ex.: 2 ou 2º)." };
       }
-      const value = Number.parseInt(match[1] ?? "", 10);
+      const value = Number.parseInt(match[1]!, 10);
       if (value <= 0) {
         return { ok: false, reason: "A posição começa em 1." };
       }

@@ -3086,12 +3086,16 @@ th {
 
 @media (max-width: 48rem) {
   .icpc-table {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
   }
 
   .icpc-table th,
   .icpc-table td {
-    padding: 0.25rem 0.35rem;
+    padding: 0.25rem 0.28rem;
+  }
+
+  .icpc-table td .icpc-balloon {
+    display: none;
   }
 
   .icpc-choose-grid {

@@ -16,7 +16,7 @@ export const ICPC_KIND_LABELS: Readonly<Record<IcpcKind, string>> = {
   penalidade: "Penalidade",
   posicao: "Posição",
   ultrapassar: "Ultrapassar",
-  escolher: "Escolher problema",
+  escolher: "Escolher",
 };
 
 export const ICPC_MAX_MINUTE = 300;
@@ -130,7 +130,7 @@ function sortSubmissions(subs: Submission[]): Submission[] {
   return subs.sort((a, b) => {
     if (a.minute !== b.minute) return a.minute - b.minute;
     if (a.problem !== b.problem) return a.problem < b.problem ? -1 : 1;
-    return a.team < b.team ? -1 : a.team > b.team ? 1 : 0;
+    return a.team < b.team ? -1 : 1;
   });
 }
 
@@ -297,71 +297,73 @@ function generatePosicao(
   const teamCount = rng.int(4, 5);
   const teams = pickDistinct(rng, TEAM_NAMES, teamCount);
 
-  return retry(() => {
-    const currentMinute = rng.int(110, 275);
-    const submissions: Submission[] = [];
+  return retry<PosicaoItem | null>(
+    () => {
+      const currentMinute = rng.int(110, 275);
+      const submissions: Submission[] = [];
 
-    for (const team of teams) {
-      const solvedCount = rng.int(1, probCount - 1);
-      submissions.push(
-        ...buildTeamSubmissions(rng, team, problems, solvedCount, 12, currentMinute - 12, 2),
-      );
-    }
+      for (const team of teams) {
+        const solvedCount = rng.int(1, probCount - 1);
+        submissions.push(
+          ...buildTeamSubmissions(rng, team, problems, solvedCount, 12, currentMinute - 12, 2),
+        );
+      }
 
-    sortSubmissions(submissions);
-    const before = computeScoreboard(submissions, { compileErrorCounts, teams, problems });
+      sortSubmissions(submissions);
+      const before = computeScoreboard(submissions, { compileErrorCounts, teams, problems });
 
-    // Prefer a team not already in 1st place so an AC can overtake others.
-    const candidates = before.slice(1);
-    const targetBefore = rng.pick(candidates);
-    const unsolved = problems.filter((p) => !targetBefore.problems[p]!.solved);
-    const targetProblem = rng.pick(unsolved);
+      // Prefer a team not already in 1st place so an AC can overtake others.
+      const candidates = before.slice(1);
+      const targetBefore = rng.pick(candidates);
+      const unsolved = problems.filter((p) => !targetBefore.problems[p]!.solved);
+      const targetProblem = rng.pick(unsolved);
 
-    const roll = rng.next();
-    const verdict: Verdict =
-      roll < 0.78 ? "AC" : roll < 0.9 ? rng.pick(REJECT_VERDICTS) : "CE";
+      const roll = rng.next();
+      const verdict: Verdict = roll < 0.78 ? "AC" : roll < 0.9 ? rng.pick(REJECT_VERDICTS) : "CE";
 
-    const newSubmission: Submission = {
-      team: targetBefore.team,
-      problem: targetProblem,
-      minute: currentMinute,
-      verdict,
-    };
+      const newSubmission: Submission = {
+        team: targetBefore.team,
+        problem: targetProblem,
+        minute: currentMinute,
+        verdict,
+      };
 
-    const after = computeScoreboard([...submissions, newSubmission], {
-      compileErrorCounts,
-      teams,
-      problems,
-    });
+      const after = computeScoreboard([...submissions, newSubmission], {
+        compileErrorCounts,
+        teams,
+        problems,
+      });
 
-    const targetAfter = after.find((r) => r.team === targetBefore.team)!;
-    const tiedCount = after.filter((r) => compareStandings(r, targetAfter) === 0).length;
-    if (tiedCount !== 1) return null;
+      const targetAfter = after.find((r) => r.team === targetBefore.team)!;
+      const tiedCount = after.filter((r) => compareStandings(r, targetAfter) === 0).length;
+      if (tiedCount !== 1) return null;
 
-    const verb =
-      verdict === "AC"
-        ? `resolve ${targetProblem} no min ${String(currentMinute)}`
-        : `recebe ${verdict} em ${targetProblem} no min ${String(currentMinute)}`;
-    const lastStr =
-      targetAfter.lastAcMinute !== null ? `, último AC ${String(targetAfter.lastAcMinute)}` : "";
+      const verb =
+        verdict === "AC"
+          ? `resolve ${targetProblem} no min ${String(currentMinute)}`
+          : `recebe ${verdict} em ${targetProblem} no min ${String(currentMinute)}`;
+      const lastStr =
+        targetAfter.lastAcMinute !== null ? `, último AC ${String(targetAfter.lastAcMinute)}` : "";
 
-    return {
-      kind: "posicao",
-      index,
-      seed,
-      kc: "icpc.posicao",
-      compileErrorCounts,
-      currentMinute,
-      problems,
-      submissions,
-      before,
-      newSubmission,
-      after,
-      prompt: `${targetBefore.team} ${verb}. Qual passa a ser a posição do time no placar?`,
-      canonical: String(targetAfter.rank),
-      explanation: `Depois da submissão (${verdict}), ${targetBefore.team} fica com ${String(targetAfter.solved)} AC, ${String(targetAfter.penalty)} min${lastStr} → ${String(targetAfter.rank)}º lugar.`,
-    };
-  }, (item): item is PosicaoItem => item !== null);
+      return {
+        kind: "posicao",
+        index,
+        seed,
+        kc: "icpc.posicao",
+        compileErrorCounts,
+        currentMinute,
+        problems,
+        submissions,
+        before,
+        newSubmission,
+        after,
+        prompt: `${targetBefore.team} ${verb}. Qual passa a ser a posição do time no placar?`,
+        canonical: String(targetAfter.rank),
+        explanation: `Depois da submissão (${verdict}), ${targetBefore.team} fica com ${String(targetAfter.solved)} AC, ${String(targetAfter.penalty)} min${lastStr} → ${String(targetAfter.rank)}º lugar.`,
+      };
+    },
+    (item) => item !== null,
+  )!;
 }
 
 function generateUltrapassar(
@@ -378,126 +380,108 @@ function generateUltrapassar(
   const rival = teams[1]!;
   const others = teams.slice(2);
 
-  return retry(() => {
-    const baseSolved = rng.int(1, Math.min(2, probCount - 2));
-    const chaserSubs: Submission[] = [];
-    const chaserSolved = pickDistinct(rng, problems, baseSolved);
-    const chaserSolvedSet = new Set(chaserSolved);
+  return retry<UltrapassarItem | null>(
+    () => {
+      const baseSolved = rng.int(1, Math.min(2, probCount - 2));
+      const chaserSubs: Submission[] = [];
+      const chaserSolved = pickDistinct(rng, problems, baseSolved);
+      const chaserSolvedSet = new Set(chaserSolved);
 
-    for (const problem of chaserSolved) {
-      const acMinute = rng.int(10, 65);
-      const rejects = rng.int(0, 1);
-      const mins = pickDistinctMinutes(rng, 2, acMinute - 1, rejects);
-      for (const minute of mins) {
-        chaserSubs.push({ team: chaser, problem, minute, verdict: rng.pick(REJECT_VERDICTS) });
+      for (const problem of chaserSolved) {
+        const acMinute = rng.int(10, 65);
+        const rejects = rng.int(0, 1);
+        const mins = pickDistinctMinutes(rng, 2, acMinute - 1, rejects);
+        for (const minute of mins) {
+          chaserSubs.push({ team: chaser, problem, minute, verdict: rng.pick(REJECT_VERDICTS) });
+        }
+        chaserSubs.push({ team: chaser, problem, minute: acMinute, verdict: "AC" });
       }
-      chaserSubs.push({ team: chaser, problem, minute: acMinute, verdict: "AC" });
-    }
 
-    const chaserUnsolved = problems.filter((p) => !chaserSolvedSet.has(p));
-    const targetProblem = rng.pick(chaserUnsolved);
-    const priorRejects = rng.int(0, 2);
-    const hasCe = rng.next() < 0.35;
-    const targetMins = pickDistinctMinutes(rng, 18, 105, priorRejects + (hasCe ? 1 : 0));
-    for (let i = 0; i < priorRejects; i += 1) {
-      chaserSubs.push({
-        team: chaser,
-        problem: targetProblem,
-        minute: targetMins[i]!,
-        verdict: rng.pick(REJECT_VERDICTS),
-      });
-    }
-    if (hasCe) {
-      chaserSubs.push({
-        team: chaser,
-        problem: targetProblem,
-        minute: targetMins[priorRejects]!,
-        verdict: "CE",
-      });
-    }
-
-    const rivalSubs: Submission[] = [];
-    const rivalSolved = pickDistinct(rng, problems, baseSolved + 1);
-    for (const problem of rivalSolved) {
-      const acMinute = rng.int(35, 130);
-      const rejects = rng.int(1, 3);
-      const mins = pickDistinctMinutes(rng, 4, acMinute - 1, rejects);
-      for (const minute of mins) {
-        rivalSubs.push({ team: rival, problem, minute, verdict: rng.pick(REJECT_VERDICTS) });
+      const chaserUnsolved = problems.filter((p) => !chaserSolvedSet.has(p));
+      const targetProblem = rng.pick(chaserUnsolved);
+      const priorRejects = rng.int(0, 2);
+      const hasCe = rng.next() < 0.35;
+      const targetMins = pickDistinctMinutes(rng, 18, 105, priorRejects + (hasCe ? 1 : 0));
+      for (let i = 0; i < priorRejects; i += 1) {
+        chaserSubs.push({
+          team: chaser,
+          problem: targetProblem,
+          minute: targetMins[i]!,
+          verdict: rng.pick(REJECT_VERDICTS),
+        });
       }
-      rivalSubs.push({ team: rival, problem, minute: acMinute, verdict: "AC" });
-    }
+      if (hasCe) {
+        chaserSubs.push({
+          team: chaser,
+          problem: targetProblem,
+          minute: targetMins[priorRejects]!,
+          verdict: "CE",
+        });
+      }
 
-    const otherSubs: Submission[] = [];
-    for (const team of others) {
-      const solvedCount = rng.int(1, probCount - 1);
-      otherSubs.push(...buildTeamSubmissions(rng, team, problems, solvedCount, 12, 130, 2));
-    }
+      const rivalSubs: Submission[] = [];
+      const rivalSolved = pickDistinct(rng, problems, baseSolved + 1);
+      for (const problem of rivalSolved) {
+        const acMinute = rng.int(35, 130);
+        const rejects = rng.int(1, 3);
+        const mins = pickDistinctMinutes(rng, 4, acMinute - 1, rejects);
+        for (const minute of mins) {
+          rivalSubs.push({ team: rival, problem, minute, verdict: rng.pick(REJECT_VERDICTS) });
+        }
+        rivalSubs.push({ team: rival, problem, minute: acMinute, verdict: "AC" });
+      }
 
-    const submissions = sortSubmissions([...chaserSubs, ...rivalSubs, ...otherSubs]);
-    const latestSubMinute = submissions.reduce((acc, s) => Math.max(acc, s.minute), 20);
-    const currentMinute = latestSubMinute + rng.int(2, 15);
-    if (currentMinute >= ICPC_MAX_MINUTE - 5) return null;
+      const otherSubs: Submission[] = [];
+      for (const team of others) {
+        const solvedCount = rng.int(1, probCount - 1);
+        otherSubs.push(...buildTeamSubmissions(rng, team, problems, solvedCount, 12, 130, 2));
+      }
 
-    const opts = { compileErrorCounts, teams, problems };
-    const board = computeScoreboard(submissions, opts);
-    const chaserRow = board.find((r) => r.team === chaser)!;
-    const rivalRow = board.find((r) => r.team === rival)!;
+      const submissions = sortSubmissions([...chaserSubs, ...rivalSubs, ...otherSubs]);
+      const latestSubMinute = submissions.reduce((acc, s) => Math.max(acc, s.minute), 20);
+      const currentMinute = latestSubMinute + rng.int(2, 15);
+      if (currentMinute >= ICPC_MAX_MINUTE - 5) return null;
 
-    if (compareStandings(rivalRow, chaserRow) >= 0) return null;
+      const opts = { compileErrorCounts, teams, problems };
+      const board = computeScoreboard(submissions, opts);
+      const chaserRow = board.find((r) => r.team === chaser)!;
+      const rivalRow = board.find((r) => r.team === rival)!;
 
-    const penalizedOnTarget = chaserRow.problems[targetProblem]!.rejected;
-    // Since m >= currentMinute >= rivalRow.lastAcMinute, tying penalty loses or ties lastAcMinute;
-    // chaser strictly passes iff chaserPenalty + m + 20 * penalizedOnTarget < rivalPenalty.
-    const maxMinute =
-      rivalRow.penalty - chaserRow.penalty - DEFAULT_PENALTY_PER_REJECT * penalizedOnTarget - 1;
+      if (compareStandings(rivalRow, chaserRow) >= 0) return null;
 
-    if (maxMinute < currentMinute || maxMinute >= ICPC_MAX_MINUTE) return null;
+      const penalizedOnTarget = chaserRow.problems[targetProblem]!.rejected;
+      // Since m >= currentMinute >= rivalRow.lastAcMinute, tying penalty loses or ties lastAcMinute;
+      // chaser strictly passes iff chaserPenalty + m + 20 * penalizedOnTarget < rivalPenalty.
+      const maxMinute =
+        rivalRow.penalty - chaserRow.penalty - DEFAULT_PENALTY_PER_REJECT * penalizedOnTarget - 1;
 
-    // Cross-check exact boundary with computeScoreboard.
-    const atMax = computeScoreboard(
-      [...submissions, { team: chaser, problem: targetProblem, minute: maxMinute, verdict: "AC" }],
-      opts,
-    );
-    const atNext = computeScoreboard(
-      [
-        ...submissions,
-        { team: chaser, problem: targetProblem, minute: maxMinute + 1, verdict: "AC" },
-      ],
-      opts,
-    );
+      if (maxMinute < currentMinute || maxMinute >= ICPC_MAX_MINUTE) return null;
 
-    const chaserMax = atMax.find((r) => r.team === chaser)!;
-    const rivalMax = atMax.find((r) => r.team === rival)!;
-    const chaserNext = atNext.find((r) => r.team === chaser)!;
-    const rivalNext = atNext.find((r) => r.team === rival)!;
-    if (compareStandings(chaserMax, rivalMax) >= 0 || compareStandings(chaserNext, rivalNext) < 0) {
-      return null;
-    }
+      const rejectNote =
+        penalizedOnTarget > 0
+          ? ` + ${String(DEFAULT_PENALTY_PER_REJECT * penalizedOnTarget)} min de ${String(penalizedOnTarget)} rejeição(ões) em ${targetProblem}`
+          : "";
 
-    const rejectNote =
-      penalizedOnTarget > 0
-        ? ` + ${String(DEFAULT_PENALTY_PER_REJECT * penalizedOnTarget)} min de ${String(penalizedOnTarget)} rejeição(ões) em ${targetProblem}`
-        : "";
-
-    return {
-      kind: "ultrapassar",
-      index,
-      seed,
-      kc: "icpc.ultrapassar",
-      compileErrorCounts,
-      currentMinute,
-      problems,
-      submissions,
-      board,
-      chaser,
-      rival,
-      targetProblem,
-      prompt: `Aos ${String(currentMinute)} min, até que minuto ${chaser} precisa de AC em ${targetProblem} (sem novos erros) para passar ${rival}?`,
-      canonical: String(maxMinute),
-      explanation: `${rival} tem ${String(rivalRow.penalty)} min; ${chaser} tem ${String(chaserRow.penalty)} min${rejectNote}. Precisa fechar abaixo de ${String(rivalRow.penalty)} min (empate perde no último AC) → até o minuto ${String(maxMinute)}.`,
-    };
-  }, (item): item is UltrapassarItem => item !== null);
+      return {
+        kind: "ultrapassar",
+        index,
+        seed,
+        kc: "icpc.ultrapassar",
+        compileErrorCounts,
+        currentMinute,
+        problems,
+        submissions,
+        board,
+        chaser,
+        rival,
+        targetProblem,
+        prompt: `Aos ${String(currentMinute)} min, até que minuto ${chaser} precisa de AC em ${targetProblem} (sem novos erros) para passar ${rival}?`,
+        canonical: String(maxMinute),
+        explanation: `${rival} tem ${String(rivalRow.penalty)} min; ${chaser} tem ${String(chaserRow.penalty)} min${rejectNote}. Precisa fechar abaixo de ${String(rivalRow.penalty)} min (empate perde no último AC) → até o minuto ${String(maxMinute)}.`,
+      };
+    },
+    (item) => item !== null,
+  )!;
 }
 
 function generateEscolher(
@@ -532,15 +516,12 @@ function generateEscolher(
     if (i === decoyIdx) {
       const targetRate = Math.max(0.2, bestRate - rng.int(8, 18) / 100);
       attempts = Math.max(bestAttempts + 8, Math.ceil((bestAc + 3) / targetRate));
-      ac = Math.min(attempts - 1, Math.floor((bestRate - 0.05) * attempts));
+      const cap = Math.floor(((bestAc * 100 - 5 * bestAttempts) * attempts) / (100 * bestAttempts));
+      ac = Math.max(0, Math.min(attempts - 1, cap));
     } else {
       attempts = rng.int(8, 60);
-      const maxAc = Math.max(0, Math.floor((bestRate - 0.05) * attempts));
-      ac = rng.int(0, maxAc);
-    }
-
-    while (ac > 0 && bestAc * attempts <= ac * bestAttempts) {
-      ac -= 1;
+      const cap = Math.floor(((bestAc * 100 - 5 * bestAttempts) * attempts) / (100 * bestAttempts));
+      ac = rng.int(0, Math.max(0, Math.min(attempts - 1, cap)));
     }
     stats.push({ problem, ac, attempts });
   }
