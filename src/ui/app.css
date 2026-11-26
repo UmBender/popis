@@ -188,6 +188,25 @@ button.burger {
   max-width: 80ch;
 }
 
+/* Desktop (T49): the window never scrolls; the tree and the panel scroll
+   on their own, so a long tree or a long panel never drags the other. */
+@media screen and (min-width: 48.0625rem) {
+  .shell {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .shell-body {
+    overflow: hidden;
+  }
+
+  .tree,
+  .shell-main {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
 .shell-main > .screen.vim-edit {
   max-width: 120ch;
 }
@@ -2553,6 +2572,10 @@ th {
 .ref-sections {
   position: sticky;
   top: var(--space-3);
+  /* Scrolls on its own when the index is taller than the panel (T49). */
+  max-height: calc(100dvh - 10rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
