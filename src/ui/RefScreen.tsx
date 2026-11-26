@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { entriesOf, LANG_LABEL, sectionsOf } from "../ref/langs";
+import { entriesOf, LANG_DOCS, LANG_LABEL, LANG_TARGET, sectionsOf } from "../ref/langs";
 import { parseRefHash } from "../ref/link";
 import { JUDGE_BADGE, type Entry, type Lang } from "../ref/model";
 import { search } from "../ref/search";
@@ -111,7 +111,7 @@ export function RefScreen({ lang }: Props): ReactNode {
   return (
     <div className="screen ref" data-testid="ref-screen">
       <PanelTitle title={LANG_LABEL[lang]}>
-        Referência rápida para a maratona. Alvo: g++ -std=gnu++20 -O2 (WF 2026).
+        {`Referência rápida para a maratona. Alvo: ${LANG_TARGET[lang]}.`}
       </PanelTitle>
       <div className="ref-bar" data-panel="options">
         <input
@@ -176,6 +176,7 @@ type CardProps = {
 function EntryCard({ entry, open, copied, onOpen, onCopy }: CardProps): ReactNode {
   const anchor = entryAnchor(entry.lang, entry.id);
   const { complexity } = entry;
+  const pair = entry.pair !== undefined ? parseRefHash(entry.pair) : null;
   return (
     <article
       id={anchor}
@@ -247,11 +248,18 @@ function EntryCard({ entry, open, copied, onOpen, onCopy }: CardProps): ReactNod
           <li key={p}>{p}</li>
         ))}
       </ul>
-      {entry.link !== undefined && (
-        <a className="ref-link" href={entry.link} target="_blank" rel="noreferrer">
-          cppreference
-        </a>
-      )}
+      <footer className="ref-links">
+        {entry.link !== undefined && (
+          <a className="ref-link" href={entry.link} target="_blank" rel="noreferrer">
+            {LANG_DOCS[entry.lang]}
+          </a>
+        )}
+        {pair !== null && (
+          <a className="ref-link" href={`#${pair.lang}/${pair.id}`}>
+            {`em ${LANG_LABEL[pair.lang]}`}
+          </a>
+        )}
+      </footer>
     </article>
   );
 }

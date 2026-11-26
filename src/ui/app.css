@@ -2706,6 +2706,12 @@ th {
   font-size: var(--text-sm);
 }
 
+.ref-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
 .ref-link {
   font-size: var(--text-sm);
   color: var(--accent);
@@ -2734,6 +2740,7 @@ th {
   .ref-bar,
   .ref-sections,
   .ref-copy,
+  .ref-links,
   .ref-link {
     display: none;
   }

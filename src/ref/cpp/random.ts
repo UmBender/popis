@@ -80,6 +80,7 @@ cout << (it > 0) << '\n';`,
       "Consultar o relógio a cada iteração é caro, então olhe a cada 1000 iterações.",
     ],
     tags: ["tempo", "relógio", "chrono", "heurística", "timer"],
+    pair: "py/perf_counter_cutoff",
     link: `${REF}chrono/steady_clock`,
   },
 ];
