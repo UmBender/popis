@@ -1,7 +1,7 @@
 ---
 id: T47
 title: Referência - Python para CP
-status: review
+status: done
 depends_on: [T46]
 branch: task/T47-python-reference
 adrs: [ADR-T47-1]
