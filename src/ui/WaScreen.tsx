@@ -66,7 +66,7 @@ function newRun(settings: WaSettings, seed: number, run: number): Run {
   };
 }
 
-const formatSec = (ms: number): string => `${(ms / 1000).toFixed(1)} s`;
+const formatSec = (ms: number): string => `${(ms / 1000).toFixed(1)}\u00A0s`;
 
 const diffPrefix = (kind: "context" | "removed" | "added"): string =>
   kind === "removed" ? "- " : kind === "added" ? "+ " : "  ";

@@ -78,9 +78,10 @@ describe("wa cases (AC-1)", () => {
 
       const brutePath = join("src", "wa", "cases", "brute", `${c.id}.cpp`);
       expect(existsSync(brutePath), `${c.id} brute file exists`).toBe(true);
-      expect(readFileSync(brutePath, "utf8").trim().length, `${c.id} brute non-empty`).toBeGreaterThan(
-        0,
-      );
+      expect(
+        readFileSync(brutePath, "utf8").trim().length,
+        `${c.id} brute non-empty`,
+      ).toBeGreaterThan(0);
     }
 
     expect(casesForClasses(["overflow"])).toEqual(WA_CASES.filter((c) => c.class === "overflow"));

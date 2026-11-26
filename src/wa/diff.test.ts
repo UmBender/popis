@@ -31,9 +31,13 @@ describe("wa diff (AC-1)", () => {
     expect(snippet[2]?.newLine).toBe(3);
 
     // Pure insertion after line 1.
-    const inserted = ["int a = 1;", "int extra = 0;", "int b = 2;", "int c = a + b;", "return c;"].join(
-      "\n",
-    );
+    const inserted = [
+      "int a = 1;",
+      "int extra = 0;",
+      "int b = 2;",
+      "int c = a + b;",
+      "return c;",
+    ].join("\n");
     const insHunks = changedHunks(base, inserted);
     expect(insHunks).toHaveLength(1);
     expect(insHunks[0]?.removedCount).toBe(0);

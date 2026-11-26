@@ -67,7 +67,9 @@ describe("WaScreen (AC-4)", () => {
     expect(screen.getByTestId("wa-progress").textContent).toBe("1/5");
     expect(screen.getByTestId("wa-time").textContent).toBe("0 s");
     expect(screen.getByTestId("wa-statement").textContent).toContain(item0.caseData.statement);
-    expect(screen.getByTestId("wa-sample").textContent).toContain(item0.caseData.sample_input.trim());
+    expect(screen.getByTestId("wa-sample").textContent).toContain(
+      item0.caseData.sample_input.trim(),
+    );
 
     // Answer item 0 correctly via two clicks: line then class.
     fireEvent.click(screen.getByRole("button", { name: `Linha ${String(item0.caseData.line)}` }));

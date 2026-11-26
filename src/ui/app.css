@@ -2373,6 +2373,16 @@ th {
   color: var(--correct);
 }
 
+.wa-review .compile-next {
+  align-self: flex-start;
+}
+
+.wa-review .compile-next kbd {
+  margin-left: var(--space-1);
+  color: inherit;
+  font-weight: 400;
+}
+
 .wa-counterexample {
   display: flex;
   flex-direction: column;
