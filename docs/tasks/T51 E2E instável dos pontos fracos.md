@@ -1,7 +1,7 @@
 ---
 id: T51
 title: E2E instável dos pontos fracos
-status: review
+status: done
 depends_on: []
 branch: fix/weak-spots-e2e-flake
 adrs: []
