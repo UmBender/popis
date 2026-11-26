@@ -151,4 +151,66 @@ cout << atan2(1.0, 1.0) << ' ' << hypot(3.0, 4.0) << '\n';`,
     tags: ["ângulo", "geometria", "distância"],
     link: `${REF}numeric/math/atan2`,
   },
+  {
+    id: "midpoint",
+    title: "midpoint",
+    signature: "midpoint(l, r)  // média sem overflow",
+    complexity: "O(1)",
+    example: c`int l = INT_MAX - 4, r = INT_MAX;
+cout << midpoint(l, r) << ' ' << midpoint(1, 2) << ' ' << midpoint(2, 1) << '\n';`,
+    pitfalls: [
+      "Em empates, arredonda sempre na direção do primeiro argumento, então midpoint(1, 2) dá 1 e midpoint(2, 1) dá 2.",
+      "Funciona também para ponteiros e números de ponto flutuante sem estourar l + r.",
+    ],
+    tags: ["midpoint", "ponto médio", "busca binária", "sem overflow", "c++20"],
+    since: "C++20",
+    link: `${REF}numeric/midpoint`,
+  },
+  {
+    id: "clamp",
+    title: "clamp",
+    signature: "clamp(x, lo, hi)",
+    complexity: "O(1)",
+    example: c`cout << clamp(-5, 0, 10) << ' ' << clamp(7, 0, 10) << ' ';
+cout << clamp(99, 0, 10) << '\n';`,
+    pitfalls: [
+      "Se lo > hi o comportamento é indefinido.",
+      "Os três argumentos precisam ter exatamente o mesmo tipo (por exemplo, todos long long).",
+    ],
+    tags: ["clamp", "limitar", "intervalo", "min max", "c++17"],
+    since: "C++17",
+    link: `${REF}algorithm/clamp`,
+  },
+  {
+    id: "gcd_vs_builtin_gcd",
+    title: "__gcd contra gcd",
+    signature: "gcd(a, b)  // C++17, sempre >= 0    __gcd(a, b)  // extensão GCC",
+    complexity: "O(log min(|a|, |b|))",
+    example: c`cout << __gcd(-12, -18) << ' ' << gcd(-12, -18) << '\n';
+cout << gcd(12, 18LL) << '\n';`,
+    pitfalls: [
+      "__gcd pode devolver número negativo quando um dos argumentos é negativo, enquanto std::gcd sempre devolve valor não negativo.",
+      "__gcd exige que os dois argumentos tenham exatamente o mesmo tipo, já std::gcd aceita int com long long.",
+    ],
+    tags: ["__gcd", "gcd", "mdc", "negativo", "extensão gcc"],
+    since: "C++17",
+    link: `${REF}numeric/gcd`,
+  },
+  {
+    id: "lcm_overflow",
+    title: "Overflow em lcm",
+    signature: "bool estoura = (a / gcd(a, b)) > lim / b;",
+    complexity: "O(log min(a, b))",
+    example: c`long long a = 1e10, b = 1e10 + 1, lim = 1e18;
+long long g = gcd(a, b);
+bool estoura = (a / g) > lim / b;
+cout << estoura << ' ' << lcm(12LL, 18LL) << '\n';`,
+    pitfalls: [
+      "std::lcm(a, b) tem comportamento indefinido se o resultado não couber no tipo comum de a e b.",
+      "Ao acumular o mmc de um vetor, compare (cur / gcd(cur, x)) > lim / x antes de multiplicar para cortar cedo.",
+    ],
+    tags: ["lcm", "overflow", "mmc", "estouro", "limite"],
+    since: "C++17",
+    link: `${REF}numeric/lcm`,
+  },
 ];

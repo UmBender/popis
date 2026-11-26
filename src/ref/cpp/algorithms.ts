@@ -320,4 +320,266 @@ cout << ranges::fold_left(v, 0LL, plus<>()) << '\n';`,
     judge: true,
     link: `${REF}algorithm/ranges/fold_left`,
   },
+  {
+    id: "partition_point",
+    title: "partition_point",
+    signature: "partition_point(v.begin(), v.end(), pred)  // primeiro onde pred é falso",
+    complexity: "O(log n)",
+    example: c`vector<int> v = {2, 4, 6, 9, 11};
+auto it = partition_point(v.begin(), v.end(), [](int x) { return x % 2 == 0; });
+cout << (it - v.begin()) << ' ' << *it << '\n';`,
+    pitfalls: [
+      "O intervalo precisa ter todos os true antes de todos os false, senão o resultado não faz sentido.",
+      "Com iteradores não aleatórios (como set) custa O(n) avanços mesmo fazendo O(log n) chamadas ao predicado.",
+    ],
+    tags: ["partition_point", "busca binária", "predicado", "monótono", "c++11"],
+    since: "C++11",
+    link: `${REF}algorithm/partition_point`,
+  },
+  {
+    id: "equal_range",
+    title: "equal_range",
+    signature: "auto [l, r] = equal_range(v.begin(), v.end(), x);",
+    complexity: "O(log n)",
+    example: c`vector<int> v = {1, 3, 3, 3, 5};
+auto [l, r] = equal_range(v.begin(), v.end(), 3);
+cout << (l - v.begin()) << ' ' << (r - v.begin()) << ' ' << (r - l) << '\n';`,
+    pitfalls: [
+      "Devolve o par {lower_bound, upper_bound}, e r - l é o número de ocorrências de x num vetor ordenado.",
+      "Em set e multiset, use o membro s.equal_range(x) para manter O(log n).",
+    ],
+    tags: ["equal_range", "busca binária", "faixa", "contar ocorrências"],
+    link: `${REF}algorithm/equal_range`,
+  },
+  {
+    id: "includes",
+    title: "includes",
+    signature: "includes(a.begin(), a.end(), b.begin(), b.end())",
+    complexity: "O(|a| + |b|)",
+    example: c`vector<int> a = {1, 2, 3, 4, 5}, b = {2, 4}, c = {2, 6};
+cout << includes(a.begin(), a.end(), b.begin(), b.end()) << ' ';
+cout << includes(a.begin(), a.end(), c.begin(), c.end()) << '\n';`,
+    pitfalls: [
+      "Os dois intervalos precisam estar ordenados pelo mesmo comparador.",
+      "Considera multiplicidade, então {2, 2} só está contido se a também tiver pelo menos dois 2.",
+    ],
+    tags: ["includes", "subconjunto", "subsequência ordenada", "ordenado"],
+    link: `${REF}algorithm/includes`,
+  },
+  {
+    id: "rotate",
+    title: "rotate",
+    signature: "rotate(first, middle, last);  // middle vira o novo primeiro",
+    complexity: "O(n) in-place",
+    example: c`vector<int> v = {1, 2, 3, 4, 5};
+rotate(v.begin(), v.begin() + 2, v.end());
+for (int x : v) cout << x;
+cout << '\n';`,
+    pitfalls: [
+      "Desloca à esquerda por k com rotate(v.begin(), v.begin() + k, v.end()) e à direita com v.end() - k.",
+      "Também move um elemento de posição sem vetor auxiliar rodando apenas o subintervalo entre origem e destino.",
+    ],
+    tags: ["rotate", "rotação cíclica", "shift", "deslocar vetor"],
+    link: `${REF}algorithm/rotate`,
+  },
+  {
+    id: "merge",
+    title: "merge",
+    signature: "merge(a.begin(), a.end(), b.begin(), b.end(), out.begin());",
+    complexity: "O(|a| + |b|)",
+    example: c`vector<int> a = {1, 4, 7}, b = {2, 4, 6}, out(6);
+merge(a.begin(), a.end(), b.begin(), b.end(), out.begin());
+for (int x : out) cout << x << ' ';
+cout << '\n';`,
+    pitfalls: [
+      "O destino não pode sobrepor os vetores de entrada e precisa já ter espaço (ou use back_inserter).",
+      "É estável: em empates, elementos do primeiro intervalo saem antes dos do segundo.",
+    ],
+    tags: ["merge", "intercalar", "merge sort tree", "ordenado"],
+    link: `${REF}algorithm/merge`,
+  },
+  {
+    id: "inplace_merge",
+    title: "inplace_merge",
+    signature: "inplace_merge(first, middle, last);",
+    complexity: "O(n) com buffer extra, ou O(n log n) sem memória",
+    example: c`vector<int> v = {1, 5, 8, 2, 3, 7};
+inplace_merge(v.begin(), v.begin() + 3, v.end());
+for (int x : v) cout << x << ' ';
+cout << '\n';`,
+    pitfalls: [
+      "Exige que [first, middle) e [middle, last) já estejam ambos ordenados.",
+      "Encurta bastante implementações de dividir e conquistar como CDQ e contagem de inversões.",
+    ],
+    tags: ["inplace_merge", "intercalar", "cdq", "dividir e conquistar"],
+    link: `${REF}algorithm/inplace_merge`,
+  },
+  {
+    id: "set_operations",
+    title: "set_union, set_intersection e set_difference",
+    signature: "set_intersection(a.begin(), a.end(), b.begin(), b.end(), back_inserter(out));",
+    complexity: "O(|a| + |b|)",
+    example: c`vector<int> a = {1, 2, 3, 4}, b = {3, 4, 5}, u, inter, diff;
+set_union(a.begin(), a.end(), b.begin(), b.end(), back_inserter(u));
+set_intersection(a.begin(), a.end(), b.begin(), b.end(), back_inserter(inter));
+set_difference(a.begin(), a.end(), b.begin(), b.end(), back_inserter(diff));
+cout << u.size() << ' ' << inter.size() << ' ' << diff.size() << '\n';`,
+    pitfalls: [
+      "Os intervalos de entrada precisam estar ordenados, e o destino não pode coincidir com nenhum deles.",
+      "Também existe set_symmetric_difference para os elementos que aparecem em apenas um dos intervalos.",
+    ],
+    tags: ["set_union", "set_intersection", "set_difference", "união", "interseção", "diferença"],
+    link: `${REF}algorithm/set_intersection`,
+  },
+  {
+    id: "adjacent_difference",
+    title: "adjacent_difference",
+    signature: "adjacent_difference(v.begin(), v.end(), d.begin());",
+    complexity: "O(n)",
+    example: c`vector<int> v = {3, 5, 9, 10}, d(4);
+adjacent_difference(v.begin(), v.end(), d.begin());
+for (int x : d) cout << x << ' ';
+cout << '\n';`,
+    pitfalls: [
+      "d[0] recebe v[0] sem alteração, e os demais recebem v[i] - v[i - 1], sendo a inversa exata de partial_sum.",
+      "Funciona in-place com d.begin() == v.begin().",
+    ],
+    tags: ["adjacent_difference", "diferenças", "vetor de diferenças", "numeric"],
+    link: `${REF}algorithm/adjacent_difference`,
+  },
+  {
+    id: "inclusive_exclusive_scan",
+    title: "inclusive_scan e exclusive_scan",
+    signature: "inclusive_scan(v.begin(), v.end(), out.begin());  exclusive_scan(..., init);",
+    complexity: "O(n)",
+    example: c`vector<int> v = {2, 3, 5}, inc(3), exc(3);
+inclusive_scan(v.begin(), v.end(), inc.begin());
+exclusive_scan(v.begin(), v.end(), exc.begin(), 0);
+cout << inc[0] << ' ' << inc[1] << ' ' << inc[2] << '\n';
+cout << exc[0] << ' ' << exc[1] << ' ' << exc[2] << '\n';`,
+    pitfalls: [
+      "Em exclusive_scan o elemento i soma tudo antes de i (com exc[0] = init), e o tipo da soma segue o de init (use 0LL para evitar overflow).",
+      "Em inclusive_scan com operação binária, o valor inicial é o quinto argumento, depois do operador.",
+    ],
+    tags: ["inclusive_scan", "exclusive_scan", "soma de prefixos", "numeric", "c++17"],
+    since: "C++17",
+    link: `${REF}algorithm/exclusive_scan`,
+  },
+  {
+    id: "is_sorted",
+    title: "is_sorted e is_sorted_until",
+    signature: "is_sorted(v.begin(), v.end());  is_sorted_until(v.begin(), v.end());",
+    complexity: "O(n)",
+    example: c`vector<int> v = {1, 3, 3, 2, 5};
+auto it = is_sorted_until(v.begin(), v.end());
+cout << is_sorted(v.begin(), v.end()) << ' ' << (it - v.begin()) << '\n';`,
+    pitfalls: [
+      "Empates contam como ordenados; para estritamente crescente passe less_equal<>() ou compare com adjacent_find.",
+      "is_sorted_until devolve o primeiro iterador que quebra a ordem crescente (ou end() se tudo estiver ordenado).",
+    ],
+    tags: ["is_sorted", "is_sorted_until", "ordenado", "verificar ordem", "c++11"],
+    since: "C++11",
+    link: `${REF}algorithm/is_sorted`,
+  },
+  {
+    id: "minmax_element",
+    title: "minmax_element",
+    signature: "auto [mn, mx] = minmax_element(v.begin(), v.end());",
+    complexity: "O(n), no máximo 3n/2 comparações",
+    example: c`vector<int> v = {4, 1, 9, 1, 9};
+auto [mn, mx] = minmax_element(v.begin(), v.end());
+cout << *mn << '@' << (mn - v.begin()) << ' ' << *mx << '@' << (mx - v.begin()) << '\n';`,
+    pitfalls: [
+      "Em empates, devolve o primeiro mínimo e o último máximo, diferente de max_element que devolve o primeiro máximo.",
+      "Se o intervalo estiver vazio, ambos os iteradores valem end().",
+    ],
+    tags: ["minmax_element", "mínimo e máximo", "extremos", "c++11"],
+    since: "C++11",
+    link: `${REF}algorithm/minmax_element`,
+  },
+  {
+    id: "prev_permutation",
+    title: "prev_permutation",
+    signature: "do { ... } while (prev_permutation(v.begin(), v.end()));",
+    complexity: "O(n) por chamada, n! no total",
+    example: c`string s = "cab";
+sort(s.rbegin(), s.rend());
+do cout << s << ' ';
+while (prev_permutation(s.begin(), s.end()));
+cout << '\n';`,
+    pitfalls: [
+      "Para percorrer todas as permutações, comece com o vetor em ordem decrescente (sort com rbegin/rend).",
+      "Quando já está na menor permutação lexicográfica, devolve false e reverte o vetor para a maior.",
+    ],
+    tags: ["prev_permutation", "permutação", "anterior", "decrescente"],
+    link: `${REF}algorithm/prev_permutation`,
+  },
+  {
+    id: "stable_partition",
+    title: "stable_partition",
+    signature: "auto mid = stable_partition(v.begin(), v.end(), pred);",
+    complexity: "O(n) com memória extra, ou O(n log n) sem memória",
+    example: c`vector<int> v = {3, 2, 5, 4, 1, 6};
+auto mid = stable_partition(v.begin(), v.end(), [](int x) { return x % 2 == 0; });
+for (int x : v) cout << x;
+cout << ' ' << (mid - v.begin()) << '\n';`,
+    pitfalls: [
+      "Coloca quem satisfaz pred na frente mantendo a ordem relativa dentro dos dois grupos, e devolve o início do segundo grupo.",
+      "Se a ordem relativa não importar, partition é mais rápida e sempre O(n) sem alocar.",
+    ],
+    tags: ["stable_partition", "partition", "separar", "filtrar", "estável"],
+    link: `${REF}algorithm/stable_partition`,
+  },
+  {
+    id: "all_any_none_of",
+    title: "all_of, any_of e none_of",
+    signature: "all_of(v.begin(), v.end(), pred);  any_of(...);  none_of(...);",
+    complexity: "O(n) com curto-circuito",
+    example: c`vector<int> v = {2, 4, 6};
+auto even = [](int x) { return x % 2 == 0; };
+cout << all_of(v.begin(), v.end(), even) << ' ';
+cout << any_of(v.begin(), v.end(), [](int x) { return x > 5; }) << ' ';
+cout << none_of(v.begin(), v.end(), [](int x) { return x < 0; }) << '\n';`,
+    pitfalls: [
+      "Em intervalo vazio, all_of e none_of devolvem true, enquanto any_of devolve false.",
+      "Param assim que o resultado fica decidido, sem avaliar o restante do vetor.",
+    ],
+    tags: ["all_of", "any_of", "none_of", "todos", "algum", "nenhum", "c++11"],
+    since: "C++11",
+    link: `${REF}algorithm/all_any_none_of`,
+  },
+  {
+    id: "transform",
+    title: "transform",
+    signature: "transform(a.begin(), a.end(), out.begin(), f);  // ou versão binária",
+    complexity: "O(n)",
+    example: c`vector<int> a = {1, 2, 3}, b = {10, 20, 30}, c(3);
+transform(a.begin(), a.end(), b.begin(), c.begin(), plus<>());
+for (int x : c) cout << x << ' ';
+cout << '\n';`,
+    pitfalls: [
+      "O vetor de saída já precisa ter tamanho suficiente (ou use back_inserter), mas pode coincidir com o de entrada para alterar in-place.",
+      "Não garante ordem da esquerda para a direita, então não use funções com efeito colateral dependente da ordem.",
+    ],
+    tags: ["transform", "map", "aplicar função", "elemento a elemento"],
+    link: `${REF}algorithm/transform`,
+  },
+  {
+    id: "ranges_projection",
+    title: "ranges:: com projeção",
+    signature: "ranges::sort(v, {}, &P::x);  ranges::lower_bound(v, key, {}, &P::x);",
+    complexity: "mesma do algoritmo base (O(n log n) para sort, O(log n) para lower_bound)",
+    example: c`struct P { int x, y; };
+vector<P> v = {{3, 1}, {1, 9}, {2, 5}};
+ranges::sort(v, {}, &P::x);
+auto it = ranges::lower_bound(v, 2, {}, &P::x);
+cout << v[0].x << v[1].x << v[2].x << ' ' << it->y << '\n';`,
+    pitfalls: [
+      "O {} no comparador mantém ranges::less, e o ponteiro para membro &P::x (ou uma lambda) escolhe a chave sem escrever comparador manual.",
+      "Funciona em praticamente todo algoritmo de std::ranges (sort, min_element, lower_bound, unique).",
+    ],
+    tags: ["ranges", "projeção", "projection", "sort", "lower_bound", "c++20"],
+    since: "C++20",
+    link: `${REF}algorithm/ranges/sort`,
+  },
 ];

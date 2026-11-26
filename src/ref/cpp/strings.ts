@@ -160,4 +160,108 @@ cout << s.contains("ton") << s.contains('z') << '\n';`,
     judge: true,
     link: `${REF}string/basic_string/contains`,
   },
+  {
+    id: "boyer_moore_searcher",
+    title: "std::search com boyer_moore_searcher",
+    signature: "search(t.begin(), t.end(), boyer_moore_searcher(p.begin(), p.end()))",
+    complexity: "linear em média, O(n·m) no pior caso",
+    example: c`string t = "abracadabra", p = "cada";
+auto it = search(t.begin(), t.end(), boyer_moore_searcher(p.begin(), p.end()));
+auto it2 = search(t.begin(), t.end(), boyer_moore_horspool_searcher(p.begin(), p.end()));
+cout << (it - t.begin()) << ' ' << (it2 - t.begin()) << '\n';`,
+    pitfalls: [
+      "Tanto boyer_moore_searcher quanto boyer_moore_horspool_searcher podem degradar para O(n·m) em entradas repetitivas, então use KMP ou função Z para garantir O(n + m).",
+      "Reaproveite o mesmo objeto searcher ao buscar o mesmo padrão em vários textos para não refazer a tabela.",
+    ],
+    tags: [
+      "boyer",
+      "horspool",
+      "boyer_moore_horspool_searcher",
+      "busca de padrão",
+      "search",
+      "padrão",
+    ],
+    since: "C++17",
+    link: `${REF}utility/functional/boyer_moore_searcher`,
+  },
+  {
+    id: "kmp",
+    title: "KMP — busca de padrão (função prefixo)",
+    signature: "pi[i] = maior borda própria de s[0..i]  // O(n + m) garantido",
+    complexity: "O(n + m) no pior caso",
+    example: c`string p = "aba", t = "ababa", s = p + '#' + t;
+int n = s.size(); vector<int> pi(n);
+for (int i = 1, j = 0; i < n; i++) {
+  while (j && s[i] != s[j]) j = pi[j - 1];
+  pi[i] = j += (s[i] == s[j]); }
+for (int i = 4; i < n; i++) if (pi[i] == 3) cout << i - 6 << '\n';`,
+    pitfalls: [
+      "O separador '#' não pode aparecer no padrão nem no texto, senão um casamento pode atravessar a fronteira.",
+      "Para um casamento terminado em i na string p + '#' + t, o início no texto t é i - 2 * |p|.",
+    ],
+    tags: [
+      "kmp",
+      "prefix function",
+      "função prefixo",
+      "busca de padrão",
+      "padrão",
+      "linear",
+      "borda",
+    ],
+    link: `${REF}algorithm/search`,
+  },
+  {
+    id: "z_function",
+    title: "Função Z",
+    signature: "z[i] = LCP de s com o sufixo s[i..]  // O(n + m) garantido",
+    complexity: "O(n + m) no pior caso",
+    example: c`string s = "ana#anana"; int n = s.size(); vector<int> z(n);
+for (int i = 1, l = 0, r = 0; i < n; i++) {
+  if (i < r) z[i] = min(r - i, z[i - l]);
+  while (i + z[i] < n && s[z[i]] == s[i + z[i]]) z[i]++;
+  if (i + z[i] > r) l = i, r = i + z[i]; }
+for (int i = 4; i < n; i++) if (z[i] == 3) cout << i - 4 << '\n';`,
+    pitfalls: [
+      "z[0] fica 0 nesta forma, então comece o laço em i = 1 e trate o prefixo inteiro à parte se precisar.",
+      "Ao concatenar p + '#' + t, cada posição i > |p| com z[i] == |p| marca o início de um casamento em i - |p| - 1.",
+    ],
+    tags: ["função z", "z algorithm", "z_function", "busca de padrão", "padrão", "lcp", "linear"],
+    link: `${REF}algorithm/search`,
+  },
+  {
+    id: "string_view",
+    title: "string_view",
+    signature: "string_view sv(s);  sv.substr(pos, len);",
+    complexity: "O(1) para criar e para substr",
+    example: c`string s = "maratona";
+string_view sv(s);
+string_view sub = sv.substr(2, 3);
+cout << sub << ' ' << sub.size() << '\n';`,
+    pitfalls: [
+      "Não é dona dos caracteres, então nunca guarde uma string_view apontando para uma string temporária ou que será realocada.",
+      "sv.data() não garante terminador nulo '\\0', então nunca passe direto para funções de C como printf(\"%s\").",
+    ],
+    tags: ["string_view", "fatia", "substr o(1)", "sem cópia", "c++17"],
+    since: "C++17",
+    link: `${REF}string/basic_string_view`,
+  },
+  {
+    id: "from_chars_to_chars",
+    title: "from_chars e to_chars",
+    signature: "from_chars(ini, fim, x);  to_chars(buf, buf + N, x);",
+    complexity: "O(dígitos), sem alocação nem locale",
+    example: c`char buf[32];
+auto [p, e1] = to_chars(buf, buf + 32, 123456789LL);
+long long x = 0;
+auto [q, e2] = from_chars(buf, p, x);
+bool ok = e1 == errc{} && e2 == errc{} && q == p;
+cout << string(buf, p) << ' ' << x << ' ' << ok << '\n';`,
+    pitfalls: [
+      "Não pula espaços iniciais nem aceita '+' na frente, e devolve erro em ec em vez de lançar exceção.",
+      "to_chars não coloca '\\0' no final do buffer, então use o ponteiro p devolvido como limite.",
+    ],
+    tags: ["from_chars", "to_chars", "charconv", "parse rápido", "converter", "c++17"],
+    since: "C++17",
+    link: `${REF}utility/from_chars`,
+  },
 ];

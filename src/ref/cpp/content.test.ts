@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { entriesOf, sectionsOf } from "../langs";
+import { refLink } from "../link";
 
-// T46 AC-3: the C++ content covers the nine sections of the note in short entries.
+// T46 AC-3 / T50 AC-1..AC-2: the C++ content covers all sections of the notes in short entries.
 
 const ENTRIES = entriesOf("cpp");
 const byId = new Map(ENTRIES.map((e) => [e.id, e]));
@@ -75,7 +76,75 @@ const MINIMUM: Readonly<Record<string, readonly string[]>> = {
   bits: ["popcount", "clz", "ctz", "lg", "bit_width", "submasks"],
   math: ["gcd", "lcm", "powmod", "modinv", "mod_negative", "isqrt", "ceil_div"],
   random: ["mt19937", "uniform_int_distribution", "shuffle", "time_cutoff"],
-  extras: ["ordered_set", "gp_hash_table", "pragma_optimize", "assert", "glibcxx_debug", "regex"],
+  pb_ds: ["ordered_set", "gp_hash_table"],
+  extras: ["pragma_optimize", "assert", "glibcxx_debug", "regex"],
+};
+
+/** The new entries listed in the T50 task note, by section and id. */
+const MINIMUM_T50: Readonly<Record<string, readonly string[]>> = {
+  pb_ds: [
+    "ordered_set",
+    "ordered_map",
+    "ordered_multiset",
+    "pbds_split_join",
+    "pbds_trie",
+    "pbds_priority_queue",
+    "cc_hash_table",
+    "gp_hash_table",
+    "gp_hash_table_hash",
+  ],
+  gnu: [
+    "rope",
+    "bitset_find_first",
+    "builtin_parity_ffs",
+    "builtin_expect",
+    "print_int128",
+    "pragma_target",
+    "builtin_overflow",
+  ],
+  strings: ["boyer_moore_searcher", "kmp", "z_function", "string_view", "from_chars_to_chars"],
+  algorithms: [
+    "partition_point",
+    "equal_range",
+    "includes",
+    "rotate",
+    "merge",
+    "inplace_merge",
+    "set_operations",
+    "adjacent_difference",
+    "inclusive_exclusive_scan",
+    "is_sorted",
+    "minmax_element",
+    "prev_permutation",
+    "stable_partition",
+    "all_any_none_of",
+    "transform",
+    "ranges_projection",
+  ],
+  containers: [
+    "node_extract_merge",
+    "contains_erase_if",
+    "try_emplace",
+    "unordered_reserve",
+    "multiset_erase_one",
+    "list_splice",
+    "complex_point",
+    "exchange",
+    "tie_tuple_cmp",
+    "ssize",
+    "ctad",
+    "span",
+  ],
+  bits: [
+    "std_popcount",
+    "countl_zero",
+    "countr_zero",
+    "bit_ceil_floor",
+    "has_single_bit",
+    "rotl_rotr",
+  ],
+  math: ["midpoint", "clamp", "gcd_vs_builtin_gcd", "lcm_overflow"],
+  extras: ["dbg_macro", "fsanitize", "pretty_function", "views_zip"],
 };
 
 const CONTAINERS = [
@@ -158,5 +227,41 @@ describe("cpp content", () => {
     expect(judged.length).toBeGreaterThanOrEqual(3);
     for (const e of judged) expect(e.since, e.id).toBe("C++23");
     for (const e of ENTRIES.filter((x) => x.since === "C++23")) expect(e.judge, e.id).toBe(true);
+  });
+
+  it("at least 136 cpp entries", () => {
+    expect(ENTRIES.length).toBeGreaterThanOrEqual(136);
+  });
+
+  it("pb_ds and gnu sections precede extras", () => {
+    const sections = sectionsOf("cpp");
+    const ids = sections.map((s) => s.id);
+    const pbdsAt = ids.indexOf("pb_ds");
+    const gnuAt = ids.indexOf("gnu");
+    const extrasAt = ids.indexOf("extras");
+    expect(pbdsAt).toBeGreaterThanOrEqual(0);
+    expect(gnuAt).toBe(pbdsAt + 1);
+    expect(extrasAt).toBe(gnuAt + 1);
+    expect(sections[pbdsAt]?.title).toBe("pb_ds");
+    expect(sections[gnuAt]?.title).toBe("Extensões GNU");
+  });
+
+  it("pb_ds entries keep their ids after moving", () => {
+    for (const id of ["ordered_set", "gp_hash_table"]) {
+      expect(byId.get(id)?.section, id).toBe("pb_ds");
+      expect(refLink(`cpp/${id}`)).toBe(`#cpp/${id}`);
+    }
+  });
+
+  it("the minimum entries of T50 exist", () => {
+    for (const [section, ids] of Object.entries(MINIMUM_T50)) {
+      for (const id of ids) expect(byId.get(id)?.section, id).toBe(section);
+    }
+  });
+
+  it("boyer_moore_searcher warns about worst-case quadratic complexity", () => {
+    expect(byId.get("boyer_moore_searcher")?.complexity).toBe(
+      "linear em média, O(n·m) no pior caso",
+    );
   });
 });
