@@ -1,7 +1,7 @@
 ---
 id: T49
 title: Rolagem independente dos painéis
-status: review
+status: done
 depends_on: []
 branch: fix/independent-scroll
 adrs: []
