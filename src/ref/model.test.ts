@@ -64,6 +64,8 @@ describe("reference model", () => {
         "bits",
         "math",
         "random",
+        "pb_ds",
+        "gnu",
         "extras",
       ],
       py: [
