@@ -1,6 +1,6 @@
 import type { TrainingEvent } from "../stats/event";
 import type { WaClass } from "./classes";
-import type { WaAnswer, WaItem } from "./drill";
+import { checkWaAnswer, generateWaItem, type WaAnswer, type WaItem } from "./drill";
 
 export const WA_ROUND_SIZE = 5;
 
@@ -64,38 +64,190 @@ export type WaRoundStats = {
   readonly wrongItems: readonly WaItemResult[];
 };
 
-export function startWaRound(_config: WaRoundConfig): WaRound {
-  throw new Error("todo");
+export function startWaRound(config: WaRoundConfig): WaRound {
+  const resolved: WaResolvedRoundConfig = {
+    seed: config.seed,
+    classes: config.classes,
+    count: config.count ?? WA_ROUND_SIZE,
+  };
+  return {
+    config: resolved,
+    startedAt: null,
+    itemStartedAt: null,
+    finishedAt: null,
+    finished: false,
+    current: generateWaItem(resolved.seed, 0, resolved.classes),
+    reviewing: null,
+    results: [],
+    last: null,
+  };
 }
 
-export function touchWaRound(_round: WaRound, _now: number): WaRound {
-  throw new Error("todo");
+/** Starts the stopwatch on the first interaction if not already running. */
+export function touchWaRound(round: WaRound, now: number): WaRound {
+  if (round.finished || round.startedAt !== null) return round;
+  return { ...round, startedAt: now, itemStartedAt: now };
 }
 
-export function waElapsedMs(_round: WaRound, _now: number): number {
-  throw new Error("todo");
+export function waElapsedMs(round: WaRound, now: number): number {
+  if (round.startedAt === null) return 0;
+  const end = round.finishedAt ?? now;
+  return Math.max(0, end - round.startedAt);
 }
 
-export function isWaRoundFinished(_round: WaRound): boolean {
-  throw new Error("todo");
+export function isWaRoundFinished(round: WaRound): boolean {
+  return round.finished;
 }
 
-export function submitWaAnswer(_round: WaRound, _answer: WaAnswer, _now: number): WaRound {
-  throw new Error("todo");
+/** Records an answer and opens post-answer review (counterexample, outputs and fix diff). */
+export function submitWaAnswer(round: WaRound, answer: WaAnswer, now: number): WaRound {
+  if (round.finished || round.reviewing !== null) return round;
+  const base = touchWaRound(round, now);
+  const { current } = base;
+  const checked = checkWaAnswer(current, answer);
+  const timeMs = Math.max(0, now - (base.itemStartedAt ?? now));
+  const result: WaItemResult = {
+    index: current.index,
+    seed: current.seed,
+    caseId: current.caseData.id,
+    bugClass: current.bugClass,
+    kc: current.kc,
+    expectedLine: current.caseData.line,
+    selectedLine: answer.line,
+    expectedClass: current.caseData.class,
+    selectedClass: answer.bugClass,
+    ok: checked.ok,
+    lineOk: checked.lineOk,
+    classOk: checked.classOk,
+    skipped: false,
+    explanation: current.caseData.explanation,
+    timeMs,
+  };
+  return {
+    ...base,
+    reviewing: result,
+    results: [...base.results, result],
+    last: result,
+  };
 }
 
-export function advanceAfterReview(_round: WaRound, _now: number): WaRound {
-  throw new Error("todo");
+/** Advances to the next case after review, or finishes the round once all cases are done. */
+export function advanceAfterReview(round: WaRound, now: number): WaRound {
+  if (round.finished || round.reviewing === null) return round;
+  if (round.results.length >= round.config.count) {
+    return {
+      ...round,
+      finished: true,
+      finishedAt: now,
+      reviewing: null,
+    };
+  }
+  const nextIndex = round.current.index + 1;
+  return {
+    ...round,
+    itemStartedAt: now,
+    current: generateWaItem(round.config.seed, nextIndex, round.config.classes),
+    reviewing: null,
+  };
 }
 
-export function skipWaItem(_round: WaRound, _now: number): WaRound {
-  throw new Error("todo");
+/** Skips the active case immediately, or closes review when reviewing. */
+export function skipWaItem(round: WaRound, now: number): WaRound {
+  if (round.finished) return round;
+  if (round.reviewing !== null) return advanceAfterReview(round, now);
+  const base = touchWaRound(round, now);
+  const { current } = base;
+  const timeMs = Math.max(0, now - (base.itemStartedAt ?? now));
+  const result: WaItemResult = {
+    index: current.index,
+    seed: current.seed,
+    caseId: current.caseData.id,
+    bugClass: current.bugClass,
+    kc: current.kc,
+    expectedLine: current.caseData.line,
+    selectedLine: null,
+    expectedClass: current.caseData.class,
+    selectedClass: null,
+    ok: false,
+    lineOk: false,
+    classOk: false,
+    skipped: true,
+    explanation: current.caseData.explanation,
+    timeMs,
+  };
+  const results = [...base.results, result];
+  const done = results.length >= base.config.count;
+  const nextIndex = current.index + 1;
+  return {
+    ...base,
+    itemStartedAt: now,
+    finished: done,
+    finishedAt: done ? now : null,
+    current: done ? current : generateWaItem(base.config.seed, nextIndex, base.config.classes),
+    reviewing: null,
+    results,
+    last: result,
+  };
 }
 
-export function waRoundStats(_round: WaRound): WaRoundStats {
-  throw new Error("todo");
+export function waRoundStats(round: WaRound): WaRoundStats {
+  const { results } = round;
+  let correct = 0;
+  let wrong = 0;
+  let skipped = 0;
+  let totalTimeMs = 0;
+  const byMap = new Map<WaClass, { total: number; correct: number; timeMs: number }>();
+
+  for (const r of results) {
+    if (r.skipped) skipped += 1;
+    else if (r.ok) correct += 1;
+    else wrong += 1;
+    totalTimeMs += r.timeMs;
+    const entry = byMap.get(r.bugClass) ?? { total: 0, correct: 0, timeMs: 0 };
+    entry.total += 1;
+    if (r.ok) entry.correct += 1;
+    entry.timeMs += r.timeMs;
+    byMap.set(r.bugClass, entry);
+  }
+
+  const total = results.length;
+  const answered = correct + wrong;
+  const byClass: WaClassStats[] = [...byMap.entries()].map(([bugClass, entry]) => ({
+    bugClass,
+    total: entry.total,
+    correct: entry.correct,
+    avgTimeMs: Math.round(entry.timeMs / entry.total),
+  }));
+
+  return {
+    correct,
+    wrong,
+    skipped,
+    total,
+    accuracy: answered > 0 ? correct / answered : 0,
+    avgTimeMs: total > 0 ? Math.round(totalTimeMs / total) : 0,
+    byClass,
+    wrongItems: results.filter((r) => !r.ok && !r.skipped),
+  };
 }
 
-export function waRoundEvents(_round: Pick<WaRound, "results">, _at: number): TrainingEvent[] {
-  throw new Error("todo");
+/** One T22 TrainingEvent per attempted or skipped case in a Caça ao WA round (AC-4). */
+export function waRoundEvents(round: Pick<WaRound, "results">, at: number): TrainingEvent[] {
+  return round.results.map((r) => ({
+    at,
+    drill: "wa.hunt",
+    config: "hunt",
+    kc: r.kc,
+    ok: r.ok,
+    timeMs: r.timeMs,
+    extra: {
+      seed: r.seed,
+      i: r.index,
+      caseId: r.caseId,
+      class: r.bugClass,
+      lineOk: r.lineOk,
+      classOk: r.classOk,
+      skipped: r.skipped,
+    },
+  }));
 }

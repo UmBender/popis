@@ -2288,6 +2288,141 @@ th {
   }
 }
 
+/* WA bug hunt drill (T41, ADR-T41-1). */
+.wa-statement-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--selection);
+  background: var(--surface);
+  min-width: 0;
+  max-width: 100%;
+  font-size: var(--text-sm);
+}
+
+.wa-statement-head {
+  color: var(--accent);
+}
+
+.wa-statement-text {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.wa-sample-grid,
+.wa-outputs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.wa-io-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.wa-io-label {
+  font-size: var(--text-sm);
+}
+
+.wa-io-pre {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--selection);
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: auto;
+  max-width: 100%;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  white-space: pre;
+}
+
+.wa-out-wrong {
+  color: var(--wrong);
+}
+
+.wa-out-ok {
+  color: var(--correct);
+}
+
+.wa-review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--surface);
+  font-size: var(--text-sm);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.wa-review p {
+  margin: 0;
+}
+
+.wa-review-ok {
+  border-left: 3px solid var(--correct);
+}
+
+.wa-review-ok strong {
+  color: var(--correct);
+}
+
+.wa-counterexample {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.wa-diff-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.wa-diff-lines {
+  border: 1px solid var(--selection);
+  background: var(--bg);
+  padding: var(--space-1) 0;
+  overflow-x: auto;
+  max-width: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.wa-diff-line {
+  padding: 0 var(--space-2);
+  white-space: pre;
+  min-width: max-content;
+}
+
+.wa-diff-context {
+  color: var(--muted);
+}
+
+.wa-diff-removed {
+  color: var(--wrong);
+}
+
+.wa-diff-added {
+  color: var(--correct);
+}
+
+@media (max-width: 48rem) {
+  .wa-sample-grid,
+  .wa-outputs-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Shell commands drill & Aprender curriculum (T39, ADR-T39-1). */
 .shell-drill-viewer {
   display: flex;

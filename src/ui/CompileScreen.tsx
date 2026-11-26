@@ -41,6 +41,7 @@ import {
 import { recordEvents } from "../storage/events";
 import type { KeyValueStore } from "../storage/history";
 import { matchTrainingKey } from "./keys";
+import { ChoiceGrid, CodeLinePicker } from "./maratona/LineChoicePicker";
 import { RoundHistory } from "./shell/History";
 import { PanelTitle, Reference, useRunning } from "./shell/panel";
 import { Result } from "./shell/Result";
@@ -351,7 +352,6 @@ export function CompileScreen({
   const best = historyScores.length > 0 ? Math.max(...historyScores) : correctCount;
 
   const caseData = round.current.caseData;
-  const codeLines = useMemo(() => caseData.code.split("\n"), [caseData.code]);
   const reviewing = round.reviewing;
 
   const stepPrompt =
@@ -499,57 +499,16 @@ export function CompileScreen({
                 </code>
               </div>
 
-              <div
-                className="compile-code"
-                data-testid="compile-code"
-                data-autofocus="true"
-                tabIndex={0}
-                role="group"
-                aria-label="Código C++ (clique ou use setas e Enter para escolher a linha)"
-              >
-                {codeLines.map((text, idx) => {
-                  const lineNo = idx + 1;
-                  const isCorrect = reviewing !== null && reviewing.expectedLine === lineNo;
-                  const isWrong =
-                    reviewing !== null &&
-                    reviewing.selectedLine === lineNo &&
-                    reviewing.expectedLine !== lineNo;
-                  const isSelected = reviewing === null && selectedLine === lineNo;
-                  const isFocused = reviewing === null && focusedLine === lineNo;
-                  const cls = [
-                    "compile-line",
-                    isCorrect ? "compile-line-correct" : "",
-                    isWrong ? "compile-line-wrong" : "",
-                    isSelected ? "compile-line-selected" : "",
-                    isFocused && !isSelected ? "compile-line-focused" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ");
-                  return (
-                    <button
-                      key={lineNo}
-                      type="button"
-                      className={cls}
-                      aria-label={`Linha ${String(lineNo)}`}
-                      aria-pressed={isSelected}
-                      disabled={reviewing !== null}
-                      data-line={lineNo}
-                      data-selected={isSelected ? "true" : undefined}
-                      data-focused={isFocused ? "true" : undefined}
-                      data-correct={isCorrect ? "true" : undefined}
-                      data-wrong={isWrong ? "true" : undefined}
-                      onClick={() => {
-                        pickLine(lineNo);
-                      }}
-                    >
-                      <span className="compile-gutter" aria-hidden="true">
-                        {String(lineNo).padStart(2, " ")}
-                      </span>
-                      <span className="compile-line-text">{text}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <CodeLinePicker
+                code={caseData.code}
+                selectedLine={selectedLine}
+                focusedLine={focusedLine}
+                correctLine={reviewing?.expectedLine ?? null}
+                wrongLine={reviewing?.selectedLine ?? null}
+                disabled={reviewing !== null}
+                onPickLine={pickLine}
+                testId="compile-code"
+              />
 
               {caseData.input !== undefined && (
                 <div className="compile-input-bar" data-testid="compile-input">
@@ -566,47 +525,17 @@ export function CompileScreen({
               {stepPrompt}
             </p>
 
-            <div
-              className="compile-choices"
-              data-testid="compile-choices"
-              role="group"
-              aria-label="Causas"
-            >
-              {round.current.choices.map((choice, idx) => {
-                const isCorrect = reviewing !== null && reviewing.expectedCause === choice.id;
-                const isWrong =
-                  reviewing !== null &&
-                  reviewing.selectedCause === choice.id &&
-                  reviewing.expectedCause !== choice.id;
-                const isSelected = reviewing === null && selectedCause === choice.id;
-                const cls = [
-                  "compile-choice",
-                  isCorrect ? "compile-choice-correct" : "",
-                  isWrong ? "compile-choice-wrong" : "",
-                  isSelected ? "compile-choice-selected" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ");
-                return (
-                  <button
-                    key={choice.id}
-                    type="button"
-                    className={cls}
-                    disabled={reviewing !== null}
-                    aria-pressed={isSelected}
-                    data-cause={choice.id}
-                    data-shortcut={idx + 1}
-                    data-correct={isCorrect ? "true" : undefined}
-                    data-wrong={isWrong ? "true" : undefined}
-                    onClick={() => {
-                      pickCause(choice.id);
-                    }}
-                  >
-                    <kbd>{idx + 1}</kbd> <span>{choice.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <ChoiceGrid
+              choices={round.current.choices}
+              selectedId={selectedCause}
+              correctId={reviewing?.expectedCause ?? null}
+              wrongId={reviewing?.selectedCause ?? null}
+              disabled={reviewing !== null}
+              onPick={pickCause}
+              testId="compile-choices"
+              ariaLabel="Causas"
+              itemAttrName="data-cause"
+            />
 
             {reviewing !== null ? (
               <div

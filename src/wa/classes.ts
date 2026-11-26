@@ -23,10 +23,12 @@ export const WA_CLASS_LABELS: Readonly<Record<WaClass, string>> = {
   leitura: "Leitura ou formato de saída",
 };
 
-export function isWaClass(_value: unknown): _value is WaClass {
-  throw new Error("todo");
+const CLASS_SET: ReadonlySet<string> = new Set(WA_CLASSES);
+
+export function isWaClass(value: unknown): value is WaClass {
+  return typeof value === "string" && CLASS_SET.has(value);
 }
 
-export function waClassLabel(_bugClass: WaClass): string {
-  throw new Error("todo");
+export function waClassLabel(bugClass: WaClass): string {
+  return WA_CLASS_LABELS[bugClass];
 }
