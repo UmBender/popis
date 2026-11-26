@@ -1,10 +1,10 @@
 ---
 id: T43
 title: Placar e penalidade do ICPC
-status: ready
+status: in-progress
 depends_on: []
 branch: task/T43-icpc-scoreboard
-adrs: []
+adrs: [ADR-T43-1]
 tags: [task]
 ---
 
@@ -37,12 +37,13 @@ prova, ler o placar rápido ajuda a escolher o próximo problema.
     minuto o time precisa de um AC para passar o outro;
   - `escolher`: as contagens de AC e de tentativas por problema, para
     responder qual problema tem a maior taxa de acerto.
-  - Testes: `src/icpc/drill.prop.test.ts` (a resposta canônica é aceita; os minutos ficam em 0..300; a resposta é única; a mesma seed gera o mesmo item).
+  - Testes: `src/icpc/drill.prop.test.ts` (a resposta canônica é aceita; os minutos ficam em 0..300; a resposta é única; a mesma seed gera o mesmo item), `src/icpc/check.test.ts` (tabela de formas equivalentes aceitas e quase-acertos rejeitados).
 - **AC-3**: **Tela** `src/ui/IcpcScreen.tsx`, com o placar desenhado como
   no BOCA e no DOMjudge (balões nas cores de token existentes),
   resposta numérica ou letra do problema, rodada de 90 s e eventos com
-  drill `icpc.score`.
-  - Testes: `src/ui/IcpcScreen.test.tsx`, `src/ui/shell/sections.test.ts`, `tests/e2e/icpc.spec.ts`.
+  drill `icpc.score`. Entra na pasta Maratona logo após `STL` como item
+  `Placar` (`id: "icpc"`), sem alterar os atalhos 1–9.
+  - Testes: `src/icpc/round.test.ts`, `src/storage/icpc.test.ts`, `src/stats/event.test.ts`, `src/ui/IcpcScreen.test.tsx`, `src/ui/shell/sections.test.ts`, `tests/e2e/icpc.spec.ts`.
 
 ## Out of scope
 
@@ -51,9 +52,9 @@ prova, ler o placar rápido ajuda a escolher o próximo problema.
 
 ## Files owned
 
-- `src/icpc/` (novo), `src/storage/icpc.ts`, `src/stats/event.ts`
-- `src/ui/IcpcScreen.tsx`, `src/ui/App.tsx`, `src/ui/shell/sections.ts`, `src/ui/app.css`
-- `tests/e2e/icpc.spec.ts`
+- `src/icpc/` (novo), `src/storage/icpc.ts`, `src/storage/icpc.test.ts`, `src/stats/event.ts`, `src/stats/event.test.ts`
+- `src/ui/IcpcScreen.tsx`, `src/ui/IcpcScreen.test.tsx`, `src/ui/App.tsx`, `src/ui/shell/sections.ts`, `src/ui/shell/sections.test.ts`, `src/ui/app.css`
+- `tests/e2e/icpc.spec.ts`, `playwright.config.ts` (projeto mobile para `icpc.spec.ts`), `vite.config.ts` (limiar de cobertura de `src/icpc/**`)
 
 ## Subtasks (one commit each)
 
