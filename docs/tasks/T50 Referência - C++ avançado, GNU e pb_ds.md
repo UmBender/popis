@@ -1,7 +1,7 @@
 ---
 id: T50
 title: Referência - C++ avançado, GNU e pb_ds
-status: ready
+status: in-progress
 depends_on: [T46]
 branch: task/T50-cpp-reference-advanced
 adrs: []
@@ -104,24 +104,46 @@ novas.
 ## Spec
 
 - **AC-1**: **Conteúdo:**
-  - pelo menos 45 verbetes novos nas seções acima;
-  - as seções novas "pb_ds" e "Extensões GNU" ficam antes de "Extras", e
-    os verbetes de `pb_ds` que hoje estão em "Extras" passam para "pb_ds"
-    com o mesmo `id` (os links `#cpp/<id>` continuam valendo);
+  - pelo menos 45 verbetes novos nas seções acima (total >= 136 verbetes
+    em C++, partindo dos 91 da T46);
+  - as seções novas `"pb_ds"` (`id: "pb_ds"`) e `"Extensões GNU"`
+    (`id: "gnu"`) ficam imediatamente antes de `"Extras"` (`id: "extras"`),
+    e os verbetes de `pb_ds` que hoje estão em `"Extras"` (`ordered_set`,
+    `gp_hash_table`) passam para `"pb_ds"` com o mesmo `id` (os links
+    `#cpp/<id>` continuam valendo);
   - KMP e Z são as únicas exceções à regra "algoritmos prontos ficam fora"
     da T46, porque respondem "como achar um padrão em O(n+m)" e cabem em 6
-    linhas.
-  - Testes: `src/ref/cpp/content.test.ts` (existente: toda seção tem verbetes, exemplos com até 6 linhas), mais "pb_ds entries keep their ids after moving" e "at least 136 cpp entries".
+    linhas;
+  - todos os verbetes mantêm a convenção da T46 de link para
+    `en.cppreference.com/w/cpp/` (o leitor exibe o rótulo `cppreference`).
+  - Testes: `src/ref/cpp/content.test.ts` (existentes: toda seção tem
+    verbetes, exemplos com até 6 linhas, armadilhas em uma frase, links
+    para cppreference; mais `"pb_ds entries keep their ids after moving"`,
+    `"pb_ds and gnu sections precede extras"`, `"at least 136 cpp entries"`,
+    `"the minimum entries of T50 exist"` e `"boyer_moore_searcher warns
+    about worst-case quadratic complexity"`), `src/ref/model.test.ts`
+    (`"entriesOf and sectionsOf return the language content"` atualizado
+    com as 11 seções de C++).
 - **AC-2**: **Oráculo:** `npm run ref:oracle -- cpp` passa em todos os
-  verbetes, os novos inclusive. O que exige C++23 (ou um g++ mais novo que
-  o 13 da WF) tem `judge` e falha com `-std=gnu++20`. A complexidade dita
-  pelo verbete do `boyer_moore_searcher` diz "linear em média, O(n·m) no
-  pior caso".
-  - Testes: `npm run ref:oracle -- cpp`, com o resultado no *Log*.
-- **AC-3**: **Busca:** "kmp", "padrão", "prefix function", "ordered",
-  "rope", "find first" e "popcount" encontram os verbetes novos como
-  primeiro resultado.
-  - Testes: `src/ref/search.test.ts` (novos casos na tabela).
+  verbetes, os novos inclusive, sem avisos e com saídas gravadas via
+  `--write` em `src/ref/cpp/outputs.ts`. O que exige C++23 (ou um g++
+  mais novo que o 13 da WF) tem `judge: true`, `since: "C++23"` e falha
+  com `-std=gnu++20`. A complexidade dita pelo verbete do
+  `boyer_moore_searcher` diz `"linear em média, O(n·m) no pior caso"`.
+  - Testes: `npm run ref:oracle -- cpp` (resultado no *Log*) e
+    `src/ref/cpp/content.test.ts` (`"boyer_moore_searcher warns about
+    worst-case quadratic complexity"`, `"judge entries need C++23"`).
+- **AC-3**: **Busca:** `"kmp"`, `"padrão"`, `"prefix function"`,
+  `"ordered"`, `"rope"`, `"find first"` e `"popcount"` encontram os
+  verbetes esperados como primeiro resultado (`kmp`, `kmp`, `kmp`,
+  `ordered_set` no topo da nova seção `pb_ds`, `rope`,
+  `bitset_find_first` e o novo `std_popcount` do C++20; este substitui
+  o antigo empate de `"popcount"` → `__builtin_popcount` da T46, enquanto
+  `"__builtin_popcount"` continua achando `popcount` primeiro, e
+  `"ordered map"` / `"ordered multiset"` encontram `ordered_map` e
+  `ordered_multiset`).
+  - Testes: `src/ref/search.test.ts` (novos casos na tabela e atualização
+    de `"popcount"` para `std_popcount` por mudança de spec da T50).
 
 ## Out of scope
 
@@ -131,16 +153,18 @@ novas.
 
 ## Files owned
 
-- `src/ref/cpp/` (conteúdo e saídas gravadas), `src/ref/search.test.ts`
-- `src/ref/model.ts` (só se uma seção nova precisar ser registrada ali)
+- `src/ref/cpp/` (conteúdo, testes e saídas gravadas),
+  `src/ref/search.test.ts`, `src/ref/model.test.ts`
+- `src/ref/model.ts` (só se uma seção nova precisar ser registrada ali —
+  não é necessário)
 
 ## Subtasks (one commit each)
 
 - [ ] spec
 - [ ] tests
-- [ ] models (provavelmente pulado: o modelo é o da T46)
+- [ ] models (pulado: o modelo da T46/T47 já cobre as novas seções e verbetes)
 - [ ] behaviour: verbetes e `ref:oracle -- cpp --write`
-- [ ] quality: `npm run check`, `ref:oracle -- cpp`, coverage, e2e
+- [ ] quality: `npm run check`, `ref:oracle -- cpp`, coverage, fuzz, e2e e verificação visual
 - [ ] docs
 
 ## Log
