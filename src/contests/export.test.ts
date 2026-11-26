@@ -70,7 +70,7 @@ describe("RFC 5545 .ics export", () => {
   });
 
   it("foldIcsLine folds long ASCII and multibyte UTF-8 lines to at most 75 octets without splitting code points", () => {
-    const longUtf8 = `SUMMARY:${"ação,".repeat(30)}`;
+    const longUtf8 = `SUMMARY:${"ação,🏆".repeat(25)}`;
     const folded = foldIcsLine(longUtf8);
     const lines = folded.split("\r\n");
 

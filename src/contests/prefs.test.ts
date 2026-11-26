@@ -9,7 +9,9 @@ describe("contests prefs", () => {
     expect(loadContestsPrefs(memoryStore({ [CONTESTS_KEY]: "{bad" }))).toEqual({
       sites: [...SITES],
     });
-    expect(loadContestsPrefs(memoryStore({ [CONTESTS_KEY]: JSON.stringify({ sites: "nope" }) }))).toEqual({
+    expect(
+      loadContestsPrefs(memoryStore({ [CONTESTS_KEY]: JSON.stringify({ sites: "nope" }) })),
+    ).toEqual({
       sites: [...SITES],
     });
   });

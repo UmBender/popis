@@ -48,6 +48,23 @@ describe("mergeContests", () => {
     expect(merged.map((c) => `${c.site}:${c.id}`)).toEqual(["atcoder:200", "codeforces:200"]);
     expect(merged[1]?.name).toBe("Contest 200");
   });
+
+  it("mergeContests breaks start-time ties deterministically by duration, site and id", () => {
+    const start = NOW + HOUR_MS;
+    const items = [
+      contest({ site: "leetcode", id: "b", startMs: start, durationMs: HOUR_MS }),
+      contest({ site: "leetcode", id: "a", startMs: start, durationMs: HOUR_MS }),
+      contest({ site: "atcoder", id: "z", startMs: start, durationMs: HOUR_MS }),
+      contest({ site: "codeforces", id: "1", startMs: start, durationMs: 2 * HOUR_MS }),
+    ];
+
+    expect(mergeContests([items]).map((c) => `${c.site}:${c.id}`)).toEqual([
+      "atcoder:z",
+      "leetcode:a",
+      "leetcode:b",
+      "codeforces:1",
+    ]);
+  });
 });
 
 describe("buildAgenda", () => {
@@ -114,7 +131,9 @@ describe("time formatting", () => {
   it("formatUpdatedAgo and isStale report freshness and 24h staleness", () => {
     expect(formatUpdatedAgo(NOW - 20_000, NOW)).toBe("atualizado há menos de 1 min");
     expect(formatUpdatedAgo(NOW - 15 * MINUTE_MS, NOW)).toBe("atualizado há 15 min");
-    expect(formatUpdatedAgo(NOW - 2 * HOUR_MS - 5 * MINUTE_MS, NOW)).toBe("atualizado há 2 h 5 min");
+    expect(formatUpdatedAgo(NOW - 2 * HOUR_MS - 5 * MINUTE_MS, NOW)).toBe(
+      "atualizado há 2 h 5 min",
+    );
     expect(formatUpdatedAgo(NOW - 26 * HOUR_MS, NOW)).toBe("atualizado há 1 d 2 h");
 
     expect(isStale(NOW - DAY_MS, NOW)).toBe(false);

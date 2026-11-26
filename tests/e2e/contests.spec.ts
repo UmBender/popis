@@ -88,7 +88,9 @@ test("T38: open Contests from the Agenda folder, filter sites and download .ics"
   await expectNoHorizontalScroll(page, "contests");
   if (mobile) {
     await expectTouchTargets(
-      page.locator(".contests-controls label, .contests-controls button, .contest-actions a, .contest-actions button"),
+      page.locator(
+        ".contests-controls label, .contests-controls button, .contest-actions a, .contest-actions button",
+      ),
       "contests mobile",
     );
   }

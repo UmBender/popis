@@ -163,30 +163,30 @@ function extractAtcoderTableBody(html: string, id: string): string | null {
   const nextSection = /<div\b[^>]*\bid=["']contest-table-/i.exec(after);
   const chunk = nextSection === null ? after : after.slice(0, nextSection.index);
   const body = /<tbody\b[^>]*>([\s\S]*?)<\/tbody>/i.exec(chunk);
-  return body === null ? null : (body[1] ?? null);
+  return body === null ? null : body[1]!;
 }
 
 function parseAtcoderRows(tbody: string): Contest[] {
   const out: Contest[] = [];
   for (const rowMatch of tbody.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
-    const rowHtml = rowMatch[1] ?? "";
-    const cells = [...rowHtml.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map((m) => m[1] ?? "");
+    const rowHtml = rowMatch[1]!;
+    const cells = [...rowHtml.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map((m) => m[1]!);
     if (cells.length < 3) fail("atcoder", "unexpected row column count");
 
-    const timeMatch = /<time\b[^>]*>([\s\S]*?)<\/time>/i.exec(cells[0] ?? "");
+    const timeMatch = /<time\b[^>]*>([\s\S]*?)<\/time>/i.exec(cells[0]!);
     if (timeMatch === null) fail("atcoder", "missing <time> tag");
-    const startMs = parseIsoDateTimeMs(timeMatch[1] ?? "");
+    const startMs = parseIsoDateTimeMs(timeMatch[1]!);
     if (startMs === null) fail("atcoder", "invalid start time");
 
     const linkMatch = /<a\b[^>]*href=["']\/contests\/([^"'/?#]+)["'][^>]*>([\s\S]*?)<\/a>/i.exec(
-      cells[1] ?? "",
+      cells[1]!,
     );
     if (linkMatch === null) fail("atcoder", "missing contest link");
-    const slug = (linkMatch[1] ?? "").trim();
-    const name = decodeHtmlEntities((linkMatch[2] ?? "").replace(/<[^>]+>/g, "")).trim();
+    const slug = linkMatch[1]!.trim();
+    const name = decodeHtmlEntities(linkMatch[2]!.replace(/<[^>]+>/g, "")).trim();
     if (slug.length === 0 || name.length === 0) fail("atcoder", "empty contest slug or name");
 
-    const durText = (cells[2] ?? "").replace(/<[^>]+>/g, "").trim();
+    const durText = cells[2]!.replace(/<[^>]+>/g, "").trim();
     const durMatch = DURATION_RE.exec(durText);
     if (durMatch === null) fail("atcoder", `invalid duration "${durText}" for ${slug}`);
     const hours = Number(durMatch[1]);

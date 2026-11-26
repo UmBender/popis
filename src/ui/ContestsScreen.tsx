@@ -50,12 +50,11 @@ function saveIcs(name: string, text: string): void {
 }
 
 function contestsJsonUrl(): string {
-  const base = import.meta.env.BASE_URL;
-  return `${base.endsWith("/") ? base : `${base}/`}contests.json`;
+  return `${import.meta.env.BASE_URL}contests.json`;
 }
 
 function capitalize(text: string): string {
-  return text.length === 0 ? text : `${text.charAt(0).toLocaleUpperCase("pt-BR")}${text.slice(1)}`;
+  return `${text.charAt(0).toLocaleUpperCase("pt-BR")}${text.slice(1)}`;
 }
 
 function makeFormatters(timeZone?: string) {
@@ -80,11 +79,8 @@ function makeFormatters(timeZone?: string) {
   });
 
   const dayKey = (ms: number): string => {
-    const parts = dayParts.formatToParts(ms);
-    const y = parts.find((p) => p.type === "year")?.value ?? "";
-    const m = parts.find((p) => p.type === "month")?.value ?? "";
-    const d = parts.find((p) => p.type === "day")?.value ?? "";
-    return `${y}-${m}-${d}`;
+    const parts = new Map(dayParts.formatToParts(ms).map((p) => [p.type, p.value]));
+    return `${parts.get("year")}-${parts.get("month")}-${parts.get("day")}`;
   };
 
   const dayLabel = (ms: number, now: number): string => {
@@ -114,12 +110,7 @@ function ContestRow({ contest, now, startTimeLabel, onDownloadOne }: ContestRowP
         <span className="contest-site" data-site={contest.site}>
           {SITE_LABEL[contest.site]}
         </span>
-        <a
-          className="contest-name"
-          href={contest.url}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a className="contest-name" href={contest.url} target="_blank" rel="noopener noreferrer">
           {contest.name}
         </a>
         <div className="contest-meta">
@@ -181,19 +172,17 @@ export function ContestsScreen({
     let cancelled = false;
     const loader = fetchData ?? fetch;
     void (async () => {
+      let next: LoadState = { kind: "missing" };
       try {
         const res = await loader(contestsJsonUrl(), { cache: "no-cache" });
-        if (!res.ok) {
-          if (!cancelled) setState({ kind: "missing" });
-          return;
-        }
-        const parsed = parseSnapshot((await res.json()) as unknown);
-        if (!cancelled) {
-          setState(parsed === null ? { kind: "missing" } : { kind: "ready", snapshot: parsed });
+        if (res.ok) {
+          const parsed = parseSnapshot((await res.json()) as unknown);
+          if (parsed !== null) next = { kind: "ready", snapshot: parsed };
         }
       } catch {
-        if (!cancelled) setState({ kind: "missing" });
+        // Missing or unreadable file keeps the missing state.
       }
+      if (!cancelled) setState(next);
     })();
     return () => {
       cancelled = true;
@@ -237,49 +226,46 @@ export function ContestsScreen({
         Próximos contests de Codeforces, AtCoder, CodeChef e LeetCode no seu fuso horário.
       </PanelTitle>
 
-      {state.kind === "ready" && (
-        <div className="contests-controls" data-panel="options">
-          <fieldset className="contests-sites">
-            <legend>Sites</legend>
-            {SITES.map((site) => (
-              <label key={site} className="op">
-                <input
-                  type="checkbox"
-                  checked={enabledSet.has(site)}
-                  onChange={() => {
-                    toggleSite(site);
-                  }}
-                />
-                <span className="contest-site" data-site={site}>
-                  {SITE_LABEL[site]}
-                </span>
-              </label>
-            ))}
-          </fieldset>
-          <div className="contests-bar">
-            <span className="muted contests-updated">
-              {formatUpdatedAgo(state.snapshot.generatedAt, now)}
-            </span>
-            <button
-              type="button"
-              onClick={downloadAll}
-              disabled={visibleContests.length === 0}
-            >
-              Baixar .ics
-            </button>
-          </div>
-          {isStale(state.snapshot.generatedAt, now) && (
-            <p role="alert" className="contests-warning">
-              Os dados têm mais de 24 h e podem estar desatualizados.
-            </p>
-          )}
-          {state.snapshot.errors.map((err) => (
-            <p key={err.site} role="alert" className="contests-warning">
-              {`${SITE_LABEL[err.site]} indisponível na última atualização`}
-            </p>
+      <div className="contests-controls" data-panel="options">
+        <div role="group" aria-label="Sites" className="contests-sites">
+          {SITES.map((site) => (
+            <label key={site} className="op">
+              <input
+                type="checkbox"
+                checked={enabledSet.has(site)}
+                onChange={() => {
+                  toggleSite(site);
+                }}
+              />
+              <span className="contest-site" data-site={site}>
+                {SITE_LABEL[site]}
+              </span>
+            </label>
           ))}
         </div>
-      )}
+        {state.kind === "ready" && (
+          <>
+            <div className="contests-bar">
+              <span className="muted contests-updated">
+                {formatUpdatedAgo(state.snapshot.generatedAt, now)}
+              </span>
+              <button type="button" onClick={downloadAll} disabled={visibleContests.length === 0}>
+                Baixar .ics
+              </button>
+            </div>
+            {isStale(state.snapshot.generatedAt, now) && (
+              <p role="alert" className="contests-warning">
+                Os dados têm mais de 24 h e podem estar desatualizados.
+              </p>
+            )}
+            {state.snapshot.errors.map((err) => (
+              <p key={err.site} role="alert" className="contests-warning">
+                {`${SITE_LABEL[err.site]} indisponível na última atualização`}
+              </p>
+            ))}
+          </>
+        )}
+      </div>
 
       <div className="contests-area" data-panel="area">
         {state.kind === "loading" && <p className="muted">Carregando agenda...</p>}
@@ -298,10 +284,7 @@ export function ContestsScreen({
         {state.kind === "ready" && agenda !== null && (
           <>
             {agenda.running.length > 0 && (
-              <section
-                className="contests-section"
-                aria-labelledby="contests-running-title"
-              >
+              <section className="contests-section" aria-labelledby="contests-running-title">
                 <h2 id="contests-running-title">Acontecendo agora</h2>
                 <ul className="contests-list">
                   {agenda.running.map((c) => (
@@ -317,10 +300,7 @@ export function ContestsScreen({
               </section>
             )}
 
-            <section
-              className="contests-section"
-              aria-labelledby="contests-upcoming-title"
-            >
+            <section className="contests-section" aria-labelledby="contests-upcoming-title">
               <h2 id="contests-upcoming-title">Próximos 14 dias</h2>
               {enabledSites.length === 0 ? (
                 <p className="muted">Nenhum site selecionado.</p>
@@ -328,7 +308,7 @@ export function ContestsScreen({
                 <p className="muted">Nenhum contest nos próximos 14 dias.</p>
               ) : (
                 agenda.days.map((group) => {
-                  const first = group.contests[0];
+                  const first = group.contests[0]!;
                   const headingId = `contests-day-${group.day}-title`;
                   return (
                     <section
@@ -337,9 +317,7 @@ export function ContestsScreen({
                       data-testid={`contests-day-${group.day}`}
                       aria-labelledby={headingId}
                     >
-                      <h3 id={headingId}>
-                        {first === undefined ? group.day : fmt.dayLabel(first.startMs, now)}
-                      </h3>
+                      <h3 id={headingId}>{fmt.dayLabel(first.startMs, now)}</h3>
                       <ul className="contests-list">
                         {group.contests.map((c) => (
                           <ContestRow

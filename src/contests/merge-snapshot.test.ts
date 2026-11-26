@@ -19,7 +19,10 @@ function item(site: Contest["site"], id: string, startOffsetH: number, durationH
 describe("mergeSnapshot", () => {
   it("mergeSnapshot keeps fresh contests from all four sources when every source succeeds", () => {
     const results: FetchResults = {
-      codeforces: { ok: true, contests: [item("codeforces", "1", 5), item("codeforces", "old", -5)] },
+      codeforces: {
+        ok: true,
+        contests: [item("codeforces", "1", 5), item("codeforces", "old", -5)],
+      },
       atcoder: { ok: true, contests: [item("atcoder", "abc1", 2)] },
       codechef: { ok: true, contests: [item("codechef", "st1", 8)] },
       leetcode: { ok: true, contests: [item("leetcode", "wc1", 1)] },

@@ -3008,6 +3008,11 @@ th {
 }
 
 @media (max-width: 48rem) {
+  .contests-sites {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .contests-controls label.op,
   .contests-controls button,
   .contest-action {

@@ -19,15 +19,18 @@ const contestArb: fc.Arbitrary<Contest> = fc
 describe("agenda properties", () => {
   it("merged contests are always sorted by startMs and deduplicated by site and id", () => {
     fc.assert(
-      fc.property(fc.array(fc.array(contestArb, { maxLength: 15 }), { maxLength: 4 }), (sources) => {
-        const merged = mergeContests(sources);
+      fc.property(
+        fc.array(fc.array(contestArb, { maxLength: 15 }), { maxLength: 4 }),
+        (sources) => {
+          const merged = mergeContests(sources);
 
-        for (let i = 1; i < merged.length; i += 1) {
-          expect(merged[i]!.startMs).toBeGreaterThanOrEqual(merged[i - 1]!.startMs);
-        }
-        const keys = merged.map((c) => `${c.site}:${c.id}`);
-        expect(new Set(keys).size).toBe(keys.length);
-      }),
+          for (let i = 1; i < merged.length; i += 1) {
+            expect(merged[i]!.startMs).toBeGreaterThanOrEqual(merged[i - 1]!.startMs);
+          }
+          const keys = merged.map((c) => `${c.site}:${c.id}`);
+          expect(new Set(keys).size).toBe(keys.length);
+        },
+      ),
     );
   });
 
@@ -64,7 +67,9 @@ describe("agenda properties", () => {
             expect(c.startMs).toBeLessThanOrEqual(NOW + 14 * DAY_MS);
           }
           for (let i = 1; i < agenda.running.length; i += 1) {
-            expect(agenda.running[i]!.startMs).toBeGreaterThanOrEqual(agenda.running[i - 1]!.startMs);
+            expect(agenda.running[i]!.startMs).toBeGreaterThanOrEqual(
+              agenda.running[i - 1]!.startMs,
+            );
           }
           for (let i = 1; i < agenda.upcoming.length; i += 1) {
             expect(agenda.upcoming[i]!.startMs).toBeGreaterThanOrEqual(

@@ -69,10 +69,44 @@ describe("parseCodeforces", () => {
     ["invalid JSON", "not json"],
     ["non-OK status", JSON.stringify({ status: "FAILED", comment: "limit" })],
     ["missing result array", JSON.stringify({ status: "OK", result: null })],
-    ["missing name", JSON.stringify({ status: "OK", result: [{ id: 1, phase: "BEFORE", startTimeSeconds: 100, durationSeconds: 3600 }] })],
-    ["missing startTimeSeconds", JSON.stringify({ status: "OK", result: [{ id: 1, name: "Round", phase: "BEFORE", durationSeconds: 3600 }] })],
-    ["non-positive duration", JSON.stringify({ status: "OK", result: [{ id: 1, name: "Round", phase: "BEFORE", startTimeSeconds: 100, durationSeconds: 0 }] })],
-    ["non-integer id", JSON.stringify({ status: "OK", result: [{ id: "abc", name: "Round", phase: "BEFORE", startTimeSeconds: 100, durationSeconds: 3600 }] })],
+    [
+      "missing name",
+      JSON.stringify({
+        status: "OK",
+        result: [{ id: 1, phase: "BEFORE", startTimeSeconds: 100, durationSeconds: 3600 }],
+      }),
+    ],
+    [
+      "missing startTimeSeconds",
+      JSON.stringify({
+        status: "OK",
+        result: [{ id: 1, name: "Round", phase: "BEFORE", durationSeconds: 3600 }],
+      }),
+    ],
+    [
+      "non-positive duration",
+      JSON.stringify({
+        status: "OK",
+        result: [
+          { id: 1, name: "Round", phase: "BEFORE", startTimeSeconds: 100, durationSeconds: 0 },
+        ],
+      }),
+    ],
+    [
+      "non-integer id",
+      JSON.stringify({
+        status: "OK",
+        result: [
+          {
+            id: "abc",
+            name: "Round",
+            phase: "BEFORE",
+            startTimeSeconds: 100,
+            durationSeconds: 3600,
+          },
+        ],
+      }),
+    ],
     ["malformed item", JSON.stringify({ status: "OK", result: [null] })],
   ])("parser throws an error naming codeforces on %s", (_label, raw) => {
     expect(() => parseCodeforces(raw)).toThrow(/codeforces/i);
@@ -115,7 +149,10 @@ describe("parseCodechef", () => {
 
   it.each([
     ["invalid JSON", "{"],
-    ["non-success status", JSON.stringify({ status: "error", present_contests: [], future_contests: [] })],
+    [
+      "non-success status",
+      JSON.stringify({ status: "error", present_contests: [], future_contests: [] }),
+    ],
     ["missing future_contests", JSON.stringify({ status: "success", present_contests: [] })],
     [
       "missing contest_code",
@@ -142,6 +179,77 @@ describe("parseCodechef", () => {
             contest_name: "Starters",
             contest_start_date_iso: "2026-02-30T20:00:00+05:30",
             contest_end_date_iso: "2026-03-01T22:00:00+05:30",
+          },
+        ],
+      }),
+    ],
+    [
+      "malformed entry",
+      JSON.stringify({ status: "success", present_contests: [null], future_contests: [] }),
+    ],
+    [
+      "missing contest_name",
+      JSON.stringify({
+        status: "success",
+        present_contests: [],
+        future_contests: [
+          {
+            contest_code: "START999",
+            contest_start_date_iso: "2026-11-30T20:00:00+05:30",
+            contest_end_date_iso: "2026-11-30T22:00:00+05:30",
+          },
+        ],
+      }),
+    ],
+    [
+      "missing ISO dates",
+      JSON.stringify({
+        status: "success",
+        present_contests: [],
+        future_contests: [{ contest_code: "START999", contest_name: "Starters" }],
+      }),
+    ],
+    [
+      "out-of-range month and offset",
+      JSON.stringify({
+        status: "success",
+        present_contests: [],
+        future_contests: [
+          {
+            contest_code: "START999",
+            contest_name: "Starters",
+            contest_start_date_iso: "2026-13-01T20:00:00+05:30",
+            contest_end_date_iso: "2026-13-01T22:00:00+05:30",
+          },
+        ],
+      }),
+    ],
+    [
+      "out-of-range hour",
+      JSON.stringify({
+        status: "success",
+        present_contests: [],
+        future_contests: [
+          {
+            contest_code: "START999",
+            contest_name: "Starters",
+            contest_start_date_iso: "2026-11-30T24:00:00Z",
+            contest_end_date_iso: "2026-12-01T01:00:00Z",
+          },
+        ],
+      }),
+    ],
+    [
+      "out-of-range timezone offset",
+      JSON.stringify({
+        status: "success",
+        present_contests: [],
+        future_contests: [
+          {
+            contest_code: "START999",
+            contest_name: "Starters",
+            contest_start_date_iso: "2026-11-30T20:00:00-25:00",
+            contest_end_date_iso: "2026-11-30T22:00:00-03:00",
           },
         ],
       }),
@@ -206,13 +314,13 @@ describe("parseAtcoder", () => {
     ]);
   });
 
-  it("parser reads active contests, long durations and HTML entities from AtCoder", () => {
+  it("parser reads active contests, long durations, leap days and HTML entities from AtCoder", () => {
     const html = `
       <div id="contest-table-action">
         <table><tbody>
           <tr>
-            <td><time class="fixtime">2026-11-26 19:00:00+0900</time></td>
-            <td><a href="/contests/ahc074">HACK &amp; RUN &#39;26</a></td>
+            <td><time class="fixtime">2024-02-29 19:00:00-0300</time></td>
+            <td><a href="/contests/ahc074">HACK &amp; &#x26; &unknown; RUN &#39;26</a></td>
             <td>240:00</td>
             <td>All</td>
           </tr>
@@ -227,9 +335,9 @@ describe("parseAtcoder", () => {
       {
         site: "atcoder",
         id: "ahc074",
-        name: "HACK & RUN '26",
+        name: "HACK & & &unknown; RUN '26",
         url: "https://atcoder.jp/contests/ahc074",
-        startMs: Date.UTC(2026, 10, 26, 10, 0, 0),
+        startMs: Date.UTC(2024, 1, 29, 22, 0, 0),
         durationMs: 240 * 3_600_000,
       },
     ]);
@@ -237,9 +345,10 @@ describe("parseAtcoder", () => {
 
   it.each([
     ["HTML without upcoming table", "<html><body><p>Maintenance</p></body></html>"],
+    ["upcoming div without tbody", '<div id="contest-table-upcoming"><table></table></div>'],
     [
-      "upcoming div without tbody",
-      '<div id="contest-table-upcoming"><table></table></div>',
+      "row with fewer than 3 columns",
+      '<div id="contest-table-upcoming"><table><tbody><tr><td>only one</td></tr></tbody></table></div>',
     ],
     [
       "row missing time tag",
@@ -252,6 +361,18 @@ describe("parseAtcoder", () => {
     [
       "row missing contest link",
       '<div id="contest-table-upcoming"><table><tbody><tr><td><time>2026-11-28 21:00:00+0900</time></td><td>ABC</td><td>01:40</td></tr></tbody></table></div>',
+    ],
+    [
+      "row with empty contest name",
+      '<div id="contest-table-upcoming"><table><tbody><tr><td><time>2026-11-28 21:00:00+0900</time></td><td><a href="/contests/abc1">   </a></td><td>01:40</td></tr></tbody></table></div>',
+    ],
+    [
+      "row with non-matching duration",
+      '<div id="contest-table-upcoming"><table><tbody><tr><td><time>2026-11-28 21:00:00+0900</time></td><td><a href="/contests/abc1">ABC</a></td><td>2h</td></tr></tbody></table></div>',
+    ],
+    [
+      "row with zero duration",
+      '<div id="contest-table-upcoming"><table><tbody><tr><td><time>2026-11-28 21:00:00+0900</time></td><td><a href="/contests/abc1">ABC</a></td><td>00:00</td></tr></tbody></table></div>',
     ],
     [
       "row with invalid duration",
@@ -282,10 +403,19 @@ describe("parseLeetcode", () => {
     ["invalid JSON", "<html>502</html>"],
     ["missing data", JSON.stringify({ errors: [{ message: "denied" }] })],
     ["missing upcomingContests", JSON.stringify({ data: {} })],
+    ["malformed entry", JSON.stringify({ data: { upcomingContests: [null] } })],
+    [
+      "missing title",
+      JSON.stringify({
+        data: { upcomingContests: [{ titleSlug: "w1", startTime: 1_795_919_400, duration: 5400 }] },
+      }),
+    ],
     [
       "missing titleSlug",
       JSON.stringify({
-        data: { upcomingContests: [{ title: "Weekly 1", startTime: 1_795_919_400, duration: 5400 }] },
+        data: {
+          upcomingContests: [{ title: "Weekly 1", startTime: 1_795_919_400, duration: 5400 }],
+        },
       }),
     ],
     [
@@ -333,6 +463,8 @@ describe("parseSnapshot", () => {
     expect(parseSnapshot(valid)).toEqual(valid);
     expect(parseSnapshot(null)).toBeNull();
     expect(parseSnapshot({ generatedAt: "bad", contests: [], errors: [] })).toBeNull();
+    expect(parseSnapshot({ generatedAt: 1000, contests: [null], errors: [] })).toBeNull();
+    expect(parseSnapshot({ generatedAt: 1000, contests: [], errors: [null] })).toBeNull();
     expect(
       parseSnapshot({
         generatedAt: 1000,

@@ -6,6 +6,7 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from "../contests/agenda";
 import type { ContestsSnapshot } from "../contests/model";
 import { CONTESTS_KEY } from "../contests/prefs";
 import { memoryStore, type KeyValueStore } from "../storage/history";
+import { App } from "./App";
 import { ContestsScreen } from "./ContestsScreen";
 
 // 2026-11-26 12:00 UTC = 09:00 America/Sao_Paulo (UTC-3).
@@ -109,19 +110,26 @@ describe("ContestsScreen", () => {
   it("ContestsScreen groups running and upcoming contests by local day with links and Google Calendar buttons", async () => {
     const { fetchData } = await renderScreen();
 
-    expect(fetchData).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}contests.json`, expect.anything());
+    expect(fetchData).toHaveBeenCalledWith(
+      `${import.meta.env.BASE_URL}contests.json`,
+      expect.anything(),
+    );
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Contests");
     expect(screen.getByText("atualizado há 15 min")).toBeTruthy();
 
     const running = screen.getByRole("region", { name: "Acontecendo agora" });
-    expect(within(running).getByRole("link", { name: "Codeforces Round 1138 (Div. 3)" }).getAttribute("href")).toBe(
-      "https://codeforces.com/contests/2292",
-    );
+    expect(
+      within(running)
+        .getByRole("link", { name: "Codeforces Round 1138 (Div. 3)" })
+        .getAttribute("href"),
+    ).toBe("https://codeforces.com/contests/2292");
     expect(within(running).getByText("Codeforces")).toBeTruthy();
     expect(within(running).getByText("termina em 1 h 20 min")).toBeTruthy();
-    expect(within(running).getByRole("link", { name: /Google Agenda/ }).getAttribute("href")).toContain(
-      "https://calendar.google.com/calendar/render?action=TEMPLATE",
-    );
+    expect(
+      within(running)
+        .getByRole("link", { name: /Google Agenda/ })
+        .getAttribute("href"),
+    ).toContain("https://calendar.google.com/calendar/render?action=TEMPLATE");
 
     // Local timezone grouping: 2026-11-27 01:00 UTC lands on 2026-11-26 in America/Sao_Paulo.
     const day26 = screen.getByTestId("contests-day-2026-11-26");
@@ -251,5 +259,48 @@ describe("ContestsScreen", () => {
     const netFail = vi.fn<typeof fetch>(() => Promise.reject(new Error("offline")));
     await renderScreen({ fetchData: netFail });
     expect(screen.getByText(/npm run contests:fetch/)).toBeTruthy();
+  });
+
+  it("ContestsScreen handles re-enabling a site, empty states, tomorrow heading and opening from App", async () => {
+    // Tomorrow heading + toggling a site off and back on + empty selection.
+    const tomorrowSnapshot: ContestsSnapshot = {
+      generatedAt: NOW,
+      contests: [
+        {
+          site: "atcoder",
+          id: "abc487",
+          name: "AtCoder Tomorrow",
+          url: "https://atcoder.jp/contests/abc487",
+          startMs: NOW + DAY_MS,
+          durationMs: HOUR_MS,
+        },
+      ],
+      errors: [],
+    };
+    const { store } = await renderScreen({ snapshot: tomorrowSnapshot });
+    expect(screen.getByText(/amanhã/i)).toBeTruthy();
+
+    const atcoder = screen.getByRole<HTMLInputElement>("checkbox", { name: "AtCoder" });
+    fireEvent.click(atcoder);
+    expect(screen.getByText("Nenhum contest nos próximos 14 dias.")).toBeTruthy();
+    fireEvent.click(atcoder);
+    expect(screen.getByRole("link", { name: "AtCoder Tomorrow" })).toBeTruthy();
+
+    // Unchecking every site shows the no-site-selected message.
+    for (const label of ["Codeforces", "AtCoder", "CodeChef", "LeetCode"]) {
+      fireEvent.click(screen.getByRole("checkbox", { name: label }));
+    }
+    expect(screen.getByText("Nenhum site selecionado.")).toBeTruthy();
+    expect(store.getItem(CONTESTS_KEY)).toBe(JSON.stringify({ sites: [] }));
+
+    // Opening Contests from App uses global fetch and browser default timezone.
+    cleanup();
+    vi.stubGlobal("fetch", jsonFetch(tomorrowSnapshot));
+    render(<App clock={clock} store={memoryStore()} newSeed={() => 1} />);
+    fireEvent.click(screen.getByRole("radio", { name: "Contests" }));
+    await flush();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Contests");
+    expect(screen.getByRole("link", { name: "AtCoder Tomorrow" })).toBeTruthy();
+    vi.unstubAllGlobals();
   });
 });
