@@ -2,6 +2,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -119,6 +120,7 @@ export function TextTypingScreen({
   // The latest run and pace settings, read by event handlers between renders.
   const latest = useRef(current);
   const paceRef = useRef(pace);
+  const goalHintId = useId();
   const box = useRef<HTMLTextAreaElement>(null);
   const area = useRef<HTMLDivElement>(null);
 
@@ -408,6 +410,7 @@ export function TextTypingScreen({
               Meta no ritmo
               <select
                 aria-label="Meta no ritmo"
+                aria-describedby={goalHintId}
                 value={String(pace.goal)}
                 onChange={(e) => {
                   updatePace({ ...paceRef.current, goal: Number(e.target.value) });
@@ -419,6 +422,9 @@ export function TextTypingScreen({
                   </option>
                 ))}
               </select>
+              <small id={goalHintId} className="pace-goal-hint">
+                % das palavras certas acima do alvo; maior = alvo mais fácil
+              </small>
             </label>
           )}
         </div>
@@ -682,7 +688,7 @@ function TextResults({
       extra={
         paceSummary !== null && (
           <p className="pace-result" data-testid="text-pace-result">
-            {`${String(Math.round(paceSummary.onPaceShare * 100))}% das palavras no ritmo · alvo ${String(paceSummary.target)} → ${String(paceSummary.nextTarget)} WPM`}
+            {`${String(Math.round(paceSummary.onPaceShare * 100))}% das palavras certas no ritmo · alvo ${String(paceSummary.target)} → ${String(paceSummary.nextTarget)} WPM`}
           </p>
         )
       }

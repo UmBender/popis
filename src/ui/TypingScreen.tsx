@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { Clock } from "../core/clock";
 import { codeEvents, codePaceUnits, traceCode, type KeyTrace } from "../stats/keytrace";
 import { detectPlateau, weeklyRate } from "../stats/learning";
@@ -135,6 +135,7 @@ export function TypingScreen({
   // The latest run and pace settings, read by event handlers between renders.
   const latest = useRef(current);
   const paceRef = useRef(pace);
+  const goalHintId = useId();
   const box = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -316,6 +317,7 @@ export function TypingScreen({
               Meta no ritmo
               <select
                 aria-label="Meta no ritmo"
+                aria-describedby={goalHintId}
                 value={String(pace.goal)}
                 onChange={(e) => {
                   updatePace({ ...paceRef.current, goal: Number(e.target.value) });
@@ -327,6 +329,9 @@ export function TypingScreen({
                   </option>
                 ))}
               </select>
+              <small id={goalHintId} className="pace-goal-hint">
+                % das linhas certas acima do alvo; maior = alvo mais fácil
+              </small>
             </label>
           )}
         </div>
@@ -545,7 +550,7 @@ function TypingResults({
           )}
           {paceSummary !== null && (
             <p className="pace-result" data-testid="typing-pace-result">
-              {`${String(Math.round(paceSummary.onPaceShare * 100))}% das linhas no ritmo · alvo ${String(paceSummary.target)} → ${String(paceSummary.nextTarget)} WPM`}
+              {`${String(Math.round(paceSummary.onPaceShare * 100))}% das linhas certas no ritmo · alvo ${String(paceSummary.target)} → ${String(paceSummary.nextTarget)} WPM`}
             </p>
           )}
         </>

@@ -112,9 +112,14 @@ export function nextTargetWpm({
  * reached, or null when no unit counts or that speed is unbounded.
  */
 export function goalSpeedWpm(units: readonly PaceRoundUnit[], goal: number): number | null {
-  void units;
-  void goal;
-  throw new Error("todo");
+  const speeds = units
+    .filter((u) => u.ok && u.complete && u.chars > 0)
+    .map((u) => (u.timeMs <= 0 ? Infinity : (u.chars * 12_000) / u.timeMs))
+    .sort((x, y) => y - x);
+  if (speeds.length === 0) return null;
+  const reached = Math.max(1, Math.ceil(goal * speeds.length - EPS));
+  const speed = speeds[reached - 1] as number;
+  return Number.isFinite(speed) ? Math.floor(speed + EPS) : null;
 }
 
 /**
@@ -127,11 +132,17 @@ export function evaluatePaceRound(
   accuracy: number,
   goal = DEFAULT_PACE_GOAL,
 ): PaceRoundSummary {
-  void units;
-  void target;
-  void accuracy;
-  void goal;
-  throw new Error("todo");
+  const counted = units.filter((u) => u.ok && u.complete && u.chars > 0);
+  const totalUnits = counted.length;
+  if (totalUnits === 0) {
+    return { target, nextTarget: target, onPaceCount: 0, totalUnits: 0, onPaceShare: 0 };
+  }
+  const onPaceCount = counted.filter((u) => isUnitOnPace(u, target)).length;
+  const onPaceShare = onPaceCount / totalUnits;
+  const stepped = nextTargetWpm({ target, onPaceShare, accuracy, goal });
+  const speed = stepped > target ? goalSpeedWpm(counted, goal) : null;
+  const nextTarget = speed !== null && speed - target > CATCH_UP_GAP_WPM ? speed : stepped;
+  return { target, nextTarget, onPaceCount, totalUnits, onPaceShare };
 }
 
 /** Typeable characters advanced in `elapsedMs` at `targetWpm` (`targetWpm * 5 / 60` chars/s). */
