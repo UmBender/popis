@@ -24,6 +24,7 @@ export default defineConfig({
         "gdb.spec.ts",
         "compile.spec.ts",
         "stl.spec.ts",
+        "icpc.spec.ts",
         "shell-drill.spec.ts",
         "regex.spec.ts",
         "ref.spec.ts",

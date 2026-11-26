@@ -165,4 +165,29 @@ describe("event drills", () => {
     expect(recordEvents(store, [ev], at)).toBe(true);
     expect(loadEvents(store)).toEqual([ev]);
   });
+
+  it("DRILLS accepts icpc.score and stores ICPC scoreboard events", () => {
+    expect(DRILLS).toContain("icpc.score");
+    const store = memoryStore();
+    const at = Date.UTC(2026, 10, 26, 4);
+    const ev: TrainingEvent = {
+      at,
+      drill: "icpc.score",
+      config: "90s-all",
+      kc: "icpc.penalidade",
+      ok: true,
+      timeMs: 3100,
+      extra: {
+        seed: 29,
+        i: 0,
+        kind: "penalidade",
+        compileErrorCounts: false,
+        skipped: false,
+      },
+    };
+
+    expect(eventKey(ev)).toBe(`${String(at)}|icpc.score|29|0`);
+    expect(recordEvents(store, [ev], at)).toBe(true);
+    expect(loadEvents(store)).toEqual([ev]);
+  });
 });
