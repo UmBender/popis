@@ -1,7 +1,7 @@
 ---
 id: T38
 title: Agenda de contests
-status: review
+status: done
 depends_on: []
 branch: task/T38-contest-calendar
 adrs: ["[[ADR-T38-1 Dados de contests buscados no build a cada 6 h]]"]
