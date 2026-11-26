@@ -25,6 +25,7 @@ const SCREENS: readonly ItemId[] = [
   "compile-read",
   "stl",
   "ref-cpp",
+  "ref-py",
 ];
 
 describe("sections", () => {
@@ -40,16 +41,17 @@ describe("sections", () => {
       ["Shell", ["Aprender", "Comandos"]],
       ["Regex", ["Aprender", "Prática"]],
       ["Maratona", ["Ler o erro", "STL"]],
-      ["Referência", ["C++"]],
+      ["Referência", ["C++", "Python"]],
     ]);
   });
 
-  it("Referência folder closes the tree with C++ on touch screens", () => {
+  it("Referência folder closes the tree with C++ and Python on touch screens", () => {
     const last = SECTIONS[SECTIONS.length - 1];
     expect(last?.id).toBe("referencia");
     expect(last?.label).toBe("Referência");
     expect(last?.items.map((i) => [i.id, i.label, i.touch, i.shortcut])).toEqual([
       ["ref-cpp", "C++", true, null],
+      ["ref-py", "Python", true, null],
     ]);
     expect(ITEMS.slice(1, 10).map((i) => i.id)).toEqual([
       "arithmetic",
