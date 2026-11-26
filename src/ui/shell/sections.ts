@@ -22,7 +22,8 @@ export type ItemId =
   | "compile-read"
   | "stl"
   | "ref-cpp"
-  | "ref-py";
+  | "ref-py"
+  | "contests";
 
 export type TreeItem = {
   readonly id: ItemId;
