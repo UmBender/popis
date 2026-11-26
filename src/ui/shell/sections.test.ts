@@ -23,6 +23,7 @@ const SCREENS: readonly ItemId[] = [
   "regex-learn",
   "regex-practice",
   "compile-read",
+  "wa-hunt",
   "stl",
   "ref-cpp",
   "ref-py",
@@ -40,7 +41,7 @@ describe("sections", () => {
       ["GDB", ["Aprender", "Comandos", "Saída"]],
       ["Shell", ["Aprender", "Comandos"]],
       ["Regex", ["Aprender", "Prática"]],
-      ["Maratona", ["Ler o erro", "STL"]],
+      ["Maratona", ["Ler o erro", "Caça ao WA", "STL"]],
       ["Referência", ["C++", "Python"]],
     ]);
   });
@@ -66,7 +67,7 @@ describe("sections", () => {
     ]);
   });
 
-  it("Maratona folder follows Regex with Ler o erro and STL and keeps shortcuts 1-9", () => {
+  it("Maratona folder places Caça ao WA right after Ler o erro and keeps shortcuts 1-9", () => {
     const regexIdx = SECTIONS.findIndex((f) => f.id === "regex");
     const maratonaIdx = SECTIONS.findIndex((f) => f.id === "maratona");
     expect(maratonaIdx).toBe(regexIdx + 1);
@@ -74,6 +75,7 @@ describe("sections", () => {
     expect(maratona?.label).toBe("Maratona");
     expect(maratona?.items.map((i) => [i.id, i.label, i.touch, i.shortcut])).toEqual([
       ["compile-read", "Ler o erro", true, null],
+      ["wa-hunt", "Caça ao WA", true, null],
       ["stl", "STL", true, null],
     ]);
     expect(ITEMS.slice(1, 10).map((i) => i.shortcut)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
