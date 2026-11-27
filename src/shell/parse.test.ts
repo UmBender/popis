@@ -405,3 +405,65 @@ describe("shell parser script constructs (T54 AC-1)", () => {
     }
   });
 });
+
+describe("shell parser script edge cases (T54 AC-1)", () => {
+  it("parser reads edge forms of the script constructs", () => {
+    const ok = [
+      "for (( i = 0; i < 2; i++ )) do echo $i; done",
+      "for i in a b do echo $i; done",
+      "case x in (a) echo a;; esac",
+      "case x in a) echo a; esac",
+      "echo $(( -(1 + 2) * !0 )) $(( ++i )) $(( (a) ))",
+      "(( x = y += 2 ))",
+      "echo ${n} $((${n} + $# + $1))",
+      "[[ ( -f a || -d b ) && ! -z $c ]]",
+      "[[ $a != b && $x -ne 1 ]]",
+      "[[ $a ]]",
+      "[[ $a > b ]]",
+      "{ echo a; } > out 2>&1",
+      "if true; then echo a; else echo b; fi < in1",
+      "f() {\n  echo a\n}",
+      "echo `echo a`",
+    ];
+    for (const input of ok) {
+      const res = parseShell(input);
+      expect(res.ok, `${input}: ${res.ok ? "" : res.error}`).toBe(true);
+      if (res.ok) expect(parseShell(formatShell(res.node))).toEqual(res);
+    }
+  });
+
+  it("parser explains broken script constructs", () => {
+    const cases: readonly (readonly [string, RegExp])[] = [
+      ["echo $(( 1 @ 2 ))", /aritm/i],
+      ["echo $(( $ ))", /aritm/i],
+      ["echo $(( ++ ))", /aritm/i],
+      ["echo $(( (1 ))", /aritm|\)\)/i],
+      ["echo $(( ) ))", /\)\)/],
+      ["echo $(( ))", /aritm/i],
+      ["echo $(( 1 2 ))", /aritm/i],
+      ["echo $(( 1 + ) x ))", /\)\)|aritm/i],
+      ["echo a |", /comando/],
+      ["echo a; fi", /sintaxe/],
+      ["done << EOF", /comando|here-doc/],
+      ["for i in a; do echo; done << EOF", /here-doc|sintaxe/],
+      ["case", /palavra/],
+      ["case x esac", /in/],
+      ["case x in ) a;; esac", /padrão/],
+      ["case x in a b) echo;; esac", /\)/],
+      ["case x in a) echo a; fi", /;;/],
+      ["[[ ]]", /vazio/],
+      ["[[ -f ]]", /valor/],
+      ["[[ ( -f a ]]", /\)/],
+      ["[[ a == ]]", /valor/],
+      ["[[ && ]]", /valor/],
+      ["echo `ls", /crase/],
+      ["echo `ls |`", /comando/],
+      ["./a &", /segundo plano/],
+    ];
+    for (const [input, pattern] of cases) {
+      const res = parseShell(input);
+      expect(res.ok, `expected error for "${input}"`).toBe(false);
+      if (!res.ok) expect(res.error, input).toMatch(pattern);
+    }
+  });
+});

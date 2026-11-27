@@ -216,3 +216,78 @@ describe("shell checker scripts (T54 AC-2)", () => {
     expect(other).toEqual({ ok: false, reason: expect.stringMatching(/cd.*case/) as string });
   });
 });
+
+describe("shell checker script normalization (T54 AC-2)", () => {
+  it("checker normalizes every script construct consistently", () => {
+    const same: readonly (readonly [string, string])[] = [
+      ['echo "$(ls  in*)"', "echo $(ls in*)"],
+      ['echo a"b$c"', "echo ab$c"],
+      ["for f in ./ in*; do echo; done", "for f in ./ in*; do echo; done"],
+      ["[[ ! $a -lt 2 ]]", "(( !(a < 2) ))"],
+      ["[[ $a -lt 2 || $b -ge 3 ]]", "(( a < 2 || b >= 3 ))"],
+      ['[[ "$a" -eq 1 ]]', "(( a == 1 ))"],
+      ["[[ ! -f a && $x -lt ${y:-1} ]]", "[[ ! -f a && $x -lt ${y:-1} ]]"],
+      ["[[ x$a -lt 2 ]]", "[[ x$a -lt 2 ]]"],
+      [
+        'if [[ -f a ]]; then echo "$x"; else echo b; fi',
+        "if [[ -f a ]]; then echo $x; else echo b; fi",
+      ],
+      ['until [[ -f a ]]; do echo "$x"; done', "until [[ -f a ]]; do echo $x; done"],
+      ['case "$1" in a) echo "$x";; *) ;; esac', "case $1 in a) echo $x;; *) ;; esac"],
+      [
+        'for (( i=0; i<2; i++ )); do echo "$i"; done',
+        "for (( i = 0; i < 2; i++ )); do echo $i; done",
+      ],
+      ['{ echo "$a"; } > out', "{ echo $a; } >out"],
+    ];
+    for (const [a, b] of same) {
+      const res = checkShellCommand(a, { accepted: [b] });
+      expect(res.ok, `"${a}" vs "${b}": ${res.ok ? "" : res.reason}`).toBe(true);
+    }
+  });
+
+  it("checker diagnoses differences inside script constructs", () => {
+    const cases: readonly (readonly [string, string, RegExp])[] = [
+      ["if [[ -f a ]]; then echo b; fi", "if [[ -f a ]]; then echo a; fi", /diferentes/],
+      ["until false; do ls; done", "until false; do cd x; done", /esperado cd, mas você usou ls/],
+      ["case $x in a) ls;; esac", "case $x in a) cd x;; esac", /esperado cd/],
+      ["case $x in a) ;; esac", "case $x in a) cd;; b) ls;; esac", /diferentes/],
+      ["for (( ;; )); do ls; done", "for (( ;; )); do cd; done", /esperado cd/],
+      ["{ ls; } > a", "{ cd; } > a", /esperado cd/],
+      ["ls | wc", "(( 1 ))", /esperado \(\( \)\), mas você usou ls/],
+      ["[[ -f a ]]", "{ ls; }", /esperado \{ \}, mas você usou \[\[ \]\]/],
+      ["f() { ls; }", "ls | wc", /esperado ls, mas você usou uma função/],
+      ["while true; do ls; done", "for (( ;; )); do ls; done", /esperado for, mas você usou while/],
+      ["{ ls; } > a", "while true; do ls; done > a", /while/],
+      ['echo "$a"', "cat $a", /esperado cat/],
+      ["[[ $1 > 2 ]]", "[[ $1 > 3 ]]", /diferentes/],
+      ["exit", "exit 0", /diferentes/],
+      // ./$x may differ from $x when $x is an absolute path.
+      ["for f in ./$x; do echo; done", "for f in $x; do echo; done", /diferentes/],
+      ["for f in ./in*; do echo $f; done", "for f in ./in*; do echo $f; done x", /./],
+    ];
+    for (const [typed, canonical, pattern] of cases) {
+      const res = checkShellCommand(typed, { accepted: [canonical] });
+      expect(res.ok, `${typed} vs ${canonical}`).toBe(false);
+      if (!res.ok) expect(res.reason, `${typed} vs ${canonical}`).toMatch(pattern);
+    }
+
+    // Strict quotes accept a quoted test operand and a quoted redirect target.
+    expect(
+      checkShellCommand('[[ -f "$1" ]] && cat < "$1"', {
+        accepted: ['[[ -f "$1" ]] && cat < "$1"'],
+        options: { strictQuotes: true },
+      }).ok,
+    ).toBe(true);
+    const bareRedir = checkShellCommand("cat < $1 2>&1", {
+      accepted: ['cat < "$1" 2>&1'],
+      options: { strictQuotes: true },
+    });
+    expect(bareRedir.ok).toBe(false);
+    const bareTest = checkShellCommand("[[ -f $1 && $1 == x ]]", {
+      accepted: ['[[ -f "$1" && "$1" == x ]]'],
+      options: { strictQuotes: true },
+    });
+    expect(bareTest).toEqual({ ok: false, reason: expect.stringMatching(/aspas/) as string });
+  });
+});
