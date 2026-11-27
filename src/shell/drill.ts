@@ -10,6 +10,7 @@ export const SHELL_DRILL_KINDS = [
   "limites",
   "texto",
   "setup",
+  "scripts",
 ] as const;
 
 export type ShellDrillKind = (typeof SHELL_DRILL_KINDS)[number];
@@ -23,6 +24,7 @@ export const SHELL_DRILL_KIND_LABELS: Readonly<Record<ShellDrillKind, string>> =
   limites: "Limites (ulimit -s, -v, -a)",
   texto: "Texto (head, tail, wc, sort, uniq, grep)",
   setup: "Setup (alias, função, source)",
+  scripts: "Scripts (if, for, função, exit)",
 };
 
 export type ShellDrillItem = {
@@ -568,6 +570,80 @@ function buildSetup(rng: Rng): ItemSpec {
   }
 }
 
+/** One-line script objectives: tests, if, loops, functions and exit codes (T54 AC-5). */
+function buildScripts(rng: Rng): ItemSpec {
+  const variant = rng.int(0, 4);
+  const bin = rng.pick(["a", "sol"]);
+  const files = ["run.sh", "a", "sol", "in1", "in2", "out1", "out2"];
+  const ls = `run.sh  a  sol  in1  in2  out1  out2`;
+
+  switch (variant) {
+    case 0: {
+      const file = rng.pick(["out1", "out2", "ans1"]);
+      return {
+        prompt: `Se o arquivo ${file} não existir, saia do script com código 1.`,
+        mentionedFiles: [file],
+        cwd: "~/contest",
+        files,
+        terminalLines: ["$ ls", ls],
+        canonical: `[[ -f ${file} ]] || exit 1`,
+        extraAccepted: [`if [[ ! -f ${file} ]]; then exit 1; fi`],
+        oracleFixture: "scripts",
+      };
+    }
+    case 1:
+      return {
+        prompt: `Para cada arquivo in*, mostre o nome do arquivo com echo e depois rode ./${bin} com ele como entrada.`,
+        mentionedFiles: ["in*", `./${bin}`],
+        cwd: "~/contest",
+        files,
+        terminalLines: ["$ ls", ls],
+        canonical: `for f in in*; do echo "$f"; ./${bin} < "$f"; done`,
+        options: { exactPaths: true },
+        oracleFixture: "scripts",
+      };
+    case 2: {
+      const name = rng.pick(["t", "r", "roda"]);
+      return {
+        prompt: `Defina a função ${name} que roda ./${bin} com a entrada vinda do arquivo "$1".`,
+        mentionedFiles: [`./${bin}`],
+        cwd: "~/contest",
+        files,
+        terminalLines: ["$ ls", ls],
+        canonical: `${name}() { ./${bin} < "$1"; }`,
+        oracleFixture: "scripts",
+        oracleProbe: `${name} in1`,
+      };
+    }
+    case 3: {
+      const file = rng.pick(["in1", "in2", "ans1"]);
+      const word = rng.pick(["ok", "tem"]);
+      return {
+        prompt: `Se o arquivo ${file} existir, mostre ${word} com echo (if numa linha).`,
+        mentionedFiles: [file],
+        cwd: "~/contest",
+        files,
+        terminalLines: ["$ ls", ls],
+        canonical: `if [[ -f ${file} ]]; then echo ${word}; fi`,
+        extraAccepted: [`[[ -f ${file} ]] && echo ${word}`],
+        oracleFixture: "scripts",
+      };
+    }
+    default: {
+      const n = rng.int(3, 9);
+      return {
+        prompt: `Mostre os números de 1 a ${String(n)} com for (( )) e a variável i.`,
+        mentionedFiles: [],
+        cwd: "~/contest",
+        files,
+        terminalLines: ["$ ls", ls],
+        canonical: `for (( i = 1; i <= ${String(n)}; i++ )); do echo $i; done`,
+        oracleFixture: "scripts",
+      };
+    }
+  }
+}
+
 /** Generates a deterministic Shell Comandos drill item from seed, index and active kinds (AC-3). */
 export function generateShellItem(
   seed: number,
@@ -604,6 +680,9 @@ export function generateShellItem(
       break;
     case "setup":
       spec = buildSetup(rng);
+      break;
+    case "scripts":
+      spec = buildScripts(rng);
       break;
   }
 

@@ -43,6 +43,7 @@ const KIND_FAMILIES: readonly {
   { title: "Dia a dia da prova", kinds: ["arquivos", "compilar", "rodar"] },
   { title: "Testar e estressar", kinds: ["comparar", "stress"] },
   { title: "Limites, texto e setup", kinds: ["limites", "texto", "setup"] },
+  { title: "Scripts", kinds: ["scripts"] },
 ];
 
 type Props = {

@@ -7,9 +7,23 @@ export type ShellExampleStep = {
   readonly note: string;
 };
 
+/** One line of an annotated script with its short explanation (T54 AC-3). */
+export type ShellScriptLine = {
+  readonly code: string;
+  readonly note: string;
+};
+
+/** A `.sh` file shown line by line in the lesson and written to disk by the oracle. */
+export type ShellScriptFile = {
+  readonly file: string;
+  readonly lines: readonly ShellScriptLine[];
+};
+
 export type ShellLessonExample = {
   readonly fixture: string;
   readonly setup?: readonly string[];
+  /** Annotated scripts written to the fixture folder before the steps run (T54 AC-3). */
+  readonly scripts?: readonly ShellScriptFile[];
   readonly steps: readonly ShellExampleStep[];
 };
 
@@ -65,7 +79,16 @@ function ex(
   };
 }
 
-/** 9-unit Shell curriculum for contest terminal workflows (AC-6, ADR-T39-1). */
+/** One annotated script line (T54 AC-3). */
+function ln(code: string, note: string): ShellScriptLine {
+  return { code, note };
+}
+
+const SHEBANG = ln("#!/usr/bin/env bash", "Shebang: diz que o arquivo é lido pelo bash.");
+const SCRIPT_FILES = ["a.cpp", "a", "in1", "in2", "out1", "out2"] as const;
+const SCRIPT_LS = ["$ ls", "a  a.cpp  in1  in2  out1  out2"] as const;
+
+/** 11-unit Shell curriculum: contest commands (ADR-T39-1) and bash scripts (ADR-T54-1). */
 export const SHELL_UNITS: readonly ShellUnit[] = [
   {
     id: "u1-arquivos",
@@ -787,6 +810,679 @@ export const SHELL_UNITS: readonly ShellUnit[] = [
           ),
         ],
         practiceKinds: [],
+      },
+    ],
+  },
+  {
+    id: "u10-scripts",
+    number: 10,
+    title: "Scripts",
+    lessons: [
+      {
+        id: "u10-first",
+        unitId: "u10-scripts",
+        title: "Primeiro script",
+        explanation:
+          "Um script é um arquivo de texto com comandos do bash, um por linha, que rodam em ordem. A primeira linha, #!/usr/bin/env bash, diz ao sistema qual programa lê o arquivo. Depois de chmod +x ola.sh o arquivo vira executável e roda com ./ola.sh. Sem o chmod, bash ola.sh também funciona.",
+        note: "A primeira linha também pode ser #!/bin/bash.",
+        helpKeys: ["chmod", "bash"],
+        commands: ["#!/usr/bin/env bash", "chmod +x ola.sh", "./ola.sh", "bash ola.sh"],
+        example: {
+          fixture: "scripts",
+          scripts: [
+            {
+              file: "ola.sh",
+              lines: [
+                SHEBANG,
+                ln("# Meu primeiro script", "Comentário: o bash ignora tudo depois do #."),
+                ln('echo "Olá, prova"', "Imprime uma linha na tela."),
+                ln("ls in*", "Lista as entradas de teste da pasta."),
+              ],
+            },
+          ],
+          steps: [
+            { cmd: "chmod +x ola.sh", note: "Dá permissão de execução ao arquivo." },
+            { cmd: "./ola.sh", note: "Roda o script; o ./ diz que ele está nesta pasta." },
+            { cmd: "bash ola.sh", note: "Também roda, mesmo sem o chmod." },
+          ],
+        },
+        exercises: [
+          ex(
+            "~/contest",
+            ["run.sh", ...SCRIPT_FILES],
+            ["$ ls -l run.sh", "-rw-r--r--. 1 contest contest 80 Nov 25 00:00 run.sh"],
+            "Dê permissão de execução ao arquivo run.sh.",
+            "chmod +x run.sh",
+          ),
+          ex(
+            "~/contest",
+            ["run.sh", ...SCRIPT_FILES],
+            ["$ chmod +x run.sh"],
+            "Rode o script run.sh, que já é executável e está na pasta atual.",
+            "./run.sh",
+          ),
+          ex(
+            "~/contest",
+            ["teste.sh", ...SCRIPT_FILES],
+            ["$ ls", "teste.sh  a  a.cpp  in1  in2"],
+            "Rode o script teste.sh com o bash, sem precisar de chmod.",
+            "bash teste.sh",
+          ),
+        ],
+        practiceKinds: [],
+      },
+      {
+        id: "u10-vars",
+        unitId: "u10-scripts",
+        title: "Variáveis e aspas",
+        explanation:
+          "Crie uma variável com nome=valor, sem espaço antes nem depois do =. Use o valor com $nome, sempre entre aspas duplas. Aspas simples mostram o texto como está, sem trocar $nome pelo valor. Já $(comando) guarda a saída de um comando, como em n=$(wc -l < in1).",
+        helpKeys: ["echo"],
+        commands: ["nome=valor", '"$nome"', "'texto'", "n=$(comando)"],
+        example: {
+          fixture: "scripts",
+          scripts: [
+            {
+              file: "vars.sh",
+              lines: [
+                SHEBANG,
+                ln('nome="in1"', "Cria a variável nome; sem espaço em volta do =."),
+                ln('echo "arquivo: $nome"', "Aspas duplas trocam $nome pelo valor."),
+                ln("echo 'arquivo: $nome'", "Aspas simples mostram $nome como está."),
+                ln('linhas=$(wc -l < "$nome")', "$( ) guarda a saída do comando na variável."),
+                ln('echo "$nome tem $linhas linha"', "Junta texto e variáveis na mesma linha."),
+              ],
+            },
+          ],
+          steps: [{ cmd: "bash vars.sh", note: "Roda o script e mostra as três linhas." }],
+        },
+        exercises: [
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            [...SCRIPT_LS],
+            "Crie a variável n com o valor 5.",
+            "n=5",
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ arq=in1"],
+            "Mostre com echo o valor da variável arq, entre aspas duplas.",
+            'echo "$arq"',
+            undefined,
+            { strictQuotes: true },
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            [...SCRIPT_LS],
+            "Guarde na variável linhas a saída de wc -l < in1.",
+            "linhas=$(wc -l < in1)",
+          ),
+        ],
+        practiceKinds: [],
+      },
+      {
+        id: "u10-math",
+        unitId: "u10-scripts",
+        title: "Contas",
+        explanation:
+          "O bash faz contas com números inteiros dentro de $(( )), como em soma=$((a + b)). Dentro de (( )) não precisa de $ antes das variáveis, e (( i++ )) soma 1 em i. A divisão é inteira: $((7 / 2)) dá 3.",
+        helpKeys: [],
+        commands: ["$((a + b))", "(( i++ ))", "i=$((i + 1))", "$((a % b))"],
+        example: {
+          fixture: "scripts",
+          scripts: [
+            {
+              file: "contas.sh",
+              lines: [
+                SHEBANG,
+                ln("a=7", "Primeiro número das contas."),
+                ln("b=2", "Segundo número."),
+                ln('echo "soma: $((a + b))"', "$(( )) calcula e põe o resultado no texto."),
+                ln('echo "divisão: $((a / b))"', "Divisão inteira: 7 / 2 dá 3."),
+                ln('echo "resto: $((a % b))"', "% é o resto da divisão."),
+                ln("i=0", "Contador começando em zero."),
+                ln("(( i++ ))", "(( )) faz a conta sem imprimir; i passa a valer 1."),
+                ln("i=$((i + 1))", "Outra forma de somar 1: i passa a valer 2."),
+                ln('echo "i: $i"', "Mostra o contador."),
+              ],
+            },
+          ],
+          steps: [{ cmd: "bash contas.sh", note: "Mostra a soma, a divisão, o resto e o i." }],
+        },
+        exercises: [
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ a=3", "$ b=4"],
+            "Guarde em soma o valor de a + b usando $(( )).",
+            "soma=$((a + b))",
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ i=0"],
+            "Some 1 à variável i usando (( )).",
+            "(( i++ ))",
+            ["(( i += 1 ))", "(( ++i ))", "i=$((i + 1))"],
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ n=7"],
+            "Mostre com echo o resto de n dividido por 2.",
+            "echo $((n % 2))",
+          ),
+        ],
+        practiceKinds: [],
+      },
+      {
+        id: "u10-args",
+        unitId: "u10-scripts",
+        title: "Argumentos",
+        explanation:
+          "Ao rodar ./soma.sh 2 3, o script recebe 2 em $1 e 3 em $2. A quantidade de argumentos fica em $# e todos eles juntos em $@. A forma ${3:-10} usa 10 quando o terceiro argumento não foi passado. O shift descarta o $1 e anda os outros uma casa para a esquerda.",
+        helpKeys: [],
+        commands: ['"$1"', "$#", '"$@"', "${1:-padrão}", "shift"],
+        example: {
+          fixture: "scripts",
+          scripts: [
+            {
+              file: "soma.sh",
+              lines: [
+                SHEBANG,
+                ln('echo "recebi $# argumentos"', "$# é a quantidade de argumentos."),
+                ln('echo "primeiro: $1, segundo: $2"', "$1 e $2 são os dois primeiros."),
+                ln('echo "todos: $@"', "$@ são todos os argumentos."),
+                ln("n=${3:-10}", "Usa 10 se o terceiro argumento faltar."),
+                ln('echo "n: $n"', "Mostra o n escolhido."),
+                ln("shift", "Descarta o $1; o antigo $2 vira $1."),
+                ln('echo "depois do shift: $1"', "Agora $1 é o antigo segundo argumento."),
+              ],
+            },
+          ],
+          steps: [
+            { cmd: "chmod +x soma.sh", note: "Deixa o script executável." },
+            { cmd: "./soma.sh 2 3", note: "Dois argumentos: n fica com o padrão 10." },
+            { cmd: "./soma.sh 2 3 50", note: "Com o terceiro argumento, n vale 50." },
+          ],
+        },
+        exercises: [
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ cat mostra.sh", "#!/usr/bin/env bash"],
+            "Mostre com echo o primeiro argumento do script, entre aspas.",
+            'echo "$1"',
+            undefined,
+            { strictQuotes: true },
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ cat stress.sh", "#!/usr/bin/env bash"],
+            "Guarde em n o primeiro argumento, ou 100 se ele não for passado.",
+            "n=${1:-100}",
+          ),
+          ex(
+            "~/contest",
+            ["stress.sh", "sol", "brute", "gen"],
+            ["$ ls", "brute  gen  sol  stress.sh"],
+            "Rode o script stress.sh com os argumentos sol, brute e 50.",
+            "./stress.sh sol brute 50",
+          ),
+        ],
+        practiceKinds: [],
+      },
+      {
+        id: "u10-exit",
+        unitId: "u10-scripts",
+        title: "Código de saída",
+        explanation:
+          "Todo comando termina com um código de saída: 0 quer dizer que deu certo, e qualquer outro número, que falhou. O código do último comando fica em $?, e o próximo comando já o troca. Num script, exit 1 para tudo e avisa que houve falha. Com && o próximo comando só roda se o anterior deu certo, e com || só se ele falhou.",
+        helpKeys: ["exit"],
+        commands: ["$?", "exit 0", "exit 1", "cmd && ok", "cmd || falha"],
+        example: {
+          fixture: "scripts",
+          scripts: [
+            {
+              file: "confere.sh",
+              lines: [
+                SHEBANG,
+                ln("cmp -s out1 ans1", "cmp -s termina com 0 se os arquivos são iguais."),
+                ln('echo "código do cmp: $?"', "$? mostra o código do último comando."),
+                ln('cmp -s out1 out1 && echo "iguais"', "&& roda só se o cmp deu certo."),
+                ln('cmp -s out1 ans1 || echo "diferentes"', "|| roda só se o cmp falhou."),
+                ln("exit 1", "Termina o script com código 1 (falha)."),
+                ln('echo "nunca aparece"', "Não roda: o exit já parou o script."),
+              ],
+            },
+          ],
+          steps: [
+            {
+              cmd: 'bash confere.sh; echo "saída: $?"',
+              note: "Depois do script, $? mostra o 1 do exit.",
+            },
+          ],
+        },
+        exercises: [
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ cat confere.sh", "#!/usr/bin/env bash"],
+            "Termine o script indicando falha, com código 1.",
+            "exit 1",
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ cmp -s out1 ans1"],
+            "Mostre com echo o código de saída do último comando.",
+            "echo $?",
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES, "ans1"],
+            [...SCRIPT_LS],
+            "Rode cmp -s out1 ans1 e, se ele falhar, mostre WA com echo.",
+            "cmp -s out1 ans1 || echo WA",
+          ),
+        ],
+        practiceKinds: [],
+      },
+    ],
+  },
+  {
+    id: "u11-controle",
+    number: 11,
+    title: "Controle",
+    lessons: [
+      {
+        id: "u11-if",
+        unitId: "u11-controle",
+        title: "Testes e if",
+        explanation:
+          "O teste [[ -f in1 ]] dá certo se o arquivo existe, -d testa uma pasta e -z testa um texto vazio. Para números use -eq, -ne, -lt, -le, -gt e -ge, ou escreva a conta em (( n < 5 )). O if roda o bloco do then quando o teste dá certo, o elif testa outra condição e o else pega o resto. Deixe espaço depois de [[ e antes de ]], senão o bash não reconhece o teste.",
+        helpKeys: ["if"],
+        commands: ["[[ -f in1 ]]", "[[ $n -lt 5 ]]", "(( n < 5 ))", "if …; then …; fi"],
+        example: {
+          fixture: "scripts",
+          scripts: [
+            {
+              file: "tipo.sh",
+              lines: [
+                SHEBANG,
+                ln("n=${1:-0}", "Número vindo do primeiro argumento (0 se faltar)."),
+                ln("if [[ -f in1 ]]; then", "-f: verdadeiro se in1 existe e é arquivo."),
+                ln('  echo "in1 existe"', "Bloco do then: roda quando o teste deu certo."),
+                ln("fi", "fi fecha o if (é if de trás para frente)."),
+                ln("if (( n > 10 )); then", "(( )) compara números com < e >."),
+                ln('  echo "grande"', "Roda quando n passa de 10."),
+                ln("elif [[ $n -eq 0 ]]; then", "-eq compara números dentro de [[ ]]."),
+                ln('  echo "zero"', "Roda quando n é 0."),
+                ln("else", "Nenhum teste deu certo."),
+                ln('  echo "pequeno"', "Roda nos outros casos."),
+                ln("fi", "Fecha o segundo if."),
+              ],
+            },
+          ],
+          steps: [
+            { cmd: "bash tipo.sh 42", note: "42 passa de 10: grande." },
+            { cmd: "bash tipo.sh", note: "Sem argumento, n vale 0: zero." },
+            { cmd: "bash tipo.sh 3", note: "Nenhum dos dois: cai no else." },
+          ],
+        },
+        exercises: [
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            [...SCRIPT_LS],
+            "Se o arquivo in1 existir, mostre ok com echo (if numa linha).",
+            "if [[ -f in1 ]]; then echo ok; fi",
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ n=3"],
+            "Se n for menor que 5, mostre menor com echo (use -lt e if numa linha).",
+            "if [[ $n -lt 5 ]]; then echo menor; fi",
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            [...SCRIPT_LS],
+            "Se a pasta tests não existir, crie-a com mkdir (if numa linha).",
+            "if [[ ! -d tests ]]; then mkdir tests; fi",
+            ["[[ -d tests ]] || mkdir tests"],
+          ),
+        ],
+        practiceKinds: ["scripts"],
+      },
+      {
+        id: "u11-loops",
+        unitId: "u11-controle",
+        title: "Laços",
+        explanation:
+          "O laço for f in in* repete o bloco uma vez para cada arquivo que começa com in, com o nome em $f. Já for (( i = 1; i <= n; i++ )) conta de 1 até n, como em C. O while read -r linha lê um arquivo linha a linha. O bloco do laço fica entre do e done.",
+        helpKeys: [],
+        commands: [
+          "for f in in*; do …; done",
+          "for (( i = 1; i <= n; i++ ))",
+          "while read -r linha; do …; done < in1",
+        ],
+        example: {
+          fixture: "scripts",
+          scripts: [
+            {
+              file: "lacos.sh",
+              lines: [
+                SHEBANG,
+                ln("for f in in*; do", "Uma volta para cada arquivo: in1, depois in2."),
+                ln('  echo "arquivo $f"', "$f guarda o nome do arquivo da volta."),
+                ln("done", "done fecha o laço."),
+                ln("for (( i = 1; i <= 3; i++ )); do", "Conta de 1 a 3, como o for do C."),
+                ln('  echo "volta $i"', "Mostra o número da volta."),
+                ln("done", "Fecha o segundo laço."),
+                ln("while read -r linha; do", "Lê uma linha por volta; -r mantém as barras."),
+                ln('  echo "lido: $linha"', "Mostra a linha lida."),
+                ln("done < in1", "< in1 entrega o arquivo ao read do laço."),
+              ],
+            },
+          ],
+          steps: [{ cmd: "bash lacos.sh", note: "Os três laços, um depois do outro." }],
+        },
+        exercises: [
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            [...SCRIPT_LS],
+            "Para cada arquivo in*, rode ./a com ele como entrada (laço numa linha).",
+            'for f in in*; do ./a < "$f"; done',
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            [...SCRIPT_LS],
+            "Mostre os números de 1 a 10 com for (( )) e a variável i.",
+            "for (( i = 1; i <= 10; i++ )); do echo $i; done",
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            [...SCRIPT_LS],
+            "Leia in1 linha a linha com while read -r linha e mostre cada linha.",
+            'while read -r linha; do echo "$linha"; done < in1',
+          ),
+        ],
+        practiceKinds: ["scripts"],
+      },
+      {
+        id: "u11-case",
+        unitId: "u11-controle",
+        title: "Escolher com case",
+        explanation:
+          "O case escolhe um bloco pelo valor de uma palavra, quase sempre o primeiro argumento. Cada opção termina com ) e o bloco dela termina com ;;. O padrão * pega qualquer valor que não casou antes, e esac fecha o case.",
+        helpKeys: ["case"],
+        commands: ['case "$1" in', "run) …;;", "a | b) …;;", "*) …;;", "esac"],
+        example: {
+          fixture: "scripts",
+          scripts: [
+            {
+              file: "modo.sh",
+              lines: [
+                SHEBANG,
+                ln('case "$1" in', "Escolhe pelo primeiro argumento."),
+                ln('  run) echo "rodando os testes" ;;', "Opção para quando $1 é run."),
+                ln('  stress | s) echo "stress test" ;;', "| aceita mais de um nome: stress ou s."),
+                ln('  *) echo "uso: ./modo.sh run ou stress" ;;', "* pega qualquer outro valor."),
+                ln("esac", "esac fecha o case (é case de trás para frente)."),
+              ],
+            },
+          ],
+          steps: [
+            { cmd: "bash modo.sh run", note: "Casa com a opção run." },
+            { cmd: "bash modo.sh s", note: "s casa com stress | s." },
+            { cmd: "bash modo.sh", note: "Sem argumento, cai no *." },
+          ],
+        },
+        exercises: [
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            [...SCRIPT_LS],
+            'Com case em "$1", rode ./a < in1 quando o valor for run (case numa linha).',
+            'case "$1" in run) ./a < in1;; esac',
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            [...SCRIPT_LS],
+            'Com case em "$1", mostre ajuda com echo quando o valor for -h.',
+            'case "$1" in -h) echo ajuda;; esac',
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            [...SCRIPT_LS],
+            'Com case em "$1", mostre WA para wa e AC para qualquer outro valor.',
+            'case "$1" in wa) echo WA;; *) echo AC;; esac',
+          ),
+        ],
+        practiceKinds: ["scripts"],
+      },
+      {
+        id: "u11-func",
+        unitId: "u11-controle",
+        title: "Funções",
+        explanation:
+          'Uma função é um pequeno comando com nome: t() { ./a < "$1"; } cria o comando t. Dentro dela, $1 e $@ são os argumentos da função, não os do script. Já local x=1 cria uma variável que só existe dentro da função. O return 1 sai da função com código 1, como o exit faz com o script.',
+        helpKeys: ["local"],
+        commands: ["nome() { …; }", "local x=1", "return 1", "nome in1"],
+        example: {
+          fixture: "scripts",
+          scripts: [
+            {
+              file: "funcoes.sh",
+              lines: [
+                SHEBANG,
+                ln("t() {", "Define a função t."),
+                ln('  local entrada="$1"', "local: a variável só existe dentro de t."),
+                ln('  echo "== $entrada =="', "Mostra qual teste vai rodar."),
+                ln(
+                  '  ./a < "$entrada" 2> /dev/null',
+                  "Roda o programa; 2> /dev/null esconde o stderr.",
+                ),
+                ln("}", "Fecha o corpo da função."),
+                ln("existe() {", "Uma função que só testa."),
+                ln('  [[ -f "$1" ]] || return 1', "return 1 avisa que o arquivo não existe."),
+                ln("}", "Fecha a segunda função."),
+                ln("t in1", "Chama t como um comando, com in1 em $1."),
+                ln('existe in9 || echo "in9 não existe"', "Usa o código da função com ||."),
+              ],
+            },
+          ],
+          steps: [{ cmd: "bash funcoes.sh", note: "Roda t com in1 e testa in9." }],
+        },
+        exercises: [
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            [...SCRIPT_LS],
+            'Defina a função t que roda ./a com a entrada vinda do arquivo "$1".',
+            't() { ./a < "$1"; }',
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ t() {"],
+            "Dentro de uma função, crie a variável local n com valor 0.",
+            "local n=0",
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ existe() {"],
+            "Saia da função com código 1.",
+            "return 1",
+          ),
+        ],
+        practiceKinds: ["scripts"],
+      },
+      {
+        id: "u11-strict",
+        unitId: "u11-controle",
+        title: "Modo estrito",
+        explanation:
+          "Com set -euo pipefail no começo do script, os erros ficam visíveis. O -e para o script no primeiro comando que falhar, o -u acusa variável não definida (um erro de digitação, por exemplo) e o pipefail faz o pipe falhar se qualquer parte dele falhar. Para um comando que pode falhar de propósito, use || true.",
+        helpKeys: ["set"],
+        commands: ["set -euo pipefail", "cmd || true"],
+        example: {
+          fixture: "scripts",
+          scripts: [
+            {
+              file: "estrito.sh",
+              lines: [
+                SHEBANG,
+                ln(
+                  "set -euo pipefail",
+                  "-e para no erro, -u acusa variável indefinida, pipefail vê erro no pipe.",
+                ),
+                ln(
+                  "cmp -s out1 ans1 || true",
+                  "|| true: aqui a falha é esperada e não para o script.",
+                ),
+                ln('echo "passo 1 ok"', "Esta linha roda."),
+                ln(
+                  "cat in9 | wc -l",
+                  "in9 não existe: com pipefail o pipe falha e o -e para tudo.",
+                ),
+                ln('echo "nunca aparece"', "Não roda: o script parou na linha anterior."),
+              ],
+            },
+          ],
+          steps: [
+            {
+              cmd: 'bash estrito.sh; echo "saída: $?"',
+              note: "O script para no cat e sai com código 1.",
+            },
+          ],
+        },
+        exercises: [
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ cat run.sh", "#!/usr/bin/env bash"],
+            "Ligue o modo estrito: parar no erro, variável indefinida e erro no pipe.",
+            "set -euo pipefail",
+            ["set -e -u -o pipefail", "set -eu -o pipefail"],
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES, "ans1"],
+            ["$ set -e"],
+            "Rode cmp -s out1 ans1 sem deixar a falha parar o script.",
+            "cmp -s out1 ans1 || true",
+          ),
+          ex(
+            "~/contest",
+            [...SCRIPT_FILES],
+            ["$ cat run.sh", "#!/usr/bin/env bash"],
+            "Ligue só a parada no primeiro comando que falhar.",
+            "set -e",
+          ),
+        ],
+        practiceKinds: ["scripts"],
+      },
+      {
+        id: "u11-prova",
+        unitId: "u11-controle",
+        title: "Scripts de prova",
+        explanation:
+          "O run.sh compila a solução, roda cada entrada inN e compara a saída com outN, imprimindo OK ou WA. O stress.sh sol brute 100 gera testes com ./gen, compara as duas soluções e para no primeiro teste que difere. Os dois juntam tudo destas duas unidades: argumentos, if, laços e modo estrito.",
+        helpKeys: [],
+        commands: ["./run.sh", "./stress.sh sol brute 100"],
+        example: {
+          fixture: "scripts",
+          scripts: [
+            {
+              file: "run.sh",
+              lines: [
+                SHEBANG,
+                ln("set -euo pipefail", "Para no primeiro erro (inclusive de compilação)."),
+                ln("g++ -O2 -std=gnu++20 a.cpp -o a", "Compila com as flags do juiz."),
+                ln("n=$(ls in* | wc -l)", "Conta quantos arquivos de entrada existem."),
+                ln("for (( i = 1; i <= n; i++ )); do", "Testa in1, in2, … um por volta."),
+                ln('  ./a < "in$i" > saida 2> /dev/null', "Roda a solução e guarda a saída."),
+                ln(
+                  '  if diff -Z saida "out$i" > /dev/null; then',
+                  "diff -Z ignora espaço no fim da linha.",
+                ),
+                ln('    echo "teste $i: OK"', "Saída igual à esperada."),
+                ln("  else", "Saída diferente."),
+                ln('    echo "teste $i: WA"', "Avisa o teste que errou."),
+                ln("  fi", "Fecha o if."),
+                ln("done", "Fecha o laço."),
+                ln("rm -f saida", "Apaga o arquivo temporário."),
+              ],
+            },
+            {
+              file: "stress.sh",
+              lines: [
+                SHEBANG,
+                ln("set -euo pipefail", "Modo estrito, como no run.sh."),
+                ln("sol=$1", "Primeiro argumento: a solução a testar."),
+                ln("brute=$2", "Segundo: a solução lenta e certa."),
+                ln("n=${3:-100}", "Terceiro, opcional: quantos testes (100 se faltar)."),
+                ln("for (( i = 1; i <= n; i++ )); do", "Um teste por volta."),
+                ln('  ./gen "$i" > entrada', "Gera o teste i; a seed é o próprio i."),
+                ln('  "./$sol" < entrada > saida1', "Roda a solução no teste."),
+                ln('  "./$brute" < entrada > saida2', "Roda a força bruta no mesmo teste."),
+                ln(
+                  '  cmp -s saida1 saida2 || { echo "WA no teste $i"; cat entrada; exit 1; }',
+                  "Se diferem: mostra o teste e sai com código 1.",
+                ),
+                ln("done", "Fecha o laço."),
+                ln('echo "$n testes OK"', "Chegou aqui: nenhum teste diferiu."),
+              ],
+            },
+          ],
+          steps: [
+            { cmd: "chmod +x run.sh stress.sh", note: "Deixa os dois scripts executáveis." },
+            { cmd: "./run.sh", note: "in1 passa e in2 dá WA." },
+            {
+              cmd: './stress.sh sol brute 10; echo "saída: $?"',
+              note: "sol erra no teste 7: o stress para ali, com código 1.",
+            },
+            { cmd: "./stress.sh brute brute 5", note: "A mesma solução nunca difere de si." },
+          ],
+        },
+        exercises: [
+          ex(
+            "~/contest",
+            ["stress.sh", "sol", "brute", "gen"],
+            ["$ ls", "brute  gen  sol  stress.sh"],
+            "Rode o stress.sh com sol, brute e 200 testes.",
+            "./stress.sh sol brute 200",
+          ),
+          ex(
+            "~/contest",
+            ["saida1", "saida2", "entrada"],
+            ["$ ls", "entrada  saida1  saida2"],
+            "Se saida1 e saida2 forem diferentes (cmp -s), mostre WA e saia com código 1.",
+            "cmp -s saida1 saida2 || { echo WA; exit 1; }",
+          ),
+          ex(
+            "~/contest",
+            ["gen", "sol", "brute"],
+            ["$ n=50"],
+            'Para i de 1 a n com for (( )), rode ./gen "$i" > entrada.',
+            'for (( i = 1; i <= n; i++ )); do ./gen "$i" > entrada; done',
+          ),
+        ],
+        unlocksKind: "scripts",
+        practiceKinds: ["scripts"],
       },
     ],
   },

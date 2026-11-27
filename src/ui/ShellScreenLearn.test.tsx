@@ -2,7 +2,12 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { manualClock, type ManualClock } from "../core/clock";
-import { SHELL_LESSONS, SHELL_UNITS, shellLessonForCommand } from "../shell/curriculum";
+import {
+  SHELL_LESSONS,
+  SHELL_UNITS,
+  shellLessonById,
+  shellLessonForCommand,
+} from "../shell/curriculum";
 import { memoryStore } from "../storage/history";
 import { loadShellSettings } from "../storage/shell";
 import { loadShellCompleted } from "../storage/shell-learn";
@@ -164,5 +169,31 @@ describe("ShellScreen Learn mode (AC-6)", () => {
     submitCmd(u9Lesson.exercises[2].canonical);
     expect(screen.getByTestId("learn-done")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Treinar" })).toBeNull();
+  });
+
+  it("a script lesson shows each line with its note", () => {
+    // T54 AC-3: the annotated file comes before the animated terminal.
+    const store = memoryStore();
+    render(<App clock={clock} store={store} newSeed={() => 17} />);
+    fireEvent.click(screen.getByRole("radio", { name: "Aprender (Shell)" }));
+
+    const lesson = shellLessonById("u10-first")!;
+    const script = lesson.example.scripts![0]!;
+    fireEvent.click(screen.getByRole("button", { name: lesson.title }));
+
+    const figure = screen.getByTestId("shell-script");
+    expect(figure.textContent).toContain(script.file);
+    const codes = screen.getAllByTestId("shell-script-code").map((el) => el.textContent);
+    const notes = screen.getAllByTestId("shell-script-note").map((el) => el.textContent);
+    expect(codes).toEqual(script.lines.map((l) => l.code));
+    expect(notes).toEqual(script.lines.map((l) => l.note));
+    expect(screen.getByTestId("shell-example-terminal")).toBeTruthy();
+
+    // Lesson 11.6 shows run.sh and stress.sh.
+    fireEvent.click(screen.getByRole("button", { name: "Lições" }));
+    const prova = shellLessonById("u11-prova")!;
+    fireEvent.click(screen.getByRole("button", { name: prova.title }));
+    const files = screen.getAllByTestId("shell-script").map((el) => el.dataset["file"]);
+    expect(files).toEqual(["run.sh", "stress.sh"]);
   });
 });

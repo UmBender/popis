@@ -29,7 +29,7 @@ export default defineConfig({
         "src/regex/**": { lines: 100, statements: 99, functions: 100, branches: 98 },
         "src/ref/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
         "src/session/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
-        "src/shell/**": { lines: 98, statements: 97, functions: 100, branches: 93 },
+        "src/shell/**": { lines: 99, statements: 98, functions: 100, branches: 96 },
         "src/stats/**": { lines: 100, statements: 100, functions: 100, branches: 100 },
         "src/stl/**": { lines: 100, statements: 99, functions: 100, branches: 94 },
         "src/storage/**": { lines: 100, statements: 100, functions: 100, branches: 100 },

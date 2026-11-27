@@ -3,7 +3,11 @@ import {
   parseShell,
   wordDisplay,
   wordText,
+  type ArithBinaryOp,
+  type ArithExpr,
+  type DqPart,
   type ListOp,
+  type TestExpr,
   type Redirection,
   type ShellNode,
   type SimpleCommand,
@@ -43,6 +47,14 @@ export const SHELL_COMMAND_TABLE: readonly ShellCommandRef[] = [
   { key: "grep", text: "filtra linhas por padrão (-n número, -i sem maiúsculas)" },
   { key: "alias", text: "cria atalho curto para um comando frequente" },
   { key: "source", text: "carrega o ~/.bashrc no terminal atual (atalho .)" },
+  { key: "chmod", text: "muda permissões; chmod +x deixa o script executável" },
+  { key: "bash", text: "roda um script com o bash, mesmo sem chmod +x" },
+  { key: "echo", text: "imprime texto e variáveis (use aspas duplas)" },
+  { key: "exit", text: "termina o script com um código: 0 deu certo, 1 falhou" },
+  { key: "if", text: "roda um bloco só quando o teste dá certo" },
+  { key: "case", text: "escolhe um bloco pelo valor de uma palavra" },
+  { key: "local", text: "cria uma variável que só existe dentro da função" },
+  { key: "set", text: "liga opções do bash, como set -euo pipefail" },
 ];
 
 export type CheckOptions = {
@@ -50,6 +62,10 @@ export type CheckOptions = {
   readonly allowSemicolon?: boolean;
   /** Optional fallback hint when a command does not match. */
   readonly hint?: string;
+  /** When true, double quotes around an expansion are required (`"$1"` is not `$1`, T54 AC-2). */
+  readonly strictQuotes?: boolean;
+  /** When true, `for f in ./in*` differs from `for f in in*` (the objective shows the name). */
+  readonly exactPaths?: boolean;
 };
 
 export type ShellExpected = {
@@ -142,18 +158,123 @@ function litWord(value: string): Word {
   return { parts: [{ type: "text", value }] };
 }
 
+function normalizeDqPart(part: DqPart, options?: CheckOptions): DqPart {
+  return part.type === "cmdsub"
+    ? { type: "cmdsub", node: normalizeShell(part.node, options) }
+    : part;
+}
+
+function mergeTexts(parts: readonly WordPart[]): WordPart[] {
+  const out: WordPart[] = [];
+  for (const part of parts) {
+    const prev = out[out.length - 1];
+    if (part.type === "text" && prev?.type === "text") {
+      out[out.length - 1] = { type: "text", value: prev.value + part.value };
+    } else {
+      out.push(part);
+    }
+  }
+  return out;
+}
+
+/** Normalizes substitutions inside a word; double quotes drop unless `strictQuotes` (T54 AC-2). */
 function normalizeWord(word: Word, options?: CheckOptions): Word {
-  return {
-    parts: word.parts.map((part): WordPart => {
-      if (part.type === "cmdsub") {
-        return { type: "cmdsub", node: normalizeShell(part.node, options) };
-      }
-      if (part.type === "procsub") {
-        return { type: "procsub", dir: "<", node: normalizeShell(part.node, options) };
-      }
-      return part;
-    }),
-  };
+  const parts = word.parts.flatMap((part): WordPart[] => {
+    if (part.type === "cmdsub") {
+      return [{ type: "cmdsub", node: normalizeShell(part.node, options) }];
+    }
+    if (part.type === "procsub") {
+      return [{ type: "procsub", dir: "<", node: normalizeShell(part.node, options) }];
+    }
+    if (part.type === "dq") {
+      const inner = part.parts.map((p) => normalizeDqPart(p, options));
+      return options?.strictQuotes ? [{ type: "dq", parts: inner }] : inner;
+    }
+    return [part];
+  });
+  return { parts: mergeTexts(parts) };
+}
+
+/** `./in*` reads as `in*` in a for list unless the objective shows the name (`exactPaths`). */
+function normalizeForItem(word: Word, options?: CheckOptions): Word {
+  const norm = normalizeWord(word, options);
+  const first = norm.parts[0];
+  if (options?.exactPaths || first?.type !== "text" || !first.value.startsWith("./")) return norm;
+  if (first.value.length <= 2) return norm;
+  return { parts: [{ type: "text", value: first.value.slice(2) }, ...norm.parts.slice(1)] };
+}
+
+const NUMERIC_TEST_OPS: Readonly<Record<string, ArithBinaryOp>> = {
+  "-eq": "==",
+  "-ne": "!=",
+  "-lt": "<",
+  "-le": "<=",
+  "-gt": ">",
+  "-ge": ">=",
+};
+
+function wordToArith(word: Word): ArithExpr | null {
+  if (word.parts.length !== 1) return null;
+  const part = word.parts[0]!;
+  const single = part.type === "dq" && part.parts.length === 1 ? part.parts[0]! : part;
+  if (single.type === "text" && /^\d+$/.test(single.value)) {
+    return { type: "num", value: Number(single.value) };
+  }
+  if (single.type === "var" && single.fallback === undefined) {
+    return { type: "name", name: single.name };
+  }
+  return null;
+}
+
+/** `[[ $n -lt 5 ]]` and `(( n < 5 ))` compare the same numbers (T54 AC-2). */
+function testToArith(expr: TestExpr): ArithExpr | null {
+  switch (expr.type) {
+    case "binary": {
+      const op = NUMERIC_TEST_OPS[expr.op];
+      const left = wordToArith(expr.left);
+      const right = wordToArith(expr.right);
+      return op !== undefined && left !== null && right !== null
+        ? { type: "binary", op, left, right }
+        : null;
+    }
+    case "not": {
+      const arg = testToArith(expr.expr);
+      return arg !== null ? { type: "unary", op: "!", arg } : null;
+    }
+    case "and":
+    case "or": {
+      const left = testToArith(expr.left);
+      const right = testToArith(expr.right);
+      return left !== null && right !== null
+        ? { type: "binary", op: expr.type === "and" ? "&&" : "||", left, right }
+        : null;
+    }
+    case "unary":
+      return null;
+  }
+}
+
+function normalizeTest(expr: TestExpr, options?: CheckOptions): TestExpr {
+  switch (expr.type) {
+    case "unary":
+      return { type: "unary", op: expr.op, arg: normalizeWord(expr.arg, options) };
+    case "binary":
+      return {
+        type: "binary",
+        op: expr.op,
+        left: normalizeWord(expr.left, options),
+        right: normalizeWord(expr.right, options),
+      };
+    case "not":
+      return { type: "not", expr: normalizeTest(expr.expr, options) };
+    case "and":
+    case "or":
+      return {
+        type: expr.type,
+        left: normalizeTest(expr.left, options),
+        right: normalizeTest(expr.right, options),
+      };
+  }
 }
 
 function normalizeRedirs(redirs: readonly Redirection[], options?: CheckOptions): Redirection[] {
@@ -418,7 +539,7 @@ export function normalizeShell(node: ShellNode, options?: CheckOptions): ShellNo
           };
           return { parts: [{ type: "cmdsub" as const, node: seqNode }] };
         }
-        return normalizeWord(item, options);
+        return normalizeForItem(item, options);
       });
       return {
         kind: "for",
@@ -439,7 +560,231 @@ export function normalizeShell(node: ShellNode, options?: CheckOptions): ShellNo
         name: node.name,
         body: normalizeShell(node.body, options),
       };
+    case "if":
+      return {
+        kind: "if",
+        branches: node.branches.map((b) => ({
+          condition: normalizeShell(b.condition, options),
+          body: normalizeShell(b.body, options),
+        })),
+        elseBody: node.elseBody !== null ? normalizeShell(node.elseBody, options) : null,
+      };
+    case "until":
+      return {
+        kind: "until",
+        condition: normalizeShell(node.condition, options),
+        body: normalizeShell(node.body, options),
+      };
+    case "case":
+      return {
+        kind: "case",
+        word: normalizeWord(node.word, options),
+        arms: node.arms.map((arm) => ({
+          patterns: arm.patterns.map((p) => normalizeWord(p, options)),
+          body: arm.body !== null ? normalizeShell(arm.body, options) : null,
+        })),
+      };
+    case "forarith":
+      return { ...node, body: normalizeShell(node.body, options) };
+    case "test": {
+      const expr = normalizeTest(node.expr, options);
+      const arith = testToArith(expr);
+      return arith !== null ? { kind: "arith", expr: arith } : { kind: "test", expr };
+    }
+    case "arith":
+      return node;
+    case "group":
+      return { kind: "group", body: normalizeShell(node.body, options) };
+    case "redirect":
+      return {
+        kind: "redirect",
+        body: normalizeShell(node.body, options),
+        redirs: normalizeRedirs(node.redirs, options),
+      };
   }
+}
+
+/** Direct child nodes of a node, in source order. */
+function childNodes(node: ShellNode): ShellNode[] {
+  switch (node.kind) {
+    case "command":
+    case "test":
+    case "arith":
+      return [];
+    case "pipeline":
+      return [...node.stages];
+    case "list":
+      return [node.first, ...node.rest.map((r) => r.node)];
+    case "for":
+    case "forarith":
+    case "funcdef":
+    case "group":
+    case "redirect":
+      return [node.body];
+    case "while":
+    case "until":
+      return [node.condition, node.body];
+    case "if":
+      return [
+        ...node.branches.flatMap((b) => [b.condition, b.body]),
+        ...(node.elseBody !== null ? [node.elseBody] : []),
+      ];
+    case "case":
+      return node.arms.flatMap((a) => (a.body !== null ? [a.body] : []));
+  }
+}
+
+function allNodes(node: ShellNode): ShellNode[] {
+  return [node, ...childNodes(node).flatMap(allNodes)];
+}
+
+function commandsOf(node: ShellNode): SimpleCommand[] {
+  return allNodes(node).filter((n): n is SimpleCommand => n.kind === "command");
+}
+
+function flatTest(e: TestExpr): TestExpr[] {
+  if (e.type === "not") return [e, ...flatTest(e.expr)];
+  if (e.type === "and" || e.type === "or") return [e, ...flatTest(e.left), ...flatTest(e.right)];
+  return [e];
+}
+
+function testExprsOf(node: ShellNode): TestExpr[] {
+  return allNodes(node).flatMap((n) => (n.kind === "test" ? flatTest(n.expr) : []));
+}
+
+function wordsOf(node: ShellNode): Word[] {
+  return allNodes(node).flatMap((n): Word[] => {
+    switch (n.kind) {
+      case "command":
+        return [...n.words, ...n.redirs.flatMap((r) => (r.op === "2>&1" ? [] : [r.target]))];
+      case "for":
+        return [...n.items];
+      case "case":
+        return [n.word];
+      case "test":
+        return flatTest(n.expr).flatMap((e) =>
+          e.type === "unary" ? [e.arg] : e.type === "binary" ? [e.left, e.right] : [],
+        );
+      default:
+        return [];
+    }
+  });
+}
+
+/** Variable names expanded inside double quotes (`inQuotes`) or outside them. */
+function varNames(node: ShellNode, inQuotes: boolean): Set<string> {
+  const names = new Set<string>();
+  for (const word of wordsOf(node)) {
+    for (const part of word.parts) {
+      if (part.type === "dq" && inQuotes) {
+        for (const p of part.parts) if (p.type === "var") names.add(p.name);
+      } else if (part.type === "var" && !inQuotes) {
+        names.add(part.name);
+      }
+    }
+  }
+  return names;
+}
+
+function describeNode(node: ShellNode): string {
+  switch (node.kind) {
+    case "command":
+      return wordText(node.words[0]!) ?? wordDisplay(node.words[0]!);
+    case "list":
+      return describeNode(node.first);
+    case "pipeline":
+      return describeNode(node.stages[0]!);
+    case "redirect":
+      return describeNode(node.body);
+    case "forarith":
+      return "for";
+    case "test":
+      return "[[ ]]";
+    case "arith":
+      return "(( ))";
+    case "group":
+      return "{ }";
+    case "funcdef":
+      return "uma função";
+    default:
+      return node.kind;
+  }
+}
+
+function hasDottedForItem(node: ShellNode): boolean {
+  return allNodes(node).some(
+    (n) =>
+      n.kind === "for" &&
+      n.items.some((w) => w.parts[0]?.type === "text" && w.parts[0].value.startsWith("./")),
+  );
+}
+
+/** Script-specific near misses (T54 AC-2), found anywhere in the typed script. */
+function diagnoseScript(
+  typed: ShellNode,
+  expected: ShellNode,
+  options?: CheckOptions,
+): string | null {
+  const expCmds = commandsOf(expected);
+  const gotCmds = commandsOf(typed);
+
+  const assigned = new Set(
+    expCmds.flatMap((c) => {
+      const m = /^([A-Za-z_][A-Za-z0-9_]*)=/.exec(wordText(c.words[0]!) ?? "");
+      return m !== null ? [m[1]!] : [];
+    }),
+  );
+  const spaced = gotCmds.find(
+    (c) =>
+      assigned.has(wordText(c.words[0]!) ?? "") &&
+      c.words[1] !== undefined &&
+      wordText(c.words[1]) === "=",
+  );
+  if (spaced !== undefined) {
+    const name = wordText(spaced.words[0]!) ?? "";
+    return `tire os espaços em volta do =: escreva ${name}=valor (com espaço, o bash roda um comando chamado ${name})`;
+  }
+
+  const textCompare = (e: TestExpr) => e.type === "binary" && (e.op === "<" || e.op === ">");
+  if (testExprsOf(typed).some(textCompare) && !testExprsOf(expected).some(textCompare)) {
+    return "dentro de [[ ]], < e > comparam texto (10 < 9 dá verdadeiro); para números use -lt e -gt, ou (( ))";
+  }
+
+  if (options?.strictQuotes) {
+    const quoted = varNames(expected, true);
+    const bare = [...varNames(typed, false)].find((name) => quoted.has(name));
+    if (bare !== undefined) {
+      return `coloque aspas: "$${bare}" (sem aspas, um nome com espaço vira duas palavras)`;
+    }
+  }
+
+  const failsWithCode = expCmds.some(
+    (c) => wordText(c.words[0]!) === "exit" && c.words.length > 1 && wordText(c.words[1]!) !== "0",
+  );
+  const bareExit = gotCmds.some((c) => wordText(c.words[0]!) === "exit" && c.words.length === 1);
+  if (failsWithCode && bareExit) {
+    return "exit sem código devolve o código do último comando; use exit 1 para indicar falha";
+  }
+
+  if (options?.exactPaths && hasDottedForItem(typed) && !hasDottedForItem(expected)) {
+    return "o objetivo mostra o nome do arquivo: use o padrão sem ./ na frente";
+  }
+  return null;
+}
+
+/** First differing child pair of two nodes with the same shape, for a deeper diagnosis. */
+function firstDifferingChildren(
+  typed: ShellNode,
+  expected: ShellNode,
+): readonly [ShellNode, ShellNode] | null {
+  if (typed.kind !== expected.kind) return null;
+  const a = childNodes(typed);
+  const b = childNodes(expected);
+  if (a.length !== b.length) return null;
+  for (let i = 0; i < a.length; i++) {
+    if (!nodesEqual(a[i]!, b[i]!)) return [a[i]!, b[i]!];
+  }
+  return null;
 }
 
 /** Structural equality of two normalized shell ASTs. */
@@ -467,12 +812,14 @@ function diagnoseMismatch(typed: ShellNode, expected: ShellNode, options?: Check
 
   // Semicolon when && is required
   if (expected.kind === "list" && typed.kind === "list" && !options?.allowSemicolon) {
-    const expHasAnd = expected.rest.some((r) => r.op === "&&");
-    const gotHasSemi = typed.rest.some((r) => r.op === ";");
-    if (expHasAnd && gotHasSemi) {
+    const semiForAnd = expected.rest.some((r, i) => r.op === "&&" && typed.rest[i]?.op === ";");
+    if (semiForAnd) {
       return "use && no lugar de ; para só continuar se o comando anterior der certo";
     }
   }
+
+  const scriptReason = diagnoseScript(typed, expected, options);
+  if (scriptReason !== null) return scriptReason;
 
   if (expected.kind === "command" && typed.kind === "command") {
     const expCmd = wordText(expected.words[0]!);
@@ -540,7 +887,18 @@ function diagnoseMismatch(typed: ShellNode, expected: ShellNode, options?: Check
     }
   }
 
-  return options?.hint ?? "comando ou flags diferentes do esperado";
+  if (options?.hint !== undefined) return options.hint;
+
+  if (typed.kind !== expected.kind) {
+    const want = describeNode(expected);
+    const got = describeNode(typed);
+    if (want !== got) return `esperado ${want}, mas você usou ${got}`;
+  }
+
+  const inner = typed.kind !== "command" ? firstDifferingChildren(typed, expected) : null;
+  if (inner !== null) return diagnoseMismatch(inner[0], inner[1], options);
+
+  return "comando ou flags diferentes do esperado";
 }
 
 /** Checks a typed bash command against expected canonical/accepted forms (AC-2). */
@@ -604,6 +962,10 @@ export function equivalentForms(canonical: string, options?: CheckOptions): read
     [/\$\(seq 1 (\d+)\)/, "$(seq $1)"],
     [/\$\(seq 1 (\d+)\)/, "{1..$1}"],
     [/^while true;/, "while :;"],
+    // Script forms (T54 AC-2, AC-5).
+    [/"\$1"/, '"${1}"'],
+    [/for \(\( i = 1; i <= (\d+); i\+\+ \)\)/, "for ((i=1; i<=$1; i++))"],
+    [/^if (\[\[ .* \]\]); then /, "if $1\nthen "],
   ];
 
   for (const [re, rep] of swaps) {

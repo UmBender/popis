@@ -4,7 +4,9 @@
 //      effect (exit code, stdout, stderr, probe output, and resulting files).
 //   2. Every near-miss in src/shell/cases/near-misses.ts produces a DIFFERENT observable
 //      effect from its canonical command.
-//   3. Every Aprender lesson example transcript (units 1-9) matches live bash output
+//   2b. (T54, ADR-T54-1) every script equivalence has the same effect, every script
+//      near-miss a different one, and every annotated lesson script passes `bash -n`.
+//   3. Every Aprender lesson example transcript (units 1-11) matches live bash output
 //      (with temp paths, usernames and timings masked).
 //
 //   npm run shell:oracle             check all three suites
@@ -178,6 +180,22 @@ function setupFixture(workDir, workHome, binDir, fixture) {
     cpBin("gen", "gen");
     cpBin("sol", "sol");
     cpBin("brute", "brute");
+  } else if (fixture === "scripts") {
+    // T54: run.sh gets one OK (in1) and one WA (in2); stress.sh finds sol != brute at test 7.
+    writeFileSync(join(workDir, "a.cpp"), CPP_A);
+    cpBin("a", "a");
+    cpBin("sol", "sol");
+    cpBin("brute", "brute");
+    cpBin("gen", "gen");
+    writeFileSync(join(workDir, "in1"), "5\n");
+    writeFileSync(join(workDir, "in2"), "6\n");
+    writeFileSync(join(workDir, "out1"), "10 opt\n");
+    writeFileSync(join(workDir, "out2"), "13 opt\n");
+    writeFileSync(join(workDir, "ans1"), "10\n");
+  } else if (fixture === "spaces") {
+    writeFileSync(join(workDir, "meu arquivo"), "conteúdo\n");
+    writeFileSync(join(workDir, "meu"), "só meu\n");
+    writeFileSync(join(workDir, "in1"), "5\n");
   } else if (fixture === "limits") {
     writeFileSync(join(workDir, "in1"), "5\n");
   } else if (fixture === "text") {
@@ -352,11 +370,29 @@ async function checkDrillEquivalences(root, binDir, drillMod) {
   return { checked, failures };
 }
 
-/** 2. Verify every near-miss in NEAR_MISS_CASES has a DIFFERENT observable effect. */
-async function checkNearMisses(root, binDir, nearMissMod) {
-  const { NEAR_MISS_CASES } = nearMissMod;
+/** 2b. Every script equivalence (T54 AC-2) has the SAME observable effect in bash. */
+async function checkScriptEquivalences(root, binDir, nearMissMod) {
+  const { SCRIPT_EQUIVALENT_CASES } = nearMissMod;
   const failures = [];
-  for (const c of NEAR_MISS_CASES) {
+  for (const c of SCRIPT_EQUIVALENT_CASES) {
+    const base = await runInBash(root, binDir, c.fixture, c.canonical, c.probe);
+    const alt = await runInBash(root, binDir, c.fixture, c.equivalent, c.probe);
+    if (!sameEffect(base, alt)) {
+      failures.push(
+        `script equivalence ${c.id}: "${c.equivalent}" differs from "${c.canonical}"\n` +
+          `  canon: code=${base.code} out=${JSON.stringify(base.stdout)} err=${JSON.stringify(base.stderr)}\n` +
+          `  alt:   code=${alt.code} out=${JSON.stringify(alt.stdout)} err=${JSON.stringify(alt.stderr)}`,
+      );
+    }
+  }
+  return { checked: SCRIPT_EQUIVALENT_CASES.length, failures };
+}
+
+/** 2. Verify every near-miss (T39 and T54 script tables) has a DIFFERENT observable effect. */
+async function checkNearMisses(root, binDir, nearMissMod) {
+  const cases = [...nearMissMod.NEAR_MISS_CASES, ...nearMissMod.SCRIPT_NEAR_MISS_CASES];
+  const failures = [];
+  for (const c of cases) {
     const base = await runInBash(root, binDir, c.fixture, c.canonical, c.probe);
     const miss = await runInBash(root, binDir, c.fixture, c.nearMiss, c.probe);
     if (sameEffect(base, miss)) {
@@ -365,15 +401,34 @@ async function checkNearMisses(root, binDir, nearMissMod) {
       );
     }
   }
-  return { checked: NEAR_MISS_CASES.length, failures };
+  return { checked: cases.length, failures };
 }
 
-/** 3. Record or verify live bash transcripts for every Aprender lesson (units 1-9). */
-async function recordLessonTranscript(root, binDir, lesson) {
+/**
+ * Writes the lesson's annotated scripts (T54 AC-3) into the work folder and checks each
+ * with `bash -n`; returns the syntax failures.
+ */
+async function writeLessonScripts(workDir, lesson) {
+  const failures = [];
+  for (const script of lesson.example.scripts ?? []) {
+    const path = join(workDir, script.file);
+    writeFileSync(path, script.lines.map((l) => l.code).join("\n") + "\n");
+    try {
+      await execFileAsync("bash", ["-n", path], { timeout: 10_000 });
+    } catch (err) {
+      failures.push(`bash -n ${lesson.id}/${script.file}: ${String(err.stderr ?? err)}`);
+    }
+  }
+  return failures;
+}
+
+/** 3. Record or verify live bash transcripts for every Aprender lesson (units 1-11). */
+async function recordLessonTranscript(root, binDir, lesson, syntaxFailures) {
   const caseDir = mkdtempSync(join(root, "lesson-"));
   const workDir = join(caseDir, "work");
   const workHome = join(caseDir, "home");
   setupFixture(workDir, workHome, binDir, lesson.example.fixture);
+  syntaxFailures.push(...(await writeLessonScripts(workDir, lesson)));
 
   const MARK_STEP = "===POPIS_STEP===";
   const MARK_META = "===POPIS_META===";
@@ -538,11 +593,13 @@ async function main() {
 
     const eqRes = await checkDrillEquivalences(root, binDir, drillMod);
     const nmRes = await checkNearMisses(root, binDir, nearMissMod);
+    const seRes = await checkScriptEquivalences(root, binDir, nearMissMod);
 
     const recorded = {};
     const transcriptFailures = [];
+    const syntaxFailures = [];
     for (const lesson of curriculumMod.SHELL_LESSONS) {
-      const got = await recordLessonTranscript(root, binDir, lesson);
+      const got = await recordLessonTranscript(root, binDir, lesson, syntaxFailures);
       recorded[lesson.id] = got;
       if (!writeMode) {
         const expected = transcriptsMod.SHELL_TRANSCRIPTS[lesson.id];
@@ -562,10 +619,18 @@ async function main() {
     console.log(
       `shell:oracle summary: equivalences=${eqRes.checked} (failures=${eqRes.failures.length}), ` +
         `near-misses=${nmRes.checked} (failures=${nmRes.failures.length}), ` +
+        `script-equivalences=${seRes.checked} (failures=${seRes.failures.length}), ` +
+        `scripts bash -n failures=${syntaxFailures.length}, ` +
         `transcripts=${Object.keys(recorded).length} (failures=${transcriptFailures.length})`,
     );
 
-    const allFailures = [...eqRes.failures, ...nmRes.failures, ...transcriptFailures];
+    const allFailures = [
+      ...eqRes.failures,
+      ...nmRes.failures,
+      ...seRes.failures,
+      ...syntaxFailures,
+      ...transcriptFailures,
+    ];
     if (allFailures.length > 0) {
       for (const f of allFailures) console.error("FAIL:", f);
       process.exitCode = 1;

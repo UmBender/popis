@@ -76,3 +76,41 @@ test("T39: complete a Shell Aprender lesson and play a Comandos round", async ({
   await expect(page.getByTestId("shell-kind-table")).toBeVisible();
   await expectNoHorizontalScroll(page, "shell results");
 });
+
+test("T54: a script lesson shows the annotated file next to each line", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("./");
+  await chooseItem(page, "Aprender (Shell)");
+  await page.getByRole("button", { name: /Primeiro script/ }).click();
+
+  const script = page.getByTestId("shell-script");
+  await expect(script).toBeVisible();
+  await expect(script).toContainText("ola.sh");
+  const code = page.getByTestId("shell-script-code").first();
+  const note = page.getByTestId("shell-script-note").first();
+  await expect(code).toHaveText("#!/usr/bin/env bash");
+  await expect(note).toBeVisible();
+  await expectNoHorizontalScroll(page, "shell script lesson");
+
+  const codeBox = await code.boundingBox();
+  const noteBox = await note.boundingBox();
+  expect(codeBox).not.toBeNull();
+  expect(noteBox).not.toBeNull();
+  if (codeBox !== null && noteBox !== null) {
+    if (test.info().project.name === "mobile") {
+      // Narrow screen: the note sits below its line of code.
+      expect(noteBox.y).toBeGreaterThanOrEqual(codeBox.y + codeBox.height - 1);
+    } else {
+      // Wide screen: the note sits beside its line of code.
+      expect(noteBox.x).toBeGreaterThan(codeBox.x + codeBox.width - 1);
+      expect(Math.abs(noteBox.y - codeBox.y)).toBeLessThan(codeBox.height);
+    }
+  }
+
+  // The first exercise accepts the shown command.
+  const ref = (await page.getByTestId("learn-reference").textContent()) ?? "";
+  const box = page.getByRole("textbox", { name: "Comando bash" });
+  await box.fill(ref.replace(/^.*?:\s*/, "").trim());
+  await box.press("Enter");
+  await expect(page.getByTestId("learn-step")).toContainText("3");
+});

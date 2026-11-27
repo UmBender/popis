@@ -1,10 +1,10 @@
 ---
 id: T54
 title: Shell - scripts
-status: ready
+status: review
 depends_on: [T39]
 branch: task/T54-shell-scripts
-adrs: []
+adrs: [ADR-T54-1]
 tags: [task]
 ---
 
@@ -62,15 +62,24 @@ conceito por lição, sempre com um exemplo que roda de verdade.
     `-lt`, `-le`, `-gt`, `-ge`, `&&` e `||`;
   - `if … then … elif … else … fi`, `until`, `case … in … ;; esac`,
     `for (( i = 1; i <= n; i++ ))`;
-  - definição de função `nome() { …; }` com `return`;
+  - definição de função `nome() { …; }` com `return`, grupo `{ …; }`
+    (para `|| { echo WA; exit 1; }`) e redirecionamento de um comando
+    composto (`done < in1`);
+  - aspas duplas com expansão dentro ficam marcadas no AST (`"$1"` é
+    diferente de `$1`), e crases são lidas como `$(…)`;
   - `exit`, `set`, `read -r`, `echo`, `printf`, `chmod`, `bash`, `shift`;
   - comentários `#` e várias linhas (o parser recebe o script inteiro).
 
   Continua de fora (com erro legível, nunca exceção): arrays, here-docs,
   `trap`, `getopts`, `select` e `eval`.
-  - Testes: `src/shell/parse.test.ts` (casos novos por construção),
-    `src/shell/parse.prop.test.ts` (`parse(format(t))` é igual a `t`
-    também para as construções novas).
+  - Testes: `src/shell/parse.test.ts` ("parser reads each script
+    construct", "parser reads a multi-line script with comments", "parser
+    rejects constructs still outside the subset with a readable message"),
+    `src/shell/parse.prop.test.ts` ("parseShell(formatShell(t)) equals t
+    for script constructs").
+  - Os casos de erro da T39 para `if`, `case`, `until`, `[[`, `((`,
+    `for ((` e crases deixam de valer (ADR-T54-1) e saem da lista de
+    rejeição, num commit `test` próprio.
 - **AC-2**: **Verificador** (`src/shell/check.ts`). Formas aceitas e
   quase-acertos de script:
   - aceitas: `then` na mesma linha (`; then`) ou na seguinte; `[[ $n -lt 5 ]]`
@@ -82,13 +91,17 @@ conceito por lição, sempre com um exemplo que roda de verdade.
     nome com espaço; `-lt` trocado por `<` dentro de `[[ ]]` (compara
     texto, não número); `fi` ou `done` faltando; `exit` sem código onde
     o objetivo pede falha.
-  - Testes: `src/shell/check.test.ts` ("checker accepts equivalent script forms", "checker rejects script near misses"), com a tabela em `src/shell/cases/near-misses.ts`.
+  - Por padrão as aspas em volta de uma expansão são opcionais, como na
+    T39; a opção `strictQuotes` as exige. `for f in ./in*` é aceito por
+    padrão; a opção `exactPaths` desliga isso.
+  - Testes: `src/shell/check.test.ts` ("checker accepts equivalent script forms", "checker rejects script near misses"), com as tabelas `SCRIPT_EQUIVALENT_CASES` e `SCRIPT_NEAR_MISS_CASES` em `src/shell/cases/near-misses.ts`.
 - **AC-3**: **Script anotado** no exemplo da lição. `ShellLessonExample`
-  ganha um campo opcional `script` com o nome do arquivo e as linhas,
-  cada uma com o código e uma nota curta. A lição mostra o arquivo com
+  ganha um campo opcional `scripts`: uma lista de arquivos, cada um com o
+  nome e as linhas, e cada linha com o código e uma nota curta (lista
+  porque a 11.6 mostra `run.sh` e `stress.sh`, ADR-T54-1). A lição mostra o arquivo com
   as notas ao lado (abaixo, no celular) e, depois, os passos de terminal
   que o rodam (`chmod +x run.sh`, `./run.sh`), como hoje.
-  - Testes: `src/shell/curriculum.test.ts` ("every script line has a note", "every lesson example has an oracle transcript"), `src/ui/ShellScreenLearn.test.tsx` ("a script lesson shows each line with its note").
+  - Testes: `src/shell/curriculum.test.ts` ("every script line has a note", "every script parses in the shell subset", "every lesson example has an oracle transcript"), `src/ui/ShellScreenLearn.test.tsx` ("a script lesson shows each line with its note").
 - **AC-4**: **Currículo** (`src/shell/curriculum.ts`), duas unidades
   novas depois das 9 da T39:
 
@@ -110,13 +123,13 @@ conceito por lição, sempre com um exemplo que roda de verdade.
   conferido pelo oráculo e 3 exercícios de uma linha. Os exercícios de
   `if`, laço e função usam a forma de uma linha
   (`if [[ -f in1 ]]; then echo ok; fi`).
-  - Testes: `src/shell/curriculum.test.ts` ("every drill kind is unlocked by exactly one lesson", "every exercise answer passes the checker", que já existem e passam a cobrir as unidades novas).
+  - Testes: `src/shell/curriculum.test.ts` ("every drill kind is unlocked by exactly one lesson", "every exercise answer passes the checker", que já existem e passam a cobrir as unidades novas; "has 11 units in order and unique lesson ids", que antes esperava 9; "script lessons explain in at most 4 sentences").
 - **AC-5**: **Tipo `scripts` no Comandos** (`src/shell/drill.ts`, KC
   `shell.scripts`). O gerador sorteia objetivos como "se `out1` não
   existir, saia com código 1", "para cada `in*`, rode `./a` com ele e
   mostre o nome do arquivo antes" (só o que o AC-1 cobre), "defina a função `t` que roda
   `./a < "$1"`". A rodada continua de uma linha.
-  - Testes: `src/shell/drill.prop.test.ts` (para muitas seeds: a resposta canônica é aceita; os arquivos citados aparecem; a mesma seed gera o mesmo item).
+  - Testes: `src/shell/drill.prop.test.ts` (para muitas seeds: a resposta canônica é aceita; os arquivos citados aparecem; a mesma seed gera o mesmo item; "scripts items use a script construct").
 - **AC-6**: **Oráculo** (`scripts/shell-oracle.mjs`, `npm run shell:oracle`).
   Para cada script anotado, ele grava o arquivo numa pasta temporária,
   roda `bash -n` (sintaxe) e depois o executa com os arquivos de exemplo,
@@ -146,16 +159,17 @@ conceito por lição, sempre com um exemplo que roda de verdade.
 - `src/ui/ShellScreen.tsx`, `src/ui/shell-drill/`,
   `src/ui/ShellScreenLearn.test.tsx`, `src/ui/app.css`
 - `scripts/shell-oracle.mjs`, `vite.config.ts` (limiares de `src/shell/**`)
+- `docs/decisions/ADR-T54-1 …`
 - `tests/e2e/shell-drill.spec.ts`
 
 ## Subtasks (one commit each)
 
-- [ ] spec: ADR-T54-1 (amends ADR-T39-1: subconjunto maior, script anotado e oráculo de script) e testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, `shell:oracle`, coverage, e2e e screenshots
-- [ ] docs: *Log* e status `review`
+- [x] spec: ADR-T54-1 (amends ADR-T39-1: subconjunto maior, script anotado e oráculo de script) e testes nomeados
+- [x] tests (mais um commit `test` antes, para os testes da T39 que o ADR-T54-1 substitui)
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, `shell:oracle`, coverage, e2e e screenshots
+- [x] docs: *Log* e status `review`
 
 ## Notas para o batch
 
@@ -168,3 +182,51 @@ conceito por lição, sempre com um exemplo que roda de verdade.
   `tests/regressions/T39-no-raw-backticks.test.ts`).
 
 ## Log
+
+- 2026-11-26 — **Spec ajustado antes do código** (commit `docs`):
+  - `script` virou `scripts`, uma lista de arquivos, porque a 11.6 mostra
+    `run.sh` e `stress.sh`;
+  - entraram no AC-1 o grupo `{ …; }` (o `|| { echo WA; exit 1; }` do
+    `stress.sh`) e o redirecionamento de comando composto
+    (`done < in1`, lição 11.2);
+  - entraram no AC-2 as opções `strictQuotes` e `exactPaths`.
+- 2026-11-26 — **Testes da T39 trocados em commit próprio**
+  (`test(T54): update T39 shell tests superseded by ADR-T54-1`), antes
+  dos testes novos:
+  - os casos de rejeição de `if`, `case`, `until`, `[[`, `((`, `for ((`
+    e crases saíram, porque agora esses comandos são aceitos;
+  - "has 9 units" passou a "has 11 units";
+  - o limite de frases continua 3 nas unidades 1–9 e é 4 nas 10–11.
+- 2026-11-27 — **Mudanças de comportamento fora do script:**
+  - a regra "use && no lugar de ;" agora compara posição por posição.
+    Antes ela disparava quando havia `&&` em qualquer lugar do esperado e
+    `;` em qualquer lugar do digitado, e escondia a mensagem certa (o
+    `[[ $n < 9 ]]` com `n=10; …`). O teste dela da T39 continua passando;
+  - quando a forma é outra, a mensagem nomeia as duas formas
+    ("esperado cd, mas você usou case"). O teste da T39 que digita um
+    `case` continua achando "case" na mensagem.
+- 2026-11-27 — **Limitações registradas** (ADR-T54-1, *Consequences*):
+  um `*` entre aspas e um sem aspas viram o mesmo texto no AST. Dentro
+  do `case`, uma palavra-chave de fechamento sem `;` antes (`echo a esac`)
+  fecha o bloco, como já acontecia com `done` na T39.
+- 2026-11-27 — **Bug achado fora do escopo, sem correção nesta task:** o
+  token `--text-xs` é usado em `src/ui/app.css` (ex.:
+  `.shell-drill-file code`, T39), mas não existe, e o texto cai no
+  tamanho herdado. No celular, as notas do script ficavam maiores que o
+  código; as notas passaram a usar `--text-sm`. O resto pede uma task
+  `fix/` com teste de regressão.
+- 2026-11-27 — **Gates:**
+  - `npm run check` verde: 4757 testes;
+  - `npm run coverage` verde. `src/shell/**` subiu para 99,31% de
+    linhas, 98,95% de statements e 96,07% de branches, e os limiares
+    passaram para 99/98/100/96;
+  - `npm run test:fuzz`: 301 testes, verde;
+  - `npm run test:e2e`: 71/71, incluindo a lição de script no desktop e
+    no celular;
+  - `npm run shell:oracle`: 45 equivalências do Comandos (já com o tipo
+    `scripts`), 18 quase-acertos (10 da T39 e 8 de script), 7
+    equivalências de script, nenhum `bash -n` falho e 26 transcrições.
+    O `run.sh` mostra `teste 1: OK` e `teste 2: WA`, e o
+    `stress.sh sol brute 10` para em "WA no teste 7" com saída 1.
+  - Capturas da 11.6 conferidas no desktop (nota ao lado) e no celular
+    (nota abaixo).
