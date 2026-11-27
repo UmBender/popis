@@ -7,7 +7,15 @@ import {
   typeWordsText,
   type WordsState,
 } from "../typing/words-engine";
-import { codeEvents, textEvents, traceCode, traceText, type KeyTrace } from "./keytrace";
+import {
+  codeEvents,
+  codePaceUnits,
+  textEvents,
+  textPaceUnits,
+  traceCode,
+  traceText,
+  type KeyTrace,
+} from "./keytrace";
 
 /** Runs `steps` on a code run, tracing every state change. */
 function codeRun(target: string, steps: readonly [number, (s: TypingState) => TypingState][]) {
@@ -302,5 +310,53 @@ describe("text trace", () => {
     });
     expect(doneEvent?.extra["target"]).toBe(40);
     expect(doneEvent?.extra["onPace"]).toBe(true);
+  });
+});
+
+describe("pace units", () => {
+  it("textPaceUnits marks wrong and cut words", () => {
+    // "ab" right with space (3 chars in 200 ms), "cd" with a fixed typo,
+    // "efgh" cut after "e" by the end of the round.
+    const { trace } = textRun(
+      ["ab", "cd", "efgh"],
+      [
+        typeWord("a", 100),
+        typeWord("b", 200),
+        [300, (s) => pressSpace(s, 300)],
+        typeWord("c", 350),
+        typeWord("x", 400),
+        [450, backspaceWord],
+        typeWord("d", 500),
+        [550, (s) => pressSpace(s, 550)],
+        typeWord("e", 600),
+      ],
+    );
+    expect(textPaceUnits(trace, ["ab", "cd", "efgh"])).toEqual([
+      { ok: true, complete: true, chars: 3, timeMs: 200 },
+      { ok: false, complete: true, chars: 3, timeMs: 250 },
+      { ok: true, complete: false, chars: 4, timeMs: 50 },
+    ]);
+
+    // A last word typed in full without a space is complete.
+    const finished = textRun(["ab"], [typeWord("a", 100), typeWord("b", 200)]);
+    expect(textPaceUnits(finished.trace, ["ab"])).toEqual([
+      { ok: true, complete: true, chars: 2, timeMs: 100 },
+    ]);
+  });
+
+  it("codePaceUnits counts typeable characters per line", () => {
+    const { trace } = codeRun("ab\n    cd", [
+      [100, (s) => typeText(s, "a", 100)],
+      [200, (s) => typeText(s, "b", 200)],
+      [300, (s) => pressEnter(s, 300)],
+      [700, (s) => typeText(s, "x", 700)],
+      [800, backspace],
+      [900, (s) => typeText(s, "c", 900)],
+      [1300, (s) => typeText(s, "d", 1300)],
+    ]);
+    expect(codePaceUnits(trace, "ab\n    cd")).toEqual([
+      { ok: true, complete: true, chars: 3, timeMs: 200 },
+      { ok: false, complete: true, chars: 2, timeMs: 1000 },
+    ]);
   });
 });

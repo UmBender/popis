@@ -1,6 +1,14 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { ghostCodePosition, isUnitOnPace, nextTargetWpm, PACE_BAND, PACE_STEP_WPM } from "./pace";
+import {
+  evaluatePaceRound,
+  ghostCodePosition,
+  isUnitOnPace,
+  nextTargetWpm,
+  PACE_BAND,
+  PACE_GOAL_STEPS,
+  PACE_STEP_WPM,
+} from "./pace";
 
 const GOALS = [0.7, 0.85, 0.95] as const;
 
@@ -93,6 +101,28 @@ describe("pace properties", () => {
               }
             }
           }
+        },
+      ),
+    );
+  });
+  it("replaying a round at its caught-up target never lowers it", () => {
+    const unit = fc.record({
+      ok: fc.boolean(),
+      complete: fc.boolean(),
+      chars: fc.integer({ min: 1, max: 12 }),
+      timeMs: fc.integer({ min: 50, max: 8000 }),
+    });
+    fc.assert(
+      fc.property(
+        fc.array(unit, { maxLength: 80 }),
+        fc.integer({ min: 4, max: 120 }),
+        fc.double({ min: 0.95, max: 1, noNaN: true }),
+        fc.constantFrom(...PACE_GOAL_STEPS),
+        (units, target, accuracy, goal) => {
+          const first = evaluatePaceRound(units, target, accuracy, goal);
+          if (first.nextTarget - target <= PACE_STEP_WPM) return;
+          const replay = evaluatePaceRound(units, first.nextTarget, accuracy, goal);
+          expect(replay.nextTarget).toBeGreaterThanOrEqual(first.nextTarget);
         },
       ),
     );

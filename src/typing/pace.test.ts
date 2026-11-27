@@ -3,6 +3,7 @@ import {
   codeLineLengths,
   DEFAULT_INITIAL_TARGET_WPM,
   evaluatePaceRound,
+  goalSpeedWpm,
   ghostCodePosition,
   ghostTextPosition,
   initialTargetWpm,
@@ -63,22 +64,79 @@ describe("on-pace unit check and round evaluation", () => {
   });
 
   it("evaluatePaceRound summarises on-pace share and next target", () => {
-    expect(
-      evaluatePaceRound([true, true, true, true, true, true, true, true, true, false], 30, 0.98),
-    ).toEqual({
+    // 9 right words at 36 WPM and 1 at 20 WPM: 90% on pace against 30,
+    // and the goal speed (36) is not far enough above 30 to jump.
+    const fast = { ok: true, complete: true, chars: 5, timeMs: (5 * 12_000) / 36 };
+    const slow = { ok: true, complete: true, chars: 5, timeMs: 3000 };
+    expect(evaluatePaceRound([...Array.from({ length: 9 }, () => fast), slow], 30, 0.98)).toEqual({
       target: 30,
       nextTarget: 32,
       onPaceCount: 9,
       totalUnits: 10,
       onPaceShare: 0.9,
     });
-    expect(evaluatePaceRound([], 30, 1)).toEqual({
-      target: 30,
-      nextTarget: 30,
-      onPaceCount: 0,
-      totalUnits: 0,
-      onPaceShare: 0,
-    });
+  });
+
+  it("evaluatePaceRound ignores wrong and incomplete units", () => {
+    const onPace = { ok: true, complete: true, chars: 5, timeMs: 1000 }; // 60 WPM
+    const wrong = { ok: false, complete: true, chars: 5, timeMs: 1000 };
+    const cut = { ok: true, complete: false, chars: 2, timeMs: 5000 };
+    const summary = evaluatePaceRound(
+      [...Array.from({ length: 8 }, () => onPace), wrong, wrong, cut],
+      50,
+      0.97,
+      0.95,
+    );
+    expect(summary.totalUnits).toBe(8);
+    expect(summary.onPaceCount).toBe(8);
+    expect(summary.onPaceShare).toBe(1);
+    expect(summary.nextTarget).toBe(52);
+  });
+
+  it("evaluatePaceRound keeps the target when no unit counts", () => {
+    const wrong = { ok: false, complete: true, chars: 5, timeMs: 1000 };
+    const cut = { ok: true, complete: false, chars: 2, timeMs: 1000 };
+    for (const units of [[], [wrong], [wrong, cut]]) {
+      expect(evaluatePaceRound(units, 30, 1)).toEqual({
+        target: 30,
+        nextTarget: 30,
+        onPaceCount: 0,
+        totalUnits: 0,
+        onPaceShare: 0,
+      });
+    }
+  });
+
+  it("goalSpeedWpm is the speed reached by the goal share of units", () => {
+    // 10 right words at 10, 20, …, 100 WPM.
+    const units = Array.from({ length: 10 }, (_, i) => ({
+      ok: true,
+      complete: true,
+      chars: 5,
+      timeMs: (5 * 12_000) / (10 * (i + 1)),
+    }));
+    expect(goalSpeedWpm(units, 0.85)).toBe(20); // 9 of 10 reached 20
+    expect(goalSpeedWpm(units, 0.7)).toBe(40); // 7 of 10 reached 40
+    expect(goalSpeedWpm(units, 0.95)).toBe(10); // all 10 reached 10
+    expect(goalSpeedWpm([{ ok: true, complete: true, chars: 5, timeMs: 700 }], 0.85)).toBe(85);
+    expect(goalSpeedWpm([], 0.85)).toBeNull();
+    expect(goalSpeedWpm([{ ok: false, complete: true, chars: 5, timeMs: 700 }], 0.85)).toBeNull();
+    expect(goalSpeedWpm([{ ok: true, complete: true, chars: 5, timeMs: 0 }], 0.85)).toBeNull();
+  });
+
+  it("evaluatePaceRound jumps to the goal speed when far below", () => {
+    // 20 right words at 60 WPM: goal speed 60, far above 30.
+    const at60 = Array.from({ length: 20 }, () => ({
+      ok: true,
+      complete: true,
+      chars: 5,
+      timeMs: 1000,
+    }));
+    expect(evaluatePaceRound(at60, 30, 0.98).nextTarget).toBe(60);
+    // 10 WPM below the goal speed is not "far": the 2 WPM step stays.
+    expect(evaluatePaceRound(at60, 50, 0.98).nextTarget).toBe(52);
+    // Below the accuracy floor the target does not rise at all.
+    expect(evaluatePaceRound(at60, 30, 0.94).nextTarget).toBe(30);
   });
 
   it("targetIntervalMs returns milliseconds per character for a target WPM", () => {

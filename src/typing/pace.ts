@@ -16,6 +16,8 @@ export const DEFAULT_INITIAL_TARGET_WPM = 30;
 export const MIN_TARGET_WPM = 4;
 /** Number of recent rounds whose median sets the initial target. */
 export const INITIAL_HISTORY_WINDOW = 10;
+/** A rising target this far below the round's goal speed jumps to it (ADR-T52-1). */
+export const CATCH_UP_GAP_WPM = 10;
 
 const EPS = 1e-9;
 
@@ -23,6 +25,12 @@ export type PaceUnit = {
   readonly ok: boolean;
   readonly chars: number;
   readonly timeMs: number;
+};
+
+/** One word or line of a finished round, as the target rule counts it (ADR-T52-1). */
+export type PaceRoundUnit = PaceUnit & {
+  /** False for the last word cut by the end of a timed round. */
+  readonly complete: boolean;
 };
 
 export type PaceAdjustmentInput = {
@@ -99,20 +107,41 @@ export function nextTargetWpm({
   return target;
 }
 
-/** Summarises a finished round's unit on-pace flags and computes the next target WPM. */
+/**
+ * Highest whole WPM that at least `goal` of the right, complete units
+ * reached, or null when no unit counts or that speed is unbounded.
+ */
+export function goalSpeedWpm(units: readonly PaceRoundUnit[], goal: number): number | null {
+  const speeds = units
+    .filter((u) => u.ok && u.complete && u.chars > 0)
+    .map((u) => (u.timeMs <= 0 ? Infinity : (u.chars * 12_000) / u.timeMs))
+    .sort((x, y) => y - x);
+  if (speeds.length === 0) return null;
+  const reached = Math.max(1, Math.ceil(goal * speeds.length - EPS));
+  const speed = speeds[reached - 1] as number;
+  return Number.isFinite(speed) ? Math.floor(speed + EPS) : null;
+}
+
+/**
+ * Summarises a finished round over its right, complete units and computes
+ * the next target WPM, catching up when far below the goal speed (ADR-T52-1).
+ */
 export function evaluatePaceRound(
-  onPaceUnits: readonly boolean[],
+  units: readonly PaceRoundUnit[],
   target: number,
   accuracy: number,
   goal = DEFAULT_PACE_GOAL,
 ): PaceRoundSummary {
-  const totalUnits = onPaceUnits.length;
+  const counted = units.filter((u) => u.ok && u.complete && u.chars > 0);
+  const totalUnits = counted.length;
   if (totalUnits === 0) {
     return { target, nextTarget: target, onPaceCount: 0, totalUnits: 0, onPaceShare: 0 };
   }
-  const onPaceCount = onPaceUnits.filter(Boolean).length;
+  const onPaceCount = counted.filter((u) => isUnitOnPace(u, target)).length;
   const onPaceShare = onPaceCount / totalUnits;
-  const nextTarget = nextTargetWpm({ target, onPaceShare, accuracy, goal });
+  const stepped = nextTargetWpm({ target, onPaceShare, accuracy, goal });
+  const speed = stepped > target ? goalSpeedWpm(counted, goal) : null;
+  const nextTarget = speed !== null && speed - target > CATCH_UP_GAP_WPM ? speed : stepped;
   return { target, nextTarget, onPaceCount, totalUnits, onPaceShare };
 }
 

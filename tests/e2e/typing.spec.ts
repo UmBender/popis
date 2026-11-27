@@ -37,7 +37,7 @@ test("typing a Python and a C++ generated snippet with auto-indent in the real a
   await expect(page.getByTestId("accuracy")).toHaveText("100%");
   await expect(page.getByTestId("typing-summary")).toContainText("Últimas 10 rodadas");
   await expect(page.getByTestId("typing-summary")).toContainText("melhor");
-  await expect(page.getByTestId("typing-pace-result")).toContainText("das linhas no ritmo");
+  await expect(page.getByTestId("typing-pace-result")).toContainText("das linhas certas no ritmo");
   await expect(page.getByTestId("typing-pace-result")).toContainText("→");
 });
 

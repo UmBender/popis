@@ -325,6 +325,15 @@ describe("typing screen", () => {
     expect(charSpans()[expected]?.dataset["ghost"]).toBe("true");
   });
 
+  it("pace goal select explains that a higher goal means an easier target", () => {
+    setup();
+    const select = screen.getByRole("combobox", { name: "Meta no ritmo" });
+    const id = select.getAttribute("aria-describedby") ?? "";
+    expect(document.getElementById(id)?.textContent).toBe(
+      "% das linhas certas acima do alvo; maior = alvo mais fácil",
+    );
+  });
+
   it("ghost caret is hidden when Ritmo-alvo is off", () => {
     const { store } = setup();
     const toggle = screen.getByRole<HTMLInputElement>("checkbox", { name: "Ritmo-alvo" });
@@ -352,9 +361,11 @@ describe("typing screen", () => {
       typeSnippet(snippet);
 
       const paceText = screen.getByTestId("typing-pace-result").textContent ?? "";
-      expect(paceText).toContain("100% das linhas no ritmo");
-      expect(paceText).toContain("30 → 32 WPM");
-      expect(loadTypingPace(store).targets[codePaceKey(LANGUAGES)]).toBe(32);
+      expect(paceText).toContain("100% das linhas certas no ritmo");
+      // Typed far above 30 WPM: the target catches up in one round (T52).
+      const next = Number(/30 → (\d+) WPM/.exec(paceText)?.[1]);
+      expect(next).toBeGreaterThan(40);
+      expect(loadTypingPace(store).targets[codePaceKey(LANGUAGES)]).toBe(next);
 
       const events = loadEvents(store).filter((e) => e.drill === "typing.code");
       expect(events.length).toBeGreaterThan(0);
@@ -384,7 +395,8 @@ describe("typing screen", () => {
       expect(screen.getByTestId("pace-target").textContent).toBe("50 WPM");
 
       typeSnippet(generateCodeSnippet(SEED, LANGUAGES));
-      expect(screen.getByTestId("typing-pace-result").textContent).toContain("50 → 52 WPM");
+      // The round starts at 50; typed far above it, the target catches up (T52).
+      expect(screen.getByTestId("typing-pace-result").textContent).toMatch(/alvo 50 → \d+ WPM/);
     },
     WHOLE_SNIPPET_TIMEOUT_MS,
   );
@@ -457,8 +469,10 @@ describe("typing screen", () => {
       fireEvent.keyDown(box(), { key: "Escape" });
 
       typeSnippet(burst, 100);
-      expect(screen.getByTestId("typing-pace-result").textContent).toContain("30 → 32 WPM");
-      expect(loadTypingPace(store).targets[burstPaceKey(LANGUAGES)]).toBe(32);
+      const paceText = screen.getByTestId("typing-pace-result").textContent ?? "";
+      const next = Number(/alvo 30 → (\d+) WPM/.exec(paceText)?.[1]);
+      expect(next).toBeGreaterThan(30);
+      expect(loadTypingPace(store).targets[burstPaceKey(LANGUAGES)]).toBe(next);
       expect(loadTypingPace(store).targets[codePaceKey(LANGUAGES)]).toBe(60);
 
       fireEvent.click(screen.getByRole("checkbox", { name: "Rajada (5×)" }));

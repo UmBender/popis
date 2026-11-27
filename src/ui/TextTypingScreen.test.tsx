@@ -439,6 +439,15 @@ describe("text typing results", () => {
     }
   });
 
+  it("pace goal select explains that a higher goal means an easier target", () => {
+    setup(storeWith(WORDS_10));
+    const select = screen.getByRole("combobox", { name: "Meta no ritmo" });
+    const id = select.getAttribute("aria-describedby") ?? "";
+    expect(document.getElementById(id)?.textContent).toBe(
+      "% das palavras certas acima do alvo; maior = alvo mais fácil",
+    );
+  });
+
   it("ghost caret is hidden when Ritmo-alvo is off", () => {
     const { store } = setup(storeWith(WORDS_10));
     const toggle = screen.getByRole<HTMLInputElement>("checkbox", { name: "Ritmo-alvo" });
@@ -466,9 +475,11 @@ describe("text typing results", () => {
     typeAll(words);
 
     const paceText = screen.getByTestId("text-pace-result").textContent ?? "";
-    expect(paceText).toContain("100% das palavras no ritmo");
-    expect(paceText).toContain("30 → 32 WPM");
-    expect(loadTypingPace(store).targets[textPaceKey(WORDS_10)]).toBe(32);
+    expect(paceText).toContain("100% das palavras certas no ritmo");
+    // Typed far above 30 WPM: the target catches up in one round (T52).
+    const next = Number(/30 → (\d+) WPM/.exec(paceText)?.[1]);
+    expect(next).toBeGreaterThan(40);
+    expect(loadTypingPace(store).targets[textPaceKey(WORDS_10)]).toBe(next);
 
     const events = loadEvents(store).filter((e) => e.drill === "typing.text");
     expect(events).toHaveLength(10);
@@ -482,6 +493,7 @@ describe("text typing results", () => {
     expect(screen.getByTestId("pace-target").textContent).toBe("50 WPM");
 
     typeAll(initialWords(SEED, WORDS_10));
-    expect(screen.getByTestId("text-pace-result").textContent).toContain("50 → 52 WPM");
+    // The round starts at 50; typed far above it, the target catches up (T52).
+    expect(screen.getByTestId("text-pace-result").textContent).toMatch(/alvo 50 → \d+ WPM/);
   });
 });

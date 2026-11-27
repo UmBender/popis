@@ -1,5 +1,5 @@
 import type { TypingState } from "../typing/engine";
-import { codeLineLengths, isUnitOnPace } from "../typing/pace";
+import { codeLineLengths, isUnitOnPace, type PaceRoundUnit } from "../typing/pace";
 import type { WordsState } from "../typing/words-engine";
 import type { EventExtra, TrainingEvent } from "./event";
 
@@ -117,6 +117,20 @@ function summarizeUnits(trace: KeyTrace): UnitSummary[] {
   });
 }
 
+function textPaceUnit(u: UnitSummary, word: string): PaceRoundUnit {
+  const wordLen = [...word].length;
+  return {
+    ok: u.ok,
+    complete: u.endedWithSpace || u.keys >= wordLen,
+    chars: wordLen + (u.endedWithSpace ? 1 : 0),
+    timeMs: u.timeMs,
+  };
+}
+
+function codePaceUnit(u: UnitSummary, lengths: readonly number[] | null): PaceRoundUnit {
+  return { ok: u.ok, complete: true, chars: lengths?.[u.unit] ?? u.keys, timeMs: u.timeMs };
+}
+
 export type CodeMeta = {
   readonly at: number;
   /** The language. */
@@ -148,10 +162,7 @@ export function codeEvents(trace: KeyTrace, meta: CodeMeta): TrainingEvent[] {
         : {
             ...base,
             target: meta.target,
-            onPace: isUnitOnPace(
-              { ok: u.ok, chars: lengths?.[u.unit] ?? u.keys, timeMs: u.timeMs },
-              meta.target,
-            ),
+            onPace: isUnitOnPace(codePaceUnit(u, lengths), meta.target),
           };
     return {
       at: meta.at,
@@ -182,13 +193,11 @@ export function textEvents(trace: KeyTrace, meta: TextMeta): TrainingEvent[] {
     const base: EventExtra = { seed: meta.seed, i: u.unit, w: word, iv: u.iv, bad: u.bad };
     let extra: EventExtra = base;
     if (meta.target !== undefined) {
-      const wordLen = [...word].length;
-      const completed = u.endedWithSpace || u.keys >= wordLen;
-      const chars = wordLen + (u.endedWithSpace ? 1 : 0);
+      const unit = textPaceUnit(u, word);
       extra = {
         ...base,
         target: meta.target,
-        onPace: completed && isUnitOnPace({ ok: u.ok, chars, timeMs: u.timeMs }, meta.target),
+        onPace: unit.complete && isUnitOnPace(unit, meta.target),
       };
     }
     return {
@@ -201,4 +210,15 @@ export function textEvents(trace: KeyTrace, meta: TextMeta): TrainingEvent[] {
       extra,
     };
   });
+}
+
+/** One pace unit per typed word: right, complete, characters and time (ADR-T52-1). */
+export function textPaceUnits(trace: KeyTrace, words: readonly string[]): PaceRoundUnit[] {
+  return summarizeUnits(trace).map((u) => textPaceUnit(u, words[u.unit] as string));
+}
+
+/** One pace unit per typed line, counting typeable characters of `text` (ADR-T52-1). */
+export function codePaceUnits(trace: KeyTrace, text: string): PaceRoundUnit[] {
+  const lengths = codeLineLengths(text);
+  return summarizeUnits(trace).map((u) => codePaceUnit(u, lengths));
 }
