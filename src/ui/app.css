@@ -2492,6 +2492,62 @@ th {
   overflow-wrap: anywhere;
 }
 
+/* Annotated script in Shell Aprender (T54, ADR-T54-1): note beside each line, below on mobile. */
+.shell-script {
+  margin: 0 0 var(--space-2);
+  border: 1px solid var(--selection);
+  background: var(--surface);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.shell-script-file {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--selection);
+  color: var(--accent);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.shell-script-lines {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  list-style: none;
+}
+
+.shell-script-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: 2px 0;
+}
+
+.shell-script-code {
+  color: var(--text);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.shell-script-note {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+@media (max-width: 48rem) {
+  .shell-script-line {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: var(--space-1) 0;
+    border-bottom: 1px solid var(--selection);
+  }
+
+  .shell-script-line:last-child {
+    border-bottom: 0;
+  }
+}
+
 /* Regex drill & Aprender curriculum (T45, ADR-T45-1). */
 .regex-area,
 .regex-form,

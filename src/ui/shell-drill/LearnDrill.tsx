@@ -223,6 +223,28 @@ function ShellExample({ lesson }: { readonly lesson: ShellLesson }): ReactNode {
   return (
     <div className="vim-example">
       <h3>Exemplo</h3>
+      {lesson.example.scripts?.map((script) => (
+        <figure
+          key={script.file}
+          className="shell-script"
+          data-testid="shell-script"
+          data-file={script.file}
+        >
+          <figcaption className="shell-script-file">{script.file}</figcaption>
+          <ol className="shell-script-lines">
+            {script.lines.map((line, i) => (
+              <li key={i} className="shell-script-line">
+                <code className="shell-script-code" data-testid="shell-script-code">
+                  {line.code}
+                </code>
+                <span className="shell-script-note" data-testid="shell-script-note">
+                  {line.note}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </figure>
+      ))}
       <TerminalView
         cwd={frame.cwd}
         files={frame.files}
