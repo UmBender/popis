@@ -1,7 +1,7 @@
 ---
 id: T54
 title: Shell - scripts
-status: review
+status: done
 depends_on: [T39]
 branch: task/T54-shell-scripts
 adrs: [ADR-T54-1]
