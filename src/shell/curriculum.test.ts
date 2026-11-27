@@ -15,9 +15,9 @@ import { SHELL_DRILL_KINDS } from "./drill";
 // 3 exercises verified by the checker, oracle transcripts, and 1-to-1 drill unlocking.
 
 describe("shell curriculum (AC-6)", () => {
-  it("has 9 units in order and unique lesson ids", () => {
-    expect(SHELL_UNITS).toHaveLength(9);
-    expect(SHELL_UNITS.map((u) => u.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  it("has 11 units in order and unique lesson ids", () => {
+    expect(SHELL_UNITS).toHaveLength(11);
+    expect(SHELL_UNITS.map((u) => u.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
     const ids = SHELL_LESSONS.map((l) => l.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const lesson of SHELL_LESSONS) {
@@ -60,7 +60,12 @@ describe("shell curriculum (AC-6)", () => {
         .split(/[.!?]+(?:\s|$)/)
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
-      expect(sentences.length, `${lesson.id}: ${lesson.explanation}`).toBeLessThanOrEqual(3);
+      // Units 1-9 keep the T39 limit of 3 sentences; script units 10-11 allow 4 (ADR-T54-1).
+      const maxSentences =
+        lesson.unitId.startsWith("u10-") || lesson.unitId.startsWith("u11-") ? 4 : 3;
+      expect(sentences.length, `${lesson.id}: ${lesson.explanation}`).toBeLessThanOrEqual(
+        maxSentences,
+      );
 
       expect(lesson.exercises, lesson.id).toHaveLength(3);
       lesson.exercises.forEach((ex, idx) => {
