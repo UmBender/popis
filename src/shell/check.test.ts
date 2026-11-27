@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { NEAR_MISS_CASES } from "./cases/near-misses";
+import {
+  NEAR_MISS_CASES,
+  SCRIPT_EQUIVALENT_CASES,
+  SCRIPT_NEAR_MISS_CASES,
+} from "./cases/near-misses";
 import { checkShellCommand, equivalentForms, normalizeShell, SHELL_COMMAND_TABLE } from "./check";
 import { parseShell } from "./parse";
 
@@ -178,5 +182,37 @@ describe("shell checker (AC-2)", () => {
     ]) {
       expect(keys, `missing ${required}`).toContain(required);
     }
+  });
+});
+
+// T54 AC-2: script forms accepted as equal and script near misses rejected.
+
+describe("shell checker scripts (T54 AC-2)", () => {
+  it("checker accepts equivalent script forms", () => {
+    expect(SCRIPT_EQUIVALENT_CASES.length).toBeGreaterThanOrEqual(6);
+    for (const c of SCRIPT_EQUIVALENT_CASES) {
+      const res = checkShellCommand(c.equivalent, { accepted: [c.canonical], options: c.options });
+      expect(res.ok, `${c.id}: got ${res.ok ? "ok" : res.reason}`).toBe(true);
+      const rev = checkShellCommand(c.canonical, { accepted: [c.equivalent], options: c.options });
+      expect(rev.ok, `${c.id} reversed`).toBe(true);
+    }
+  });
+
+  it("checker rejects script near misses", () => {
+    expect(SCRIPT_NEAR_MISS_CASES.length).toBeGreaterThanOrEqual(8);
+    for (const c of SCRIPT_NEAR_MISS_CASES) {
+      const expected = { accepted: [c.canonical], options: c.options };
+      expect(checkShellCommand(c.canonical, expected).ok, `canonical ${c.id}`).toBe(true);
+      const res = checkShellCommand(c.nearMiss, expected);
+      expect(res.ok, `near miss ${c.id} ("${c.nearMiss}") must be rejected`).toBe(false);
+      if (!res.ok) {
+        expect(res.reason, c.id).toMatch(c.reasonMatch);
+        expect(res.reason, c.id).not.toContain("`");
+      }
+    }
+
+    // A different construct names both forms.
+    const other = checkShellCommand("case $x in a) echo a;; esac", { accepted: ["cd contest"] });
+    expect(other).toEqual({ ok: false, reason: expect.stringMatching(/cd.*case/) as string });
   });
 });

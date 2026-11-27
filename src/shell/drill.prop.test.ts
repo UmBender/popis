@@ -2,6 +2,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { checkShellCommand } from "./check";
 import { generateShellItem, SHELL_DRILL_KINDS } from "./drill";
+import { parseShell, wordText, type ShellNode } from "./parse";
 
 // T39 AC-3: property tests for the Shell commands drill generator.
 // For many seeds and every kind:
@@ -42,6 +43,49 @@ describe("shell drill generator properties (AC-3)", () => {
           // 3. Determinism: same seed + index -> identical item.
           const again = generateShellItem(seed, index, [kind]);
           expect(again).toEqual(item);
+        },
+      ),
+    );
+  });
+});
+
+// T54 AC-5: the scripts kind drills one-line script constructs.
+
+function usesScriptConstruct(node: ShellNode): boolean {
+  switch (node.kind) {
+    case "if":
+    case "test":
+    case "arith":
+    case "forarith":
+    case "funcdef":
+    case "case":
+    case "for":
+    case "until":
+      return true;
+    case "command":
+      return ["exit", "return", "local"].includes(wordText(node.words[0]!) ?? "");
+    case "list":
+      return usesScriptConstruct(node.first) || node.rest.some((r) => usesScriptConstruct(r.node));
+    default:
+      return false;
+  }
+}
+
+describe("shell drill scripts kind (T54 AC-5)", () => {
+  it("scripts items use a script construct", () => {
+    expect(SHELL_DRILL_KINDS).toContain("scripts");
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 0xffffffff }),
+        fc.integer({ min: 0, max: 20 }),
+        (seed, index) => {
+          const item = generateShellItem(seed, index, ["scripts"]);
+          expect(item.kc).toBe("shell.scripts");
+          expect(item.canonical).not.toContain("\n");
+          expect(item.prompt).not.toContain("`");
+          const parsed = parseShell(item.canonical);
+          expect(parsed.ok, item.canonical).toBe(true);
+          if (parsed.ok) expect(usesScriptConstruct(parsed.node), item.canonical).toBe(true);
         },
       ),
     );

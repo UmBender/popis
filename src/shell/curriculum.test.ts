@@ -10,6 +10,7 @@ import {
   shellLessonForCommand,
 } from "./curriculum";
 import { SHELL_DRILL_KINDS } from "./drill";
+import { parseShell } from "./parse";
 
 // T39 AC-6: 9-unit Shell curriculum reusing src/learn/, short explanations,
 // 3 exercises verified by the checker, oracle transcripts, and 1-to-1 drill unlocking.
@@ -106,5 +107,73 @@ describe("shell curriculum (AC-6)", () => {
     expect(unitStatus(u1, new Set(u1.lessons.map((l) => l.id)))).toBe("done");
     expect(nextUncompleted(SHELL_LESSONS, new Set())?.id).toBe(SHELL_LESSONS[0]?.id);
     expect(nextFadingStep(0, true)).toBe(2);
+  });
+});
+
+// T54 AC-3/AC-4: units 10 (Scripts) and 11 (Controle) with annotated scripts.
+
+const SCRIPT_UNIT_TABLE: readonly (readonly [string, readonly string[]])[] = [
+  ["u10-scripts", ["u10-first", "u10-vars", "u10-math", "u10-args", "u10-exit"]],
+  ["u11-controle", ["u11-if", "u11-loops", "u11-case", "u11-func", "u11-strict", "u11-prova"]],
+];
+
+function scriptLessons() {
+  return SHELL_LESSONS.filter((l) => l.unitId === "u10-scripts" || l.unitId === "u11-controle");
+}
+
+describe("shell script lessons (T54 AC-3, AC-4)", () => {
+  it("script lessons explain in at most 4 sentences", () => {
+    for (const [unitId, lessonIds] of SCRIPT_UNIT_TABLE) {
+      const unit = SHELL_UNITS.find((u) => u.id === unitId);
+      expect(unit, unitId).toBeDefined();
+      expect(unit?.lessons.map((l) => l.id)).toEqual(lessonIds);
+    }
+    expect(SHELL_UNITS[9]?.id).toBe("u10-scripts");
+    expect(SHELL_UNITS[10]?.id).toBe("u11-controle");
+    expect(shellLessonById("u11-prova")?.unlocksKind).toBe("scripts");
+
+    for (const lesson of scriptLessons()) {
+      const sentences = lesson.explanation
+        .split(/[.!?]+(?:\s|$)/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      expect(sentences.length, lesson.id).toBeGreaterThanOrEqual(2);
+      expect(sentences.length, `${lesson.id}: ${lesson.explanation}`).toBeLessThanOrEqual(4);
+      for (const ex of lesson.exercises) {
+        expect(ex.canonical, `${lesson.id} exercise is one line`).not.toContain("\n");
+      }
+    }
+  });
+
+  it("every script line has a note", () => {
+    const lessons = scriptLessons();
+    expect(lessons).toHaveLength(11);
+    for (const lesson of lessons) {
+      const scripts = lesson.example.scripts ?? [];
+      expect(scripts.length, `${lesson.id} has an annotated script`).toBeGreaterThan(0);
+      for (const script of scripts) {
+        expect(script.file, lesson.id).toMatch(/^[a-z]+\.sh$/);
+        expect(["#!/usr/bin/env bash", "#!/bin/bash"], lesson.id).toContain(script.lines[0]?.code);
+        expect(script.lines.length, lesson.id).toBeGreaterThan(2);
+        for (const line of script.lines) {
+          expect(line.code.trim().length, `${lesson.id} ${script.file}`).toBeGreaterThan(0);
+          expect(line.note.trim().length, `${lesson.id} ${line.code}`).toBeGreaterThan(3);
+          expect(line.note, `${lesson.id} ${line.code}`).not.toContain("`");
+        }
+      }
+    }
+    expect(shellLessonById("u11-prova")?.example.scripts?.map((s) => s.file)).toEqual([
+      "run.sh",
+      "stress.sh",
+    ]);
+  });
+
+  it("every script parses in the shell subset", () => {
+    for (const lesson of scriptLessons()) {
+      for (const script of lesson.example.scripts ?? []) {
+        const res = parseShell(script.lines.map((l) => l.code).join("\n"));
+        expect(res.ok, `${lesson.id} ${script.file}: ${res.ok ? "" : res.error}`).toBe(true);
+      }
+    }
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { SHELL_LESSONS } from "../shell/curriculum";
+import { unitStatus } from "../learn/curriculum";
+import { SHELL_LESSONS, SHELL_UNITS } from "../shell/curriculum";
 import { memoryStore } from "./history";
 import {
   completeShellLesson,
@@ -38,5 +39,28 @@ describe("shell-learn storage (AC-7)", () => {
 
     saveShellCompleted(store, [second]);
     expect(loadShellCompleted(store)).toEqual([second]);
+  });
+
+  it("progress saved before the scripts units still loads", () => {
+    // T54 AC-7: a pre-T54 save only knows lessons of units 1-9.
+    const store = memoryStore();
+    store.setItem(
+      SHELL_LEARN_KEY,
+      JSON.stringify({ version: 2, completed: ["u1-nav", "u5-loop", "u9-shortcuts"] }),
+    );
+
+    const completed = loadShellCompleted(store);
+    expect(completed).toEqual(["u1-nav", "u5-loop", "u9-shortcuts"]);
+    const done = new Set(completed);
+    expect(SHELL_UNITS.map((u) => u.id).slice(9)).toEqual(["u10-scripts", "u11-controle"]);
+    expect(unitStatus(SHELL_UNITS[9]!, done)).toBe("new");
+    expect(unitStatus(SHELL_UNITS[10]!, done)).toBe("new");
+
+    expect(completeShellLesson(store, "u10-first")).toEqual([
+      "u1-nav",
+      "u5-loop",
+      "u9-shortcuts",
+      "u10-first",
+    ]);
   });
 });
