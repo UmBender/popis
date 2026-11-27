@@ -1,7 +1,7 @@
 ---
 id: T54
 title: Shell - scripts
-status: in-progress
+status: review
 depends_on: [T39]
 branch: task/T54-shell-scripts
 adrs: [ADR-T54-1]
@@ -165,11 +165,11 @@ conceito por lição, sempre com um exemplo que roda de verdade.
 ## Subtasks (one commit each)
 
 - [x] spec: ADR-T54-1 (amends ADR-T39-1: subconjunto maior, script anotado e oráculo de script) e testes nomeados
-- [ ] tests
-- [ ] models
-- [ ] behaviour
-- [ ] quality: `npm run check`, `shell:oracle`, coverage, e2e e screenshots
-- [ ] docs: *Log* e status `review`
+- [x] tests (mais um commit `test` antes, para os testes da T39 que o ADR-T54-1 substitui)
+- [x] models
+- [x] behaviour
+- [x] quality: `npm run check`, `shell:oracle`, coverage, e2e e screenshots
+- [x] docs: *Log* e status `review`
 
 ## Notas para o batch
 
@@ -182,3 +182,51 @@ conceito por lição, sempre com um exemplo que roda de verdade.
   `tests/regressions/T39-no-raw-backticks.test.ts`).
 
 ## Log
+
+- 2026-11-26 — **Spec ajustado antes do código** (commit `docs`):
+  - `script` virou `scripts`, uma lista de arquivos, porque a 11.6 mostra
+    `run.sh` e `stress.sh`;
+  - entraram no AC-1 o grupo `{ …; }` (o `|| { echo WA; exit 1; }` do
+    `stress.sh`) e o redirecionamento de comando composto
+    (`done < in1`, lição 11.2);
+  - entraram no AC-2 as opções `strictQuotes` e `exactPaths`.
+- 2026-11-26 — **Testes da T39 trocados em commit próprio**
+  (`test(T54): update T39 shell tests superseded by ADR-T54-1`), antes
+  dos testes novos:
+  - os casos de rejeição de `if`, `case`, `until`, `[[`, `((`, `for ((`
+    e crases saíram, porque agora esses comandos são aceitos;
+  - "has 9 units" passou a "has 11 units";
+  - o limite de frases continua 3 nas unidades 1–9 e é 4 nas 10–11.
+- 2026-11-27 — **Mudanças de comportamento fora do script:**
+  - a regra "use && no lugar de ;" agora compara posição por posição.
+    Antes ela disparava quando havia `&&` em qualquer lugar do esperado e
+    `;` em qualquer lugar do digitado, e escondia a mensagem certa (o
+    `[[ $n < 9 ]]` com `n=10; …`). O teste dela da T39 continua passando;
+  - quando a forma é outra, a mensagem nomeia as duas formas
+    ("esperado cd, mas você usou case"). O teste da T39 que digita um
+    `case` continua achando "case" na mensagem.
+- 2026-11-27 — **Limitações registradas** (ADR-T54-1, *Consequences*):
+  um `*` entre aspas e um sem aspas viram o mesmo texto no AST. Dentro
+  do `case`, uma palavra-chave de fechamento sem `;` antes (`echo a esac`)
+  fecha o bloco, como já acontecia com `done` na T39.
+- 2026-11-27 — **Bug achado fora do escopo, sem correção nesta task:** o
+  token `--text-xs` é usado em `src/ui/app.css` (ex.:
+  `.shell-drill-file code`, T39), mas não existe, e o texto cai no
+  tamanho herdado. No celular, as notas do script ficavam maiores que o
+  código; as notas passaram a usar `--text-sm`. O resto pede uma task
+  `fix/` com teste de regressão.
+- 2026-11-27 — **Gates:**
+  - `npm run check` verde: 4757 testes;
+  - `npm run coverage` verde. `src/shell/**` subiu para 99,31% de
+    linhas, 98,95% de statements e 96,07% de branches, e os limiares
+    passaram para 99/98/100/96;
+  - `npm run test:fuzz`: 301 testes, verde;
+  - `npm run test:e2e`: 71/71, incluindo a lição de script no desktop e
+    no celular;
+  - `npm run shell:oracle`: 45 equivalências do Comandos (já com o tipo
+    `scripts`), 18 quase-acertos (10 da T39 e 8 de script), 7
+    equivalências de script, nenhum `bash -n` falho e 26 transcrições.
+    O `run.sh` mostra `teste 1: OK` e `teste 2: WA`, e o
+    `stress.sh sol brute 10` para em "WA no teste 7" com saída 1.
+  - Capturas da 11.6 conferidas no desktop (nota ao lado) e no celular
+    (nota abaixo).
