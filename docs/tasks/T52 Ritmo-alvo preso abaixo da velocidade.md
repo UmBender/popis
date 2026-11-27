@@ -1,7 +1,7 @@
 ---
 id: T52
 title: Ritmo-alvo preso abaixo da velocidade
-status: review
+status: done
 depends_on: []
 branch: fix/pace-target-stuck
 adrs:
