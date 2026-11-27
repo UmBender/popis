@@ -3,11 +3,55 @@ export type RedirOp = "<" | ">" | ">>" | "2>" | "2>&1" | "&>";
 export type Redirection =
   { readonly op: "2>&1" } | { readonly op: Exclude<RedirOp, "2>&1">; readonly target: Word };
 
-export type WordPart =
+export type ArithBinaryOp =
+  "||" | "&&" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "+" | "-" | "*" | "/" | "%";
+
+export type ArithAssignOp = "=" | "+=" | "-=" | "*=" | "/=" | "%=";
+
+/** Integer arithmetic of `$(( … ))`, `(( … ))` and `for (( … ))` (T54 AC-1). */
+export type ArithExpr =
+  | { readonly type: "num"; readonly value: number }
+  /** A variable; `$n` and `n` are the same name, positional and special names keep no `$`. */
+  | { readonly type: "name"; readonly name: string }
+  | { readonly type: "unary"; readonly op: "-" | "!"; readonly arg: ArithExpr }
+  | {
+      readonly type: "binary";
+      readonly op: ArithBinaryOp;
+      readonly left: ArithExpr;
+      readonly right: ArithExpr;
+    }
+  | {
+      readonly type: "assign";
+      readonly op: ArithAssignOp;
+      readonly name: string;
+      readonly value: ArithExpr;
+    }
+  | {
+      readonly type: "incdec";
+      readonly op: "++" | "--";
+      readonly prefix: boolean;
+      readonly name: string;
+    };
+
+export type VarPart = {
+  readonly type: "var";
+  readonly name: string;
+  /** Value of `${name:-fallback}` when the variable is unset or empty. */
+  readonly fallback?: string;
+};
+
+/** A part that may appear inside double quotes. */
+export type DqPart =
   | { readonly type: "text"; readonly value: string }
-  | { readonly type: "var"; readonly name: string }
+  | VarPart
   | { readonly type: "cmdsub"; readonly node: ShellNode }
-  | { readonly type: "procsub"; readonly dir: "<"; readonly node: ShellNode };
+  | { readonly type: "arith"; readonly expr: ArithExpr };
+
+export type WordPart =
+  | DqPart
+  | { readonly type: "procsub"; readonly dir: "<"; readonly node: ShellNode }
+  /** Double quotes around at least one expansion; quotes around text only stay text. */
+  | { readonly type: "dq"; readonly parts: readonly DqPart[] };
 
 export type Word = {
   readonly parts: readonly WordPart[];
@@ -51,7 +95,78 @@ export type FuncDefNode = {
   readonly body: ShellNode;
 };
 
-export type ShellNode = SimpleCommand | PipelineNode | ListNode | ForNode | WhileNode | FuncDefNode;
+export type TestUnaryOp = "-f" | "-d" | "-e" | "-s" | "-x" | "-z" | "-n";
+export type TestBinaryOp = "==" | "!=" | "<" | ">" | "-eq" | "-ne" | "-lt" | "-le" | "-gt" | "-ge";
+
+/** Expression inside `[[ … ]]`; `=` reads as `==` and a bare word as `-n word`. */
+export type TestExpr =
+  | { readonly type: "unary"; readonly op: TestUnaryOp; readonly arg: Word }
+  | {
+      readonly type: "binary";
+      readonly op: TestBinaryOp;
+      readonly left: Word;
+      readonly right: Word;
+    }
+  | { readonly type: "not"; readonly expr: TestExpr }
+  | { readonly type: "and" | "or"; readonly left: TestExpr; readonly right: TestExpr };
+
+export type IfNode = {
+  readonly kind: "if";
+  readonly branches: readonly { readonly condition: ShellNode; readonly body: ShellNode }[];
+  readonly elseBody: ShellNode | null;
+};
+
+export type UntilNode = {
+  readonly kind: "until";
+  readonly condition: ShellNode;
+  readonly body: ShellNode;
+};
+
+export type CaseArm = {
+  readonly patterns: readonly Word[];
+  readonly body: ShellNode | null;
+};
+
+export type CaseNode = {
+  readonly kind: "case";
+  readonly word: Word;
+  readonly arms: readonly CaseArm[];
+};
+
+export type ArithForNode = {
+  readonly kind: "forarith";
+  readonly init: ArithExpr | null;
+  readonly condition: ArithExpr | null;
+  readonly step: ArithExpr | null;
+  readonly body: ShellNode;
+};
+
+export type TestNode = { readonly kind: "test"; readonly expr: TestExpr };
+export type ArithNode = { readonly kind: "arith"; readonly expr: ArithExpr };
+export type GroupNode = { readonly kind: "group"; readonly body: ShellNode };
+
+/** A compound command with redirections, as in `done < in1`. */
+export type RedirectNode = {
+  readonly kind: "redirect";
+  readonly body: ShellNode;
+  readonly redirs: readonly Redirection[];
+};
+
+export type ShellNode =
+  | SimpleCommand
+  | PipelineNode
+  | ListNode
+  | ForNode
+  | WhileNode
+  | FuncDefNode
+  | IfNode
+  | UntilNode
+  | CaseNode
+  | ArithForNode
+  | TestNode
+  | ArithNode
+  | GroupNode
+  | RedirectNode;
 
 export type ParseResult =
   { readonly ok: true; readonly node: ShellNode } | { readonly ok: false; readonly error: string };
@@ -648,7 +763,21 @@ export function formatShell(node: ShellNode): string {
       return `while ${formatShell(node.condition)}; do ${formatShell(node.body)}; done`;
     case "funcdef":
       return `${node.name}() { ${formatShell(node.body)}; }`;
+    case "if":
+    case "until":
+    case "case":
+    case "forarith":
+    case "test":
+    case "arith":
+    case "group":
+    case "redirect":
+      throw new Error("todo");
   }
+}
+
+/** Formats an arithmetic expression with the fewest parentheses that keep its tree (T54 AC-1). */
+export function formatArith(_expr: ArithExpr): string {
+  throw new Error("todo");
 }
 
 /** Returns the literal string of a word if it has no variables or substitutions, else null. */

@@ -50,6 +50,10 @@ export type CheckOptions = {
   readonly allowSemicolon?: boolean;
   /** Optional fallback hint when a command does not match. */
   readonly hint?: string;
+  /** When true, double quotes around an expansion are required (`"$1"` is not `$1`, T54 AC-2). */
+  readonly strictQuotes?: boolean;
+  /** When true, `for f in ./in*` differs from `for f in in*` (the objective shows the name). */
+  readonly exactPaths?: boolean;
 };
 
 export type ShellExpected = {
@@ -439,6 +443,15 @@ export function normalizeShell(node: ShellNode, options?: CheckOptions): ShellNo
         name: node.name,
         body: normalizeShell(node.body, options),
       };
+    case "if":
+    case "until":
+    case "case":
+    case "forarith":
+    case "test":
+    case "arith":
+    case "group":
+    case "redirect":
+      throw new Error("todo");
   }
 }
 

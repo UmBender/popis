@@ -10,6 +10,7 @@ export const SHELL_DRILL_KINDS = [
   "limites",
   "texto",
   "setup",
+  "scripts",
 ] as const;
 
 export type ShellDrillKind = (typeof SHELL_DRILL_KINDS)[number];
@@ -23,6 +24,7 @@ export const SHELL_DRILL_KIND_LABELS: Readonly<Record<ShellDrillKind, string>> =
   limites: "Limites (ulimit -s, -v, -a)",
   texto: "Texto (head, tail, wc, sort, uniq, grep)",
   setup: "Setup (alias, função, source)",
+  scripts: "Scripts (if, for, função, exit)",
 };
 
 export type ShellDrillItem = {
@@ -568,6 +570,11 @@ function buildSetup(rng: Rng): ItemSpec {
   }
 }
 
+/** One-line script objectives: tests, if, loops, functions and exit codes (T54 AC-5). */
+function buildScripts(_rng: Rng): ItemSpec {
+  throw new Error("todo");
+}
+
 /** Generates a deterministic Shell Comandos drill item from seed, index and active kinds (AC-3). */
 export function generateShellItem(
   seed: number,
@@ -604,6 +611,9 @@ export function generateShellItem(
       break;
     case "setup":
       spec = buildSetup(rng);
+      break;
+    case "scripts":
+      spec = buildScripts(rng);
       break;
   }
 

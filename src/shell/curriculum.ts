@@ -7,9 +7,23 @@ export type ShellExampleStep = {
   readonly note: string;
 };
 
+/** One line of an annotated script with its short explanation (T54 AC-3). */
+export type ShellScriptLine = {
+  readonly code: string;
+  readonly note: string;
+};
+
+/** A `.sh` file shown line by line in the lesson and written to disk by the oracle. */
+export type ShellScriptFile = {
+  readonly file: string;
+  readonly lines: readonly ShellScriptLine[];
+};
+
 export type ShellLessonExample = {
   readonly fixture: string;
   readonly setup?: readonly string[];
+  /** Annotated scripts written to the fixture folder before the steps run (T54 AC-3). */
+  readonly scripts?: readonly ShellScriptFile[];
   readonly steps: readonly ShellExampleStep[];
 };
 
